@@ -55,7 +55,11 @@ async function authFetch(path: string, options: RequestInit = {}): Promise<Respo
   const token = getToken();
   const headers = new Headers(options.headers);
   if (token) headers.set("Authorization", `Bearer ${token}`);
-  if (options.body) headers.set("Content-Type", "application/json");
+  // FormData setzt seinen eigenen multipart-Content-Type inkl. Boundary;
+  // den nicht überschreiben.
+  if (options.body && !(options.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
+  }
 
   const res = await fetch(`/api${path}`, { ...options, headers });
   if (!res.ok) {
@@ -146,4 +150,37 @@ export async function updateProduct(
 
 export async function deleteProduct(id: number): Promise<void> {
   await authFetch(`/products/${id}`, { method: "DELETE" });
+}
+
+export type TestOrder = {
+  id: number;
+  customer_id: number;
+  product_id: number | null;
+  order_number: string | null;
+  source: string;
+  original_filename: string | null;
+  status: string;
+  raw_data: Record<string, unknown> | null;
+};
+
+export type LidlImportResult = {
+  product: Product;
+  test_order: TestOrder;
+  pruefumfang_kategorien: string[];
+  referenzpruefung: boolean;
+  ngo_pruefung: boolean;
+  ffu_pruefung: boolean;
+};
+
+export async function importLidlPruefauftrag(file: File): Promise<LidlImportResult> {
+  const formData = new FormData();
+  formData.append("file", file);
+  return (
+    await authFetch("/test-orders/import-lidl", { method: "POST", body: formData })
+  ).json();
+}
+
+export async function listTestOrders(customerId?: number): Promise<TestOrder[]> {
+  const query = customerId ? `?customer_id=${customerId}` : "";
+  return (await authFetch(`/test-orders${query}`)).json();
 }

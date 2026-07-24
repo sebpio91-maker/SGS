@@ -3,9 +3,10 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import LoginPage from "./pages/LoginPage";
 import CustomersPage from "./pages/CustomersPage";
 import ProductsPage from "./pages/ProductsPage";
+import LidlImportPage from "./pages/LidlImportPage";
 
 function Home() {
-  return <p>Nächste Schritte: Prüfauftrag-Import, Prüfplan-Erstellung.</p>;
+  return <p>Nächste Schritte: Prüfplan-Erstellung.</p>;
 }
 
 const navLinkStyle = ({ isActive }: { isActive: boolean }) => ({
@@ -36,12 +37,16 @@ function AppShell() {
         <NavLink to="/produkte" style={navLinkStyle}>
           Produkte
         </NavLink>
+        <NavLink to="/lidl-import" style={navLinkStyle}>
+          Lidl-Prüfauftrag-Import
+        </NavLink>
       </nav>
 
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/kunden" element={<CustomersPage />} />
         <Route path="/produkte" element={<ProductsPage />} />
+        <Route path="/lidl-import" element={<LidlImportPage />} />
       </Routes>
     </main>
   );

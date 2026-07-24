@@ -4,8 +4,9 @@ Automatische Erstellung von Prüfplänen für Produktprüfungen – basierend au
 Normen, Prüfprogrammen, gesetzlichen Vorgaben (z. B. Kennzeichnung) sowie
 Produktspezifikationen und kundenspezifischen Vorgaben.
 
-Zentrales Ausgangsdokument für den Kunden Lidl ist der Prüfauftrag; für
-andere Kunden erfolgt die Auswahl der Prüfungen über ein Menü im Katalog.
+Zentrales Ausgangsdokument für den Kunden Lidl ist der Prüfauftrag (PDF);
+für andere Kunden erfolgt die Auswahl der Prüfungen über ein Menü im
+Katalog.
 
 ## Architektur
 
@@ -48,6 +49,28 @@ Stammdaten-Referenztabellen (befüllt aus den realen Excel-Katalogen):
 Migrationen liegen in `backend/alembic/versions/`. Der Lidl-Prüfpunkt-Baum
 kann per Seed-Skript eingespielt werden (siehe unten), die vier
 Referenztabellen per Import-Skript aus den Original-Excel-Dateien.
+
+## Lidl-Prüfauftrag-Import
+
+`backend/app/lidl_pdf_parser.py` extrahiert aus dem PDF-Prüfauftrag
+Artikeldaten (IAN/Charge, Bezeichnung, Warenbereich/-gruppe), Lieferant,
+den Prüfumfang (welche Prüfkategorien beauftragt sind), sowie die
+Signalfelder für Batterie (`Batterietyp`), Anleitung (Erwähnung von
+"Montageanleitung"/"Bedienungsanleitung" im Qualitätstext),
+Referenzprüfung, NGO- und FFU-Prüfung. Über `POST
+/api/test-orders/import-lidl` (Multipart-Upload) wird daraus automatisch
+ein `Product` (Kunde "Lidl", identifiziert per Artikelnummer/IAN) und ein
+`TestOrder` mit dem vollständigen Rohtext als Audit-Trail angelegt bzw.
+aktualisiert. In der Web-App steht dafür die Seite
+"Lidl-Prüfauftrag-Import" zur Verfügung.
+
+Da bisher nur ein Beispieldokument vorlag, ist der Parser defensiv
+ausgelegt: nicht erkannte Felder bleiben leer, der komplette Rohtext wird
+immer mit gespeichert. Ein paar Formularfelder mit mehrzeilig
+umgebrochenem Label (z. B. "Sicherheitsdatenblatt Gefahrgut") werden
+nicht strukturiert erfasst, da PDF-Textextraktion Label und Wert dort
+zeilenweise verschränkt – keines dieser Felder wird für die
+Prüfplan-Logik benötigt.
 
 ## Lokale Entwicklung
 
@@ -97,8 +120,8 @@ npm run dev
 ```
 
 Frontend läuft unter http://localhost:5173 und proxyt `/api`-Requests an
-das Backend. Nach dem Login stehen die Seiten "Kunden" und "Produkte"
-zur Verfügung (CRUD).
+das Backend. Nach dem Login stehen die Seiten "Kunden", "Produkte" und
+"Lidl-Prüfauftrag-Import" zur Verfügung.
 
 ## Roadmap
 
@@ -108,7 +131,7 @@ zur Verfügung (CRUD).
 3. ✅ Login/Auth (JWT, eine Rolle für alle Nutzer)
 4. ✅ Stammdaten-Datenmodell (Normenfinder, Produktspezifikation,
    Lidl-Warengruppen) + Import der realen Excel-Referenzdaten
-5. Lidl-Prüfauftrag-Import (Excel-Parser)
+5. ✅ Lidl-Prüfauftrag-Import (PDF-Parser)
 6. Menü-basierte Prüfungsauswahl für andere Kunden, inkl.
    kaskadierender Normenfinder-Auswahl
 7. Prüfplan-Generierungslogik inkl. Kostenberechnung
