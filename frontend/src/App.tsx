@@ -1,34 +1,39 @@
-import { useEffect, useState } from "react";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import LoginPage from "./pages/LoginPage";
 
-type HealthResponse = {
-  status: string;
-  app: string;
-};
-
-export default function App() {
-  const [health, setHealth] = useState<HealthResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/health")
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then(setHealth)
-      .catch((err) => setError(String(err)));
-  }, []);
+function Dashboard() {
+  const { user, logout } = useAuth();
 
   return (
     <main style={{ fontFamily: "sans-serif", padding: "2rem" }}>
       <h1>SGS Prüfplan-App</h1>
-      <p>Grundgerüst steht. Nächste Schritte: Datenmodell, Login, Stammdaten.</p>
-      {error && <p style={{ color: "crimson" }}>Backend nicht erreichbar: {error}</p>}
-      {health && (
-        <p style={{ color: "green" }}>
-          Backend-Status: {health.status} ({health.app})
-        </p>
-      )}
+      <p>
+        Angemeldet als {user?.full_name} ({user?.email})
+      </p>
+      <button onClick={logout} style={{ padding: "0.5rem 1rem" }}>
+        Abmelden
+      </button>
+      <p style={{ marginTop: "2rem" }}>
+        Nächste Schritte: Stammdatenverwaltung, Prüfauftrag-Import, Prüfplan-Erstellung.
+      </p>
     </main>
+  );
+}
+
+function AppContent() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <p style={{ fontFamily: "sans-serif", padding: "2rem" }}>Lade...</p>;
+  }
+
+  return user ? <Dashboard /> : <LoginPage />;
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }

@@ -55,6 +55,14 @@ Sonder- & Funktionsparameter"):
 docker compose exec backend python -m app.seed
 ```
 
+Es gibt noch keine öffentliche Registrierung – Benutzer werden über ein
+Skript angelegt:
+
+```bash
+docker compose exec backend python -m app.create_user \
+  --email max.muster@sgs.de --name "Max Muster" --password "einStarkesPasswort"
+```
+
 ### Frontend
 
 ```bash
@@ -71,7 +79,7 @@ das Backend.
 1. ✅ Projekt-Grundgerüst (Docker, FastAPI, Vite/React)
 2. ✅ Datenmodell (Kunden, Produkte, Normen/Gesetzesvorgaben, Prüfkatalog,
    Prüfprogramme, Prüfaufträge, Prüfpläne)
-3. Login/Auth (JWT)
+3. ✅ Login/Auth (JWT, eine Rolle für alle Nutzer)
 4. Stammdatenverwaltung (CRUD) für Kunden, Produkte, Prüfkatalog
 5. Lidl-Prüfauftrag-Import (Excel-Parser)
 6. Menü-basierte Prüfungsauswahl für andere Kunden
