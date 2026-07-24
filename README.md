@@ -105,6 +105,29 @@ liefert die Pläne inkl. berechneter Summen (Laborzeit/-kosten,
 VK-Preis). In der Web-App steht dafür die Seite "Prüfpläne" zur
 Verfügung.
 
+## Schnellstart zum Ausprobieren
+
+```bash
+git clone <repo-url> && cd SGS
+git checkout claude/automated-test-plan-app-7zmuf6
+cp backend/.env.example backend/.env
+docker compose up --build -d
+
+docker compose exec backend python -m app.seed_demo
+docker compose exec backend python -m app.create_user \
+  --email test@sgs.de --name "Test Nutzer" --password geheim123
+
+cd frontend && npm install && npm run dev
+```
+
+Dann http://localhost:5173 öffnen, mit `test@sgs.de` / `geheim123`
+einloggen und auf der Seite "Prüfpläne" das Produkt "Demo-Campingtisch"
+auswählen – dort liegt bereits ein fertig generierter Prüfplan mit
+Norm-Lookup, abgeleiteten Lidl-Prüfpunkten und Kostenberechnung, an dem
+sich das Zusammenspiel aller bisherigen Schritte ansehen lässt. Über
+"Kunden"/"Produkte" lässt sich Eigenes anlegen, über
+"Lidl-Prüfauftrag-Import" ein echtes Prüfauftrags-PDF hochladen.
+
 ## Lokale Entwicklung
 
 ### Backend + Datenbank (Docker)
@@ -124,6 +147,13 @@ Sonder- & Funktionsparameter"):
 
 ```bash
 docker compose exec backend python -m app.seed
+```
+
+Oder direkt die Demo-Daten (Lidl-Baum + Beispielprodukt + generierter
+Prüfplan, siehe Schnellstart oben):
+
+```bash
+docker compose exec backend python -m app.seed_demo
 ```
 
 Stammdaten aus den Original-Excel-Referenzdateien importieren (Dateien
