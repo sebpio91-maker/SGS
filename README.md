@@ -29,10 +29,25 @@ andere Kunden erfolgt die Auswahl der Prüfungen über ein Menü im Katalog.
 - **TestOrder**: Prüfauftrag als Ausgangsdokument (bei Lidl importiert,
   sonst manuell)
 - **TestPlan** / **TestPlanItem**: der generierte Prüfplan mit seinen
-  Prüfpositionen (Snapshot aus dem Katalog zum Erstellungszeitpunkt)
+  Prüfpositionen (Snapshot aus dem Katalog zum Erstellungszeitpunkt),
+  inkl. Kosten-Snapshot (`lab_minutes`, `lab_cost`, `sale_price`)
+
+Stammdaten-Referenztabellen (befüllt aus den realen Excel-Katalogen):
+
+- **NormLookupRule**: Produktklassifikation (Kategorie → Produktart →
+  Zielgruppe → Einsatzort → Bereich → Produkt) → anzuwendende Norm(en),
+  Laborzeit/-kosten, Preis (Normenfinder-Logik)
+- **NormSpecialItem**: Zusatzkosten/-normen für spezielle
+  Produkteigenschaften (z. B. Armlehne, Glas), scoped nach Klassifikation
+- **ProductSpecRequirement**: Anforderungskatalog physikalische
+  Produktspezifikation (Parameter × Produkt/Material × Paketstufe →
+  Norm, Laufzeit, Kosten-/Bewertungsformeln, Prüflabor)
+- **LidlWarengruppeRule**: Norm/FFU/StiWa/NGO-Referenzen und Kosten je
+  Lidl-Warengruppe
 
 Migrationen liegen in `backend/alembic/versions/`. Der Lidl-Prüfpunkt-Baum
-kann per Seed-Skript eingespielt werden (siehe unten).
+kann per Seed-Skript eingespielt werden (siehe unten), die vier
+Referenztabellen per Import-Skript aus den Original-Excel-Dateien.
 
 ## Lokale Entwicklung
 
@@ -53,6 +68,16 @@ Sonder- & Funktionsparameter"):
 
 ```bash
 docker compose exec backend python -m app.seed
+```
+
+Stammdaten aus den Original-Excel-Referenzdateien importieren (Dateien
+liegen nicht im Repo – Pfade zeigen auf lokale Kopien):
+
+```bash
+docker compose exec backend python -m app.import_master_data \
+  --normenauswahl /pfad/zu/Normenauswahl.xlsm \
+  --produktspezifikationen /pfad/zu/Produktspezifikationen.xlsx \
+  --mechanik /pfad/zu/KV_Monitoring.xlsm
 ```
 
 Es gibt noch keine öffentliche Registrierung – Benutzer werden über ein
@@ -80,8 +105,12 @@ das Backend.
 2. ✅ Datenmodell (Kunden, Produkte, Normen/Gesetzesvorgaben, Prüfkatalog,
    Prüfprogramme, Prüfaufträge, Prüfpläne)
 3. ✅ Login/Auth (JWT, eine Rolle für alle Nutzer)
-4. Stammdatenverwaltung (CRUD) für Kunden, Produkte, Prüfkatalog
+4. ✅ Stammdaten-Datenmodell (Normenfinder, Produktspezifikation,
+   Lidl-Warengruppen) + Import der realen Excel-Referenzdaten
 5. Lidl-Prüfauftrag-Import (Excel-Parser)
-6. Menü-basierte Prüfungsauswahl für andere Kunden
-7. Prüfplan-Generierungslogik
+6. Menü-basierte Prüfungsauswahl für andere Kunden, inkl.
+   kaskadierender Normenfinder-Auswahl
+7. Prüfplan-Generierungslogik inkl. Kostenberechnung
 8. Export als Excel & PDF
+9. CRUD/API für Kunden, Produkte, Stammdaten-Kataloge
+10. Monitoring-Dashboard

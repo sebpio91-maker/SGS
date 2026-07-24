@@ -6,6 +6,12 @@ from app.models.product import Product
 from app.models.order import TestOrder
 from app.models.plan import TestPlan, TestPlanItem
 from app.models.user import User
+from app.models.master_data import (
+    LidlWarengruppeRule,
+    NormLookupRule,
+    NormSpecialItem,
+    ProductSpecRequirement,
+)
 
 __all__ = [
     "Customer",
@@ -19,4 +25,8 @@ __all__ = [
     "TestPlan",
     "TestPlanItem",
     "User",
+    "NormLookupRule",
+    "NormSpecialItem",
+    "ProductSpecRequirement",
+    "LidlWarengruppeRule",
 ]

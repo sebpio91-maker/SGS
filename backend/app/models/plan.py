@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, ForeignKey, String, Text
+from sqlalchemy import DateTime, ForeignKey, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.session import Base
@@ -76,6 +76,12 @@ class TestPlanItem(Base):
     result: Mapped[str | None] = mapped_column(String(50), nullable=True)
     remarks: Mapped[str | None] = mapped_column(Text, nullable=True)
     sort_order: Mapped[int] = mapped_column(default=0)
+
+    # Kosten-Snapshot zum Erstellungszeitpunkt (aus Normenfinder/
+    # Produktspezifikation/Lidl-Warengruppen-Regeln übernommen)
+    lab_minutes: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)
+    lab_cost: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)
+    sale_price: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)
 
     test_plan: Mapped["TestPlan"] = relationship(back_populates="items")
     catalog_item: Mapped["TestCatalogItem | None"] = relationship()
