@@ -13,6 +13,27 @@ andere Kunden erfolgt die Auswahl der Prüfungen über ein Menü im Katalog.
 - **Frontend**: React + TypeScript (Vite)
 - **Export**: Prüfpläne als Excel (`.xlsx`) und PDF
 
+## Datenmodell
+
+- **Customer**: Kunde (z. B. Lidl), identifiziert per `code`
+- **Product**: zu prüfendes Produkt eines Kunden, inkl. flexibler
+  `specification` (JSON) und Flags wie `has_battery`/`has_manual`
+- **Norm**: Norm/Gesetz/Kundenvorgabe, auf die sich ein Prüfpunkt bezieht
+- **TestCategory** / **TestCatalogItem**: hierarchischer Prüfkatalog
+  (Kategorie → Prüfpunkte). Kann kundenspezifisch (z. B. Lidls fester
+  Baum) oder generisch (Menü-Auswahl für andere Kunden) sein.
+  `applicability_condition` markiert bedingte Prüfpunkte (z. B.
+  `has_battery` für den Akkusicherheitskurzcheck)
+- **TestProgram** / **TestProgramItem**: wiederverwendbare Vorlage aus
+  mehreren Katalog-Prüfpunkten für wiederkehrende, ähnliche Produkte
+- **TestOrder**: Prüfauftrag als Ausgangsdokument (bei Lidl importiert,
+  sonst manuell)
+- **TestPlan** / **TestPlanItem**: der generierte Prüfplan mit seinen
+  Prüfpositionen (Snapshot aus dem Katalog zum Erstellungszeitpunkt)
+
+Migrationen liegen in `backend/alembic/versions/`. Der Lidl-Prüfpunkt-Baum
+kann per Seed-Skript eingespielt werden (siehe unten).
+
 ## Lokale Entwicklung
 
 ### Backend + Datenbank (Docker)
@@ -23,7 +44,16 @@ docker compose up --build
 ```
 
 Backend läuft danach unter http://localhost:8000, Health-Check unter
-http://localhost:8000/api/health.
+http://localhost:8000/api/health. Datenbankmigrationen (Alembic) werden
+beim Start automatisch angewendet.
+
+Optional: Beispieldaten für den Lidl-Prüfpunkt-Baum einspielen
+(Kunde "Lidl" inkl. Kategorien und Prüfpunkten unter "Sicherheit & Norm /
+Sonder- & Funktionsparameter"):
+
+```bash
+docker compose exec backend python -m app.seed
+```
 
 ### Frontend
 
@@ -39,7 +69,7 @@ das Backend.
 ## Roadmap
 
 1. ✅ Projekt-Grundgerüst (Docker, FastAPI, Vite/React)
-2. Datenmodell (Kunden, Produkte, Normen/Gesetzesvorgaben, Prüfkatalog,
+2. ✅ Datenmodell (Kunden, Produkte, Normen/Gesetzesvorgaben, Prüfkatalog,
    Prüfprogramme, Prüfaufträge, Prüfpläne)
 3. Login/Auth (JWT)
 4. Stammdatenverwaltung (CRUD) für Kunden, Produkte, Prüfkatalog
