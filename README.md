@@ -97,7 +97,8 @@ npm run dev
 ```
 
 Frontend läuft unter http://localhost:5173 und proxyt `/api`-Requests an
-das Backend.
+das Backend. Nach dem Login stehen die Seiten "Kunden" und "Produkte"
+zur Verfügung (CRUD).
 
 ## Roadmap
 
@@ -112,5 +113,5 @@ das Backend.
    kaskadierender Normenfinder-Auswahl
 7. Prüfplan-Generierungslogik inkl. Kostenberechnung
 8. Export als Excel & PDF
-9. CRUD/API für Kunden, Produkte, Stammdaten-Kataloge
+9. ✅ CRUD/API für Kunden, Produkte
 10. Monitoring-Dashboard

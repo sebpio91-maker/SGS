@@ -50,3 +50,100 @@ export async function fetchCurrentUser(token: string): Promise<CurrentUser> {
 
   return res.json();
 }
+
+async function authFetch(path: string, options: RequestInit = {}): Promise<Response> {
+  const token = getToken();
+  const headers = new Headers(options.headers);
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  if (options.body) headers.set("Content-Type", "application/json");
+
+  const res = await fetch(`/api${path}`, { ...options, headers });
+  if (!res.ok) {
+    let detail = `HTTP ${res.status}`;
+    try {
+      const data = await res.json();
+      detail = data.detail ?? detail;
+    } catch {
+      /* Antwort ohne JSON-Body (z.B. 204) */
+    }
+    throw new Error(detail);
+  }
+  return res;
+}
+
+export type Customer = {
+  id: number;
+  name: string;
+  code: string;
+  notes: string | null;
+};
+
+export type CustomerInput = {
+  name: string;
+  code: string;
+  notes?: string | null;
+};
+
+export async function listCustomers(): Promise<Customer[]> {
+  return (await authFetch("/customers")).json();
+}
+
+export async function createCustomer(input: CustomerInput): Promise<Customer> {
+  return (await authFetch("/customers", { method: "POST", body: JSON.stringify(input) })).json();
+}
+
+export async function updateCustomer(
+  id: number,
+  input: Partial<CustomerInput>,
+): Promise<Customer> {
+  return (
+    await authFetch(`/customers/${id}`, { method: "PATCH", body: JSON.stringify(input) })
+  ).json();
+}
+
+export async function deleteCustomer(id: number): Promise<void> {
+  await authFetch(`/customers/${id}`, { method: "DELETE" });
+}
+
+export type Product = {
+  id: number;
+  customer_id: number;
+  article_number: string;
+  name: string;
+  category: string | null;
+  has_battery: boolean;
+  has_manual: boolean;
+  specification: Record<string, unknown> | null;
+};
+
+export type ProductInput = {
+  customer_id: number;
+  article_number: string;
+  name: string;
+  category?: string | null;
+  has_battery?: boolean;
+  has_manual?: boolean;
+  specification?: Record<string, unknown> | null;
+};
+
+export async function listProducts(customerId?: number): Promise<Product[]> {
+  const query = customerId ? `?customer_id=${customerId}` : "";
+  return (await authFetch(`/products${query}`)).json();
+}
+
+export async function createProduct(input: ProductInput): Promise<Product> {
+  return (await authFetch("/products", { method: "POST", body: JSON.stringify(input) })).json();
+}
+
+export async function updateProduct(
+  id: number,
+  input: Partial<ProductInput>,
+): Promise<Product> {
+  return (
+    await authFetch(`/products/${id}`, { method: "PATCH", body: JSON.stringify(input) })
+  ).json();
+}
+
+export async function deleteProduct(id: number): Promise<void> {
+  await authFetch(`/products/${id}`, { method: "DELETE" });
+}
