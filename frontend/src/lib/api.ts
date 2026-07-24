@@ -118,6 +118,12 @@ export type Product = {
   has_battery: boolean;
   has_manual: boolean;
   specification: Record<string, unknown> | null;
+  kategorie?: string | null;
+  produktart?: string | null;
+  zielgruppe?: string | null;
+  einsatzort?: string | null;
+  bereich?: string | null;
+  produkt_typ?: string | null;
 };
 
 export type ProductInput = {
@@ -183,4 +189,50 @@ export async function importLidlPruefauftrag(file: File): Promise<LidlImportResu
 export async function listTestOrders(customerId?: number): Promise<TestOrder[]> {
   const query = customerId ? `?customer_id=${customerId}` : "";
   return (await authFetch(`/test-orders${query}`)).json();
+}
+
+export type TestPlanItem = {
+  id: number;
+  catalog_item_id: number | null;
+  category_name: string;
+  name: string;
+  norm_reference: string | null;
+  description: string | null;
+  result: string | null;
+  remarks: string | null;
+  lab_minutes: number | null;
+  lab_cost: number | null;
+  sale_price: number | null;
+  sort_order: number;
+};
+
+export type TestPlan = {
+  id: number;
+  customer_id: number;
+  product_id: number;
+  test_order_id: number | null;
+  status: string;
+  items: TestPlanItem[];
+  lab_minutes_total: number;
+  lab_cost_total: number;
+  sale_price_total: number;
+};
+
+export type GenerateTestPlanInput = {
+  product_id: number;
+  test_order_id?: number | null;
+  selected_catalog_item_ids?: number[];
+  selected_spec_requirement_ids?: number[];
+  selected_special_item_eigenschaften?: string[];
+};
+
+export async function generateTestPlan(input: GenerateTestPlanInput): Promise<TestPlan> {
+  return (
+    await authFetch("/test-plans/generate", { method: "POST", body: JSON.stringify(input) })
+  ).json();
+}
+
+export async function listTestPlans(productId?: number): Promise<TestPlan[]> {
+  const query = productId ? `?product_id=${productId}` : "";
+  return (await authFetch(`/test-plans${query}`)).json();
 }

@@ -9,6 +9,12 @@ class ProductBase(BaseModel):
     has_battery: bool = False
     has_manual: bool = False
     specification: dict | None = None
+    kategorie: str | None = None
+    produktart: str | None = None
+    zielgruppe: str | None = None
+    einsatzort: str | None = None
+    bereich: str | None = None
+    produkt_typ: str | None = None
 
 
 class ProductCreate(ProductBase):
@@ -23,6 +29,12 @@ class ProductUpdate(BaseModel):
     has_battery: bool | None = None
     has_manual: bool | None = None
     specification: dict | None = None
+    kategorie: str | None = None
+    produktart: str | None = None
+    zielgruppe: str | None = None
+    einsatzort: str | None = None
+    bereich: str | None = None
+    produkt_typ: str | None = None
 
 
 class ProductOut(ProductBase):

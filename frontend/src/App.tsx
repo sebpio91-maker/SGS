@@ -4,6 +4,7 @@ import LoginPage from "./pages/LoginPage";
 import CustomersPage from "./pages/CustomersPage";
 import ProductsPage from "./pages/ProductsPage";
 import LidlImportPage from "./pages/LidlImportPage";
+import TestPlansPage from "./pages/TestPlansPage";
 
 function Home() {
   return <p>Nächste Schritte: Prüfplan-Erstellung.</p>;
@@ -40,6 +41,9 @@ function AppShell() {
         <NavLink to="/lidl-import" style={navLinkStyle}>
           Lidl-Prüfauftrag-Import
         </NavLink>
+        <NavLink to="/pruefplaene" style={navLinkStyle}>
+          Prüfpläne
+        </NavLink>
       </nav>
 
       <Routes>
@@ -47,6 +51,7 @@ function AppShell() {
         <Route path="/kunden" element={<CustomersPage />} />
         <Route path="/produkte" element={<ProductsPage />} />
         <Route path="/lidl-import" element={<LidlImportPage />} />
+        <Route path="/pruefplaene" element={<TestPlansPage />} />
       </Routes>
     </main>
   );

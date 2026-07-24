@@ -15,6 +15,13 @@ class Product(Base):
     die relevanten Merkmale je nach Produktart stark unterscheiden.
     `has_battery` / `has_manual` steuern die Anzeige bedingter Prüfpunkte
     (z. B. Akkusicherheitskurzcheck, Bedienungsanleitungsprüfung).
+
+    `kategorie`/`produktart`/`zielgruppe`/`einsatzort`/`bereich`/
+    `produkt_typ` sind die Normenfinder-Klassifikationsdimensionen (siehe
+    `NormLookupRule`) und unabhängig vom freien Anzeigenamen `name` bzw.
+    dem generischen `category`-Feld. Sie sind nullable: für Lidl-Produkte
+    ergibt sich die anzuwendende Norm meist direkt aus dem Prüfauftrag,
+    nicht aus dieser Klassifikation.
     """
 
     __tablename__ = "products"
@@ -29,6 +36,12 @@ class Product(Base):
     has_battery: Mapped[bool] = mapped_column(Boolean, default=False)
     has_manual: Mapped[bool] = mapped_column(Boolean, default=False)
     specification: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    kategorie: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    produktart: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    zielgruppe: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    einsatzort: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    bereich: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    produkt_typ: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )

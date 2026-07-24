@@ -50,6 +50,12 @@ Migrationen liegen in `backend/alembic/versions/`. Der Lidl-Prüfpunkt-Baum
 kann per Seed-Skript eingespielt werden (siehe unten), die vier
 Referenztabellen per Import-Skript aus den Original-Excel-Dateien.
 
+`Product` trägt zusätzlich die Normenfinder-Klassifikation (`kategorie`,
+`produktart`, `zielgruppe`, `einsatzort`, `bereich`, `produkt_typ`) –
+unabhängig vom freien Anzeigenamen, da der Normenfinder eine kontrollierte
+Klassifikation erwartet (z. B. "Möbel / Tisch / Privat / Outdoor / Camping
+/ Campingtisch").
+
 ## Lidl-Prüfauftrag-Import
 
 `backend/app/lidl_pdf_parser.py` extrahiert aus dem PDF-Prüfauftrag
@@ -71,6 +77,33 @@ umgebrochenem Label (z. B. "Sicherheitsdatenblatt Gefahrgut") werden
 nicht strukturiert erfasst, da PDF-Textextraktion Label und Wert dort
 zeilenweise verschränkt – keines dieser Felder wird für die
 Prüfplan-Logik benötigt.
+
+## Prüfplan-Generierungslogik
+
+`backend/app/services/plan_generator.py` führt alles zu einem Prüfplan
+zusammen:
+
+- **Sicherheit-/Normprüfung**: `find_norm_rule` sucht in
+  `NormLookupRule` nach der Produktklassifikation (Kategorie/Produktart/
+  Produkt sind Pflicht, Zielgruppe/Einsatzort/Bereich optional – ein
+  leeres Regelfeld gilt als Platzhalter, analog zur Normenfinder-Logik in
+  Excel; bei mehreren Treffern gewinnt der spezifischste). Liefert Norm,
+  Laborzeit/-kosten und Preis.
+- **Sonderposten**: `find_special_item` matcht ausgewählte
+  Produkteigenschaften (z. B. "Glas") gegen `NormSpecialItem` für
+  Zusatzkosten.
+- **Lidl-Fluss**: `build_lidl_items` leitet die Prüfplan-Positionen aus
+  dem festen Lidl-Prüfpunkt-Baum ab, gesteuert durch die im Prüfauftrag
+  geparsten Prüfumfang-Kategorien sowie die Produkt-Flags
+  (`has_battery`/`has_manual`) und die Booleans Referenzprüfung/NGO/FFU.
+- **Produktspezifikation**: ausgewählte `ProductSpecRequirement`-Zeilen
+  werden 1:1 mit Norm und Kosten übernommen.
+
+`POST /api/test-plans/generate` erzeugt daraus einen persistierten
+`TestPlan` mit allen `TestPlanItem`-Positionen; `GET /api/test-plans`
+liefert die Pläne inkl. berechneter Summen (Laborzeit/-kosten,
+VK-Preis). In der Web-App steht dafür die Seite "Prüfpläne" zur
+Verfügung.
 
 ## Lokale Entwicklung
 
@@ -120,8 +153,8 @@ npm run dev
 ```
 
 Frontend läuft unter http://localhost:5173 und proxyt `/api`-Requests an
-das Backend. Nach dem Login stehen die Seiten "Kunden", "Produkte" und
-"Lidl-Prüfauftrag-Import" zur Verfügung.
+das Backend. Nach dem Login stehen die Seiten "Kunden", "Produkte",
+"Lidl-Prüfauftrag-Import" und "Prüfpläne" zur Verfügung.
 
 ## Roadmap
 
@@ -134,7 +167,7 @@ das Backend. Nach dem Login stehen die Seiten "Kunden", "Produkte" und
 5. ✅ Lidl-Prüfauftrag-Import (PDF-Parser)
 6. Menü-basierte Prüfungsauswahl für andere Kunden, inkl.
    kaskadierender Normenfinder-Auswahl
-7. Prüfplan-Generierungslogik inkl. Kostenberechnung
+7. ✅ Prüfplan-Generierungslogik inkl. Kostenberechnung
 8. Export als Excel & PDF
 9. ✅ CRUD/API für Kunden, Produkte
 10. Monitoring-Dashboard
