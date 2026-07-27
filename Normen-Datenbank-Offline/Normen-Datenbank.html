@@ -30,10 +30,18 @@ button.ghost:hover { background:#f1efe9; }
 button.danger { background:var(--danger); border-color:var(--danger); }
 button.danger:hover { background:#8f3220; }
 button.small { padding:0.25rem 0.5rem; font-size:0.8rem; }
+button:disabled { opacity:0.4; cursor:default; }
 #status { font-size:0.78rem; color:var(--muted); white-space:nowrap; }
 #status.ok { color: var(--green); }
 
-.layout { display:flex; gap:1rem; padding:1rem; align-items:flex-start; }
+nav.tabs { display:flex; gap:0.3rem; padding:0 1rem; background:var(--card); border-bottom:1px solid var(--border); }
+nav.tabs button { border-radius:6px 6px 0 0; border:1px solid var(--border); border-bottom:none; background:#f1efe9; color:var(--text); margin-bottom:-1px; }
+nav.tabs button.aktiv { background:var(--card); color:var(--accent-dark); font-weight:600; border-bottom:1px solid var(--card); }
+
+.seite { padding:1rem; }
+.seite[hidden] { display:none; }
+
+.layout { display:flex; gap:1rem; align-items:flex-start; }
 #normliste-panel { width:320px; flex-shrink:0; background:var(--card); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
 #normliste-panel h2 { font-size:0.95rem; margin:0; padding:0.7rem 0.9rem; border-bottom:1px solid var(--border); background:#f1efe9; }
 #normliste { list-style:none; margin:0; padding:0; max-height:75vh; overflow-y:auto; }
@@ -47,6 +55,7 @@ button.small { padding:0.25rem 0.5rem; font-size:0.8rem; }
 #detail-panel { flex:1; min-width:0; }
 .card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:1rem 1.2rem; margin-bottom:1rem; }
 .card h2 { margin-top:0; font-size:1.1rem; }
+.toolbar-zeile { display:flex; flex-wrap:wrap; gap:0.6rem; align-items:center; margin-bottom:0.8rem; }
 .formular-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.7rem 1rem; }
 .formular-grid label { display:flex; flex-direction:column; gap:0.25rem; font-size:0.85rem; font-weight:600; }
 .formular-grid label.volle-breite { grid-column:1 / -1; }
@@ -57,21 +66,25 @@ button.small { padding:0.25rem 0.5rem; font-size:0.8rem; }
 .badge.status-aktiv { background:#e4f2e6; color:var(--green); }
 .badge.status-zurückgezogen { background:#f3e3e0; color:var(--danger); }
 .badge.status-in-Überarbeitung, .badge.status-Entwurf { background:#f7ecd2; color:var(--amber); }
+.chip { display:inline-block; padding:0.12rem 0.5rem; border-radius:999px; font-size:0.76rem; background:#efe6d8; color:var(--accent-dark); margin:0.1rem 0.2rem 0.1rem 0; white-space:nowrap; }
 
+.tabellen-wrapper { overflow-x:auto; border:1px solid var(--border); border-radius:8px; background:var(--card); }
 table.tabelle { width:100%; border-collapse:collapse; }
 table.tabelle th, table.tabelle td { padding:0.4rem 0.5rem; border-bottom:1px solid var(--border); vertical-align:top; text-align:left; font-size:0.85rem; }
-table.tabelle thead th { background:#f1efe9; font-weight:600; }
-table.tabelle input[type=text], table.tabelle select, table.tabelle textarea {
-  width:100%; border:1px solid transparent; border-radius:4px; padding:0.3rem; font-family:inherit; font-size:0.85rem; background:transparent; resize:vertical; min-height:2.2em;
+table.tabelle thead th { background:#f1efe9; font-weight:600; white-space:nowrap; position:sticky; top:0; }
+table.tabelle input[type=text], table.tabelle input[type=number], table.tabelle select, table.tabelle textarea {
+  width:100%; min-width:7ch; border:1px solid transparent; border-radius:4px; padding:0.3rem; font-family:inherit; font-size:0.85rem; background:transparent; resize:vertical; min-height:2.2em;
 }
 table.tabelle input:hover, table.tabelle select:hover, table.tabelle textarea:hover,
 table.tabelle input:focus, table.tabelle select:focus, table.tabelle textarea:focus { border-color:var(--border); background:#fdfdfc; }
 .zeile-aktionen { display:flex; gap:0.25rem; white-space:nowrap; }
 .leerzustand { padding:2rem; text-align:center; color:var(--muted); }
+.hinweis { font-size:0.8rem; color:var(--muted); margin:0.3rem 0 0.8rem; }
+.zaehler { font-size:0.8rem; color:var(--muted); margin-left:0.4rem; }
 
 #merge-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.35); display:none; align-items:flex-start; justify-content:center; overflow-y:auto; padding:2rem 1rem; z-index:20; }
 #merge-overlay.sichtbar { display:flex; }
-#merge-box { background:var(--card); border-radius:10px; max-width:900px; width:100%; padding:1.2rem 1.5rem; margin-bottom:2rem; }
+#merge-box { background:var(--card); border-radius:10px; max-width:960px; width:100%; padding:1.2rem 1.5rem; margin-bottom:2rem; }
 #merge-box h2 { margin-top:0; }
 .merge-section { margin-top:1.2rem; }
 .merge-section h3 { font-size:0.95rem; margin-bottom:0.4rem; }
@@ -82,32 +95,128 @@ table.tabelle input:focus, table.tabelle select:focus, table.tabelle textarea:fo
 .diff-cols textarea { width:100%; min-height:4em; font-family:inherit; font-size:0.82rem; border:1px solid var(--border); border-radius:4px; padding:0.3rem; }
 .merge-actions { position:sticky; bottom:0; background:var(--card); padding-top:1rem; margin-top:1rem; border-top:1px solid var(--border); display:flex; gap:0.7rem; }
 input[type=file] { display:none; }
-.hinweis { font-size:0.8rem; color:var(--muted); margin:0.3rem 0 0.8rem; }
 </style>
 </head>
 <body>
 
 <header class="topbar">
-  <h1>📚 Normen-Datenbank</h1>
-  <button id="btn-neue-norm">+ Neue Norm</button>
+  <h1>📚 Normen- &amp; Produkt-Datenbank</h1>
   <button class="ghost" id="btn-speichern">⬇ Sichern (JSON)</button>
   <button class="ghost" id="btn-laden">⬆ Datei laden (JSON)</button>
   <button class="ghost" id="btn-zusammenfuehren">🔀 Zusammenführen (JSON)</button>
-  <button class="ghost" id="btn-csv">📄 Excel-Export (CSV)</button>
+  <button class="ghost" id="btn-csv">📄 CSV-Export (aktueller Bereich)</button>
   <input type="file" id="datei-laden-input" accept="application/json">
   <input type="file" id="datei-merge-input" accept="application/json">
   <div class="spacer"></div>
-  <input type="text" id="suche" placeholder="Suche in Normen & Prüfpunkten…">
+  <input type="text" id="suche" placeholder="Suche im aktuellen Bereich…">
   <span id="status"></span>
 </header>
 
-<div class="layout">
-  <div id="normliste-panel">
-    <h2>Normen</h2>
-    <ul id="normliste"></ul>
+<nav class="tabs">
+  <button data-tab="normen" class="aktiv">Normen</button>
+  <button data-tab="produkte">Produkte</button>
+  <button data-tab="sonderposten">Sonderposten</button>
+  <button data-tab="uebersicht">Übersicht</button>
+</nav>
+
+<section class="seite" id="seite-normen">
+  <div class="layout">
+    <div id="normliste-panel">
+      <h2>Normen</h2>
+      <ul id="normliste"></ul>
+    </div>
+    <div id="detail-panel"></div>
   </div>
-  <div id="detail-panel"></div>
-</div>
+  <div style="margin-top:0.8rem"><button id="btn-neue-norm">+ Neue Norm</button></div>
+</section>
+
+<section class="seite" id="seite-produkte" hidden>
+  <div class="card">
+    <div class="toolbar-zeile">
+      <h2 style="margin:0">Produkte ↔ Normen-Zuordnung</h2>
+      <span class="zaehler" id="produkte-zaehler"></span>
+      <div class="spacer"></div>
+      <button id="btn-neues-produkt">+ Neues Produkt</button>
+    </div>
+    <p class="hinweis">Übernommen aus dem Reiter „Datenbank" der bestehenden Normenauswahl.xlsm. „Normen" und „Verweise" sind Freitext (wie im Original), da die Formulierungen dort teils uneinheitlich sind.</p>
+    <div class="tabellen-wrapper">
+      <table class="tabelle" id="produkte-tabelle">
+        <thead>
+          <tr>
+            <th style="width:8%">Kategorie</th>
+            <th style="width:9%">Produktart</th>
+            <th style="width:7%">Zielgruppe</th>
+            <th style="width:7%">Einsatzort</th>
+            <th style="width:7%">Bereich</th>
+            <th style="width:11%">Produkt</th>
+            <th style="width:12%">Normen</th>
+            <th style="width:14%">Verweise / Prüfmethoden</th>
+            <th style="width:6%">Material</th>
+            <th style="width:5%">Preis €</th>
+            <th style="width:5%">Labor min</th>
+            <th style="width:5%">Labor €</th>
+            <th style="width:8%">Bemerkungen</th>
+            <th style="width:4%">Aktion</th>
+          </tr>
+        </thead>
+        <tbody id="produkte-body"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="seite" id="seite-sonderposten" hidden>
+  <div class="card">
+    <div class="toolbar-zeile">
+      <h2 style="margin:0">Sonderposten – Produktmerkmale mit besonderen Prüfungen</h2>
+      <span class="zaehler" id="sonderposten-zaehler"></span>
+      <div class="spacer"></div>
+      <button id="btn-neuer-sonderposten">+ Neuer Sonderposten</button>
+    </div>
+    <p class="hinweis">Übernommen aus dem Reiter „Sonderposten": Produktmerkmale, die zusätzliche/besondere Prüfungen oder Kosten auslösen. Zielgruppe/Einsatzort leer lassen, wenn das Merkmal unabhängig davon gilt.</p>
+    <div class="tabellen-wrapper">
+      <table class="tabelle" id="sonderposten-tabelle">
+        <thead>
+          <tr>
+            <th style="width:14%">Kategorie</th>
+            <th style="width:16%">Produktart</th>
+            <th style="width:12%">Zielgruppe</th>
+            <th style="width:12%">Einsatzort</th>
+            <th style="width:20%">Eigenschaft</th>
+            <th style="width:10%">Zusatzkosten €</th>
+            <th style="width:12%">Kommentar</th>
+            <th style="width:4%">Aktion</th>
+          </tr>
+        </thead>
+        <tbody id="sonderposten-body"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="seite" id="seite-uebersicht" hidden>
+  <div class="card">
+    <div class="toolbar-zeile">
+      <h2 style="margin:0">Übersicht: Produkt · Normen · besondere Ausprägungen</h2>
+      <span class="zaehler" id="uebersicht-zaehler"></span>
+    </div>
+    <p class="hinweis">Nur lesend. Zeigt je Produkt die hinterlegten Normen/Verweise zusammen mit den passenden Sonderposten (nach Kategorie/Produktart/Zielgruppe/Einsatzort abgeglichen). Bearbeitet wird in den Reitern „Produkte" bzw. „Sonderposten".</p>
+    <div class="tabellen-wrapper">
+      <table class="tabelle" id="uebersicht-tabelle">
+        <thead>
+          <tr>
+            <th style="width:20%">Produkt</th>
+            <th style="width:20%">Normen</th>
+            <th style="width:20%">Verweise / Prüfmethoden</th>
+            <th style="width:30%">Besondere Ausprägungen (Sonderposten)</th>
+            <th style="width:10%">Preis €</th>
+          </tr>
+        </thead>
+        <tbody id="uebersicht-body"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
 
 <div id="merge-overlay">
   <div id="merge-box"></div>
@@ -136,7 +245,11 @@ function jetzt() {
   return new Date().toLocaleString("de-DE");
 }
 
-/* ---------- Startdaten (aus Normenauswahl.xlsm, Blatt "NORMEN") ---------- */
+function normalisiere(wert) {
+  return (wert === null || wert === undefined ? "" : String(wert)).trim().toLowerCase();
+}
+
+/* ---------- Startdaten: Normen (aus Normenauswahl.xlsm, Blatt "NORMEN") ---------- */
 
 function seedNormen() {
   return [
@@ -322,15 +435,36 @@ e) bei Tischen, die über eine Öffnung für einen Sonnenschirm verfügen, die a
   ];
 }
 
+/* ---------- Startdaten: Produkte (aus Normenauswahl.xlsm, Blatt "Datenbank") ---------- */
+function seedProdukteRoh() {
+  return [{"kategorie": "Möbel", "produktart": "Tisch", "zielgruppe": "Privat", "einsatzort": "Outdoor", "bereich": "Camping", "produkt": "Campingtisch", "code": "Möbel_Tisch_Privat_Outdoor_Camping_Campingtisch", "lidlWarengruppe": "", "normenText": "DIN EN 581-1 / DIN EN 518-3", "material": "", "verweise": "EN 1730 (Standsicherheit, Festigkeit und Dauerhaltbarkeit) / EN 12150-1 & EN 12600 (Glas)", "preis": 570, "laborZeitMin": 360, "laborKostenEur": 432, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Tisch", "zielgruppe": "Privat", "einsatzort": "Outdoor", "bereich": "Wohn", "produkt": "Tisch", "code": "Möbel_Tisch_Privat_Outdoor_Wohn_Tisch", "lidlWarengruppe": "", "normenText": "DIN EN 581-1 / DIN EN 518-3", "material": "", "verweise": "EN 1730 (Standsicherheit, Festigkeit und Dauerhaltbarkeit) / EN 12150-1 & EN 12600 (Glas)", "preis": 630, "laborZeitMin": 420, "laborKostenEur": 504, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Tisch", "zielgruppe": "Gewerblich", "einsatzort": "Outdoor", "bereich": "Objekt", "produkt": "Tisch", "code": "Möbel_Tisch_Gewerblich_Outdoor_Objekt_Tisch", "lidlWarengruppe": "", "normenText": "DIN EN 581-1 / DIN EN 518-3", "material": "", "verweise": "EN 1730 (Standsicherheit, Festigkeit und Dauerhaltbarkeit) / EN 12150-1 & EN 12600 (Glas)", "preis": 760, "laborZeitMin": 800, "laborKostenEur": 960, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Privat", "einsatzort": "Outdoor", "bereich": "Camping", "produkt": "Hocker", "code": "Möbel_Sitzmöbel_Privat_Outdoor_Camping_Hocker", "lidlWarengruppe": "", "normenText": "DIN EN 581-1 / DIN EN 518-2", "material": "", "verweise": "EN 1022 (Standsicherheit) / EN 1728 (Festigkeit und Dauerhaltbarkeit)", "preis": 780, "laborZeitMin": 300, "laborKostenEur": 360, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Privat", "einsatzort": "Outdoor", "bereich": "Camping", "produkt": "Stuhl", "code": "Möbel_Sitzmöbel_Privat_Outdoor_Camping_Stuhl", "lidlWarengruppe": "", "normenText": "DIN EN 581-1 / DIN EN 518-2", "material": "", "verweise": "EN 1022 (Standsicherheit) / EN 1728 (Festigkeit und Dauerhaltbarkeit)", "preis": 940, "laborZeitMin": 460, "laborKostenEur": 552, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Privat", "einsatzort": "Outdoor", "bereich": "Camping", "produkt": "Sessel", "code": "Möbel_Sitzmöbel_Privat_Outdoor_Camping_Sessel", "lidlWarengruppe": "", "normenText": "DIN EN 581-1 / DIN EN 518-2", "material": "", "verweise": "EN 1022 (Standsicherheit) / EN 1728 (Festigkeit und Dauerhaltbarkeit)", "preis": 980, "laborZeitMin": 460, "laborKostenEur": 552, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Privat", "einsatzort": "Outdoor", "bereich": "Camping", "produkt": "Verstellbarer Sessel", "code": "Möbel_Sitzmöbel_Privat_Outdoor_Camping_Verstellbarer Sessel", "lidlWarengruppe": "", "normenText": "DIN EN 581-1 / DIN EN 518-2", "material": "", "verweise": "EN 1022 (Standsicherheit) / EN 1728 (Festigkeit und Dauerhaltbarkeit)", "preis": 1180, "laborZeitMin": 520, "laborKostenEur": 624, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Privat", "einsatzort": "Outdoor", "bereich": "Camping", "produkt": "Liege ohne Armlehnen", "code": "Möbel_Sitzmöbel_Privat_Outdoor_Camping_Liege ohne Armlehnen", "lidlWarengruppe": "", "normenText": "DIN EN 581-1 / DIN EN 518-2", "material": "", "verweise": "EN 1022 (Standsicherheit) / EN 1728 (Festigkeit und Dauerhaltbarkeit)", "preis": 770, "laborZeitMin": 460, "laborKostenEur": 552, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Privat", "einsatzort": "Outdoor", "bereich": "Camping", "produkt": "Liege mit Armlehnen", "code": "Möbel_Sitzmöbel_Privat_Outdoor_Camping_Liege mit Armlehnen", "lidlWarengruppe": "", "normenText": "DIN EN 581-1 / DIN EN 518-2", "material": "", "verweise": "EN 1022 (Standsicherheit) / EN 1728 (Festigkeit und Dauerhaltbarkeit)", "preis": 1050, "laborZeitMin": 520, "laborKostenEur": 624, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Privat", "einsatzort": "Outdoor", "bereich": "Camping", "produkt": "Verstellbare Liege ohne Armlehnen ", "code": "Möbel_Sitzmöbel_Privat_Outdoor_Camping_Verstellbare Liege ohne Armlehnen ", "lidlWarengruppe": "", "normenText": "DIN EN 581-1 / DIN EN 518-2", "material": "", "verweise": "EN 1022 (Standsicherheit) / EN 1728 (Festigkeit und Dauerhaltbarkeit)", "preis": 940, "laborZeitMin": 460, "laborKostenEur": 552, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Privat", "einsatzort": "Outdoor", "bereich": "Camping", "produkt": "Verstellbare Liege mit Armlehnen", "code": "Möbel_Sitzmöbel_Privat_Outdoor_Camping_Verstellbare Liege mit Armlehnen", "lidlWarengruppe": "", "normenText": "DIN EN 581-1 / DIN EN 518-2", "material": "", "verweise": "EN 1022 (Standsicherheit) / EN 1728 (Festigkeit und Dauerhaltbarkeit)", "preis": 1050, "laborZeitMin": 520, "laborKostenEur": 624, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Privat", "einsatzort": "Outdoor", "bereich": "Wohn", "produkt": "Hocker", "code": "Möbel_Sitzmöbel_Privat_Outdoor_Wohn_Hocker", "lidlWarengruppe": "", "normenText": "DIN EN 581-1 / DIN EN 518-2", "material": "", "verweise": "EN 1022 (Standsicherheit) / EN 1728 (Festigkeit und Dauerhaltbarkeit)", "preis": 830, "laborZeitMin": 300, "laborKostenEur": 360, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Privat", "einsatzort": "Outdoor", "bereich": "Wohn", "produkt": "Stuhl", "code": "Möbel_Sitzmöbel_Privat_Outdoor_Wohn_Stuhl", "lidlWarengruppe": "", "normenText": "DIN EN 581-1 / DIN EN 518-2", "material": "", "verweise": "EN 1022 (Standsicherheit) / EN 1728 (Festigkeit und Dauerhaltbarkeit)", "preis": 1020, "laborZeitMin": 460, "laborKostenEur": 552, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Privat", "einsatzort": "Outdoor", "bereich": "Wohn", "produkt": "Sessel", "code": "Möbel_Sitzmöbel_Privat_Outdoor_Wohn_Sessel", "lidlWarengruppe": "", "normenText": "DIN EN 581-1 / DIN EN 518-2", "material": "", "verweise": "EN 1022 (Standsicherheit) / EN 1728 (Festigkeit und Dauerhaltbarkeit)", "preis": 1180, "laborZeitMin": 460, "laborKostenEur": 552, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Privat", "einsatzort": "Outdoor", "bereich": "Wohn", "produkt": "Verstellbarer Sessel", "code": "Möbel_Sitzmöbel_Privat_Outdoor_Wohn_Verstellbarer Sessel", "lidlWarengruppe": "", "normenText": "DIN EN 581-1 / DIN EN 518-2", "material": "", "verweise": "EN 1022 (Standsicherheit) / EN 1728 (Festigkeit und Dauerhaltbarkeit)", "preis": 1410, "laborZeitMin": 520, "laborKostenEur": 624, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Privat", "einsatzort": "Outdoor", "bereich": "Wohn", "produkt": "Liege ohne Armlehnen", "code": "Möbel_Sitzmöbel_Privat_Outdoor_Wohn_Liege ohne Armlehnen", "lidlWarengruppe": "", "normenText": "DIN EN 581-1 / DIN EN 518-2", "material": "", "verweise": "EN 1022 (Standsicherheit) / EN 1728 (Festigkeit und Dauerhaltbarkeit)", "preis": 1080, "laborZeitMin": 460, "laborKostenEur": 552, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Privat", "einsatzort": "Outdoor", "bereich": "Wohn", "produkt": "Liege mit Armlehnen", "code": "Möbel_Sitzmöbel_Privat_Outdoor_Wohn_Liege mit Armlehnen", "lidlWarengruppe": "", "normenText": "DIN EN 581-1 / DIN EN 518-2", "material": "", "verweise": "EN 1022 (Standsicherheit) / EN 1728 (Festigkeit und Dauerhaltbarkeit)", "preis": 1380, "laborZeitMin": 520, "laborKostenEur": 624, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Privat", "einsatzort": "Outdoor", "bereich": "Wohn", "produkt": "Verstellbare Liege ohne Armlehnen ", "code": "Möbel_Sitzmöbel_Privat_Outdoor_Wohn_Verstellbare Liege ohne Armlehnen ", "lidlWarengruppe": "", "normenText": "DIN EN 581-1 / DIN EN 518-2", "material": "", "verweise": "EN 1022 (Standsicherheit) / EN 1728 (Festigkeit und Dauerhaltbarkeit)", "preis": 1190, "laborZeitMin": 520, "laborKostenEur": 624, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Privat", "einsatzort": "Outdoor", "bereich": "Wohn", "produkt": "Verstellbare Liege mit Armlehnen", "code": "Möbel_Sitzmöbel_Privat_Outdoor_Wohn_Verstellbare Liege mit Armlehnen", "lidlWarengruppe": "", "normenText": "DIN EN 581-1 / DIN EN 518-2", "material": "", "verweise": "EN 1022 (Standsicherheit) / EN 1728 (Festigkeit und Dauerhaltbarkeit)", "preis": 1350, "laborZeitMin": 520, "laborKostenEur": 624, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Gewerblich", "einsatzort": "Outdoor", "bereich": "Objekt", "produkt": "Hocker", "code": "Möbel_Sitzmöbel_Gewerblich_Outdoor_Objekt_Hocker", "lidlWarengruppe": "", "normenText": "DIN EN 581-1 / DIN EN 518-2", "material": "", "verweise": "EN 1022 (Standsicherheit) / EN 1728 (Festigkeit und Dauerhaltbarkeit)", "preis": 860, "laborZeitMin": 600, "laborKostenEur": 720, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Gewerblich", "einsatzort": "Outdoor", "bereich": "Objekt", "produkt": "Stuhl", "code": "Möbel_Sitzmöbel_Gewerblich_Outdoor_Objekt_Stuhl", "lidlWarengruppe": "", "normenText": "DIN EN 581-1 / DIN EN 518-2", "material": "", "verweise": "EN 1022 (Standsicherheit) / EN 1728 (Festigkeit und Dauerhaltbarkeit)", "preis": 1100, "laborZeitMin": 800, "laborKostenEur": 960, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Gewerblich", "einsatzort": "Outdoor", "bereich": "Objekt", "produkt": "Sessel", "code": "Möbel_Sitzmöbel_Gewerblich_Outdoor_Objekt_Sessel", "lidlWarengruppe": "", "normenText": "DIN EN 581-1 / DIN EN 518-2", "material": "", "verweise": "EN 1022 (Standsicherheit) / EN 1728 (Festigkeit und Dauerhaltbarkeit)", "preis": 1320, "laborZeitMin": 800, "laborKostenEur": 960, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Gewerblich", "einsatzort": "Outdoor", "bereich": "Objekt", "produkt": "Verstellbarer Sessel", "code": "Möbel_Sitzmöbel_Gewerblich_Outdoor_Objekt_Verstellbarer Sessel", "lidlWarengruppe": "", "normenText": "DIN EN 581-1 / DIN EN 518-2", "material": "", "verweise": "EN 1022 (Standsicherheit) / EN 1728 (Festigkeit und Dauerhaltbarkeit)", "preis": 1680, "laborZeitMin": 900, "laborKostenEur": 1080, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Gewerblich", "einsatzort": "Outdoor", "bereich": "Objekt", "produkt": "Liege ohne Armlehnen", "code": "Möbel_Sitzmöbel_Gewerblich_Outdoor_Objekt_Liege ohne Armlehnen", "lidlWarengruppe": "", "normenText": "DIN EN 581-1 / DIN EN 518-2", "material": "", "verweise": "EN 1022 (Standsicherheit) / EN 1728 (Festigkeit und Dauerhaltbarkeit)", "preis": 1160, "laborZeitMin": 800, "laborKostenEur": 960, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Gewerblich", "einsatzort": "Outdoor", "bereich": "Objekt", "produkt": "Liege mit Armlehnen", "code": "Möbel_Sitzmöbel_Gewerblich_Outdoor_Objekt_Liege mit Armlehnen", "lidlWarengruppe": "", "normenText": "DIN EN 581-1 / DIN EN 518-2", "material": "", "verweise": "EN 1022 (Standsicherheit) / EN 1728 (Festigkeit und Dauerhaltbarkeit)", "preis": 1460, "laborZeitMin": 900, "laborKostenEur": 1080, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Gewerblich", "einsatzort": "Outdoor", "bereich": "Objekt", "produkt": "Verstellbare Liege ohne Armlehnen ", "code": "Möbel_Sitzmöbel_Gewerblich_Outdoor_Objekt_Verstellbare Liege ohne Armlehnen ", "lidlWarengruppe": "", "normenText": "DIN EN 581-1 / DIN EN 518-2", "material": "", "verweise": "EN 1022 (Standsicherheit) / EN 1728 (Festigkeit und Dauerhaltbarkeit)", "preis": 1350, "laborZeitMin": 800, "laborKostenEur": 960, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Gewerblich", "einsatzort": "Outdoor", "bereich": "Objekt", "produkt": "Verstellbare Liege mit Armlehnen", "code": "Möbel_Sitzmöbel_Gewerblich_Outdoor_Objekt_Verstellbare Liege mit Armlehnen", "lidlWarengruppe": "", "normenText": "DIN EN 581-1 / DIN EN 518-2", "material": "", "verweise": "EN 1022 (Standsicherheit) / EN 1728 (Festigkeit und Dauerhaltbarkeit)", "preis": 1600, "laborZeitMin": 900, "laborKostenEur": 1080, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Privat", "einsatzort": "Indoor", "bereich": "Wohn", "produkt": "Stuhl", "code": "Möbel_Sitzmöbel_Privat_Indoor_Wohn_Stuhl", "lidlWarengruppe": "", "normenText": "DIN EN 12520", "material": "", "verweise": "EN 1022 (Standsicherheit) / EN 1728 (Festigkeit und Dauerhaltbarkeit)", "preis": 1160, "laborZeitMin": 460, "laborKostenEur": 552, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Privat", "einsatzort": "Indoor", "bereich": "Wohn", "produkt": "Sessel", "code": "Möbel_Sitzmöbel_Privat_Indoor_Wohn_Sessel", "lidlWarengruppe": "", "normenText": "DIN EN 12520", "material": "", "verweise": "EN 1022 (Standsicherheit) / EN 1728 (Festigkeit und Dauerhaltbarkeit)", "preis": 1480, "laborZeitMin": 460, "laborKostenEur": 552, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Privat", "einsatzort": "Indoor", "bereich": "Wohn", "produkt": "Hocker", "code": "Möbel_Sitzmöbel_Privat_Indoor_Wohn_Hocker", "lidlWarengruppe": "", "normenText": "DIN EN 12520", "material": "", "verweise": "EN 1022 (Standsicherheit) / EN 1728 (Festigkeit und Dauerhaltbarkeit)", "preis": 990, "laborZeitMin": 360, "laborKostenEur": 432, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Tisch", "zielgruppe": "Privat", "einsatzort": "Indoor", "bereich": "Wohn", "produkt": "Tisch", "code": "Möbel_Tisch_Privat_Indoor_Wohn_Tisch", "lidlWarengruppe": "", "normenText": "DIN EN 12521", "material": "", "verweise": "DIN EN 1730", "preis": 790, "laborZeitMin": 600, "laborKostenEur": 720, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Gewerblich", "einsatzort": "Indoor", "bereich": "Objekt", "produkt": "Stuhl", "code": "Möbel_Sitzmöbel_Gewerblich_Indoor_Objekt_Stuhl", "lidlWarengruppe": "", "normenText": "DIN EN 16139", "material": "", "verweise": "", "preis": 1740, "laborZeitMin": 1000, "laborKostenEur": 1200, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Gewerblich", "einsatzort": "Indoor", "bereich": "Objekt", "produkt": "Sessel", "code": "Möbel_Sitzmöbel_Gewerblich_Indoor_Objekt_Sessel", "lidlWarengruppe": "", "normenText": "DIN EN 16139", "material": "", "verweise": "", "preis": 2190, "laborZeitMin": 1000, "laborKostenEur": 1200, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Gewerblich", "einsatzort": "Indoor", "bereich": "Objekt", "produkt": "Hocker", "code": "Möbel_Sitzmöbel_Gewerblich_Indoor_Objekt_Hocker", "lidlWarengruppe": "", "normenText": "DIN EN 16139", "material": "", "verweise": "", "preis": 1310, "laborZeitMin": 1000, "laborKostenEur": 1200, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Gewerblich", "einsatzort": "Indoor", "bereich": "Objekt", "produkt": "Barhocker", "code": "Möbel_Sitzmöbel_Gewerblich_Indoor_Objekt_Barhocker", "lidlWarengruppe": "", "normenText": "DIN EN 16139", "material": "", "verweise": "", "preis": 1540, "laborZeitMin": 1000, "laborKostenEur": 1200, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Tisch", "zielgruppe": "Gewerblich", "einsatzort": "Indoor", "bereich": "Objekt", "produkt": "Tisch", "code": "Möbel_Tisch_Gewerblich_Indoor_Objekt_Tisch", "lidlWarengruppe": "", "normenText": "DIN EN 15372", "material": "", "verweise": "", "preis": 850, "laborZeitMin": 0, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Kinder", "einsatzort": "Indoor", "bereich": "Wohn", "produkt": "Kindersitzmöbel", "code": "Möbel_Sitzmöbel_Kinder_Indoor_Wohn_Kindersitzmöbel", "lidlWarengruppe": "", "normenText": "DIN EN 17191", "material": "", "verweise": "", "preis": null, "laborZeitMin": 800, "laborKostenEur": 960, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Tritt", "zielgruppe": "Privat", "einsatzort": "Indoor", "bereich": "Wohn", "produkt": "Tritt", "code": "Möbel_Tritt_Privat_Indoor_Wohn_Tritt", "lidlWarengruppe": "", "normenText": "DIN EN 14183", "material": "", "verweise": "", "preis": 610, "laborZeitMin": 520, "laborKostenEur": 624, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Behältnismöbel", "zielgruppe": "Gewerblich", "einsatzort": "Indoor", "bereich": "Objekt", "produkt": "Schrank / Regal", "code": "Möbel_Behältnismöbel_Gewerblich_Indoor_Objekt_Schrank / Regal", "lidlWarengruppe": "", "normenText": "DIN EN 16121", "material": "", "verweise": "DIN EN 16122", "preis": 840, "laborZeitMin": 1000, "laborKostenEur": 1200, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Behältnismöbel", "zielgruppe": "Gewerblich", "einsatzort": "Indoor", "bereich": "Objekt", "produkt": "Wandregal", "code": "Möbel_Behältnismöbel_Gewerblich_Indoor_Objekt_Wandregal", "lidlWarengruppe": "", "normenText": "DIN EN 16121", "material": "", "verweise": "DIN EN 16122", "preis": 810, "laborZeitMin": 1000, "laborKostenEur": 1200, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Behältnismöbel", "zielgruppe": "Gewerblich", "einsatzort": "Indoor", "bereich": "Objekt", "produkt": "Kleiderständer", "code": "Möbel_Behältnismöbel_Gewerblich_Indoor_Objekt_Kleiderständer", "lidlWarengruppe": "", "normenText": "DIN EN 16121", "material": "", "verweise": "DIN EN 16122", "preis": 590, "laborZeitMin": 1000, "laborKostenEur": 1200, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Behältnismöbel", "zielgruppe": "Privat", "einsatzort": "Indoor", "bereich": "Wohn", "produkt": "Schrank / Regal", "code": "Möbel_Behältnismöbel_Privat_Indoor_Wohn_Schrank / Regal", "lidlWarengruppe": "", "normenText": "DIN EN 14749", "material": "", "verweise": "DIN EN 16122", "preis": 600, "laborZeitMin": 600, "laborKostenEur": 720, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Behältnismöbel", "zielgruppe": "Privat", "einsatzort": "Indoor", "bereich": "Wohn", "produkt": "Wandregal", "code": "Möbel_Behältnismöbel_Privat_Indoor_Wohn_Wandregal", "lidlWarengruppe": "", "normenText": "DIN EN 14749", "material": "", "verweise": "DIN EN 16122", "preis": 360, "laborZeitMin": 600, "laborKostenEur": 720, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Gewerblich", "einsatzort": "Indoor", "bereich": "Büro", "produkt": "Bürostuhl", "code": "Möbel_Sitzmöbel_Gewerblich_Indoor_Büro_Bürostuhl", "lidlWarengruppe": "", "normenText": "DIN EN 1335-1 / DIN EN 1335-2", "material": "", "verweise": "", "preis": 2600, "laborZeitMin": 0, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Tisch", "zielgruppe": "Gewerblich", "einsatzort": "Indoor", "bereich": "Büro", "produkt": "Bürotisch", "code": "Möbel_Tisch_Gewerblich_Indoor_Büro_Bürotisch", "lidlWarengruppe": "", "normenText": "DIN EN 527-1 / DIN EN 527-2", "material": "", "verweise": "", "preis": null, "laborZeitMin": 0, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Behältnismöbel", "zielgruppe": "Gewerblich", "einsatzort": "Indoor", "bereich": "Büro", "produkt": "Schrank / Regal", "code": "Möbel_Behältnismöbel_Gewerblich_Indoor_Büro_Schrank / Regal", "lidlWarengruppe": "", "normenText": "EN 14073-2 / EN 14073-3", "material": "", "verweise": "", "preis": 1560, "laborZeitMin": 0, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Behältnismöbel", "zielgruppe": "Gewerblich", "einsatzort": "Indoor", "bereich": "Büro", "produkt": "Wandregal", "code": "Möbel_Behältnismöbel_Gewerblich_Indoor_Büro_Wandregal", "lidlWarengruppe": "", "normenText": "EN 14073-2 / EN 14073-3", "material": "", "verweise": "", "preis": 1460, "laborZeitMin": 0, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "einfaches Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Plüschtier", "code": "Spielzeug_einfaches Spielzeug____Plüschtier", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 289, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "einfaches Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Knisterplüsch", "code": "Spielzeug_einfaches Spielzeug____Knisterplüsch", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 289, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "einfaches Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Ball", "code": "Spielzeug_einfaches Spielzeug____Ball", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 289, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "einfaches Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Holzspielsachen", "code": "Spielzeug_einfaches Spielzeug____Holzspielsachen", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 289, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "einfaches Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Spieluhren", "code": "Spielzeug_einfaches Spielzeug____Spieluhren", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 289, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "einfaches Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Schmusetücher", "code": "Spielzeug_einfaches Spielzeug____Schmusetücher", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 289, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "einfaches Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Spielfiguren", "code": "Spielzeug_einfaches Spielzeug____Spielfiguren", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 289, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "einfaches Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Sandförmchen", "code": "Spielzeug_einfaches Spielzeug____Sandförmchen", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 289, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "einfach", "produkt": "Spielbogen", "code": "Spielzeug_Spielzeug___einfach_Spielbogen", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71,2", "material": "", "verweise": "", "preis": 289, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "einfach", "produkt": "Gesellschaftsspiele", "code": "Spielzeug_Spielzeug___einfach_Gesellschaftsspiele", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 289, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "einfach", "produkt": "Bücher", "code": "Spielzeug_Spielzeug___einfach_Bücher", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 289, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "einfach", "produkt": "Buntstift", "code": "Spielzeug_Spielzeug___einfach_Buntstift", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 289, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "einfach", "produkt": "Knete", "code": "Spielzeug_Spielzeug___einfach_Knete", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 289, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "einfach", "produkt": "Filzstifte", "code": "Spielzeug_Spielzeug___einfach_Filzstifte", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2 (ohne Prüfung nach ISO 11540 / without testing according ISO 11540)", "material": "", "verweise": "", "preis": 289, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "einfach", "produkt": "Greifring", "code": "Spielzeug_Spielzeug___einfach_Greifring", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 289, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "einfach", "produkt": "Wassermalfarben", "code": "Spielzeug_Spielzeug___einfach_Wassermalfarben", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 289, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "einfach", "produkt": "Ballons", "code": "Spielzeug_Spielzeug___einfach_Ballons", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 289, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "einfach", "produkt": "Rassel", "code": "Spielzeug_Spielzeug___einfach_Rassel", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 289, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "einfach", "produkt": "Tattoo", "code": "Spielzeug_Spielzeug___einfach_Tattoo", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2 (ohne evtl. Kosmetik-Prüfungen)", "material": "", "verweise": "", "preis": 289, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "einfach", "produkt": "Zündplättchen", "code": "Spielzeug_Spielzeug___einfach_Zündplättchen", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2 (ohne Akustik-Prüfung / without testing of acoustics)", "material": "", "verweise": "", "preis": 289, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "einfach", "produkt": "Tierspielzeug", "code": "Spielzeug_Spielzeug___einfach_Tierspielzeug", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2 (ohne erweiterten Prüfumfang für Hundespielzeug, ohne Akustik-Prüfung / without advanced test scope for dog toys, without testing of acoustics)", "material": "", "verweise": "", "preis": 289, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "komplex", "produkt": "Spielzelt / Spielhaus (weiche Konstruktion)", "code": "Spielzeug_Spielzeug___komplex_Spielzelt / Spielhaus (weiche Konstruktion)", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "komplex", "produkt": "Spielebogen", "code": "Spielzeug_Spielzeug___komplex_Spielebogen", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71.2", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "komplex", "produkt": "funktionelles Spielzeug", "code": "Spielzeug_Spielzeug___komplex_funktionelles Spielzeug", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "komplex", "produkt": "Laufrad", "code": "Spielzeug_Spielzeug___komplex_Laufrad", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "komplex", "produkt": "Schaukelpferd", "code": "Spielzeug_Spielzeug___komplex_Schaukelpferd", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "komplex", "produkt": "Aufsitzspielzeug zum Fortbewegen", "code": "Spielzeug_Spielzeug___komplex_Aufsitzspielzeug zum Fortbewegen", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "komplex", "produkt": "Spielfahrräder", "code": "Spielzeug_Spielzeug___komplex_Spielfahrräder", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "komplex", "produkt": "Aufsitzspielzeug, das nicht vom Kind fortbewegt wird", "code": "Spielzeug_Spielzeug___komplex_Aufsitzspielzeug, das nicht vom Kind fortbewegt wird", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "komplex", "produkt": "Spielzeugroller", "code": "Spielzeug_Spielzeug___komplex_Spielzeugroller", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 870, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "komplex", "produkt": "Bällebad", "code": "Spielzeug_Spielzeug___komplex_Bällebad", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "komplex", "produkt": "Geschossspielzeug", "code": "Spielzeug_Spielzeug___komplex_Geschossspielzeug", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2 (ohne Prüfung der kinetischen Energie, ohne Wandaufprallprüfung / without testing of kinetic energy, without wall impact test)", "material": "", "verweise": "", "preis": 410, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Wasserspielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Badeboot", "code": "Spielzeug_Wasserspielzeug____Badeboot", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2 (ohne evtl. Prüfung nach EN ISO 25649)", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Wasserspielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Wassertiere", "code": "Spielzeug_Wasserspielzeug____Wassertiere", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2 (ohne evtl. Prüfung nach EN ISO 25649)", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Wasserspielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Schwimmring", "code": "Spielzeug_Wasserspielzeug____Schwimmring", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2 (ohne evtl. Prüfung nach EN ISO 25649)", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Aktivitätsspielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "einfach", "produkt": "Pools, Planschbecken", "code": "Spielzeug_Aktivitätsspielzeug___einfach_Pools, Planschbecken", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2, EN 71-8", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Aktivitätsspielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "einfach", "produkt": "Planschbecken ab 40cm Höhe ", "code": "Spielzeug_Aktivitätsspielzeug___einfach_Planschbecken ab 40cm Höhe ", "lidlWarengruppe": "", "normenText": "EN 16927 (EN71.1, EN71.2 und EN 71.8 muss zusätzlich geprüft werden)", "material": "", "verweise": "", "preis": 960, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Aktivitätsspielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "einfach", "produkt": "Sandkasten", "code": "Spielzeug_Aktivitätsspielzeug___einfach_Sandkasten", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2, EN 71-8", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Aktivitätsspielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "einfach", "produkt": "starres Spielhaus", "code": "Spielzeug_Aktivitätsspielzeug___einfach_starres Spielhaus", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2, EN 71-8", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Aktivitätsspielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "einfach", "produkt": "einfache Klettergerüste", "code": "Spielzeug_Aktivitätsspielzeug___einfach_einfache Klettergerüste", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2, EN 71-8", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Aktivitätsspielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "komplex", "produkt": "komplexe Klettergerüste", "code": "Spielzeug_Aktivitätsspielzeug___komplex_komplexe Klettergerüste", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2, EN 71-8", "material": "", "verweise": "", "preis": 870, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Aktivitätsspielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "komplex", "produkt": "Rutschen", "code": "Spielzeug_Aktivitätsspielzeug___komplex_Rutschen", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2, EN 71-8", "material": "", "verweise": "", "preis": 870, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Aktivitätsspielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "komplex", "produkt": "Schaukel", "code": "Spielzeug_Aktivitätsspielzeug___komplex_Schaukel", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2, EN 71-8", "material": "", "verweise": "", "preis": 870, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Aktivitätsspielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "komplex", "produkt": "Wippen", "code": "Spielzeug_Aktivitätsspielzeug___komplex_Wippen", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2, EN 71-8", "material": "", "verweise": "", "preis": 870, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Lebensmittelkontakt", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Geschirr", "code": "Spielzeug_Lebensmittelkontakt____Geschirr", "lidlWarengruppe": "", "normenText": "EN 14372", "material": "", "verweise": "", "preis": 550, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Lebensmittelkontakt", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Besteck", "code": "Spielzeug_Lebensmittelkontakt____Besteck", "lidlWarengruppe": "", "normenText": "EN 14372", "material": "", "verweise": "", "preis": 550, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Lebensmittelkontakt", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Schnuller", "code": "Spielzeug_Lebensmittelkontakt____Schnuller", "lidlWarengruppe": "", "normenText": "EN 1400", "material": "", "verweise": "", "preis": 870, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Lebensmittelkontakt", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Ernährungsfläschchen", "code": "Spielzeug_Lebensmittelkontakt____Ernährungsfläschchen", "lidlWarengruppe": "", "normenText": "EN 14350", "material": "", "verweise": "", "preis": 870, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Lebensmittelkontakt", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Trinklernbecher mit Deckel (Sauger, Trinkschnabel, Trinkhalm, Push-Pull-Verschluss)", "code": "Spielzeug_Lebensmittelkontakt____Trinklernbecher mit Deckel (Sauger, Trinkschnabel, Trinkhalm, Push-Pull-Verschluss)", "lidlWarengruppe": "", "normenText": "EN 14350", "material": "", "verweise": "", "preis": 870, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Lebensmittelkontakt", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Trinkbecher ohne Deckel", "code": "Spielzeug_Lebensmittelkontakt____Trinkbecher ohne Deckel", "lidlWarengruppe": "", "normenText": "EN 14350", "material": "", "verweise": "", "preis": 870, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Lebensmittelkontakt", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Beißringe", "code": "Spielzeug_Lebensmittelkontakt____Beißringe", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 289, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Schnullerhalter", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Schnullerhalter ohne eigenen Spielwert", "code": "Spielzeug_Schnullerhalter____Schnullerhalter ohne eigenen Spielwert", "lidlWarengruppe": "", "normenText": "EN 12586", "material": "", "verweise": "", "preis": 1040, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Schnullerhalter", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Schnullerhalter mit eigenen Spielwert", "code": "Spielzeug_Schnullerhalter____Schnullerhalter mit eigenen Spielwert", "lidlWarengruppe": "", "normenText": "EN 12586, EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 1040, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "elektrisch", "produkt": "Soundbücher", "code": "Spielzeug_Spielzeug___elektrisch_Soundbücher", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2 (ohne elektrische Prüfungen, ohne Akustik-Prüfung / without testing of electrical safety, without testing of acoustics)", "material": "", "verweise": "", "preis": 289, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "elektrisch", "produkt": "Spielküche", "code": "Spielzeug_Spielzeug___elektrisch_Spielküche", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2 (ohne elektrische Prüfungen / without testing of electrical safety)", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "elektrisch", "produkt": "funktionelles Spielzeug", "code": "Spielzeug_Spielzeug___elektrisch_funktionelles Spielzeug", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2 (ohne elektrische Prüfungen / without testing of electrical safety)", "material": "", "verweise": "", "preis": 510, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "elektrisch", "produkt": "LED hula hoops ", "code": "Spielzeug_Spielzeug___elektrisch_LED hula hoops ", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2 (ohne elektrische Prüfungen / without testing of electrical safety)", "material": "", "verweise": "", "preis": 289, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "elektrisch", "produkt": "Modellfahrzeuge", "code": "Spielzeug_Spielzeug___elektrisch_Modellfahrzeuge", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2 (ohne elektrische Prüfungen / without testing of electrical safety)", "material": "", "verweise": "", "preis": 289, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "elektrisch", "produkt": "elektrische Aufsitzfahrzeuge", "code": "Spielzeug_Spielzeug___elektrisch_elektrische Aufsitzfahrzeuge", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2 (ohne elektrische Prüfungen / without testing of electrical safety)", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "elektrisch", "produkt": "Puppen", "code": "Spielzeug_Spielzeug___elektrisch_Puppen", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2 (ohne elektrische Prüfungen / without testing of electrical safety)", "material": "", "verweise": "", "preis": 289, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "elektrisch", "produkt": "Tiere", "code": "Spielzeug_Spielzeug___elektrisch_Tiere", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2 (ohne elektrische Prüfungen / without testing of electrical safety)", "material": "", "verweise": "", "preis": 289, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Kostüme", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Kostüme", "code": "Spielzeug_Kostüme____Kostüme", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2, EN 71-4 (ohne PSA Prüfung / without PSA testing)", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "textil", "produkt": "Stillkissen", "code": "Spielzeug_Spielzeug___textil_Stillkissen", "lidlWarengruppe": "", "normenText": "EN 71.1, EN 71.2", "material": "", "verweise": "", "preis": 410, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "textil", "produkt": "Sitzkissen", "code": "Spielzeug_Spielzeug___textil_Sitzkissen", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 410, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "textil", "produkt": "Spielzelt", "code": "Spielzeug_Spielzeug___textil_Spielzelt", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "textil", "produkt": "Spielteppich", "code": "Spielzeug_Spielzeug___textil_Spielteppich", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 410, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "textil", "produkt": "Spielbeutel", "code": "Spielzeug_Spielzeug___textil_Spielbeutel", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2", "material": "", "verweise": "", "preis": 410, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Experimentierkästen", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Chemieexperimentierkästen", "code": "Spielzeug_Experimentierkästen____Chemieexperimentierkästen", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2, EN 71-4 (ohne PSA Prüfung / without PSA testing)", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Experimentierkästen", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Experimentierkästen zur Kristallzucht", "code": "Spielzeug_Experimentierkästen____Experimentierkästen zur Kristallzucht", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2, EN 71-4 (ohne PSA Prüfung / without PSA testing)", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Experimentierkästen", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Experimentierkästen zur Erzeugung von CO2", "code": "Spielzeug_Experimentierkästen____Experimentierkästen zur Erzeugung von CO2", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2, EN 71-4 (ohne PSA Prüfung / without PSA testing)", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Experimentierkästen", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Magnet und Elektro Experimentierkästen", "code": "Spielzeug_Experimentierkästen____Magnet und Elektro Experimentierkästen", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2, EN 71-4 (ohne PSA Prüfung / without PSA testing)", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Experimentierkästen", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Gartenbau experimentierkasten", "code": "Spielzeug_Experimentierkästen____Gartenbau experimentierkasten", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2, EN 71-4 (ohne PSA Prüfung / without PSA testing)", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Trampolin", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Trampolin", "code": "Spielzeug_Trampolin____Trampolin", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2, EN 71-14", "material": "", "verweise": "", "preis": 4050, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Fingermalfraben", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Fingermalfarben", "code": "Spielzeug_Fingermalfraben____Fingermalfarben", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2, EN 71-7", "material": "", "verweise": "", "preis": 350, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Kosmetikkoffer", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Kosmetikkoffer", "code": "Spielzeug_Kosmetikkoffer____Kosmetikkoffer", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2, EN 71-13 (ohne evtl. Kosmetikprüfungen)", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Kosmetikkoffer", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Brettspiel Geschmackssinn", "code": "Spielzeug_Kosmetikkoffer____Brettspiel Geschmackssinn", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2, EN 71-13 (ohne evtl. Kosmetikprüfungen)", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Kosmetikkoffer", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Brettspiel Geruchssinn", "code": "Spielzeug_Kosmetikkoffer____Brettspiel Geruchssinn", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2, EN 71-13 (ohne evtl. Kosmetikprüfungen)", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "chemisch", "produkt": "Farben, Lacke", "code": "Spielzeug_Spielzeug___chemisch_Farben, Lacke", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2, EN 71-5", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "chemisch", "produkt": "Schmelzgranulat", "code": "Spielzeug_Spielzeug___chemisch_Schmelzgranulat", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2, EN 71-5", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "chemisch", "produkt": "Klebstoff", "code": "Spielzeug_Spielzeug___chemisch_Klebstoff", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2, EN 71-5", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "chemisch", "produkt": "Gips-Gussformen-Sets", "code": "Spielzeug_Spielzeug___chemisch_Gips-Gussformen-Sets", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2, EN 71-5 (ohne PSA Prüfung / without PSA testing)", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "chemisch", "produkt": "PVC-Modelliermassen-Sets", "code": "Spielzeug_Spielzeug___chemisch_PVC-Modelliermassen-Sets", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2, EN 71-5 (ohne PSA Prüfung / without PSA testing)", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Spielzeug", "produktart": "Spielzeug", "zielgruppe": "", "einsatzort": "", "bereich": "chemisch", "produkt": "Gussformen-Sets", "code": "Spielzeug_Spielzeug___chemisch_Gussformen-Sets", "lidlWarengruppe": "", "normenText": "EN 71-1, EN 71-2, EN 71-5 (ohne PSA Prüfung / without PSA testing)", "material": "", "verweise": "", "preis": 520, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Kinder", "einsatzort": "Indoor", "bereich": "Wohn", "produkt": "Sitztruhe", "code": "Möbel_Sitzmöbel_Kinder_Indoor_Wohn_Sitztruhe", "lidlWarengruppe": "", "normenText": "DIN EN 17191 (FIRA 1&4)", "material": "", "verweise": "", "preis": 1250, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Kinder", "einsatzort": "Indoor", "bereich": "Wohn", "produkt": "Sitzgruppe (Tisch & Stühle)", "code": "Möbel_Sitzmöbel_Kinder_Indoor_Wohn_Sitzgruppe (Tisch & Stühle)", "lidlWarengruppe": "", "normenText": "DIN EN 17191 (FIRA 1,2&3)", "material": "", "verweise": "", "preis": 1960, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}, {"kategorie": "", "produktart": "", "zielgruppe": "", "einsatzort": "", "bereich": "", "produkt": "Transportroller", "code": "_____Transportroller", "lidlWarengruppe": 387400, "normenText": "", "material": "", "verweise": "", "preis": null, "laborZeitMin": null, "laborKostenEur": 0, "bemerkungen": ""}];
+}
+function seedProdukte() {
+  return seedProdukteRoh().map((p) => ({ id: neueId(), ...p }));
+}
+
+/* ---------- Startdaten: Sonderposten (aus Normenauswahl.xlsm, Blatt "Sonderposten") ---------- */
+function seedSonderpostenRoh() {
+  return [{"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "", "einsatzort": "", "eigenschaft": "zusätzlicher Sitzplatz", "zusatzkosten": 170, "kommentar": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "", "einsatzort": "", "eigenschaft": "Armlehne", "zusatzkosten": 350, "kommentar": ""}, {"kategorie": "Möbel", "produktart": "Tisch", "zielgruppe": "", "einsatzort": "", "eigenschaft": "Auszug", "zusatzkosten": 100, "kommentar": ""}, {"kategorie": "Möbel", "produktart": "Tisch", "zielgruppe": "", "einsatzort": "", "eigenschaft": "Überhang", "zusatzkosten": 100, "kommentar": ""}, {"kategorie": "Möbel", "produktart": "Tisch", "zielgruppe": "", "einsatzort": "", "eigenschaft": "Glas", "zusatzkosten": 100, "kommentar": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Gewerblich", "einsatzort": "Indoor", "eigenschaft": "Level 1", "zusatzkosten": null, "kommentar": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "Gewerblich", "einsatzort": "Indoor", "eigenschaft": "Level 2", "zusatzkosten": 340, "kommentar": ""}, {"kategorie": "Möbel", "produktart": "Tisch", "zielgruppe": "Gewerblich", "einsatzort": "Indoor", "eigenschaft": "Level 1", "zusatzkosten": null, "kommentar": ""}, {"kategorie": "Möbel", "produktart": "Tisch", "zielgruppe": "Gewerblich", "einsatzort": "Indoor", "eigenschaft": "Level 2", "zusatzkosten": 150, "kommentar": ""}, {"kategorie": "Möbel", "produktart": "Tisch", "zielgruppe": "Gewerblich", "einsatzort": "Indoor", "eigenschaft": "Level 3", "zusatzkosten": 300, "kommentar": ""}, {"kategorie": "Möbel", "produktart": "Behältnismöbel", "zielgruppe": "Privat", "einsatzort": "", "eigenschaft": "Türen", "zusatzkosten": 300, "kommentar": ""}, {"kategorie": "Möbel", "produktart": "Behältnismöbel", "zielgruppe": "Privat", "einsatzort": "", "eigenschaft": "Schublade", "zusatzkosten": 150, "kommentar": ""}, {"kategorie": "Möbel", "produktart": "Behältnismöbel", "zielgruppe": "Gewerblich", "einsatzort": "", "eigenschaft": "Türen", "zusatzkosten": 300, "kommentar": ""}, {"kategorie": "Möbel", "produktart": "Behältnismöbel", "zielgruppe": "Gewerblich", "einsatzort": "", "eigenschaft": "Schublade", "zusatzkosten": 600, "kommentar": ""}, {"kategorie": "Möbel", "produktart": "Behältnismöbel", "zielgruppe": "Gewerblich", "einsatzort": "", "eigenschaft": "Level 1", "zusatzkosten": null, "kommentar": ""}, {"kategorie": "Möbel", "produktart": "Behältnismöbel", "zielgruppe": "Gewerblich", "einsatzort": "", "eigenschaft": "Level 2", "zusatzkosten": 200, "kommentar": ""}, {"kategorie": "Möbel", "produktart": "Sitzmöbel", "zielgruppe": "", "einsatzort": "", "eigenschaft": "erhöhtes Nutzergewicht", "zusatzkosten": null, "kommentar": "DIN 4573"}];
+}
+function seedSonderposten() {
+  return seedSonderpostenRoh().map((s) => ({ id: neueId(), ...s }));
+}
+
 const STATUS_OPTIONEN = ["aktiv", "in Überarbeitung", "zurückgezogen", "Entwurf"];
 const RELEVANZ_OPTIONEN = ["Ja", "Nein", "Indirekt"];
-const SPEICHER_SCHLUESSEL = "normen_datenbank_v1";
+const SPEICHER_SCHLUESSEL = "normen_datenbank_v2";
+
+const PRODUKT_FELDER = ["kategorie", "produktart", "zielgruppe", "einsatzort", "bereich", "produkt", "code", "lidlWarengruppe", "normenText", "material", "verweise", "preis", "laborZeitMin", "laborKostenEur", "bemerkungen"];
+const PRODUKT_VERGLEICHSFELDER = ["kategorie", "produktart", "zielgruppe", "einsatzort", "bereich", "produkt", "normenText", "material", "verweise", "preis", "laborZeitMin", "laborKostenEur", "bemerkungen"];
+const SONDERPOSTEN_FELDER = ["kategorie", "produktart", "zielgruppe", "einsatzort", "eigenschaft", "zusatzkosten", "kommentar"];
 
 /* ---------- Zustand ---------- */
 
-let data = { normen: [] };
+let data = { normen: [], produkte: [], sonderposten: [] };
 let aktiveNormId = null;
-let suchbegriff = "";
+let aktiverTab = "normen";
+let suchbegriffe = { normen: "", produkte: "", sonderposten: "", uebersicht: "" };
 
 function ladeAusLocalStorage() {
   try {
@@ -360,22 +494,64 @@ function zeigeStatus(text, klasse) {
 
 function init() {
   const geladen = ladeAusLocalStorage();
-  data = geladen || { normen: seedNormen() };
+  data = {
+    normen: (geladen && geladen.normen && geladen.normen.length) ? geladen.normen : seedNormen(),
+    produkte: (geladen && geladen.produkte && geladen.produkte.length) ? geladen.produkte : seedProdukte(),
+    sonderposten: (geladen && geladen.sonderposten && geladen.sonderposten.length) ? geladen.sonderposten : seedSonderposten()
+  };
   if (data.normen.length) aktiveNormId = data.normen[0].id;
-  render();
+
+  document.querySelectorAll("nav.tabs button[data-tab]").forEach((btn) => {
+    btn.addEventListener("click", () => wechsleTab(btn.dataset.tab));
+  });
+  document.getElementById("suche").addEventListener("input", (e) => {
+    suchbegriffe[aktiverTab] = e.target.value;
+    renderAktivenTab();
+  });
+
+  renderAlles();
 }
 
-/* ---------- Rendering: Normliste ---------- */
+function wechsleTab(tab) {
+  aktiverTab = tab;
+  document.querySelectorAll("nav.tabs button[data-tab]").forEach((btn) => {
+    btn.classList.toggle("aktiv", btn.dataset.tab === tab);
+  });
+  ["normen", "produkte", "sonderposten", "uebersicht"].forEach((t) => {
+    document.getElementById("seite-" + t).hidden = t !== tab;
+  });
+  document.getElementById("suche").value = suchbegriffe[tab] || "";
+  const csvBtn = document.getElementById("btn-csv");
+  const labels = { normen: "Normen", produkte: "Produkte", sonderposten: "Sonderposten", uebersicht: "Übersicht" };
+  csvBtn.textContent = "📄 CSV-Export (" + labels[tab] + ")";
+  renderAktivenTab();
+}
+
+function renderAktivenTab() {
+  if (aktiverTab === "normen") render();
+  else if (aktiverTab === "produkte") renderProdukteTab();
+  else if (aktiverTab === "sonderposten") renderSonderpostenTab();
+  else if (aktiverTab === "uebersicht") renderUebersichtTab();
+}
+
+function renderAlles() {
+  render();
+  renderProdukteTab();
+  renderSonderpostenTab();
+  renderUebersichtTab();
+}
+
+/* ================= NORMEN (bestehende Funktionalität) ================= */
 
 function gefilterteNormen() {
-  if (!suchbegriff.trim()) return data.normen;
-  const q = suchbegriff.trim().toLowerCase();
+  const q = normalisiere(suchbegriffe.normen);
+  if (!q) return data.normen;
   return data.normen.filter((n) => {
     const metaTreffer = [n.kurzbezeichnung, n.vollbezeichnung, n.titel, n.kategorie]
-      .some((f) => (f || "").toLowerCase().includes(q));
+      .some((f) => normalisiere(f).includes(q));
     if (metaTreffer) return true;
     return n.pruefpunkte.some((p) =>
-      [p.kapitel, p.ueberschrift, p.inhalt].some((f) => (f || "").toLowerCase().includes(q))
+      [p.kapitel, p.ueberschrift, p.inhalt].some((f) => normalisiere(f).includes(q))
     );
   });
 }
@@ -406,8 +582,6 @@ function renderNormliste() {
     });
   });
 }
-
-/* ---------- Rendering: Detailbereich ---------- */
 
 function findeNorm(id) {
   return data.normen.find((n) => n.id === id) || null;
@@ -453,18 +627,20 @@ function renderDetail() {
 
     <div class="card">
       <h2>Prüfpunkte / Kapitel</h2>
-      <table class="tabelle">
-        <thead>
-          <tr>
-            <th style="width:8%">Kapitel</th>
-            <th style="width:22%">Überschrift</th>
-            <th style="width:10%">Relevant</th>
-            <th>Inhalt</th>
-            <th style="width:9%">Aktionen</th>
-          </tr>
-        </thead>
-        <tbody id="pruefpunkte-body"></tbody>
-      </table>
+      <div class="tabellen-wrapper">
+        <table class="tabelle">
+          <thead>
+            <tr>
+              <th style="width:8%">Kapitel</th>
+              <th style="width:22%">Überschrift</th>
+              <th style="width:10%">Relevant</th>
+              <th>Inhalt</th>
+              <th style="width:9%">Aktionen</th>
+            </tr>
+          </thead>
+          <tbody id="pruefpunkte-body"></tbody>
+        </table>
+      </div>
       <button class="ghost" id="btn-zeile-hinzufuegen" style="margin-top:0.6rem">+ Zeile hinzufügen</button>
     </div>
   `;
@@ -553,18 +729,10 @@ function render() {
   renderDetail();
 }
 
-/* ---------- Neue Norm ---------- */
-
 document.getElementById("btn-neue-norm").addEventListener("click", () => {
   const norm = {
-    id: neueId(),
-    kurzbezeichnung: "Neue Norm",
-    vollbezeichnung: "",
-    titel: "",
-    status: "Entwurf",
-    kategorie: "",
-    notiz: "",
-    pruefpunkte: []
+    id: neueId(), kurzbezeichnung: "Neue Norm", vollbezeichnung: "", titel: "",
+    status: "Entwurf", kategorie: "", notiz: "", pruefpunkte: []
   };
   data.normen.push(norm);
   aktiveNormId = norm.id;
@@ -574,14 +742,195 @@ document.getElementById("btn-neue-norm").addEventListener("click", () => {
   if (feld) { feld.focus(); feld.select(); }
 });
 
-/* ---------- Suche ---------- */
+/* ================= PRODUKTE ================= */
 
-document.getElementById("suche").addEventListener("input", (e) => {
-  suchbegriff = e.target.value;
-  renderNormliste();
+function gefilterteProdukte() {
+  const q = normalisiere(suchbegriffe.produkte);
+  if (!q) return data.produkte;
+  return data.produkte.filter((p) => PRODUKT_FELDER.some((f) => normalisiere(p[f]).includes(q)));
+}
+
+function produktFeldZelle(p, feld, typ) {
+  const wert = p[feld] === null || p[feld] === undefined ? "" : p[feld];
+  if (feld === "verweise" || feld === "bemerkungen" || feld === "normenText") {
+    return `<textarea data-feld="${feld}" rows="1">${escapeHtml(wert)}</textarea>`;
+  }
+  const inputTyp = typ === "zahl" ? "number" : "text";
+  return `<input type="${inputTyp}" data-feld="${feld}" value="${escapeHtml(wert)}">`;
+}
+
+function renderProdukteTab() {
+  const tbody = document.getElementById("produkte-body");
+  const liste = gefilterteProdukte();
+  document.getElementById("produkte-zaehler").textContent = `${liste.length} von ${data.produkte.length} Produkten`;
+
+  if (!liste.length) {
+    tbody.innerHTML = '<tr><td colspan="14" class="leerzustand">Keine Produkte gefunden.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = liste
+    .map((p) => `
+      <tr data-id="${p.id}">
+        <td>${produktFeldZelle(p, "kategorie")}</td>
+        <td>${produktFeldZelle(p, "produktart")}</td>
+        <td>${produktFeldZelle(p, "zielgruppe")}</td>
+        <td>${produktFeldZelle(p, "einsatzort")}</td>
+        <td>${produktFeldZelle(p, "bereich")}</td>
+        <td>${produktFeldZelle(p, "produkt")}</td>
+        <td>${produktFeldZelle(p, "normenText")}</td>
+        <td>${produktFeldZelle(p, "verweise")}</td>
+        <td>${produktFeldZelle(p, "material")}</td>
+        <td>${produktFeldZelle(p, "preis", "zahl")}</td>
+        <td>${produktFeldZelle(p, "laborZeitMin", "zahl")}</td>
+        <td>${produktFeldZelle(p, "laborKostenEur", "zahl")}</td>
+        <td>${produktFeldZelle(p, "bemerkungen")}</td>
+        <td class="zeile-aktionen"><button class="danger small" data-action="loeschen" title="Löschen">🗑</button></td>
+      </tr>`)
+    .join("");
+
+  tbody.querySelectorAll("tr").forEach((tr) => {
+    const produkt = data.produkte.find((p) => p.id === tr.dataset.id);
+    tr.querySelectorAll("[data-feld]").forEach((el) => {
+      el.addEventListener("input", () => {
+        const feld = el.dataset.feld;
+        const istZahl = ["preis", "laborZeitMin", "laborKostenEur"].includes(feld);
+        produkt[feld] = istZahl ? (el.value === "" ? null : Number(el.value)) : el.value;
+        speichereInLocalStorage();
+      });
+    });
+    tr.querySelector('button[data-action="loeschen"]').addEventListener("click", () => {
+      if (!confirm(`Produkt "${produkt.produkt || "(ohne Namen)"}" wirklich löschen?`)) return;
+      data.produkte = data.produkte.filter((p) => p.id !== produkt.id);
+      speichereInLocalStorage();
+      renderProdukteTab();
+      renderUebersichtTab();
+    });
+  });
+}
+
+document.getElementById("btn-neues-produkt").addEventListener("click", () => {
+  const produkt = { id: neueId() };
+  PRODUKT_FELDER.forEach((f) => (produkt[f] = ["preis", "laborZeitMin", "laborKostenEur"].includes(f) ? null : ""));
+  data.produkte.unshift(produkt);
+  speichereInLocalStorage();
+  renderProdukteTab();
 });
 
-/* ---------- JSON Export/Import ---------- */
+/* ================= SONDERPOSTEN ================= */
+
+function gefilterteSonderposten() {
+  const q = normalisiere(suchbegriffe.sonderposten);
+  if (!q) return data.sonderposten;
+  return data.sonderposten.filter((s) => SONDERPOSTEN_FELDER.some((f) => normalisiere(s[f]).includes(q)));
+}
+
+function renderSonderpostenTab() {
+  const tbody = document.getElementById("sonderposten-body");
+  const liste = gefilterteSonderposten();
+  document.getElementById("sonderposten-zaehler").textContent = `${liste.length} von ${data.sonderposten.length} Sonderposten`;
+
+  if (!liste.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="leerzustand">Keine Sonderposten gefunden.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = liste
+    .map((s) => `
+      <tr data-id="${s.id}">
+        <td><input type="text" data-feld="kategorie" value="${escapeHtml(s.kategorie)}"></td>
+        <td><input type="text" data-feld="produktart" value="${escapeHtml(s.produktart)}"></td>
+        <td><input type="text" data-feld="zielgruppe" value="${escapeHtml(s.zielgruppe)}"></td>
+        <td><input type="text" data-feld="einsatzort" value="${escapeHtml(s.einsatzort)}"></td>
+        <td><input type="text" data-feld="eigenschaft" value="${escapeHtml(s.eigenschaft)}"></td>
+        <td><input type="number" data-feld="zusatzkosten" value="${s.zusatzkosten === null || s.zusatzkosten === undefined ? "" : s.zusatzkosten}"></td>
+        <td><input type="text" data-feld="kommentar" value="${escapeHtml(s.kommentar)}"></td>
+        <td class="zeile-aktionen"><button class="danger small" data-action="loeschen" title="Löschen">🗑</button></td>
+      </tr>`)
+    .join("");
+
+  tbody.querySelectorAll("tr").forEach((tr) => {
+    const posten = data.sonderposten.find((s) => s.id === tr.dataset.id);
+    tr.querySelectorAll("[data-feld]").forEach((el) => {
+      el.addEventListener("input", () => {
+        const feld = el.dataset.feld;
+        posten[feld] = feld === "zusatzkosten" ? (el.value === "" ? null : Number(el.value)) : el.value;
+        speichereInLocalStorage();
+        if (["kategorie", "produktart", "zielgruppe", "einsatzort"].includes(feld)) renderUebersichtTab();
+      });
+    });
+    tr.querySelector('button[data-action="loeschen"]').addEventListener("click", () => {
+      if (!confirm(`Sonderposten "${posten.eigenschaft || "(ohne Namen)"}" wirklich löschen?`)) return;
+      data.sonderposten = data.sonderposten.filter((s) => s.id !== posten.id);
+      speichereInLocalStorage();
+      renderSonderpostenTab();
+      renderUebersichtTab();
+    });
+  });
+}
+
+document.getElementById("btn-neuer-sonderposten").addEventListener("click", () => {
+  data.sonderposten.unshift({ id: neueId(), kategorie: "", produktart: "", zielgruppe: "", einsatzort: "", eigenschaft: "", zusatzkosten: null, kommentar: "" });
+  speichereInLocalStorage();
+  renderSonderpostenTab();
+});
+
+/* ================= ÜBERSICHT (nur lesend) ================= */
+
+function passendeSonderposten(produkt) {
+  return data.sonderposten.filter((s) => {
+    if (normalisiere(s.kategorie) !== normalisiere(produkt.kategorie)) return false;
+    if (normalisiere(s.produktart) && normalisiere(s.produktart) !== normalisiere(produkt.produktart)) return false;
+    if (normalisiere(s.zielgruppe) && normalisiere(s.zielgruppe) !== normalisiere(produkt.zielgruppe)) return false;
+    if (normalisiere(s.einsatzort) && normalisiere(s.einsatzort) !== normalisiere(produkt.einsatzort)) return false;
+    return true;
+  });
+}
+
+function gefilterteUebersicht() {
+  const q = normalisiere(suchbegriffe.uebersicht);
+  const basis = data.produkte;
+  if (!q) return basis;
+  return basis.filter((p) => {
+    if (PRODUKT_FELDER.some((f) => normalisiere(p[f]).includes(q))) return true;
+    return passendeSonderposten(p).some((s) => normalisiere(s.eigenschaft).includes(q) || normalisiere(s.kommentar).includes(q));
+  });
+}
+
+function renderUebersichtTab() {
+  const tbody = document.getElementById("uebersicht-body");
+  const liste = gefilterteUebersicht();
+  document.getElementById("uebersicht-zaehler").textContent = `${liste.length} von ${data.produkte.length} Produkten`;
+
+  if (!liste.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="leerzustand">Keine Produkte gefunden.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = liste
+    .map((p) => {
+      const bezeichnung = [p.kategorie, p.produktart, p.zielgruppe, p.einsatzort, p.bereich, p.produkt].filter(Boolean).join(" · ");
+      const sonder = passendeSonderposten(p);
+      const sonderHtml = sonder.length
+        ? sonder.map((s) => {
+            const kosten = (s.zusatzkosten !== null && s.zusatzkosten !== undefined && s.zusatzkosten !== "") ? ` (+${s.zusatzkosten} €)` : "";
+            const titel = s.kommentar ? ` title="${escapeHtml(s.kommentar)}"` : "";
+            return `<span class="chip"${titel}>${escapeHtml(s.eigenschaft)}${kosten}</span>`;
+          }).join(" ")
+        : '<span class="muted">–</span>';
+      const preis = (p.preis === null || p.preis === undefined || p.preis === "") ? "" : p.preis;
+      return `<tr>
+        <td><strong>${escapeHtml(p.produkt || "(ohne Namen)")}</strong><br><span class="muted">${escapeHtml(bezeichnung)}</span></td>
+        <td>${escapeHtml(p.normenText)}</td>
+        <td>${escapeHtml(p.verweise)}</td>
+        <td>${sonderHtml}</td>
+        <td>${escapeHtml(preis)}</td>
+      </tr>`;
+    })
+    .join("");
+}
+
+/* ================= JSON Export/Import ================= */
 
 function ladeDatei(input) {
   return new Promise((resolve, reject) => {
@@ -607,7 +956,7 @@ function herunterladen(inhalt, dateiname, mimeType) {
 }
 
 document.getElementById("btn-speichern").addEventListener("click", () => {
-  const payload = { version: 1, exportiertAm: new Date().toISOString(), normen: data.normen };
+  const payload = { version: 2, exportiertAm: new Date().toISOString(), normen: data.normen, produkte: data.produkte, sonderposten: data.sonderposten };
   const zeitstempel = new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
   herunterladen(JSON.stringify(payload, null, 2), `normen-datenbank_${zeitstempel}.json`, "application/json");
 });
@@ -620,11 +969,11 @@ document.getElementById("datei-laden-input").addEventListener("change", async (e
     const text = await ladeDatei(e.target);
     const geparst = JSON.parse(text);
     if (!geparst || !Array.isArray(geparst.normen)) throw new Error("Ungültiges Format");
-    if (!confirm(`${geparst.normen.length} Normen aus der Datei laden? Der aktuelle Stand in diesem Browser wird dabei ersetzt (vorher ggf. sichern!).`)) return;
-    data = { normen: geparst.normen };
+    if (!confirm(`Datei laden (${geparst.normen.length} Normen, ${(geparst.produkte || []).length} Produkte, ${(geparst.sonderposten || []).length} Sonderposten)? Der aktuelle Stand in diesem Browser wird dabei ersetzt (vorher ggf. sichern!).`)) return;
+    data = { normen: geparst.normen, produkte: geparst.produkte || [], sonderposten: geparst.sonderposten || [] };
     aktiveNormId = data.normen.length ? data.normen[0].id : null;
     speichereInLocalStorage();
-    render();
+    renderAlles();
     zeigeStatus("Datei geladen · " + jetzt(), "ok");
   } catch (err) {
     alert("Datei konnte nicht geladen werden: " + err.message);
@@ -633,87 +982,126 @@ document.getElementById("datei-laden-input").addEventListener("change", async (e
   }
 });
 
-/* ---------- CSV-Export (für Excel) ---------- */
+/* ================= CSV-Export (für Excel) ================= */
 
 function zuCsvFeld(wert) {
   const s = (wert === null || wert === undefined) ? "" : String(wert);
   if (/[;"\n]/.test(s)) return '"' + s.replaceAll('"', '""') + '"';
   return s;
 }
+function csvHerunterladen(zeilen, dateiname) {
+  const csv = "﻿" + zeilen.map((z) => z.map(zuCsvFeld).join(";")).join("\r\n");
+  herunterladen(csv, dateiname, "text/csv;charset=utf-8");
+}
 
 document.getElementById("btn-csv").addEventListener("click", () => {
-  const zeilen = [["Norm", "Kapitel", "Überschrift", "Prüfungsrelevant", "Inhalt"]];
-  data.normen
-    .slice()
-    .sort((a, b) => a.kurzbezeichnung.localeCompare(b.kurzbezeichnung, "de"))
-    .forEach((n) => {
-      n.pruefpunkte.forEach((p) => {
-        zeilen.push([n.kurzbezeichnung, p.kapitel, p.ueberschrift, p.relevanz, p.inhalt]);
-      });
+  if (aktiverTab === "normen") {
+    const zeilen = [["Norm", "Kapitel", "Überschrift", "Prüfungsrelevant", "Inhalt"]];
+    data.normen.slice().sort((a, b) => a.kurzbezeichnung.localeCompare(b.kurzbezeichnung, "de")).forEach((n) => {
+      n.pruefpunkte.forEach((p) => zeilen.push([n.kurzbezeichnung, p.kapitel, p.ueberschrift, p.relevanz, p.inhalt]));
     });
-  const csv = "﻿" + zeilen.map((z) => z.map(zuCsvFeld).join(";")).join("\r\n");
-  herunterladen(csv, "normen_export.csv", "text/csv;charset=utf-8");
+    csvHerunterladen(zeilen, "normen_export.csv");
+  } else if (aktiverTab === "produkte") {
+    const zeilen = [["Kategorie", "Produktart", "Zielgruppe", "Einsatzort", "Bereich", "Produkt", "Code", "LIDL Warengruppe", "Normen", "Material", "Verweise", "Preis", "Zeiten Labor [min]", "Kosten Labor [EUR]", "Bemerkungen"]];
+    data.produkte.forEach((p) => zeilen.push([p.kategorie, p.produktart, p.zielgruppe, p.einsatzort, p.bereich, p.produkt, p.code, p.lidlWarengruppe, p.normenText, p.material, p.verweise, p.preis, p.laborZeitMin, p.laborKostenEur, p.bemerkungen]));
+    csvHerunterladen(zeilen, "produkte_export.csv");
+  } else if (aktiverTab === "sonderposten") {
+    const zeilen = [["Kategorie", "Produktart", "Zielgruppe", "Einsatzort", "Eigenschaft", "Zusatzkosten", "Kommentar"]];
+    data.sonderposten.forEach((s) => zeilen.push([s.kategorie, s.produktart, s.zielgruppe, s.einsatzort, s.eigenschaft, s.zusatzkosten, s.kommentar]));
+    csvHerunterladen(zeilen, "sonderposten_export.csv");
+  } else if (aktiverTab === "uebersicht") {
+    const zeilen = [["Produkt", "Kategorie", "Produktart", "Zielgruppe", "Einsatzort", "Bereich", "Normen", "Verweise", "Besondere Ausprägungen", "Preis"]];
+    data.produkte.forEach((p) => {
+      const sonder = passendeSonderposten(p).map((s) => s.eigenschaft + (s.zusatzkosten ? ` (+${s.zusatzkosten} €)` : "")).join(" / ");
+      zeilen.push([p.produkt, p.kategorie, p.produktart, p.zielgruppe, p.einsatzort, p.bereich, p.normenText, p.verweise, sonder, p.preis]);
+    });
+    csvHerunterladen(zeilen, "uebersicht_export.csv");
+  }
 });
 
-/* ---------- Zusammenführen zweier Dateistände ---------- */
+/* ================= Zusammenführen zweier Dateistände ================= */
 
-function normSchluessel(n) {
-  return (n.kurzbezeichnung || "").trim().toLowerCase();
-}
-function punktSchluessel(p) {
-  return (p.kapitel || "").trim().toLowerCase();
-}
+function normSchluessel(n) { return normalisiere(n.kurzbezeichnung); }
+function punktSchluessel(p) { return normalisiere(p.kapitel); }
+function produktSchluessel(p) { return (p.code && p.code.trim()) ? normalisiere(p.code) : [p.kategorie, p.produktart, p.zielgruppe, p.einsatzort, p.bereich, p.produkt].map(normalisiere).join("|"); }
+function sonderpostenSchluessel(s) { return [s.kategorie, s.produktart, s.zielgruppe, s.einsatzort, s.eigenschaft].map(normalisiere).join("|"); }
+
 function punkteGleich(a, b) {
-  return (a.ueberschrift || "") === (b.ueberschrift || "")
-    && (a.relevanz || "") === (b.relevanz || "")
-    && (a.inhalt || "") === (b.inhalt || "");
+  return (a.ueberschrift || "") === (b.ueberschrift || "") && (a.relevanz || "") === (b.relevanz || "") && (a.inhalt || "") === (b.inhalt || "");
 }
 function normMetaGleich(a, b) {
-  return (a.vollbezeichnung || "") === (b.vollbezeichnung || "")
-    && (a.titel || "") === (b.titel || "")
-    && (a.status || "") === (b.status || "")
-    && (a.kategorie || "") === (b.kategorie || "")
-    && (a.notiz || "") === (b.notiz || "");
+  return (a.vollbezeichnung || "") === (b.vollbezeichnung || "") && (a.titel || "") === (b.titel || "")
+    && (a.status || "") === (b.status || "") && (a.kategorie || "") === (b.kategorie || "") && (a.notiz || "") === (b.notiz || "");
+}
+function feldweiseGleich(a, b, felder) {
+  return felder.every((f) => (a[f] ?? "") === (b[f] ?? ""));
+}
+
+function planFlacheListe(lokal, importiert, schluesselFn, vergleichFelder) {
+  const neue = [];
+  const konflikte = [];
+  importiert.forEach((imp) => {
+    const treffer = lokal.find((l) => l.id === imp.id || schluesselFn(l) === schluesselFn(imp));
+    if (!treffer) { neue.push(imp); return; }
+    if (!feldweiseGleich(treffer, imp, vergleichFelder)) konflikte.push({ lokal: treffer, importiert: imp });
+  });
+  return { neue, konflikte };
 }
 
 let mergePlan = null;
 
-function berechneMergePlan(importNormen) {
+function berechneMergePlan(importData) {
   const plan = { neueNormen: [], neuePunkte: [], normKonflikte: [], punktKonflikte: [] };
 
-  importNormen.forEach((impNorm) => {
+  (importData.normen || []).forEach((impNorm) => {
     const lokal = data.normen.find((n) => (n.id === impNorm.id) || (normSchluessel(n) === normSchluessel(impNorm)));
-    if (!lokal) {
-      plan.neueNormen.push(impNorm);
-      return;
-    }
-    if (!normMetaGleich(lokal, impNorm)) {
-      plan.normKonflikte.push({ lokal, importiert: impNorm });
-    }
+    if (!lokal) { plan.neueNormen.push(impNorm); return; }
+    if (!normMetaGleich(lokal, impNorm)) plan.normKonflikte.push({ lokal, importiert: impNorm });
     impNorm.pruefpunkte.forEach((impPunkt) => {
-      const lokalerPunkt = lokal.pruefpunkte.find(
-        (p) => (p.id === impPunkt.id) || (punktSchluessel(p) === punktSchluessel(impPunkt))
-      );
-      if (!lokalerPunkt) {
-        plan.neuePunkte.push({ norm: lokal, punkt: impPunkt });
-        return;
-      }
-      if (!punkteGleich(lokalerPunkt, impPunkt)) {
-        plan.punktKonflikte.push({ norm: lokal, lokal: lokalerPunkt, importiert: impPunkt });
-      }
+      const lokalerPunkt = lokal.pruefpunkte.find((p) => (p.id === impPunkt.id) || (punktSchluessel(p) === punktSchluessel(impPunkt)));
+      if (!lokalerPunkt) { plan.neuePunkte.push({ norm: lokal, punkt: impPunkt }); return; }
+      if (!punkteGleich(lokalerPunkt, impPunkt)) plan.punktKonflikte.push({ norm: lokal, lokal: lokalerPunkt, importiert: impPunkt });
     });
   });
 
+  const produktePlan = planFlacheListe(data.produkte, importData.produkte || [], produktSchluessel, PRODUKT_VERGLEICHSFELDER);
+  const sonderpostenPlan = planFlacheListe(data.sonderposten, importData.sonderposten || [], sonderpostenSchluessel, SONDERPOSTEN_FELDER);
+
+  plan.neueProdukte = produktePlan.neue;
+  plan.produktKonflikte = produktePlan.konflikte;
+  plan.neueSonderposten = sonderpostenPlan.neue;
+  plan.sonderpostenKonflikte = sonderpostenPlan.konflikte;
+
   return plan;
+}
+
+function checkboxListeHtml(typ, liste, beschreibungFn) {
+  return liste.map((item, i) => `<div class="merge-item"><label>
+      <input type="checkbox" checked data-typ="${typ}" data-idx="${i}">
+      <span>${beschreibungFn(item)}</span>
+    </label></div>`).join("");
+}
+
+function konfliktListeHtml(typ, liste, titelFn, textFn) {
+  return liste.map((k, i) => `<div class="merge-item">
+      <strong>${titelFn(k)}</strong>
+      <div class="diff-cols">
+        <div><h4>Aktuell (dieser Browser)</h4><textarea readonly>${escapeHtml(textFn(k.lokal))}</textarea></div>
+        <div><h4>Aus Datei</h4><textarea readonly>${escapeHtml(textFn(k.importiert))}</textarea></div>
+      </div>
+      <label><input type="radio" name="${typ}-${i}" value="lokal" checked data-typ="${typ}" data-idx="${i}"> Aktuell behalten</label>
+      <label style="margin-left:1rem"><input type="radio" name="${typ}-${i}" value="importiert" data-typ="${typ}" data-idx="${i}"> Aus Datei übernehmen</label>
+    </div>`).join("");
 }
 
 function renderMergeUebersicht() {
   const box = document.getElementById("merge-box");
   const p = mergePlan;
-  const nichtsZuTun = !p.neueNormen.length && !p.neuePunkte.length && !p.normKonflikte.length && !p.punktKonflikte.length;
+  const anzahl = p.neueNormen.length + p.neuePunkte.length + p.normKonflikte.length + p.punktKonflikte.length
+    + p.neueProdukte.length + p.produktKonflikte.length + p.neueSonderposten.length + p.sonderpostenKonflikte.length;
 
   let html = `<h2>Zusammenführen: Änderungen prüfen</h2>`;
-  if (nichtsZuTun) {
+  if (anzahl === 0) {
     html += `<p>Keine Unterschiede zur aktuellen Datenbank gefunden.</p>
       <div class="merge-actions"><button class="ghost" id="merge-schliessen">Schließen</button></div>`;
     box.innerHTML = html;
@@ -722,63 +1110,48 @@ function renderMergeUebersicht() {
   }
 
   if (p.neueNormen.length) {
-    html += `<div class="merge-section"><h3>Neue Normen aus der Datei (${p.neueNormen.length})</h3>`;
-    p.neueNormen.forEach((n, i) => {
-      html += `<div class="merge-item"><label>
-        <input type="checkbox" checked data-typ="neueNorm" data-idx="${i}">
-        <span><strong>${escapeHtml(n.kurzbezeichnung)}</strong> — ${n.pruefpunkte.length} Prüfpunkte</span>
-      </label></div>`;
-    });
-    html += `</div>`;
+    html += `<div class="merge-section"><h3>Neue Normen aus der Datei (${p.neueNormen.length})</h3>`
+      + checkboxListeHtml("neueNorm", p.neueNormen, (n) => `<strong>${escapeHtml(n.kurzbezeichnung)}</strong> — ${n.pruefpunkte.length} Prüfpunkte`)
+      + `</div>`;
   }
-
   if (p.neuePunkte.length) {
-    html += `<div class="merge-section"><h3>Neue Prüfpunkte in bestehenden Normen (${p.neuePunkte.length})</h3>`;
-    p.neuePunkte.forEach((item, i) => {
-      html += `<div class="merge-item"><label>
-        <input type="checkbox" checked data-typ="neuerPunkt" data-idx="${i}">
-        <span><strong>${escapeHtml(item.norm.kurzbezeichnung)}</strong> · Kapitel ${escapeHtml(item.punkt.kapitel)} — ${escapeHtml(item.punkt.ueberschrift)}</span>
-      </label></div>`;
-    });
-    html += `</div>`;
+    html += `<div class="merge-section"><h3>Neue Prüfpunkte in bestehenden Normen (${p.neuePunkte.length})</h3>`
+      + checkboxListeHtml("neuerPunkt", p.neuePunkte, (item) => `<strong>${escapeHtml(item.norm.kurzbezeichnung)}</strong> · Kapitel ${escapeHtml(item.punkt.kapitel)} — ${escapeHtml(item.punkt.ueberschrift)}`)
+      + `</div>`;
   }
-
   if (p.normKonflikte.length) {
-    html += `<div class="merge-section"><h3>Unterschiedliche Norm-Angaben (${p.normKonflikte.length})</h3>
-      <p class="hinweis">Gleiche Norm, aber Vollbezeichnung/Titel/Status/Kategorie/Notiz unterscheiden sich.</p>`;
-    p.normKonflikte.forEach((k, i) => {
-      html += `<div class="merge-item">
-        <strong>${escapeHtml(k.lokal.kurzbezeichnung)}</strong>
-        <div class="diff-cols">
-          <div><h4>Aktuell (dieser Browser)</h4>
-            <textarea readonly>${escapeHtml([k.lokal.vollbezeichnung, k.lokal.titel, k.lokal.status, k.lokal.kategorie, k.lokal.notiz].filter(Boolean).join("\n"))}</textarea></div>
-          <div><h4>Aus Datei</h4>
-            <textarea readonly>${escapeHtml([k.importiert.vollbezeichnung, k.importiert.titel, k.importiert.status, k.importiert.kategorie, k.importiert.notiz].filter(Boolean).join("\n"))}</textarea></div>
-        </div>
-        <label><input type="radio" name="normkonflikt-${i}" value="lokal" checked data-typ="normKonflikt" data-idx="${i}"> Aktuell behalten</label>
-        <label style="margin-left:1rem"><input type="radio" name="normkonflikt-${i}" value="importiert" data-typ="normKonflikt" data-idx="${i}"> Aus Datei übernehmen</label>
-      </div>`;
-    });
-    html += `</div>`;
+    html += `<div class="merge-section"><h3>Unterschiedliche Norm-Angaben (${p.normKonflikte.length})</h3><p class="hinweis">Gleiche Norm, aber Vollbezeichnung/Titel/Status/Kategorie/Notiz unterscheiden sich.</p>`
+      + konfliktListeHtml("normKonflikt", p.normKonflikte, (k) => escapeHtml(k.lokal.kurzbezeichnung),
+          (n) => [n.vollbezeichnung, n.titel, n.status, n.kategorie, n.notiz].filter(Boolean).join("\n"))
+      + `</div>`;
   }
-
   if (p.punktKonflikte.length) {
-    html += `<div class="merge-section"><h3>Konflikte bei Prüfpunkten (${p.punktKonflikte.length})</h3>
-      <p class="hinweis">Gleiches Kapitel, aber Inhalt/Überschrift/Relevanz unterscheiden sich.</p>`;
-    p.punktKonflikte.forEach((k, i) => {
-      html += `<div class="merge-item">
-        <strong>${escapeHtml(k.norm.kurzbezeichnung)} · Kapitel ${escapeHtml(k.lokal.kapitel)}</strong>
-        <div class="diff-cols">
-          <div><h4>Aktuell (dieser Browser)</h4>
-            <textarea readonly>${escapeHtml(k.lokal.ueberschrift + " [" + k.lokal.relevanz + "]\n" + (k.lokal.inhalt || ""))}</textarea></div>
-          <div><h4>Aus Datei</h4>
-            <textarea readonly>${escapeHtml(k.importiert.ueberschrift + " [" + k.importiert.relevanz + "]\n" + (k.importiert.inhalt || ""))}</textarea></div>
-        </div>
-        <label><input type="radio" name="punktkonflikt-${i}" value="lokal" checked data-typ="punktKonflikt" data-idx="${i}"> Aktuell behalten</label>
-        <label style="margin-left:1rem"><input type="radio" name="punktkonflikt-${i}" value="importiert" data-typ="punktKonflikt" data-idx="${i}"> Aus Datei übernehmen</label>
-      </div>`;
-    });
-    html += `</div>`;
+    html += `<div class="merge-section"><h3>Konflikte bei Prüfpunkten (${p.punktKonflikte.length})</h3><p class="hinweis">Gleiches Kapitel, aber Inhalt/Überschrift/Relevanz unterscheiden sich.</p>`
+      + konfliktListeHtml("punktKonflikt", p.punktKonflikte, (k) => `${escapeHtml(k.norm.kurzbezeichnung)} · Kapitel ${escapeHtml(k.lokal.kapitel)}`,
+          (pkt) => `${pkt.ueberschrift} [${pkt.relevanz}]\n${pkt.inhalt || ""}`)
+      + `</div>`;
+  }
+  if (p.neueProdukte.length) {
+    html += `<div class="merge-section"><h3>Neue Produkte aus der Datei (${p.neueProdukte.length})</h3>`
+      + checkboxListeHtml("neuesProdukt", p.neueProdukte, (pr) => `<strong>${escapeHtml(pr.produkt)}</strong> — ${escapeHtml([pr.kategorie, pr.produktart, pr.zielgruppe, pr.einsatzort, pr.bereich].filter(Boolean).join(" · "))}`)
+      + `</div>`;
+  }
+  if (p.produktKonflikte.length) {
+    html += `<div class="merge-section"><h3>Konflikte bei Produkten (${p.produktKonflikte.length})</h3><p class="hinweis">Gleiches Produkt (Code/Taxonomie), aber Angaben unterscheiden sich.</p>`
+      + konfliktListeHtml("produktKonflikt", p.produktKonflikte, (k) => escapeHtml(k.lokal.produkt || "(ohne Namen)"),
+          (pr) => PRODUKT_VERGLEICHSFELDER.map((f) => `${f}: ${pr[f] ?? ""}`).join("\n"))
+      + `</div>`;
+  }
+  if (p.neueSonderposten.length) {
+    html += `<div class="merge-section"><h3>Neue Sonderposten aus der Datei (${p.neueSonderposten.length})</h3>`
+      + checkboxListeHtml("neuerSonderposten", p.neueSonderposten, (s) => `<strong>${escapeHtml(s.eigenschaft)}</strong> — ${escapeHtml([s.kategorie, s.produktart, s.zielgruppe, s.einsatzort].filter(Boolean).join(" · "))}`)
+      + `</div>`;
+  }
+  if (p.sonderpostenKonflikte.length) {
+    html += `<div class="merge-section"><h3>Konflikte bei Sonderposten (${p.sonderpostenKonflikte.length})</h3><p class="hinweis">Gleiches Merkmal, aber Zusatzkosten/Kommentar unterscheiden sich.</p>`
+      + konfliktListeHtml("sonderpostenKonflikt", p.sonderpostenKonflikte, (k) => escapeHtml(k.lokal.eigenschaft || "(ohne Namen)"),
+          (s) => `Zusatzkosten: ${s.zusatzkosten ?? ""}\nKommentar: ${s.kommentar || ""}`)
+      + `</div>`;
   }
 
   html += `<div class="merge-actions">
@@ -795,43 +1168,32 @@ function wendeMergeAn() {
   const box = document.getElementById("merge-box");
   const p = mergePlan;
 
-  p.neueNormen.forEach((n, i) => {
-    const cb = box.querySelector(`[data-typ="neueNorm"][data-idx="${i}"]`);
-    if (cb && cb.checked) data.normen.push(n);
-  });
-
-  p.neuePunkte.forEach((item, i) => {
-    const cb = box.querySelector(`[data-typ="neuerPunkt"][data-idx="${i}"]`);
-    if (cb && cb.checked) item.norm.pruefpunkte.push(item.punkt);
-  });
-
+  p.neueNormen.forEach((n, i) => { const cb = box.querySelector(`[data-typ="neueNorm"][data-idx="${i}"]`); if (cb && cb.checked) data.normen.push(n); });
+  p.neuePunkte.forEach((item, i) => { const cb = box.querySelector(`[data-typ="neuerPunkt"][data-idx="${i}"]`); if (cb && cb.checked) item.norm.pruefpunkte.push(item.punkt); });
   p.normKonflikte.forEach((k, i) => {
-    const gewaehlt = box.querySelector(`[name="normkonflikt-${i}"]:checked`);
-    if (gewaehlt && gewaehlt.value === "importiert") {
-      Object.assign(k.lokal, {
-        vollbezeichnung: k.importiert.vollbezeichnung,
-        titel: k.importiert.titel,
-        status: k.importiert.status,
-        kategorie: k.importiert.kategorie,
-        notiz: k.importiert.notiz
-      });
-    }
+    const g = box.querySelector(`[name="normKonflikt-${i}"]:checked`);
+    if (g && g.value === "importiert") Object.assign(k.lokal, { vollbezeichnung: k.importiert.vollbezeichnung, titel: k.importiert.titel, status: k.importiert.status, kategorie: k.importiert.kategorie, notiz: k.importiert.notiz });
+  });
+  p.punktKonflikte.forEach((k, i) => {
+    const g = box.querySelector(`[name="punktKonflikt-${i}"]:checked`);
+    if (g && g.value === "importiert") Object.assign(k.lokal, { ueberschrift: k.importiert.ueberschrift, relevanz: k.importiert.relevanz, inhalt: k.importiert.inhalt });
   });
 
-  p.punktKonflikte.forEach((k, i) => {
-    const gewaehlt = box.querySelector(`[name="punktkonflikt-${i}"]:checked`);
-    if (gewaehlt && gewaehlt.value === "importiert") {
-      Object.assign(k.lokal, {
-        ueberschrift: k.importiert.ueberschrift,
-        relevanz: k.importiert.relevanz,
-        inhalt: k.importiert.inhalt
-      });
-    }
+  p.neueProdukte.forEach((pr, i) => { const cb = box.querySelector(`[data-typ="neuesProdukt"][data-idx="${i}"]`); if (cb && cb.checked) data.produkte.push(pr); });
+  p.produktKonflikte.forEach((k, i) => {
+    const g = box.querySelector(`[name="produktKonflikt-${i}"]:checked`);
+    if (g && g.value === "importiert") PRODUKT_VERGLEICHSFELDER.forEach((f) => (k.lokal[f] = k.importiert[f]));
+  });
+
+  p.neueSonderposten.forEach((s, i) => { const cb = box.querySelector(`[data-typ="neuerSonderposten"][data-idx="${i}"]`); if (cb && cb.checked) data.sonderposten.push(s); });
+  p.sonderpostenKonflikte.forEach((k, i) => {
+    const g = box.querySelector(`[name="sonderpostenKonflikt-${i}"]:checked`);
+    if (g && g.value === "importiert") Object.assign(k.lokal, { zusatzkosten: k.importiert.zusatzkosten, kommentar: k.importiert.kommentar });
   });
 
   speichereInLocalStorage();
   schliesseMergeOverlay();
-  render();
+  renderAlles();
   zeigeStatus("Zusammenführung angewendet · " + jetzt(), "ok");
 }
 
@@ -848,7 +1210,7 @@ document.getElementById("datei-merge-input").addEventListener("change", async (e
     const text = await ladeDatei(e.target);
     const geparst = JSON.parse(text);
     if (!geparst || !Array.isArray(geparst.normen)) throw new Error("Ungültiges Format");
-    mergePlan = berechneMergePlan(geparst.normen);
+    mergePlan = berechneMergePlan(geparst);
     renderMergeUebersicht();
     document.getElementById("merge-overlay").classList.add("sichtbar");
   } catch (err) {

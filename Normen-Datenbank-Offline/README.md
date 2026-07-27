@@ -1,47 +1,71 @@
 # Normen-Datenbank (Offline, ohne Installation)
 
-Eine einzelne HTML-Datei zur Pflege einer Datenbank von Normen und ihren
-Prüfpunkten (Kapitel, Überschrift, Prüfungsrelevanz, Inhalt). Läuft komplett
-im Browser, ohne Server, ohne Python, ohne Installation.
+Eine einzelne HTML-Datei zur Pflege einer Datenbank von Normen (mit ihren
+Prüfpunkten) **und** der Zuordnung zu Produkten inkl. besonderer
+Ausprägungen. Läuft komplett im Browser, ohne Server, ohne Python, ohne
+Installation.
 
 ## Benutzen
 
 Einfach **`Normen-Datenbank.html`** doppelklicken – öffnet sich im
 Standard-Browser (Chrome, Edge, Firefox). Fertig.
 
-Beim ersten Öffnen sind DIN EN 581-1, -2 und -3 (aus der bestehenden
-`Normenauswahl.xlsm`) bereits als Beispiel eingetragen.
+Beim ersten Öffnen sind bereits eingetragen (übernommen aus der bestehenden
+`Normenauswahl.xlsm`):
+- **Normen**: DIN EN 581-1, -2 und -3 (Blatt „NORMEN")
+- **Produkte**: alle 133 Zeilen aus dem Blatt „Datenbank" (Produkt-Norm-Zuordnung)
+- **Sonderposten**: alle 17 Zeilen aus dem Blatt „Sonderposten" (Produktmerkmale
+  mit besonderen Prüfungen/Zusatzkosten)
 
 Alle Änderungen werden automatisch im Browser (Local Storage) auf diesem PC
 gespeichert – ein Neuladen der Seite verliert nichts. Das gilt aber nur für
 **diesen** Browser auf **diesem** PC; zum Teilen/Sichern/Zusammenführen die
 Export-Funktionen benutzen (siehe unten).
 
-## Funktionen (Toolbar oben)
+## Die vier Reiter
 
-- **+ Neue Norm** – legt eine leere Norm an.
-- **Norm anklicken** (links in der Liste) – Metadaten und Prüfpunkte-Tabelle
-  rechts bearbeiten. Jede Änderung wird sofort gespeichert.
-- **Zeile hinzufügen / ↑ / ↓ / 🗑** – Prüfpunkte-Zeilen verwalten.
-- **⬇ Sichern (JSON)** – lädt den kompletten aktuellen Stand als
-  `.json`-Datei herunter. Das ist die "Speichern unter"-Funktion dieser App –
-  regelmäßig nutzen, vor allem bevor eine andere Datei geladen wird.
+- **Normen** – wie bisher: Norm anklicken (links), Metadaten und
+  Prüfpunkte-Tabelle (Kapitel/Überschrift/Prüfungsrelevant/Inhalt) rechts
+  bearbeiten.
+- **Produkte** – die Produkt-Norm-Zuordnung als eine große, direkt editierbare
+  Tabelle: Kategorie → Produktart → Zielgruppe → Einsatzort → Bereich →
+  Produkt, dazu Normen (Freitext, wie im Original), Verweise/Prüfmethoden,
+  Material, Preis, Labor-Zeit/-Kosten, Bemerkungen. Suche filtert über alle
+  Spalten. „+ Neues Produkt" legt eine leere Zeile an.
+- **Sonderposten** – Produktmerkmale, die besondere/zusätzliche Prüfungen oder
+  Kosten auslösen (z. B. „Armlehne", „Glas", „Level 2"), zugeordnet über
+  Kategorie/Produktart und optional Zielgruppe/Einsatzort. Leer lassen, wenn
+  das Merkmal unabhängig davon gilt.
+- **Übersicht** – nur lesend: pro Produkt werden die hinterlegten Normen,
+  Verweise/Prüfmethoden und die **passenden Sonderposten** (automatisch nach
+  Kategorie/Produktart/Zielgruppe/Einsatzort abgeglichen) in einer Zeile
+  zusammengeführt. Das ist die gewünschte Gesamtübersicht "Produkt +
+  zugehörige Normen + besondere Ausprägungen".
+
+## Toolbar (oben, gilt bereichsübergreifend)
+
+- **⬇ Sichern (JSON)** – lädt den kompletten aktuellen Stand (Normen +
+  Produkte + Sonderposten) als `.json`-Datei herunter. Das ist die "Speichern
+  unter"-Funktion dieser App – regelmäßig nutzen, vor allem bevor eine andere
+  Datei geladen wird.
 - **⬆ Datei laden (JSON)** – ersetzt den aktuellen Stand komplett durch den
   Inhalt einer zuvor gesicherten `.json`-Datei.
 - **🔀 Zusammenführen (JSON)** – **damit lassen sich Arbeitsstände mehrerer
-  Personen/Rechner zusammenführen**: Datei einer Kollegin/eines Kollegen
-  auswählen, die App zeigt an, was neu ist (neue Normen, neue Prüfpunkte)
-  und wo es Konflikte gibt (gleiches Kapitel, aber unterschiedlicher Inhalt).
-  Bei Konflikten wählt man je Fall "Aktuell behalten" oder "Aus Datei
-  übernehmen". Nichts wird automatisch überschrieben.
-- **📄 Excel-Export (CSV)** – exportiert alle Normen/Prüfpunkte als
-  `.csv`-Datei, die sich direkt in Excel öffnen lässt (für die spätere
-  Zusammenführung in einer zentralen Excel-Datei/Datenbank).
+  Personen/Rechner zusammenführen**, für Normen, Produkte und Sonderposten
+  gemeinsam: Datei einer Kollegin/eines Kollegen auswählen, die App zeigt an,
+  was neu ist und wo es Konflikte gibt (gleicher Eintrag, aber
+  unterschiedliche Angaben). Bei Konflikten wählt man je Fall "Aktuell
+  behalten" oder "Aus Datei übernehmen". Nichts wird automatisch
+  überschrieben.
+- **📄 CSV-Export (aktueller Bereich)** – exportiert die Tabelle des gerade
+  geöffneten Reiters (Normen / Produkte / Sonderposten / Übersicht) als
+  `.csv`-Datei, direkt in Excel öffenbar.
 
 ## Typischer Arbeitsablauf mit mehreren Personen
 
-1. Eine Person startet die Datei, pflegt Normen ein, klickt **Sichern (JSON)**
-   und schickt die `.json`-Datei an die anderen (z. B. per Mail/Teams).
+1. Eine Person pflegt Normen/Produkte/Sonderposten ein, klickt
+   **Sichern (JSON)** und schickt die `.json`-Datei an die anderen (z. B. per
+   Mail/Teams).
 2. Jede Person öffnet **dieselbe** `.json`-Datei über **Datei laden**, bevor
    sie eigene Änderungen macht (damit alle vom gleichen Stand ausgehen).
 3. Jede Person arbeitet lokal weiter und sichert ihren eigenen Stand
@@ -49,7 +73,7 @@ Export-Funktionen benutzen (siehe unten).
 4. Eine Person sammelt die einzelnen `.json`-Dateien ein und führt sie
    nacheinander über **Zusammenführen** zu einem gemeinsamen Stand zusammen.
 5. Der zusammengeführte Stand wird wieder als `.json` gesichert (Master-Datei)
-   und bei Bedarf als CSV für Excel exportiert.
+   und bei Bedarf pro Reiter als CSV für Excel exportiert.
 
 ## Bewusst nicht enthalten
 
@@ -57,5 +81,12 @@ Export-Funktionen benutzen (siehe unten).
   "vielleicht später" – siehe Hauptrepo, dort gibt es dazu bereits einen
   funktionierenden Prototyp in `app/`, falls das später doch serverbasiert
   gebraucht wird).
-- Die Zuordnung "welche Norm gilt für welches Produkt" (Auswahllogik) – laut
-  Vorgabe bewusst erstmal zurückgestellt.
+- Der interaktive Auswahl-Assistent ("Normenfinder" mit Dropdowns, wie im
+  Blatt „Eingabe") – die Übersicht deckt das Kernbedürfnis (welche Normen +
+  Ausprägungen gehören zu welchem Produkt) bereits ab; ein geführter
+  Auswahl-Dialog kann bei Bedarf ergänzt werden.
+- Strikte Verknüpfung zwischen dem Normen-Reiter und dem Freitext-Feld
+  "Normen" in den Produkten (z. B. per Verweis auf die Norm-ID). Das Original
+  enthält dort uneinheitliche/teils fehlerhafte Bezeichnungen (z. B.
+  „DIN EN 518-3" statt „581-3"), daher bewusst als Freitext belassen statt
+  automatisch (und ggf. falsch) verknüpft.
