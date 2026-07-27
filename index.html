@@ -21,23 +21,53 @@
   </section>
 
   <section class="range-section">
-    <div class="stack-selector" id="stackSelector"></div>
-    <div class="range-header">
-      <h2 id="rangeTitle">–</h2>
-      <p id="rangeSubtitle" class="range-subtitle"></p>
+    <div class="section-toolbar">
+      <div class="stack-selector" id="stackSelector"></div>
+      <button class="mode-btn" id="compareToggle" type="button">Ranges vergleichen</button>
     </div>
-    <p id="rangeNote" class="range-note"></p>
-    <div class="range-stats">
-      <span id="rangeCombos">0 Kombinationen</span>
-      <span id="rangePercent">0.0 %</span>
+
+    <div id="singleView">
+      <div class="range-header">
+        <h2 id="rangeTitle">–</h2>
+        <p id="rangeSubtitle" class="range-subtitle"></p>
+      </div>
+      <p id="rangeNote" class="range-note"></p>
+      <div class="range-stats">
+        <span id="rangeCombos">0 Kombinationen</span>
+        <span id="rangePercent">0.0 %</span>
+      </div>
+      <div class="range-grid" id="rangeGrid"></div>
+      <p id="allinNote" class="allin-note"></p>
+      <div class="legend" id="gridLegend">
+        <span class="legend-item"><span class="swatch swatch-active" id="legendSwatch"></span> In Range</span>
+        <span class="legend-item"><span class="swatch swatch-fold"></span> Fold</span>
+        <span class="legend-item" id="legendAllin"><span class="swatch swatch-allin">*</span> All-in statt Raise (BTN, 20BB)</span>
+      </div>
+      <div class="continue-stats" id="continueStats"></div>
     </div>
-    <div class="range-grid" id="rangeGrid"></div>
-    <p id="allinNote" class="allin-note"></p>
-    <div class="legend" id="gridLegend">
-      <span class="legend-item"><span class="swatch swatch-active" id="legendSwatch"></span> In Range</span>
-      <span class="legend-item"><span class="swatch swatch-fold"></span> Fold</span>
+
+    <div id="compareView" class="compare-view">
+      <div class="compare-picker">
+        <div class="compare-row">
+          <span class="compare-dot compare-dot-a"></span>
+          <select id="compareAPos" class="compare-select"></select>
+          <select id="compareAStack" class="compare-select compare-select-stack"></select>
+        </div>
+        <div class="compare-row">
+          <span class="compare-dot compare-dot-b"></span>
+          <select id="compareBPos" class="compare-select"></select>
+          <select id="compareBStack" class="compare-select compare-select-stack"></select>
+        </div>
+      </div>
+      <div class="range-grid" id="compareGrid"></div>
+      <div class="legend">
+        <span class="legend-item"><span class="swatch swatch-cmp-a"></span> Nur A</span>
+        <span class="legend-item"><span class="swatch swatch-cmp-b"></span> Nur B</span>
+        <span class="legend-item"><span class="swatch swatch-cmp-both"></span> Beide</span>
+        <span class="legend-item"><span class="swatch swatch-fold"></span> Keine</span>
+      </div>
+      <p class="compare-stats" id="compareStats"></p>
     </div>
-    <div class="continue-stats" id="continueStats"></div>
   </section>
 </main>
 

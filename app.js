@@ -17,9 +17,11 @@ const SEAT_MARKER = {
 };
 
 const CONTINUE_OPENERS = ['EP', 'MP', 'CO', 'BTN'];
+const OPEN_POSITION_IDS = POSITIONS.filter((p) => RANGE_DATA[p.id].kind === 'open').map((p) => p.id);
 
 let activePositionId = 'BTN';
 let activeStack = 100;
+let compareMode = false;
 
 function renderTable() {
   const table = document.getElementById('pokerTable');
@@ -71,6 +73,7 @@ function updateStackButtons() {
 }
 
 function selectPosition(posId) {
+  if (compareMode) setCompareMode(false);
   activePositionId = posId;
   document.querySelectorAll('.seat').forEach((seat) => {
     const isActive = seat.dataset.position === posId;
@@ -138,11 +141,14 @@ function renderOpenRaiseGrid(data, posId) {
   }
 
   const allinNoteEl = document.getElementById('allinNote');
+  const legendAllinEl = document.getElementById('legendAllin');
   if (allinCells.size > 0) {
     allinNoteEl.style.display = '';
-    allinNoteEl.textContent = `* markiert ${allinCells.size} Hand${allinCells.size === 1 ? '' : 'e'}, die deine Tabelle bei 20BB für BTN als All-in statt Raise kennzeichnet.`;
+    allinNoteEl.textContent = `Goldenes * = ${allinCells.size} Hand${allinCells.size === 1 ? '' : 'e'}, die deine Tabelle bei 20BB für BTN als All-in statt Raise kennzeichnet.`;
+    legendAllinEl.style.display = 'flex';
   } else {
     allinNoteEl.style.display = 'none';
+    legendAllinEl.style.display = 'none';
   }
 }
 
@@ -184,6 +190,104 @@ function renderContinueStats(data, posId) {
   });
 }
 
+function fillSelect(select, options, formatLabel) {
+  select.innerHTML = '';
+  options.forEach((opt) => {
+    const el = document.createElement('option');
+    el.value = opt;
+    el.textContent = formatLabel(opt);
+    select.appendChild(el);
+  });
+}
+
+function setupCompareControls() {
+  const aPos = document.getElementById('compareAPos');
+  const bPos = document.getElementById('compareBPos');
+  const aStack = document.getElementById('compareAStack');
+  const bStack = document.getElementById('compareBStack');
+
+  fillSelect(aPos, OPEN_POSITION_IDS, (id) => POSITIONS.find((p) => p.id === id).label);
+  fillSelect(bPos, OPEN_POSITION_IDS, (id) => POSITIONS.find((p) => p.id === id).label);
+  fillSelect(aStack, STACK_DEPTHS, (d) => d + ' BB');
+  fillSelect(bStack, STACK_DEPTHS, (d) => d + ' BB');
+
+  aPos.value = 'BTN';
+  bPos.value = 'UTG';
+  aStack.value = 100;
+  bStack.value = 100;
+
+  [aPos, bPos, aStack, bStack].forEach((el) => el.addEventListener('change', renderCompare));
+
+  document.getElementById('compareToggle').addEventListener('click', () => {
+    setCompareMode(!compareMode);
+  });
+}
+
+function setCompareMode(on) {
+  compareMode = on;
+  document.getElementById('singleView').style.display = on ? 'none' : '';
+  document.getElementById('compareView').style.display = on ? 'block' : 'none';
+  document.getElementById('stackSelector').style.display = on ? 'none' : '';
+  document.getElementById('compareToggle').textContent = on ? 'Zurück zur Einzelansicht' : 'Ranges vergleichen';
+  document.getElementById('compareToggle').classList.toggle('active', on);
+  if (on) renderCompare();
+}
+
+function renderCompare() {
+  const posA = document.getElementById('compareAPos').value;
+  const posB = document.getElementById('compareBPos').value;
+  const stackA = Number(document.getElementById('compareAStack').value);
+  const stackB = Number(document.getElementById('compareBStack').value);
+
+  const gridA = buildOpenRaiseGrid(stackA, RANGE_DATA[posA].group);
+  const gridB = buildOpenRaiseGrid(stackB, RANGE_DATA[posB].group);
+
+  const grid = document.getElementById('compareGrid');
+  grid.innerHTML = '';
+
+  let onlyACombos = 0;
+  let onlyBCombos = 0;
+  let bothCombos = 0;
+
+  for (let row = 0; row < 13; row++) {
+    for (let col = 0; col < 13; col++) {
+      const key = `${row}-${col}`;
+      const inA = gridA.cells.has(key);
+      const inB = gridB.cells.has(key);
+      const cell = document.createElement('div');
+      cell.className = 'grid-cell';
+      cell.textContent = handCodeAt(row, col);
+
+      if (inA || inB) {
+        cell.classList.add('in-range');
+        const combos = combosAt(row, col);
+        if (inA && inB) {
+          cell.style.background = 'var(--cmp-both)';
+          bothCombos += combos;
+        } else if (inA) {
+          cell.style.background = 'var(--cmp-a)';
+          onlyACombos += combos;
+        } else {
+          cell.style.background = 'var(--cmp-b)';
+          onlyBCombos += combos;
+        }
+      }
+      grid.appendChild(cell);
+    }
+  }
+
+  const pct = (c) => ((c / TOTAL_COMBOS) * 100).toFixed(1);
+  const aLabel = `${POSITIONS.find((p) => p.id === posA).label} @ ${stackA}BB`;
+  const bLabel = `${POSITIONS.find((p) => p.id === posB).label} @ ${stackB}BB`;
+  document.getElementById('compareStats').innerHTML =
+    `<strong>A</strong> = ${aLabel} (${gridA.totalCombos} Kombos, ${pct(gridA.totalCombos)} %) &nbsp;·&nbsp; ` +
+    `<strong>B</strong> = ${bLabel} (${gridB.totalCombos} Kombos, ${pct(gridB.totalCombos)} %)<br>` +
+    `Nur A: ${onlyACombos} Kombos (${pct(onlyACombos)} %) &nbsp;·&nbsp; ` +
+    `Nur B: ${onlyBCombos} Kombos (${pct(onlyBCombos)} %) &nbsp;·&nbsp; ` +
+    `Beide: ${bothCombos} Kombos (${pct(bothCombos)} %)`;
+}
+
 renderTable();
 renderStackSelector();
+setupCompareControls();
 selectPosition(activePositionId);
