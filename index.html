@@ -21,6 +21,7 @@
   </section>
 
   <section class="range-section">
+    <div class="stack-selector" id="stackSelector"></div>
     <div class="range-header">
       <h2 id="rangeTitle">–</h2>
       <p id="rangeSubtitle" class="range-subtitle"></p>
@@ -31,18 +32,21 @@
       <span id="rangePercent">0.0 %</span>
     </div>
     <div class="range-grid" id="rangeGrid"></div>
-    <div class="legend">
+    <p id="allinNote" class="allin-note"></p>
+    <div class="legend" id="gridLegend">
       <span class="legend-item"><span class="swatch swatch-active" id="legendSwatch"></span> In Range</span>
       <span class="legend-item"><span class="swatch swatch-fold"></span> Fold</span>
     </div>
+    <div class="continue-stats" id="continueStats"></div>
   </section>
 </main>
 
 <footer class="app-footer">
-  <p>Hinweis: Die gezeigten Ranges sind vereinfachte Beispiel-Ranges für ein 100bb Cash-Game (Raise-First-In je Position). Sie sind keine solver-exakten GTO-Ranges, sondern eine übliche, solide Annäherung zu Trainingszwecken.</p>
+  <p>Die Open-Raise-Ranges (UTG bis BTN) stammen aus deiner hochgeladenen Excel-Tabelle. UTG und UTG+1 verwenden dieselbe "EP"-Range, da deine Tabelle beide nicht unterscheidet. Für SB und BB liefert deine Tabelle keine Hand-für-Hand-Ranges, sondern nur Continue-Prozentsätze gegen einzelne Eröffner-Positionen – diese werden dort entsprechend angezeigt.</p>
 </footer>
 
 <script src="ranges.js"></script>
+<script src="myranges.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

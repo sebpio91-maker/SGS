@@ -13,12 +13,22 @@ Eine kleine Web-App zum Ansehen von Preflop-Ranges an einem 8-Handed-Tisch.
 7. SB
 8. BB
 
-Auf dem Tisch anklicken, um die Open-Raise-Range (Raise-First-In) der jeweiligen Position
-als 13x13-Grid anzuzeigen. Für BB wird stattdessen eine beispielhafte Defend-Range
-gegen einen Button-Open gezeigt (der BB eröffnet preflop nie selbst).
+Auf dem Tisch anklicken, um die Open-Raise-Range der jeweiligen Position als 13x13-Grid
+anzuzeigen. Über die Stack-Auswahl (100/60/40/30/20 BB) lässt sich die Range je Stacktiefe
+umschalten.
 
-Alle Ranges sind vereinfachte, aber sinnvolle Trainings-Ranges für ein 100bb-Cash-Game –
-keine solver-exakten GTO-Ranges.
+Die Open-Raise-Ranges (UTG bis BTN) stammen aus einer hochgeladenen Excel-Tabelle
+("Openraising"-Blatt). Da diese Tabelle nur 5 Eröffner-Gruppen kennt (EP, MP, HJ, CO, BTN),
+teilen sich UTG und UTG+1 dieselbe "EP"-Range. Bei 20 BB markiert ein "*" Hände, die die
+Tabelle für BTN als All-in statt Raise kennzeichnet.
+
+Für SB und BB liegt in der Quelltabelle kein Hand-für-Hand-Grid vor, sondern nur
+Continue-Prozentsätze (Call + 3-Bet zusammen) gegen einzelne Eröffner-Positionen
+(Blatt "% Ranges" / "Flat & 3-Bet"). Diese werden dort als Balkendiagramm angezeigt.
+
+Nicht übernommen wurde das Blatt "Gametree" (Postflop-Bet-Sizing-Frequenzen für einzelne
+Boardtypen) – das ist inhaltlich ein anderes Thema als Preflop-Positionsranges und würde eine
+eigene Ansicht brauchen.
 
 ## Starten
 
@@ -34,6 +44,8 @@ Dann im Browser `http://localhost:8000` öffnen. Alternativ `index.html` direkt 
 ## Dateien
 
 - `index.html` – Struktur / Layout
-- `style.css` – Tisch- und Grid-Design
-- `ranges.js` – Range-Notation-Parser (`77+`, `A9s+`, `KTo-KQo`, …) und Range-Daten je Position
-- `app.js` – Rendering des Tisches und der Range-Grid, Klick-Interaktion
+- `style.css` – Tisch-, Grid- und Stats-Design
+- `ranges.js` – Grid-Hilfsfunktionen, Positions-Metadaten
+- `myranges.js` – aus der Excel-Datei generierte Range-Daten (Open-Raise-Grid je Stacktiefe,
+  Continue-Statistiken); bei einer neuen Datei neu generieren, nicht von Hand pflegen
+- `app.js` – Rendering des Tisches, der Range-Grid bzw. Continue-Stats, Klick-Interaktion
