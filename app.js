@@ -1,13 +1,15 @@
-// Seat-Koordinaten (in % des Tisch-Containers) im Uhrzeigersinn.
+// Seat-Koordinaten (in % des Tisch-Containers) im Uhrzeigersinn, exakt auf der
+// Ellipsen-Kontur des ovalen Tisches (gleicher Radius-Anteil in beiden Achsen,
+// wodurch die Punkte automatisch der Ellipse folgen statt einem quadratischen Raster).
 const SEAT_COORDS = {
-  UTG: { top: 15, left: 15 },
-  UTG1: { top: 15, left: 50 },
-  MP: { top: 15, left: 85 },
-  HJ: { top: 50, left: 85 },
-  CO: { top: 85, left: 85 },
-  BTN: { top: 85, left: 50 },
-  SB: { top: 85, left: 15 },
-  BB: { top: 50, left: 15 },
+  UTG: { top: 19.6, left: 19.6 },
+  UTG1: { top: 7, left: 50 },
+  MP: { top: 19.6, left: 80.4 },
+  HJ: { top: 50, left: 93 },
+  CO: { top: 80.4, left: 80.4 },
+  BTN: { top: 93, left: 50 },
+  SB: { top: 80.4, left: 19.6 },
+  BB: { top: 50, left: 7 },
 };
 
 const SEAT_MARKER = {
@@ -22,6 +24,7 @@ const OPEN_POSITION_IDS = POSITIONS.filter((p) => RANGE_DATA[p.id].kind === 'ope
 let activePositionId = 'BTN';
 let activeStack = 100;
 let compareMode = false;
+let compareAxis = 'position'; // 'position' = gleicher Stack, unterschiedliche Positionen; 'stack' = gleiche Position, unterschiedliche Stacktiefen
 
 function renderTable() {
   const table = document.getElementById('pokerTable');
@@ -75,12 +78,40 @@ function updateStackButtons() {
 function selectPosition(posId) {
   if (compareMode) setCompareMode(false);
   activePositionId = posId;
+  updateSeatActiveClasses();
+  renderRange(posId);
+}
+
+function updateSeatActiveClasses() {
   document.querySelectorAll('.seat').forEach((seat) => {
-    const isActive = seat.dataset.position === posId;
+    const isActive = !compareMode && seat.dataset.position === activePositionId;
     seat.classList.toggle('active', isActive);
     seat.style.setProperty('--seat-accent', RANGE_DATA[seat.dataset.position].accent);
   });
-  renderRange(posId);
+}
+
+// Markiert die aktuell verglichenen Sitze am Tisch farblich (A/B bzw. beide Farben bei
+// gleicher Position, unterschiedlichen Stacktiefen).
+function updateCompareSeatHighlight() {
+  document.querySelectorAll('.seat').forEach((seat) => {
+    seat.classList.remove('cmp-a', 'cmp-b', 'cmp-dual');
+  });
+  if (!compareMode) return;
+
+  const sel = getCompareSelection();
+  if (compareAxis === 'stack') {
+    const seat = document.querySelector(`.seat[data-position="${sel.posA}"]`);
+    if (seat) seat.classList.add('cmp-dual');
+  } else {
+    const seatA = document.querySelector(`.seat[data-position="${sel.posA}"]`);
+    const seatB = document.querySelector(`.seat[data-position="${sel.posB}"]`);
+    if (sel.posA === sel.posB) {
+      if (seatA) seatA.classList.add('cmp-dual');
+    } else {
+      if (seatA) seatA.classList.add('cmp-a');
+      if (seatB) seatB.classList.add('cmp-b');
+    }
+  }
 }
 
 function renderRange(posId) {
@@ -201,26 +232,75 @@ function fillSelect(select, options, formatLabel) {
 }
 
 function setupCompareControls() {
-  const aPos = document.getElementById('compareAPos');
-  const bPos = document.getElementById('compareBPos');
-  const aStack = document.getElementById('compareAStack');
-  const bStack = document.getElementById('compareBStack');
+  const sharedStack = document.getElementById('cmpSharedStackSelect');
+  const posA = document.getElementById('cmpPosASelect');
+  const posB = document.getElementById('cmpPosBSelect');
+  const sharedPos = document.getElementById('cmpSharedPosSelect');
+  const stackA = document.getElementById('cmpStackASelect');
+  const stackB = document.getElementById('cmpStackBSelect');
 
-  fillSelect(aPos, OPEN_POSITION_IDS, (id) => POSITIONS.find((p) => p.id === id).label);
-  fillSelect(bPos, OPEN_POSITION_IDS, (id) => POSITIONS.find((p) => p.id === id).label);
-  fillSelect(aStack, STACK_DEPTHS, (d) => d + ' BB');
-  fillSelect(bStack, STACK_DEPTHS, (d) => d + ' BB');
+  fillSelect(sharedStack, STACK_DEPTHS, (d) => d + ' BB');
+  fillSelect(posA, OPEN_POSITION_IDS, (id) => POSITIONS.find((p) => p.id === id).label);
+  fillSelect(posB, OPEN_POSITION_IDS, (id) => POSITIONS.find((p) => p.id === id).label);
+  fillSelect(sharedPos, OPEN_POSITION_IDS, (id) => POSITIONS.find((p) => p.id === id).label);
+  fillSelect(stackA, STACK_DEPTHS, (d) => d + ' BB');
+  fillSelect(stackB, STACK_DEPTHS, (d) => d + ' BB');
 
-  aPos.value = 'BTN';
-  bPos.value = 'UTG';
-  aStack.value = 100;
-  bStack.value = 100;
+  sharedStack.value = 100;
+  posA.value = 'BTN';
+  posB.value = 'UTG';
+  sharedPos.value = 'BTN';
+  stackA.value = 100;
+  stackB.value = 20;
 
-  [aPos, bPos, aStack, bStack].forEach((el) => el.addEventListener('change', renderCompare));
+  [sharedStack, posA, posB, sharedPos, stackA, stackB].forEach((el) =>
+    el.addEventListener('change', () => {
+      renderCompare();
+      updateCompareSeatHighlight();
+    })
+  );
+
+  document.querySelectorAll('.cmp-axis-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      compareAxis = btn.dataset.axis;
+      updateCompareAxisUI();
+      renderCompare();
+      updateCompareSeatHighlight();
+    });
+  });
 
   document.getElementById('compareToggle').addEventListener('click', () => {
     setCompareMode(!compareMode);
   });
+
+  updateCompareAxisUI();
+}
+
+function updateCompareAxisUI() {
+  document.querySelectorAll('.cmp-axis-btn').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.axis === compareAxis);
+  });
+  document.getElementById('pickerPosition').style.display = compareAxis === 'position' ? 'flex' : 'none';
+  document.getElementById('pickerStack').style.display = compareAxis === 'stack' ? 'flex' : 'none';
+}
+
+// Liest die aktuelle Vergleichs-Auswahl aus, je nach Achse (Position oder Stacktiefe gemeinsam).
+function getCompareSelection() {
+  if (compareAxis === 'stack') {
+    const pos = document.getElementById('cmpSharedPosSelect').value;
+    return {
+      posA: pos,
+      posB: pos,
+      stackA: Number(document.getElementById('cmpStackASelect').value),
+      stackB: Number(document.getElementById('cmpStackBSelect').value),
+    };
+  }
+  return {
+    posA: document.getElementById('cmpPosASelect').value,
+    posB: document.getElementById('cmpPosBSelect').value,
+    stackA: Number(document.getElementById('cmpSharedStackSelect').value),
+    stackB: Number(document.getElementById('cmpSharedStackSelect').value),
+  };
 }
 
 function setCompareMode(on) {
@@ -230,14 +310,15 @@ function setCompareMode(on) {
   document.getElementById('stackSelector').style.display = on ? 'none' : '';
   document.getElementById('compareToggle').textContent = on ? 'Zurück zur Einzelansicht' : 'Ranges vergleichen';
   document.getElementById('compareToggle').classList.toggle('active', on);
-  if (on) renderCompare();
+  updateSeatActiveClasses();
+  if (on) {
+    renderCompare();
+  }
+  updateCompareSeatHighlight();
 }
 
 function renderCompare() {
-  const posA = document.getElementById('compareAPos').value;
-  const posB = document.getElementById('compareBPos').value;
-  const stackA = Number(document.getElementById('compareAStack').value);
-  const stackB = Number(document.getElementById('compareBStack').value);
+  const { posA, posB, stackA, stackB } = getCompareSelection();
 
   const gridA = buildOpenRaiseGrid(stackA, RANGE_DATA[posA].group);
   const gridB = buildOpenRaiseGrid(stackB, RANGE_DATA[posB].group);

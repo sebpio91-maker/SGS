@@ -47,18 +47,41 @@
     </div>
 
     <div id="compareView" class="compare-view">
-      <div class="compare-picker">
+      <div class="cmp-axis-switch">
+        <button class="cmp-axis-btn" data-axis="position" type="button">Positionen vergleichen<br><small>gleicher Stack</small></button>
+        <button class="cmp-axis-btn" data-axis="stack" type="button">Stacktiefen vergleichen<br><small>gleiche Position</small></button>
+      </div>
+
+      <div class="compare-picker" id="pickerPosition">
+        <div class="compare-row shared-row">
+          <span class="compare-row-label">Stack (beide)</span>
+          <select id="cmpSharedStackSelect" class="compare-select"></select>
+        </div>
         <div class="compare-row">
           <span class="compare-dot compare-dot-a"></span>
-          <select id="compareAPos" class="compare-select"></select>
-          <select id="compareAStack" class="compare-select compare-select-stack"></select>
+          <select id="cmpPosASelect" class="compare-select"></select>
         </div>
         <div class="compare-row">
           <span class="compare-dot compare-dot-b"></span>
-          <select id="compareBPos" class="compare-select"></select>
-          <select id="compareBStack" class="compare-select compare-select-stack"></select>
+          <select id="cmpPosBSelect" class="compare-select"></select>
         </div>
       </div>
+
+      <div class="compare-picker" id="pickerStack">
+        <div class="compare-row shared-row">
+          <span class="compare-row-label">Position (beide)</span>
+          <select id="cmpSharedPosSelect" class="compare-select"></select>
+        </div>
+        <div class="compare-row">
+          <span class="compare-dot compare-dot-a"></span>
+          <select id="cmpStackASelect" class="compare-select"></select>
+        </div>
+        <div class="compare-row">
+          <span class="compare-dot compare-dot-b"></span>
+          <select id="cmpStackBSelect" class="compare-select"></select>
+        </div>
+      </div>
+
       <div class="range-grid" id="compareGrid"></div>
       <div class="legend">
         <span class="legend-item"><span class="swatch swatch-cmp-a"></span> Nur A</span>

@@ -124,6 +124,24 @@ body {
   transform: scale(1.1);
 }
 
+.seat.cmp-a .seat-badge {
+  border-color: var(--cmp-a);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.35), 0 4px 14px rgba(0, 0, 0, 0.5);
+  transform: scale(1.1);
+}
+
+.seat.cmp-b .seat-badge {
+  border-color: var(--cmp-b);
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.35), 0 4px 14px rgba(0, 0, 0, 0.5);
+  transform: scale(1.1);
+}
+
+.seat.cmp-dual .seat-badge {
+  border-color: var(--cmp-a);
+  box-shadow: 0 0 0 3px var(--cmp-a), 0 0 0 6px var(--cmp-b), 0 4px 14px rgba(0, 0, 0, 0.5);
+  transform: scale(1.1);
+}
+
 .seat-marker {
   font-size: 0.65rem;
   font-weight: 700;
@@ -192,8 +210,48 @@ body {
   display: none;
 }
 
-.compare-picker {
+.cmp-axis-switch {
   display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.cmp-axis-btn {
+  flex: 1 1 0;
+  background: #262b36;
+  border: 1px solid #3a4150;
+  color: var(--text-dim);
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.cmp-axis-btn small {
+  font-weight: 500;
+  color: var(--text-dim);
+}
+
+.cmp-axis-btn:hover {
+  border-color: #545c6e;
+  color: var(--text);
+}
+
+.cmp-axis-btn.active {
+  background: #3b4a63;
+  border-color: #5b7099;
+  color: #fff;
+}
+
+.cmp-axis-btn.active small {
+  color: #cdd6e6;
+}
+
+.compare-picker {
+  display: none;
   flex-direction: column;
   gap: 10px;
   margin-bottom: 16px;
@@ -203,6 +261,19 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.shared-row {
+  padding-bottom: 8px;
+  margin-bottom: 2px;
+  border-bottom: 1px dashed var(--fold-cell-border);
+}
+
+.compare-row-label {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  flex: none;
+  width: 90px;
 }
 
 .compare-dot {
@@ -221,6 +292,7 @@ body {
 }
 
 .compare-select {
+  flex: 1;
   background: #262b36;
   border: 1px solid #3a4150;
   color: var(--text);
@@ -228,10 +300,6 @@ body {
   border-radius: 8px;
   font-size: 0.85rem;
   font-weight: 600;
-}
-
-.compare-select-stack {
-  flex: none;
 }
 
 .compare-stats {
