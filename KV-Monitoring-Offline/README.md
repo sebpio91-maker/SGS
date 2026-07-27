@@ -11,9 +11,27 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   Öffnen bereits mit allen 1.230 Zeilen aus der bestehenden
   `HL_KV_Monitoring_PA_ab_SeptMAK.xlsx` (Blatt „Tabelle1") gefüllt. Über
   **„📥 SAP-Export hochladen"** lässt sich der Arbeitsvorrat mit einem neuen
-  Excel-Export weiter füllen. Eine Zeile anklicken (✏️) öffnet sie zum
-  Bearbeiten; „+ KV" legt direkt einen neuen Kostenvoranschlag für diese IAN
-  an (Artikel, Lieferant, Warengruppe etc. werden übernommen).
+  Excel-Export weiter füllen (unterstützt sowohl den bereits angereicherten
+  Export als auch den rohen SAP-Export mit den Spalten Vertriebsbeleg/
+  Verkaufsbüro/Bestellnummer/Bezeichnung/Importeur/Angelegt am/
+  Sachbearbeiter — die IAN wird in dem Fall automatisch aus der führenden
+  Zahl der Bestellnummer abgeleitet). Eine Zeile anklicken (✏️) öffnet sie
+  zum Bearbeiten; „+ KV" legt direkt einen neuen Kostenvoranschlag für diese
+  IAN an.
+
+  **Datenherkunft je Feld:** Bezeichnung, Lieferant, Angelegt am und
+  Sachbearbeiter kommen aus dem SAP-Export. Warengruppe, Anzahl Styles,
+  LFGB? und Trivial? kommen bewusst **nicht** aus SAP, sondern — wenn im
+  verknüpften Prüfauftrag (PA) vorhanden — von dort; ein SAP-Excel-Upload
+  lässt diese vier Felder daher unangetastet. Sobald zu einer IAN ein PA
+  hochgeladen wird, werden sie automatisch befüllt (nur wenn noch leer);
+  über „↺ … aus PA übernehmen" (im Bearbeiten-Dialog bzw. auf der
+  PA-Detailseite) lässt sich das auch nachträglich/erzwungen anstoßen.
+  „Mech. erledigt" ist nur ein anklickbarer Haken direkt in der Tabelle —
+  reiner Status, ob der KV von mechanischer Seite fertig ist. Die
+  Muster-Anzahl-Felder und „KV CU" aus der ursprünglichen Excel wurden
+  entfernt, da die Musteranzahl erst bei der KV-Erstellung festgelegt wird
+  und „KV CU" hier nicht gebraucht wird.
 - **Prüfaufträge (PA)** – ein Eintrag pro IAN mit den aus der PA-PDF
   ausgelesenen Feldern. Über **„📄 PA-PDF hochladen"** wird eine Prüfauftrag-PDF
   eingelesen und automatisch (heuristisch) in Schlüssel/Wert-Paare zerlegt;
