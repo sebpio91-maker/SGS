@@ -1,15 +1,30 @@
 # SGS – Normen-Datenbank
 
-Eine einfache lokale Web-App zur Pflege einer Datenbank von Normen und ihren
-Prüfpunkten (Kapitel, Überschrift, Prüfungsrelevanz, Inhalt), als Grundlage für
-spätere Prüfungen. Die Zuordnung/Auswahl "welche Norm gilt für welches
-Produkt" ist bewusst noch nicht Teil dieser App – hier geht es erstmal nur um
-eine übersichtliche, gepflegte Datenbasis.
+Werkzeuge zur Pflege einer Datenbank von Normen und ihren Prüfpunkten
+(Kapitel, Überschrift, Prüfungsrelevanz, Inhalt), als Grundlage für spätere
+Prüfungen. Die Zuordnung/Auswahl "welche Norm gilt für welches Produkt" ist
+bewusst noch nicht Teil davon – hier geht es erstmal nur um eine
+übersichtliche, gepflegte Datenbasis.
 
-Startdaten: DIN EN 581-1, -2 und -3 (Kapitel + Prüfungsrelevanz), übernommen
-aus dem `NORMEN`-Blatt der bestehenden `Normenauswahl.xlsm`.
+Startdaten (in beiden Varianten): DIN EN 581-1, -2 und -3 (Kapitel +
+Prüfungsrelevanz), übernommen aus dem `NORMEN`-Blatt der bestehenden
+`Normenauswahl.xlsm`.
 
-## Starten
+## Variante 1 (empfohlen für den Arbeits-PC): `Normen-Datenbank-Offline/`
+
+Eine einzelne HTML-Datei, kein Python, keine Installation, kein Server –
+einfach per Doppelklick öffnen. Speichert automatisch im Browser (Local
+Storage) und bietet JSON-Export/Import zum Sichern sowie eine
+**Zusammenführen-Funktion**, um die Arbeitsstände mehrerer Kolleg:innen zu
+einer gemeinsamen Datenbank zu vereinen, plus CSV-Export für Excel.
+
+Details und Arbeitsablauf: siehe `Normen-Datenbank-Offline/README.md`.
+
+## Variante 2 (falls später ein echter Server/geteilte Datenbank gebraucht wird): `app/`
+
+Eine kleine Web-App (Python/FastAPI + SQLite) mit denselben Daten und
+zusätzlich einem einfachen, heuristischen PDF-Upload zur Prüfpunkt-Extraktion.
+Braucht eine Python-Installation und einen laufenden Prozess (`uvicorn`).
 
 ```bash
 pip install -r requirements.txt
@@ -21,7 +36,7 @@ Danach im Browser: http://127.0.0.1:8000
 Die Datenbank liegt als SQLite-Datei unter `data/normen.db` und wird beim
 ersten Start automatisch angelegt und mit den Beispiel-Normen befüllt.
 
-## Funktionen
+### Funktionen
 
 - **Übersicht** aller Normen mit Volltextsuche über Kurzbezeichnung, Titel,
   Kategorie sowie Kapitel/Überschrift/Inhalt der Prüfpunkte.
@@ -38,7 +53,7 @@ ersten Start automatisch angelegt und mit den Beispiel-Normen befüllt.
   Norm-Parsing).
 - **Export**: Alle Normen + Prüfpunkte als Excel-Datei (`/export/excel`).
 
-## Projektstruktur
+### Projektstruktur
 
 ```
 app/

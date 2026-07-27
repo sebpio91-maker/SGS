@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Normen-Datenbank</title>
+<style>
+:root {
+  --bg: #f7f7f5;
+  --card: #ffffff;
+  --text: #2b2a27;
+  --muted: #7a766e;
+  --border: #e3e0d9;
+  --accent: #a1662f;
+  --accent-dark: #7c4d22;
+  --green: #3f7d4a;
+  --amber: #b8860b;
+  --danger: #b3402a;
+}
+* { box-sizing: border-box; }
+body { margin:0; font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--text); }
+header.topbar { display:flex; flex-wrap:wrap; gap:0.6rem; align-items:center; padding:0.7rem 1rem; background:var(--card); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:5; }
+header.topbar h1 { font-size:1.1rem; margin:0 1rem 0 0; white-space:nowrap; }
+header.topbar .spacer { flex:1; }
+header.topbar input[type=text] { padding:0.4rem 0.6rem; border:1px solid var(--border); border-radius:6px; min-width:220px; }
+button, .btn { cursor:pointer; border-radius:6px; border:1px solid var(--accent); background:var(--accent); color:#fff; padding:0.45rem 0.9rem; font-size:0.85rem; }
+button:hover { background:var(--accent-dark); border-color:var(--accent-dark); }
+button.ghost { background:transparent; color:var(--accent-dark); border:1px solid var(--border); }
+button.ghost:hover { background:#f1efe9; }
+button.danger { background:var(--danger); border-color:var(--danger); }
+button.danger:hover { background:#8f3220; }
+button.small { padding:0.25rem 0.5rem; font-size:0.8rem; }
+#status { font-size:0.78rem; color:var(--muted); white-space:nowrap; }
+#status.ok { color: var(--green); }
+
+.layout { display:flex; gap:1rem; padding:1rem; align-items:flex-start; }
+#normliste-panel { width:320px; flex-shrink:0; background:var(--card); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+#normliste-panel h2 { font-size:0.95rem; margin:0; padding:0.7rem 0.9rem; border-bottom:1px solid var(--border); background:#f1efe9; }
+#normliste { list-style:none; margin:0; padding:0; max-height:75vh; overflow-y:auto; }
+#normliste li { padding:0.6rem 0.9rem; border-bottom:1px solid var(--border); cursor:pointer; font-size:0.88rem; }
+#normliste li:hover { background:#faf9f6; }
+#normliste li.aktiv { background:#f1e6d8; font-weight:600; }
+#normliste li .titelzeile { display:flex; justify-content:space-between; gap:0.4rem; }
+#normliste li .muted { color:var(--muted); font-size:0.78rem; }
+#normliste .leer { padding:1rem 0.9rem; color:var(--muted); font-size:0.85rem; }
+
+#detail-panel { flex:1; min-width:0; }
+.card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:1rem 1.2rem; margin-bottom:1rem; }
+.card h2 { margin-top:0; font-size:1.1rem; }
+.formular-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.7rem 1rem; }
+.formular-grid label { display:flex; flex-direction:column; gap:0.25rem; font-size:0.85rem; font-weight:600; }
+.formular-grid label.volle-breite { grid-column:1 / -1; }
+.formular-grid input, .formular-grid select, .formular-grid textarea {
+  font-family:inherit; font-size:0.88rem; padding:0.4rem 0.5rem; border:1px solid var(--border); border-radius:6px; font-weight:400;
+}
+.badge { display:inline-block; padding:0.1rem 0.5rem; border-radius:999px; font-size:0.75rem; background:#eee; color:#444; }
+.badge.status-aktiv { background:#e4f2e6; color:var(--green); }
+.badge.status-zurückgezogen { background:#f3e3e0; color:var(--danger); }
+.badge.status-in-Überarbeitung, .badge.status-Entwurf { background:#f7ecd2; color:var(--amber); }
+
+table.tabelle { width:100%; border-collapse:collapse; }
+table.tabelle th, table.tabelle td { padding:0.4rem 0.5rem; border-bottom:1px solid var(--border); vertical-align:top; text-align:left; font-size:0.85rem; }
+table.tabelle thead th { background:#f1efe9; font-weight:600; }
+table.tabelle input[type=text], table.tabelle select, table.tabelle textarea {
+  width:100%; border:1px solid transparent; border-radius:4px; padding:0.3rem; font-family:inherit; font-size:0.85rem; background:transparent; resize:vertical; min-height:2.2em;
+}
+table.tabelle input:hover, table.tabelle select:hover, table.tabelle textarea:hover,
+table.tabelle input:focus, table.tabelle select:focus, table.tabelle textarea:focus { border-color:var(--border); background:#fdfdfc; }
+.zeile-aktionen { display:flex; gap:0.25rem; white-space:nowrap; }
+.leerzustand { padding:2rem; text-align:center; color:var(--muted); }
+
+#merge-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.35); display:none; align-items:flex-start; justify-content:center; overflow-y:auto; padding:2rem 1rem; z-index:20; }
+#merge-overlay.sichtbar { display:flex; }
+#merge-box { background:var(--card); border-radius:10px; max-width:900px; width:100%; padding:1.2rem 1.5rem; margin-bottom:2rem; }
+#merge-box h2 { margin-top:0; }
+.merge-section { margin-top:1.2rem; }
+.merge-section h3 { font-size:0.95rem; margin-bottom:0.4rem; }
+.merge-item { border:1px solid var(--border); border-radius:6px; padding:0.6rem 0.8rem; margin-bottom:0.5rem; font-size:0.85rem; }
+.merge-item label { display:flex; align-items:flex-start; gap:0.5rem; }
+.diff-cols { display:grid; grid-template-columns:1fr 1fr; gap:0.6rem; margin-top:0.4rem; }
+.diff-cols div h4 { margin:0 0 0.2rem; font-size:0.78rem; color:var(--muted); }
+.diff-cols textarea { width:100%; min-height:4em; font-family:inherit; font-size:0.82rem; border:1px solid var(--border); border-radius:4px; padding:0.3rem; }
+.merge-actions { position:sticky; bottom:0; background:var(--card); padding-top:1rem; margin-top:1rem; border-top:1px solid var(--border); display:flex; gap:0.7rem; }
+input[type=file] { display:none; }
+.hinweis { font-size:0.8rem; color:var(--muted); margin:0.3rem 0 0.8rem; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <h1>📚 Normen-Datenbank</h1>
+  <button id="btn-neue-norm">+ Neue Norm</button>
+  <button class="ghost" id="btn-speichern">⬇ Sichern (JSON)</button>
+  <button class="ghost" id="btn-laden">⬆ Datei laden (JSON)</button>
+  <button class="ghost" id="btn-zusammenfuehren">🔀 Zusammenführen (JSON)</button>
+  <button class="ghost" id="btn-csv">📄 Excel-Export (CSV)</button>
+  <input type="file" id="datei-laden-input" accept="application/json">
+  <input type="file" id="datei-merge-input" accept="application/json">
+  <div class="spacer"></div>
+  <input type="text" id="suche" placeholder="Suche in Normen & Prüfpunkten…">
+  <span id="status"></span>
+</header>
+
+<div class="layout">
+  <div id="normliste-panel">
+    <h2>Normen</h2>
+    <ul id="normliste"></ul>
+  </div>
+  <div id="detail-panel"></div>
+</div>
+
+<div id="merge-overlay">
+  <div id="merge-box"></div>
+</div>
+
+<script>
+"use strict";
+
+/* ---------- Hilfsfunktionen ---------- */
+
+function neueId() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return "id-" + Date.now() + "-" + Math.random().toString(16).slice(2);
+}
+
+function escapeHtml(str) {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function jetzt() {
+  return new Date().toLocaleString("de-DE");
+}
+
+/* ---------- Startdaten (aus Normenauswahl.xlsm, Blatt "NORMEN") ---------- */
+
+function seedNormen() {
+  return [
+    {
+      id: neueId(),
+      kurzbezeichnung: "EN 581-1",
+      vollbezeichnung: "EN 581-1:2017",
+      titel: "Außenmöbel - Sitzmöbel und Tische für den Camping-, Wohn und Objektbereich - Teil 1: Allgemeine sicherheitstechnische Anforderungen",
+      status: "aktiv",
+      kategorie: "Möbel",
+      notiz: "",
+      pruefpunkte: [
+        { id: neueId(), kapitel: "NV", ueberschrift: "Nationales Vorwort", relevanz: "Nein", inhalt: "" },
+        { id: neueId(), kapitel: "EV", ueberschrift: "Europäisches Vorwort", relevanz: "Nein", inhalt: "" },
+        { id: neueId(), kapitel: "1", ueberschrift: "Anwendungsbereich", relevanz: "Indirekt", inhalt:
+`Dieser Teil von EN 581 legt allgemeine sicherheitstechnische Anforderungen für Außensitzmöbel und Außentische zur Verwendung durch Erwachsene im Camping-, Wohn- und Objektbereich fest, ohne Berücksichtigung der Materialien, des Designs/der Konstruktion oder der Herstellungsprozesse.
+Er gilt nicht für Sitzmöbel für Zuschaueranlagen.
+Er enthält keine Anforderungen an die Dauerhaltbarkeit von Polstermaterialien, Rollen-, Liege- und Kippmechanismen sowie Mechanismen zur Sitzhöhenverstellung.
+Mechanische Sicherheitsanforderungen werden für die Sitzmöbel in EN 581-2 und für Tische in EN 581-3 abgedeckt.
+Anhang A (informativ) enthält eine schematische Darstellung der Anforderungen und Bedingungen bezüglich der Scher- und Quetschstellen.
+Anhang B (informativ) enthält eine Begründung für die Verletzungen von Fingern.` },
+        { id: neueId(), kapitel: "2", ueberschrift: "Normative Verweisungen", relevanz: "Indirekt", inhalt: "" },
+        { id: neueId(), kapitel: "3", ueberschrift: "Begriffe", relevanz: "Indirekt", inhalt: "" },
+        { id: neueId(), kapitel: "4", ueberschrift: "Prüffinger", relevanz: "Indirekt", inhalt: "" },
+        { id: neueId(), kapitel: "5", ueberschrift: "Sicherheitstechnische Anforderungen", relevanz: "Ja", inhalt: "" },
+        { id: neueId(), kapitel: "5.1", ueberschrift: "Allgemeines", relevanz: "Ja", inhalt:
+`Um Verletzungen zu vermeiden, wenn sich das Produkt in seiner vorgesehenen Gebrauchsstellung befindet, müssen alle Kanten und Ecken abgerundet, abgeschrägt oder anderweitig geschützt sein. Das gilt für:
+— Sitzmöbel: Kanten des Sitzes, der Rückenlehne und Armlehnen und jedes Teils der Sitzflächen-Unterseite, bei einem Abstand von weniger als 120 mm von jeder Kante, die ein Finger üblicherweise erreichen kann;
+— Tische: Tischflächen, jeder Teil der Unterseite der Oberfläche bei einem Abstand von weniger als 500 mm von jeder Kante unter dem Tisch, das ein Knie und/oder ein Arm üblicherweise erreichen kann.
+Alle anderen Teile müssen ohne Grate, scharfe Kanten und scharfe Spitzen sein.
+Die einstellbaren und beweglichen Teile müssen so ausgeführt sein, dass jede Verletzung und jede unbeabsichtigte Betätigung vermieden werden.
+Kein lasttragendes Teil des Möbelstücks darf sich unbeabsichtigt lösen können.
+Alle zum leichteren Gleiten mit einem Schmierstoff versehenen Teile müssen so ausgeführt sein, dass die Benutzer bei bestimmungsgemäßem Gebrauch vor Schmiermittelflecken geschützt sind.` },
+        { id: neueId(), kapitel: "5.2", ueberschrift: "Röhrenförmige Bauteile", relevanz: "Ja", inhalt:
+`In den Enden röhrenförmiger Bauteile dürfen keine zugänglichen Löcher sein, die einen Durchmesser zwischen 7 mm und 12 mm und eine Tiefe von ≥ 10 mm haben.
+Die Unterseiten der röhrenförmigen Beine, die mit dem Fußboden in Kontakt stehen, müssen geschlossen oder mit einem Deckel versehen werden, Löcher darin sind erlaubt, solange sie nicht zwischen 7 mm und 12 mm groß sind.
+Diese Anforderungen müssen mit Hilfe der Prüffinger (Abschnitt 4) beurteilt werden.` },
+        { id: neueId(), kapitel: "5.3", ueberschrift: "Scher- und Quetschstellen", relevanz: "Ja", inhalt: "" },
+        { id: neueId(), kapitel: "5.3.1", ueberschrift: "Scher- und Quetschstellen beim Aufstellen, Einstellen und Zusammenklappen", relevanz: "Ja", inhalt:
+`Sofern 5.3.2 oder 5.3.3 nicht zutreffend ist, sind Scher- und Quetschstellen, die nur beim Aufstellen, Einstellen oder Zusammenklappen entstehen, zulässig, sofern davon ausgegangen werden kann, dass der/die Benutzer/-in seine/ihre Bewegungen unter Kontrolle hat und in der Lage ist, die Krafteinwirkung bei Schmerzempfindung sofort zu beenden.` },
+        { id: neueId(), kapitel: "5.3.2", ueberschrift: "Scher- und Quetschstellen unter Einwirkung von kraftbetriebenen Vorrichtungen", relevanz: "Ja", inhalt:
+`Teile eines Möbels, die durch kraftbetriebene Vorrichtungen, z. B. mechanische Federn und Gasfedern, bewegt werden, dürfen keine zugänglichen Scher- und Quetschstellen bilden.
+Diese Anforderung muss mit Hilfe der Prüffinger (Abschnitt 4) beurteilt werden.` },
+        { id: neueId(), kapitel: "5.3.3", ueberschrift: "Scher- und Quetschstellen bei der Benutzung", relevanz: "Ja", inhalt:
+`Es dürfen keine zugänglichen Scher- und Quetschstellen durch Belastungen entstehen, die bei bestimmungsgemäßer Benutzung aufgebracht werden. Scher- und Quetschstellen sind nicht zulässig, wenn bei üblichen Bewegungen und Tätigkeiten, z. B. beim Versuch des Anhebens des Sitzes, um den Stuhl zu verrücken, oder Verstellen der Rückenlehne, durch das Körpergewicht des Benutzers eine Verletzungsgefahr entsteht.
+Diese Anforderung muss mit Hilfe der Prüffinger (Abschnitt 4) beurteilt werden.
+Bei Liegen ist die angewandte Last während des normalen Gebrauchs die Last, die für die folgenden mechanischen Prüfungen nach EN 581-2:2015, Tabelle 1, verwendet wurde:
+— Prüfung 2: Ergänzende statische Belastungsprüfung an Sitzfläche und Beinauflage;
+— Prüfung 3: Dauerhaltbarkeitsprüfung an Sitzfläche und Rückenlehne;
+— Prüfung 4: Zusätzliche Dauerhaltbarkeitsprüfung an der Sitzfläche;
+— Prüfung 5: Dauerhaltbarkeitsprüfung an der Verstellvorrichtung der Rückenlehne.
+Bei anderen Sitzmöbeln ist die angewandte Last während des normalen Gebrauchs die Last, die für die folgenden mechanischen Prüfungen nach EN 581-2:2015, Tabelle 2, verwendet wurde:
+— Prüfung 2: Statische Belastung der Sitzvorderkante;
+— Prüfung 3: Kombinierte Dauerhaltbarkeitsprüfung an Sitzfläche und Rückenlehne;
+— Prüfung 4: Dauerhaltbarkeitsprüfung von Sitzmöbeln mit einer Mehrpositions-Rückenlehne.
+Bei Tischen ist die angewandte Last während des normalen Gebrauchs die Last, die für die folgenden mechanischen Prüfungen nach EN 581-3:2007, Tabelle 1, verwendet wurde:
+— Prüfung 1: Vertikale statische Belastung der Hauptoberfläche;
+— Prüfung 4: Vertikale statische Belastung der Ergänzungsplatte;
+— Prüfung 5: Horizontale Dauerhaltbarkeitsprüfung.` },
+        { id: neueId(), kapitel: "6", ueberschrift: "Prüfbericht", relevanz: "Indirekt", inhalt: "" },
+        { id: neueId(), kapitel: "Anhang A", ueberschrift: "(informativ) Schematische Darstellung der Anforderungen und Bedingungen bezüglich Scher- und Quetschstellen", relevanz: "Indirekt", inhalt: "" },
+        { id: neueId(), kapitel: "Anhang B", ueberschrift: "(informativ) Begründung für die Verletzungen von Fingern", relevanz: "Nein", inhalt: "" }
+      ]
+    },
+    {
+      id: neueId(),
+      kurzbezeichnung: "EN 581-2",
+      vollbezeichnung: "DIN EN 581-2:2017-01",
+      titel: "Außenmöbel – Sitzmöbel und Tische für den Camping-, Wohn- und Objektbereich – Teil 2: Mechanische Sicherheitsanforderungen und Prüfverfahren für Sitzmöbel",
+      status: "aktiv",
+      kategorie: "Möbel",
+      notiz: "",
+      pruefpunkte: [
+        { id: neueId(), kapitel: "NV", ueberschrift: "Nationales Vorwort", relevanz: "Nein", inhalt: "" },
+        { id: neueId(), kapitel: "EV", ueberschrift: "Europäisches Vorwort", relevanz: "Nein", inhalt: "" },
+        { id: neueId(), kapitel: "1", ueberschrift: "Anwendungsbereich", relevanz: "Indirekt", inhalt:
+`Diese Europäische Norm legt die Mindestanforderungen an die Sicherheit, Festigkeit und Dauerhaltbarkeit für alle Arten von Außensitzmöbeln für Erwachsene, unabhängig von Werkstoffen, Design/Konstruktion oder Herstellungsprozessen, fest.
+Sie gilt nicht für öffentlich aufgestellte Straßenmöbel.
+Sie gilt nicht für abnehmbare Polster und Bezüge.
+Sie enthält keine Anforderungen an die Dauerhaltbarkeit von Rollen/Rädern und an Mechanismen zur Höhenverstellung.
+Sie enthält keine Anforderungen an die elektrische Sicherheit.
+Sie enthält keine Anforderungen an die Alterungsbeständigkeit und Verwitterung verursacht durch Licht, Temperatur und Feuchtigkeit.
+Die in dieser Norm enthaltenen Prüfanforderungen beruhen auf dem Gebrauch durch Personen mit einem Körpergewicht bis zu 110 kg.` },
+        { id: neueId(), kapitel: "2", ueberschrift: "Normative Verweisungen", relevanz: "Indirekt", inhalt: "" },
+        { id: neueId(), kapitel: "3", ueberschrift: "Begriffe", relevanz: "Indirekt", inhalt: "" },
+        { id: neueId(), kapitel: "4", ueberschrift: "Prüfung", relevanz: "Ja", inhalt: "EN 1728 / EN 1022" },
+        { id: neueId(), kapitel: "5", ueberschrift: "Prüfeinrichtung", relevanz: "Ja", inhalt: "" },
+        { id: neueId(), kapitel: "6", ueberschrift: "Anforderungen an die Sicherheit, Festigkeit und Dauerhaltbarkeit bei Liegen", relevanz: "Ja", inhalt: "" },
+        { id: neueId(), kapitel: "6.1", ueberschrift: "Allgemeines", relevanz: "Ja", inhalt: "" },
+        { id: neueId(), kapitel: "6.2", ueberschrift: "Standsicherheit, Festigkeit und Dauerhaltbarkeit", relevanz: "Ja", inhalt: "" },
+        { id: neueId(), kapitel: "6.2.1", ueberschrift: "Prüfreihenfolge und Prüfparameter", relevanz: "Ja", inhalt: "Die Liege ist in der in Tabelle 1 angegebenen Reihenfolge zu prüfen." },
+        { id: neueId(), kapitel: "6.2.2", ueberschrift: "Anforderungen", relevanz: "Ja", inhalt:
+`Die Anforderungen an die Sicherheit, Festigkeit und Dauerhaltbarkeit sind eingehalten, wenn nach der Prüfung nach Tabelle 1:
+a) kein Teil, Bauteil oder Verbindungselement Brüche aufweist;
+b) sich kein Verbindungselement gelöst hat, welches festsitzen muss;
+c) die Liege ihre Funktion nach Entfernung der Prüflasten erfüllt;
+d) das Produkt während der Standsicherheitsprüfungen nicht umkippt.` },
+        { id: neueId(), kapitel: "7", ueberschrift: "Anforderungen an die Sicherheit, Festigkeit und Dauerhaltbarkeit bei anderen Sitzmöbeln", relevanz: "Ja", inhalt: "" },
+        { id: neueId(), kapitel: "7.1", ueberschrift: "Allgemeines", relevanz: "Ja", inhalt: "" },
+        { id: neueId(), kapitel: "7.2", ueberschrift: "Standsicherheit, Festigkeit und Dauerhaltbarkeit", relevanz: "Ja", inhalt: "" },
+        { id: neueId(), kapitel: "7.2.1", ueberschrift: "Prüfreihenfolge und Prüfparameter", relevanz: "Ja", inhalt: "Das Sitzmöbel ist in der in Tabelle 2 angegebenen Reihenfolge auf Festigkeit, Dauerhaltbarkeit und Standsicherheit zu prüfen." },
+        { id: neueId(), kapitel: "7.2.2", ueberschrift: "Anforderungen", relevanz: "Ja", inhalt:
+`Die Anforderungen an die Sicherheit, Festigkeit und Dauerhaltbarkeit sind eingehalten, wenn nach der Prüfung nach Tabelle 2:
+a) kein Teil, Bauteil oder Verbindungselement Brüche aufweist;
+b) sich kein Verbindungselement gelöst hat, welches festsitzen muss;
+c) das Sitzmöbel seine Funktion nach Entfernung der Prüflasten erfüllt;
+d) das Sitzmöbel die sicherheitstechnischen Anforderungen erfüllt;
+e) das Produkt während der Standsicherheitsprüfungen nicht umkippt.` },
+        { id: neueId(), kapitel: "8", ueberschrift: "Gebrauchsanleitung", relevanz: "Ja", inhalt: "" },
+        { id: neueId(), kapitel: "8.1", ueberschrift: "Allgemeines", relevanz: "Ja", inhalt:
+`Eine Gebrauchsanleitung muss in der(den) Sprache(n) des Landes beigefügt werden, in dem das Sitzmöbel verkauft wird. Diese Gebrauchsanleitung muss in Buchstaben von mindestens 5 mm Höhe die folgende Überschrift aufweisen: „WICHTIG, FÜR SPÄTERE BEZUGNAHME AUFBEWAHREN: SORGFÄLTIG LESEN“, es sei denn, das Produkt ist dauerhaft mit den folgenden Angaben gekennzeichnet.
+Es müssen mindestens die folgenden Angaben enthalten sein:
+a) Name und Anschrift des Herstellers/Lieferanten/Einzelhändlers;
+b) Nutzungsbedingungen für das Produkt (Camping-, Wohn- oder Objektbereich).
+Falls zutreffend:
+c) Aufbauanleitung;
+d) Anweisungen zur Pflege und Instandhaltung des Sitzmöbels;
+e) sofern das Sitzmöbel mit einer Sitzhöhen-Einstellvorrichtung mit Energiespeicher ausgerüstet ist, muss eine zusätzliche Anmerkung vorhanden sein, in der darauf hingewiesen wird, dass nur geschultes Personal die Bauteile der Sitzhöhen-Einstellvorrichtung mit Energiespeicher austauschen oder reparieren darf.` },
+        { id: neueId(), kapitel: "8.2", ueberschrift: "Kennzeichnung bei Liegen", relevanz: "Ja", inhalt:
+`Mit Rädern ausgestattete Liegen, die nicht dazu vorgesehen sind, mit einer darauf befindlichen Person angehoben und bewegt zu werden, sind mit dem in Bild 2 dargestellten graphischen Symbol dauerhaft zu kennzeichnen. Die kleinste Abmessung des graphischen Symbols darf nicht kleiner als 25 mm sein.` },
+        { id: neueId(), kapitel: "9", ueberschrift: "Prüfbericht", relevanz: "Indirekt", inhalt: "" },
+        { id: neueId(), kapitel: "Anhang A", ueberschrift: "(normativ) Prüfungen der Standsicherheit bei Liegen nach vorne und zur Seite", relevanz: "Ja", inhalt: "" },
+        { id: neueId(), kapitel: "A.1", ueberschrift: "Prüfverfahren", relevanz: "Ja", inhalt: "" },
+        { id: neueId(), kapitel: "Anhang B", ueberschrift: "(informativ) Kaufinformation (Leitfaden)", relevanz: "Nein", inhalt:
+`Um dem Verbraucher vor dem Kauf die Wahl eines Produktes im Hinblick auf die vorgesehene Nutzung zu ermöglichen, sollte die Kaufinformation ohne Öffnen der Verpackung verfügbar sein. Folgende Angaben sollten enthalten sein:
+— Bezeichnung des Produktes;
+— Produktmerkmale, z. B. Maße, Angaben zur Aufbewahrung, Pflege, usw.;
+— Nutzungsbedingungen für das Produkt (Camping-, Wohn- oder Objektbereich).` }
+      ]
+    },
+    {
+      id: neueId(),
+      kurzbezeichnung: "EN 581-3",
+      vollbezeichnung: "EN 581-3:2017",
+      titel: "",
+      status: "aktiv",
+      kategorie: "Möbel",
+      notiz: "",
+      pruefpunkte: [
+        { id: neueId(), kapitel: "NV", ueberschrift: "Nationales Vorwort", relevanz: "Nein", inhalt: "" },
+        { id: neueId(), kapitel: "EV", ueberschrift: "Europäisches Vorwort", relevanz: "Nein", inhalt: "" },
+        { id: neueId(), kapitel: "1", ueberschrift: "Anwendungsbereich", relevanz: "Indirekt", inhalt:
+`Diese Europäische Norm legt die Mindestanforderungen an die Sicherheit, Festigkeit und Dauerhaltbarkeit für alle Arten von Außentischen für Erwachsene, unabhängig von Werkstoffen, Design/Konstruktion oder Herstellungsprozessen, fest.
+Sie gilt nicht für öffentlich aufgestellte Straßenmöbel.
+Die Norm enthält mit Ausnahme der Prüfungen der Standsicherheit keine Beurteilung der Eignung der in Tischen enthaltenen Aufbewahrungsmöglichkeiten.
+Sie enthält keine Anforderungen an die Dauerhaltbarkeit von Rollen/Rädern und an Mechanismen zur Höhenverstellung.
+Sie enthält keine Anforderungen an die elektrische Sicherheit.
+Sie enthält keine Anforderungen an die Alterungsbeständigkeit und an durch Licht, Temperatur und Feuchtigkeit verursachte Qualitätsminderungen.` },
+        { id: neueId(), kapitel: "2", ueberschrift: "Normative Verweisungen", relevanz: "Indirekt", inhalt: "" },
+        { id: neueId(), kapitel: "3", ueberschrift: "Begriffe", relevanz: "Indirekt", inhalt: "" },
+        { id: neueId(), kapitel: "4", ueberschrift: "Prüfung", relevanz: "Indirekt", inhalt: "Das Prüfen ist nach EN 1730 durchzuführen." },
+        { id: neueId(), kapitel: "5", ueberschrift: "Anforderungen an die Sicherheit, Festigkeit und Dauerhaltbarkeit", relevanz: "Ja", inhalt: "" },
+        { id: neueId(), kapitel: "5.1", ueberschrift: "Allgemeines", relevanz: "Ja", inhalt:
+`Die Anforderungen nach EN 581-1:2017 müssen vor und nach der Durchführung der Prüfungen der Festigkeit, Dauerhaltbarkeit und Standsicherheit erfüllt sein.
+Glastischplatten müssen den Anforderungen nach EN 12150-1:2015, Abschnitt 8, Prüfung der Bruchstruktur, oder dem Bruchverhalten (β) vom Typ B oder Typ C nach EN 12600:2002 entsprechen.
+Öffnungen für Sonnenschirme in der Glastischplatte müssen geschützt sein, um einen Kontakt zwischen Metall und Glas zu vermeiden.` },
+        { id: neueId(), kapitel: "5.2", ueberschrift: "Standsicherheit, Festigkeit und Dauerhaltbarkeit", relevanz: "Ja", inhalt: "" },
+        { id: neueId(), kapitel: "5.2.1", ueberschrift: "Prüfreihenfolge und Prüfparameter", relevanz: "Ja", inhalt: "Der Tisch ist in der in Tabelle 1 angegebenen Reihenfolge zu prüfen." },
+        { id: neueId(), kapitel: "5.2.2", ueberschrift: "Anforderungen", relevanz: "Ja", inhalt:
+`Die Anforderungen an die Sicherheit, Festigkeit und Dauerhaltbarkeit sind eingehalten, wenn nach der Prüfung nach Tabelle 1:
+a) kein Teil, Bauteil oder Verbindungselement Brüche aufweist;
+b) sich kein bestimmungsgemäß festsitzendes Verbindungselement gelöst hat;
+c) der Tisch nach Entfernung der Prüflasten seine Funktionen erfüllt.
+Das Produkt darf während der Standsicherheitsprüfungen nicht umkippen.` },
+        { id: neueId(), kapitel: "6", ueberschrift: "Gebrauchsanleitung", relevanz: "Ja", inhalt:
+`Eine Gebrauchsanleitung muss in der oder den Sprachen des Landes beigefügt werden, in dem die Tische verkauft werden. Diese Gebrauchsanleitung muss in Buchstaben von nicht weniger als 5 mm Höhe die folgende Überschrift aufweisen: „WICHTIG, FÜR SPÄTERE BEZUGNAHME AUFBEWAHREN: SORGFÄLTIG LESEN“, es sei denn, das Produkt ist dauerhaft mit den folgenden Angaben gekennzeichnet.
+Es müssen mindestens die folgenden Angaben enthalten sein:
+a) Name und Anschrift des Herstellers/Lieferanten/Einzelhändlers;
+b) Nutzungsbedingungen für das Produkt (Camping-, Wohn- oder Objektbereich).
+Falls zutreffend:
+c) Aufbauanweisungen;
+d) Anweisungen zur Pflege und Instandhaltung des Tisches;
+e) bei Tischen, die über eine Öffnung für einen Sonnenschirm verfügen, die aber nicht dazu vorgesehen sind, als alleinige Sonnenschirmhalterung zu dienen, ein Warnhinweis, dass ein Sonnenschirm immer mit einem geeigneten Gestell zu verwenden ist.` },
+        { id: neueId(), kapitel: "7", ueberschrift: "Prüfbericht", relevanz: "Indirekt", inhalt: "" },
+        { id: neueId(), kapitel: "Anhang A", ueberschrift: "(informativ) Kaufinformation (Leitfaden)", relevanz: "Nein", inhalt:
+`Um dem Verbraucher vor dem Kauf die Wahl eines Produktes im Hinblick auf die vorgesehene Nutzung zu ermöglichen, sollte die Kaufinformation ohne Öffnen der Verpackung verfügbar sein. Folgende Angaben sollten enthalten sein:
+- Bezeichnung des Produktes;
+- Produktmerkmale, z. B. Maße, Angaben zur Aufbewahrung, Pflege usw.;
+- Nutzungsbedingungen für das Produkt (Camping-, Wohn- oder Objektbereich);
+- ein Warnhinweis, falls der Tisch, der ein Loch für einen Sonnenschirm hat, nicht dafür vorgesehen ist, einen Sonnenschirm zu halten.` }
+      ]
+    }
+  ];
+}
+
+const STATUS_OPTIONEN = ["aktiv", "in Überarbeitung", "zurückgezogen", "Entwurf"];
+const RELEVANZ_OPTIONEN = ["Ja", "Nein", "Indirekt"];
+const SPEICHER_SCHLUESSEL = "normen_datenbank_v1";
+
+/* ---------- Zustand ---------- */
+
+let data = { normen: [] };
+let aktiveNormId = null;
+let suchbegriff = "";
+
+function ladeAusLocalStorage() {
+  try {
+    const raw = localStorage.getItem(SPEICHER_SCHLUESSEL);
+    if (raw) {
+      const geparst = JSON.parse(raw);
+      if (geparst && Array.isArray(geparst.normen)) return geparst;
+    }
+  } catch (e) { /* ignorieren, dann Startdaten verwenden */ }
+  return null;
+}
+
+function speichereInLocalStorage() {
+  try {
+    localStorage.setItem(SPEICHER_SCHLUESSEL, JSON.stringify(data));
+    zeigeStatus("Automatisch gespeichert · " + jetzt(), "ok");
+  } catch (e) {
+    zeigeStatus("Konnte nicht automatisch speichern (Speicher voll?)", "");
+  }
+}
+
+function zeigeStatus(text, klasse) {
+  const el = document.getElementById("status");
+  el.textContent = text;
+  el.className = klasse || "";
+}
+
+function init() {
+  const geladen = ladeAusLocalStorage();
+  data = geladen || { normen: seedNormen() };
+  if (data.normen.length) aktiveNormId = data.normen[0].id;
+  render();
+}
+
+/* ---------- Rendering: Normliste ---------- */
+
+function gefilterteNormen() {
+  if (!suchbegriff.trim()) return data.normen;
+  const q = suchbegriff.trim().toLowerCase();
+  return data.normen.filter((n) => {
+    const metaTreffer = [n.kurzbezeichnung, n.vollbezeichnung, n.titel, n.kategorie]
+      .some((f) => (f || "").toLowerCase().includes(q));
+    if (metaTreffer) return true;
+    return n.pruefpunkte.some((p) =>
+      [p.kapitel, p.ueberschrift, p.inhalt].some((f) => (f || "").toLowerCase().includes(q))
+    );
+  });
+}
+
+function renderNormliste() {
+  const ul = document.getElementById("normliste");
+  const liste = gefilterteNormen();
+  if (!liste.length) {
+    ul.innerHTML = '<li class="leer">Keine Normen gefunden.</li>';
+    return;
+  }
+  ul.innerHTML = liste
+    .slice()
+    .sort((a, b) => a.kurzbezeichnung.localeCompare(b.kurzbezeichnung, "de"))
+    .map((n) => {
+      const aktivKlasse = n.id === aktiveNormId ? " aktiv" : "";
+      return `<li class="${aktivKlasse.trim()}" data-id="${n.id}">
+        <div class="titelzeile"><strong>${escapeHtml(n.kurzbezeichnung)}</strong>
+        <span class="badge status-${(n.status || "").replaceAll(" ", "-")}">${escapeHtml(n.status)}</span></div>
+        <div class="muted">${escapeHtml(n.vollbezeichnung || "")} · ${n.pruefpunkte.length} Prüfpunkte</div>
+      </li>`;
+    })
+    .join("");
+  ul.querySelectorAll("li[data-id]").forEach((li) => {
+    li.addEventListener("click", () => {
+      aktiveNormId = li.dataset.id;
+      render();
+    });
+  });
+}
+
+/* ---------- Rendering: Detailbereich ---------- */
+
+function findeNorm(id) {
+  return data.normen.find((n) => n.id === id) || null;
+}
+
+function renderDetail() {
+  const panel = document.getElementById("detail-panel");
+  const norm = findeNorm(aktiveNormId);
+  if (!norm) {
+    panel.innerHTML = '<div class="card leerzustand">Keine Norm ausgewählt. Wähle links eine Norm aus oder lege eine neue an.</div>';
+    return;
+  }
+
+  panel.innerHTML = `
+    <div class="card">
+      <h2>${escapeHtml(norm.kurzbezeichnung)}</h2>
+      <div class="formular-grid" id="norm-formular">
+        <label>Kurzbezeichnung *
+          <input type="text" data-feld="kurzbezeichnung" value="${escapeHtml(norm.kurzbezeichnung)}">
+        </label>
+        <label>Vollbezeichnung / Ausgabe
+          <input type="text" data-feld="vollbezeichnung" value="${escapeHtml(norm.vollbezeichnung)}">
+        </label>
+        <label class="volle-breite">Titel
+          <textarea data-feld="titel" rows="2">${escapeHtml(norm.titel)}</textarea>
+        </label>
+        <label>Status
+          <select data-feld="status">
+            ${STATUS_OPTIONEN.map((s) => `<option value="${s}" ${s === norm.status ? "selected" : ""}>${s}</option>`).join("")}
+          </select>
+        </label>
+        <label>Kategorie
+          <input type="text" data-feld="kategorie" value="${escapeHtml(norm.kategorie)}">
+        </label>
+        <label class="volle-breite">Notiz
+          <textarea data-feld="notiz" rows="2">${escapeHtml(norm.notiz)}</textarea>
+        </label>
+      </div>
+      <div style="margin-top:0.8rem">
+        <button class="danger small" id="btn-norm-loeschen">Norm löschen</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Prüfpunkte / Kapitel</h2>
+      <table class="tabelle">
+        <thead>
+          <tr>
+            <th style="width:8%">Kapitel</th>
+            <th style="width:22%">Überschrift</th>
+            <th style="width:10%">Relevant</th>
+            <th>Inhalt</th>
+            <th style="width:9%">Aktionen</th>
+          </tr>
+        </thead>
+        <tbody id="pruefpunkte-body"></tbody>
+      </table>
+      <button class="ghost" id="btn-zeile-hinzufuegen" style="margin-top:0.6rem">+ Zeile hinzufügen</button>
+    </div>
+  `;
+
+  document.querySelectorAll("#norm-formular [data-feld]").forEach((el) => {
+    el.addEventListener("input", () => {
+      norm[el.dataset.feld] = el.value;
+      speichereInLocalStorage();
+      renderNormliste();
+      if (el.dataset.feld === "kurzbezeichnung") {
+        panel.querySelector("h2").textContent = norm.kurzbezeichnung;
+      }
+    });
+  });
+  document.getElementById("btn-norm-loeschen").addEventListener("click", () => {
+    if (!confirm(`Norm "${norm.kurzbezeichnung}" inkl. aller Prüfpunkte wirklich löschen?`)) return;
+    data.normen = data.normen.filter((n) => n.id !== norm.id);
+    aktiveNormId = data.normen.length ? data.normen[0].id : null;
+    speichereInLocalStorage();
+    render();
+  });
+  document.getElementById("btn-zeile-hinzufuegen").addEventListener("click", () => {
+    norm.pruefpunkte.push({ id: neueId(), kapitel: "", ueberschrift: "", relevanz: "Nein", inhalt: "" });
+    speichereInLocalStorage();
+    renderPruefpunkteTabelle(norm);
+  });
+
+  renderPruefpunkteTabelle(norm);
+}
+
+function renderPruefpunkteTabelle(norm) {
+  const tbody = document.getElementById("pruefpunkte-body");
+  tbody.innerHTML = norm.pruefpunkte
+    .map(
+      (p, idx) => `
+      <tr data-id="${p.id}">
+        <td><input type="text" data-feld="kapitel" value="${escapeHtml(p.kapitel)}"></td>
+        <td><input type="text" data-feld="ueberschrift" value="${escapeHtml(p.ueberschrift)}"></td>
+        <td>
+          <select data-feld="relevanz">
+            ${RELEVANZ_OPTIONEN.map((r) => `<option value="${r}" ${r === p.relevanz ? "selected" : ""}>${r}</option>`).join("")}
+          </select>
+        </td>
+        <td><textarea data-feld="inhalt" rows="2">${escapeHtml(p.inhalt)}</textarea></td>
+        <td class="zeile-aktionen">
+          <button class="ghost small" data-action="hoch" ${idx === 0 ? "disabled" : ""} title="Nach oben">↑</button>
+          <button class="ghost small" data-action="runter" ${idx === norm.pruefpunkte.length - 1 ? "disabled" : ""} title="Nach unten">↓</button>
+          <button class="danger small" data-action="loeschen" title="Löschen">🗑</button>
+        </td>
+      </tr>`
+    )
+    .join("");
+
+  tbody.querySelectorAll("tr").forEach((tr) => {
+    const punkt = norm.pruefpunkte.find((p) => p.id === tr.dataset.id);
+    tr.querySelectorAll("[data-feld]").forEach((el) => {
+      const ereignis = el.tagName === "SELECT" ? "change" : "input";
+      el.addEventListener(ereignis, () => {
+        punkt[el.dataset.feld] = el.value;
+        speichereInLocalStorage();
+        if (el.dataset.feld === "ueberschrift" || el.dataset.feld === "kapitel") renderNormliste();
+      });
+    });
+    tr.querySelectorAll("button[data-action]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const aktion = btn.dataset.action;
+        const idx = norm.pruefpunkte.findIndex((p) => p.id === punkt.id);
+        if (aktion === "loeschen") {
+          if (!confirm("Diese Zeile wirklich löschen?")) return;
+          norm.pruefpunkte.splice(idx, 1);
+        } else if (aktion === "hoch" && idx > 0) {
+          [norm.pruefpunkte[idx - 1], norm.pruefpunkte[idx]] = [norm.pruefpunkte[idx], norm.pruefpunkte[idx - 1]];
+        } else if (aktion === "runter" && idx < norm.pruefpunkte.length - 1) {
+          [norm.pruefpunkte[idx + 1], norm.pruefpunkte[idx]] = [norm.pruefpunkte[idx], norm.pruefpunkte[idx + 1]];
+        }
+        speichereInLocalStorage();
+        renderPruefpunkteTabelle(norm);
+        renderNormliste();
+      });
+    });
+  });
+}
+
+function render() {
+  renderNormliste();
+  renderDetail();
+}
+
+/* ---------- Neue Norm ---------- */
+
+document.getElementById("btn-neue-norm").addEventListener("click", () => {
+  const norm = {
+    id: neueId(),
+    kurzbezeichnung: "Neue Norm",
+    vollbezeichnung: "",
+    titel: "",
+    status: "Entwurf",
+    kategorie: "",
+    notiz: "",
+    pruefpunkte: []
+  };
+  data.normen.push(norm);
+  aktiveNormId = norm.id;
+  speichereInLocalStorage();
+  render();
+  const feld = document.querySelector('#norm-formular [data-feld="kurzbezeichnung"]');
+  if (feld) { feld.focus(); feld.select(); }
+});
+
+/* ---------- Suche ---------- */
+
+document.getElementById("suche").addEventListener("input", (e) => {
+  suchbegriff = e.target.value;
+  renderNormliste();
+});
+
+/* ---------- JSON Export/Import ---------- */
+
+function ladeDatei(input) {
+  return new Promise((resolve, reject) => {
+    const datei = input.files[0];
+    if (!datei) return reject(new Error("Keine Datei gewählt"));
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsText(datei, "utf-8");
+  });
+}
+
+function herunterladen(inhalt, dateiname, mimeType) {
+  const blob = new Blob([inhalt], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = dateiname;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+document.getElementById("btn-speichern").addEventListener("click", () => {
+  const payload = { version: 1, exportiertAm: new Date().toISOString(), normen: data.normen };
+  const zeitstempel = new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
+  herunterladen(JSON.stringify(payload, null, 2), `normen-datenbank_${zeitstempel}.json`, "application/json");
+});
+
+document.getElementById("btn-laden").addEventListener("click", () => {
+  document.getElementById("datei-laden-input").click();
+});
+document.getElementById("datei-laden-input").addEventListener("change", async (e) => {
+  try {
+    const text = await ladeDatei(e.target);
+    const geparst = JSON.parse(text);
+    if (!geparst || !Array.isArray(geparst.normen)) throw new Error("Ungültiges Format");
+    if (!confirm(`${geparst.normen.length} Normen aus der Datei laden? Der aktuelle Stand in diesem Browser wird dabei ersetzt (vorher ggf. sichern!).`)) return;
+    data = { normen: geparst.normen };
+    aktiveNormId = data.normen.length ? data.normen[0].id : null;
+    speichereInLocalStorage();
+    render();
+    zeigeStatus("Datei geladen · " + jetzt(), "ok");
+  } catch (err) {
+    alert("Datei konnte nicht geladen werden: " + err.message);
+  } finally {
+    e.target.value = "";
+  }
+});
+
+/* ---------- CSV-Export (für Excel) ---------- */
+
+function zuCsvFeld(wert) {
+  const s = (wert === null || wert === undefined) ? "" : String(wert);
+  if (/[;"\n]/.test(s)) return '"' + s.replaceAll('"', '""') + '"';
+  return s;
+}
+
+document.getElementById("btn-csv").addEventListener("click", () => {
+  const zeilen = [["Norm", "Kapitel", "Überschrift", "Prüfungsrelevant", "Inhalt"]];
+  data.normen
+    .slice()
+    .sort((a, b) => a.kurzbezeichnung.localeCompare(b.kurzbezeichnung, "de"))
+    .forEach((n) => {
+      n.pruefpunkte.forEach((p) => {
+        zeilen.push([n.kurzbezeichnung, p.kapitel, p.ueberschrift, p.relevanz, p.inhalt]);
+      });
+    });
+  const csv = "﻿" + zeilen.map((z) => z.map(zuCsvFeld).join(";")).join("\r\n");
+  herunterladen(csv, "normen_export.csv", "text/csv;charset=utf-8");
+});
+
+/* ---------- Zusammenführen zweier Dateistände ---------- */
+
+function normSchluessel(n) {
+  return (n.kurzbezeichnung || "").trim().toLowerCase();
+}
+function punktSchluessel(p) {
+  return (p.kapitel || "").trim().toLowerCase();
+}
+function punkteGleich(a, b) {
+  return (a.ueberschrift || "") === (b.ueberschrift || "")
+    && (a.relevanz || "") === (b.relevanz || "")
+    && (a.inhalt || "") === (b.inhalt || "");
+}
+function normMetaGleich(a, b) {
+  return (a.vollbezeichnung || "") === (b.vollbezeichnung || "")
+    && (a.titel || "") === (b.titel || "")
+    && (a.status || "") === (b.status || "")
+    && (a.kategorie || "") === (b.kategorie || "")
+    && (a.notiz || "") === (b.notiz || "");
+}
+
+let mergePlan = null;
+
+function berechneMergePlan(importNormen) {
+  const plan = { neueNormen: [], neuePunkte: [], normKonflikte: [], punktKonflikte: [] };
+
+  importNormen.forEach((impNorm) => {
+    const lokal = data.normen.find((n) => (n.id === impNorm.id) || (normSchluessel(n) === normSchluessel(impNorm)));
+    if (!lokal) {
+      plan.neueNormen.push(impNorm);
+      return;
+    }
+    if (!normMetaGleich(lokal, impNorm)) {
+      plan.normKonflikte.push({ lokal, importiert: impNorm });
+    }
+    impNorm.pruefpunkte.forEach((impPunkt) => {
+      const lokalerPunkt = lokal.pruefpunkte.find(
+        (p) => (p.id === impPunkt.id) || (punktSchluessel(p) === punktSchluessel(impPunkt))
+      );
+      if (!lokalerPunkt) {
+        plan.neuePunkte.push({ norm: lokal, punkt: impPunkt });
+        return;
+      }
+      if (!punkteGleich(lokalerPunkt, impPunkt)) {
+        plan.punktKonflikte.push({ norm: lokal, lokal: lokalerPunkt, importiert: impPunkt });
+      }
+    });
+  });
+
+  return plan;
+}
+
+function renderMergeUebersicht() {
+  const box = document.getElementById("merge-box");
+  const p = mergePlan;
+  const nichtsZuTun = !p.neueNormen.length && !p.neuePunkte.length && !p.normKonflikte.length && !p.punktKonflikte.length;
+
+  let html = `<h2>Zusammenführen: Änderungen prüfen</h2>`;
+  if (nichtsZuTun) {
+    html += `<p>Keine Unterschiede zur aktuellen Datenbank gefunden.</p>
+      <div class="merge-actions"><button class="ghost" id="merge-schliessen">Schließen</button></div>`;
+    box.innerHTML = html;
+    document.getElementById("merge-schliessen").addEventListener("click", schliesseMergeOverlay);
+    return;
+  }
+
+  if (p.neueNormen.length) {
+    html += `<div class="merge-section"><h3>Neue Normen aus der Datei (${p.neueNormen.length})</h3>`;
+    p.neueNormen.forEach((n, i) => {
+      html += `<div class="merge-item"><label>
+        <input type="checkbox" checked data-typ="neueNorm" data-idx="${i}">
+        <span><strong>${escapeHtml(n.kurzbezeichnung)}</strong> — ${n.pruefpunkte.length} Prüfpunkte</span>
+      </label></div>`;
+    });
+    html += `</div>`;
+  }
+
+  if (p.neuePunkte.length) {
+    html += `<div class="merge-section"><h3>Neue Prüfpunkte in bestehenden Normen (${p.neuePunkte.length})</h3>`;
+    p.neuePunkte.forEach((item, i) => {
+      html += `<div class="merge-item"><label>
+        <input type="checkbox" checked data-typ="neuerPunkt" data-idx="${i}">
+        <span><strong>${escapeHtml(item.norm.kurzbezeichnung)}</strong> · Kapitel ${escapeHtml(item.punkt.kapitel)} — ${escapeHtml(item.punkt.ueberschrift)}</span>
+      </label></div>`;
+    });
+    html += `</div>`;
+  }
+
+  if (p.normKonflikte.length) {
+    html += `<div class="merge-section"><h3>Unterschiedliche Norm-Angaben (${p.normKonflikte.length})</h3>
+      <p class="hinweis">Gleiche Norm, aber Vollbezeichnung/Titel/Status/Kategorie/Notiz unterscheiden sich.</p>`;
+    p.normKonflikte.forEach((k, i) => {
+      html += `<div class="merge-item">
+        <strong>${escapeHtml(k.lokal.kurzbezeichnung)}</strong>
+        <div class="diff-cols">
+          <div><h4>Aktuell (dieser Browser)</h4>
+            <textarea readonly>${escapeHtml([k.lokal.vollbezeichnung, k.lokal.titel, k.lokal.status, k.lokal.kategorie, k.lokal.notiz].filter(Boolean).join("\n"))}</textarea></div>
+          <div><h4>Aus Datei</h4>
+            <textarea readonly>${escapeHtml([k.importiert.vollbezeichnung, k.importiert.titel, k.importiert.status, k.importiert.kategorie, k.importiert.notiz].filter(Boolean).join("\n"))}</textarea></div>
+        </div>
+        <label><input type="radio" name="normkonflikt-${i}" value="lokal" checked data-typ="normKonflikt" data-idx="${i}"> Aktuell behalten</label>
+        <label style="margin-left:1rem"><input type="radio" name="normkonflikt-${i}" value="importiert" data-typ="normKonflikt" data-idx="${i}"> Aus Datei übernehmen</label>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  if (p.punktKonflikte.length) {
+    html += `<div class="merge-section"><h3>Konflikte bei Prüfpunkten (${p.punktKonflikte.length})</h3>
+      <p class="hinweis">Gleiches Kapitel, aber Inhalt/Überschrift/Relevanz unterscheiden sich.</p>`;
+    p.punktKonflikte.forEach((k, i) => {
+      html += `<div class="merge-item">
+        <strong>${escapeHtml(k.norm.kurzbezeichnung)} · Kapitel ${escapeHtml(k.lokal.kapitel)}</strong>
+        <div class="diff-cols">
+          <div><h4>Aktuell (dieser Browser)</h4>
+            <textarea readonly>${escapeHtml(k.lokal.ueberschrift + " [" + k.lokal.relevanz + "]\n" + (k.lokal.inhalt || ""))}</textarea></div>
+          <div><h4>Aus Datei</h4>
+            <textarea readonly>${escapeHtml(k.importiert.ueberschrift + " [" + k.importiert.relevanz + "]\n" + (k.importiert.inhalt || ""))}</textarea></div>
+        </div>
+        <label><input type="radio" name="punktkonflikt-${i}" value="lokal" checked data-typ="punktKonflikt" data-idx="${i}"> Aktuell behalten</label>
+        <label style="margin-left:1rem"><input type="radio" name="punktkonflikt-${i}" value="importiert" data-typ="punktKonflikt" data-idx="${i}"> Aus Datei übernehmen</label>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `<div class="merge-actions">
+    <button id="merge-anwenden">Zusammenführung übernehmen</button>
+    <button class="ghost" id="merge-abbrechen">Abbrechen</button>
+  </div>`;
+
+  box.innerHTML = html;
+  document.getElementById("merge-abbrechen").addEventListener("click", schliesseMergeOverlay);
+  document.getElementById("merge-anwenden").addEventListener("click", wendeMergeAn);
+}
+
+function wendeMergeAn() {
+  const box = document.getElementById("merge-box");
+  const p = mergePlan;
+
+  p.neueNormen.forEach((n, i) => {
+    const cb = box.querySelector(`[data-typ="neueNorm"][data-idx="${i}"]`);
+    if (cb && cb.checked) data.normen.push(n);
+  });
+
+  p.neuePunkte.forEach((item, i) => {
+    const cb = box.querySelector(`[data-typ="neuerPunkt"][data-idx="${i}"]`);
+    if (cb && cb.checked) item.norm.pruefpunkte.push(item.punkt);
+  });
+
+  p.normKonflikte.forEach((k, i) => {
+    const gewaehlt = box.querySelector(`[name="normkonflikt-${i}"]:checked`);
+    if (gewaehlt && gewaehlt.value === "importiert") {
+      Object.assign(k.lokal, {
+        vollbezeichnung: k.importiert.vollbezeichnung,
+        titel: k.importiert.titel,
+        status: k.importiert.status,
+        kategorie: k.importiert.kategorie,
+        notiz: k.importiert.notiz
+      });
+    }
+  });
+
+  p.punktKonflikte.forEach((k, i) => {
+    const gewaehlt = box.querySelector(`[name="punktkonflikt-${i}"]:checked`);
+    if (gewaehlt && gewaehlt.value === "importiert") {
+      Object.assign(k.lokal, {
+        ueberschrift: k.importiert.ueberschrift,
+        relevanz: k.importiert.relevanz,
+        inhalt: k.importiert.inhalt
+      });
+    }
+  });
+
+  speichereInLocalStorage();
+  schliesseMergeOverlay();
+  render();
+  zeigeStatus("Zusammenführung angewendet · " + jetzt(), "ok");
+}
+
+function schliesseMergeOverlay() {
+  document.getElementById("merge-overlay").classList.remove("sichtbar");
+  mergePlan = null;
+}
+
+document.getElementById("btn-zusammenfuehren").addEventListener("click", () => {
+  document.getElementById("datei-merge-input").click();
+});
+document.getElementById("datei-merge-input").addEventListener("change", async (e) => {
+  try {
+    const text = await ladeDatei(e.target);
+    const geparst = JSON.parse(text);
+    if (!geparst || !Array.isArray(geparst.normen)) throw new Error("Ungültiges Format");
+    mergePlan = berechneMergePlan(geparst.normen);
+    renderMergeUebersicht();
+    document.getElementById("merge-overlay").classList.add("sichtbar");
+  } catch (err) {
+    alert("Datei konnte nicht gelesen werden: " + err.message);
+  } finally {
+    e.target.value = "";
+  }
+});
+
+init();
+</script>
+</body>
+</html>
