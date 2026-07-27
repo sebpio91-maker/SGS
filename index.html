@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poker Range Viewer</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="app-header">
+  <h1>Poker Range Viewer</h1>
+  <p class="app-subtitle">Klicke auf eine Position am Tisch, um ihre Open-Raise-Range zu sehen.</p>
+</header>
+
+<main class="app-main">
+  <section class="table-section">
+    <div class="poker-table" id="pokerTable">
+      <div class="felt-label">8-Max</div>
+      <!-- Sitze werden per JS eingefügt -->
+    </div>
+  </section>
+
+  <section class="range-section">
+    <div class="range-header">
+      <h2 id="rangeTitle">–</h2>
+      <p id="rangeSubtitle" class="range-subtitle"></p>
+    </div>
+    <p id="rangeNote" class="range-note"></p>
+    <div class="range-stats">
+      <span id="rangeCombos">0 Kombinationen</span>
+      <span id="rangePercent">0.0 %</span>
+    </div>
+    <div class="range-grid" id="rangeGrid"></div>
+    <div class="legend">
+      <span class="legend-item"><span class="swatch swatch-active" id="legendSwatch"></span> In Range</span>
+      <span class="legend-item"><span class="swatch swatch-fold"></span> Fold</span>
+    </div>
+  </section>
+</main>
+
+<footer class="app-footer">
+  <p>Hinweis: Die gezeigten Ranges sind vereinfachte Beispiel-Ranges für ein 100bb Cash-Game (Raise-First-In je Position). Sie sind keine solver-exakten GTO-Ranges, sondern eine übliche, solide Annäherung zu Trainingszwecken.</p>
+</footer>
+
+<script src="ranges.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
