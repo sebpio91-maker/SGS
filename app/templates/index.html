@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Übersicht – Normen-Datenbank{% endblock %}
+{% block content %}
+  <div class="page-head">
+    <h1>Normen</h1>
+    <form class="search" method="get" action="/">
+      <input type="text" name="q" placeholder="Suche in Normen &amp; Prüfpunkten…" value="{{ q }}">
+      <button type="submit">Suchen</button>
+      {% if q %}<a class="btn-ghost" href="/">Zurücksetzen</a>{% endif %}
+    </form>
+  </div>
+
+  {% if normen %}
+  <table class="tabelle">
+    <thead>
+      <tr>
+        <th>Kurzbezeichnung</th>
+        <th>Titel</th>
+        <th>Kategorie</th>
+        <th>Status</th>
+        <th>Prüfpunkte</th>
+        <th>davon relevant</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for norm in normen %}
+      <tr onclick="window.location='/normen/{{ norm.id }}'" class="klickbar">
+        <td><strong>{{ norm.kurzbezeichnung }}</strong><br><span class="muted">{{ norm.vollbezeichnung or "" }}</span></td>
+        <td>{{ norm.titel or "" }}</td>
+        <td>{{ norm.kategorie or "–" }}</td>
+        <td><span class="badge status-{{ norm.status|replace(' ', '-') }}">{{ norm.status }}</span></td>
+        <td>{{ norm.anzahl_pruefpunkte }}</td>
+        <td>{{ norm.anzahl_relevant }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p class="muted">Keine Normen gefunden{% if q %} für „{{ q }}“{% endif %}. <a href="/normen/neu">Jetzt eine Norm anlegen</a>.</p>
+  {% endif %}
+{% endblock %}

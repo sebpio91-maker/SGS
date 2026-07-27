@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}PDF hochladen – {{ norm.kurzbezeichnung }}{% endblock %}
+{% block content %}
+  <p><a class="btn-ghost" href="/normen/{{ norm.id }}">&larr; Zurück zu {{ norm.kurzbezeichnung }}</a></p>
+  <h1>Norm-PDF hochladen</h1>
+  <p class="muted">
+    Die PDF wird eingelesen und automatisch (heuristisch) in Kapitel/Absätze zerlegt.
+    Das Ergebnis ist ein <strong>Entwurf</strong> – auf der nächsten Seite kannst du jede
+    Zeile prüfen, korrigieren, aus- oder abwählen, bevor sie in die Datenbank übernommen wird.
+  </p>
+  <form method="post" action="/normen/{{ norm.id }}/upload" enctype="multipart/form-data" class="formular">
+    <label>PDF-Datei
+      <input type="file" name="datei" accept="application/pdf" required>
+    </label>
+    <div class="aktionen">
+      <button type="submit">Hochladen &amp; analysieren</button>
+    </div>
+  </form>
+{% endblock %}

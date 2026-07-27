@@ -1,0 +1,145 @@
+:root {
+  --bg: #f7f7f5;
+  --card: #ffffff;
+  --text: #2b2a27;
+  --muted: #7a766e;
+  --border: #e3e0d9;
+  --accent: #a1662f;
+  --accent-dark: #7c4d22;
+  --green: #3f7d4a;
+  --amber: #b8860b;
+  --gray: #8a8a8a;
+  --danger: #b3402a;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 1.5rem;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+}
+.topbar .brand { font-weight: 700; text-decoration: none; color: var(--text); font-size: 1.1rem; }
+.topbar nav a { margin-left: 1.2rem; color: var(--accent-dark); text-decoration: none; font-size: 0.92rem; }
+.topbar nav a:hover { text-decoration: underline; }
+
+.container { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+
+h1 { font-size: 1.5rem; margin: 0.2rem 0 1rem; }
+h2 { font-size: 1.15rem; margin-top: 2rem; }
+.muted { color: var(--muted); font-size: 0.88rem; }
+
+.page-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem; }
+.search { display: flex; gap: 0.5rem; align-items: center; }
+.search input[type=text] { padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; min-width: 260px; }
+
+table.tabelle {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 0.5rem;
+}
+table.tabelle th, table.tabelle td {
+  padding: 0.55rem 0.7rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  text-align: left;
+  font-size: 0.92rem;
+}
+table.tabelle thead th {
+  background: #f1efe9;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+}
+table.tabelle tbody tr:hover { background: #faf9f6; }
+tr.klickbar { cursor: pointer; }
+
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  background: #eee;
+  color: #444;
+}
+.badge.status-aktiv { background: #e4f2e6; color: var(--green); }
+.badge.status-zurückgezogen { background: #f3e3e0; color: var(--danger); }
+.badge.status-in-Überarbeitung, .badge.status-Entwurf { background: #f7ecd2; color: var(--amber); }
+
+.formular { display: flex; flex-direction: column; gap: 0.8rem; max-width: 640px; }
+.formular label { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.9rem; font-weight: 600; }
+.formular input, .formular select, .formular textarea {
+  font-family: inherit;
+  font-size: 0.92rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-weight: 400;
+}
+.aktionen { display: flex; gap: 0.7rem; align-items: center; flex-wrap: wrap; margin-top: 0.4rem; }
+
+button, .btn-ghost, .btn-danger {
+  cursor: pointer;
+  border-radius: 6px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  text-decoration: none;
+  display: inline-block;
+}
+button:hover, .btn-danger:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+.btn-ghost { background: transparent; color: var(--accent-dark); border: 1px solid var(--border); }
+.btn-ghost:hover { background: #f1efe9; }
+.btn-danger { background: var(--danger); border-color: var(--danger); }
+.btn-danger:hover { background: #8f3220; }
+
+details.metadaten { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem 1.2rem; margin-bottom: 1rem; }
+details.metadaten summary { cursor: pointer; list-style: none; }
+details.metadaten summary::-webkit-details-marker { display: none; }
+
+.pruefpunkte-tabelle textarea {
+  width: 100%;
+  min-height: 2.4em;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 0.3rem;
+  font-family: inherit;
+  font-size: 0.88rem;
+  resize: vertical;
+  background: transparent;
+}
+.pruefpunkte-tabelle input[type=text], .pruefpunkte-tabelle select {
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 0.3rem;
+  font-family: inherit;
+  font-size: 0.88rem;
+  background: transparent;
+}
+.pruefpunkte-tabelle textarea:hover, .pruefpunkte-tabelle input:hover, .pruefpunkte-tabelle select:hover,
+.pruefpunkte-tabelle textarea:focus, .pruefpunkte-tabelle input:focus, .pruefpunkte-tabelle select:focus {
+  border-color: var(--border);
+  background: #fdfdfc;
+}
+.zeile-aktionen { display: flex; gap: 0.3rem; }
+.zeile-aktionen button { padding: 0.25rem 0.5rem; font-size: 0.85rem; }
+#speicherstatus { font-weight: 600; }
+#speicherstatus.ok { color: var(--green); }
+#speicherstatus.fehler { color: var(--danger); }

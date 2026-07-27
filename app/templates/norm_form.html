@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Neue Norm – Normen-Datenbank{% endblock %}
+{% block content %}
+  <h1>Neue Norm anlegen</h1>
+  <form method="post" action="/normen/neu" class="formular">
+    <label>Kurzbezeichnung *
+      <input type="text" name="kurzbezeichnung" placeholder="z. B. EN 581-1" required>
+    </label>
+    <label>Vollbezeichnung / Ausgabe
+      <input type="text" name="vollbezeichnung" placeholder="z. B. DIN EN 581-1:2017-01">
+    </label>
+    <label>Titel
+      <textarea name="titel" rows="2"></textarea>
+    </label>
+    <label>Status
+      <select name="status">
+        {% for s in status_optionen %}
+        <option value="{{ s }}">{{ s }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Kategorie
+      <input type="text" name="kategorie" placeholder="z. B. Möbel, Spielzeug…">
+    </label>
+    <label>Notiz
+      <textarea name="notiz" rows="3"></textarea>
+    </label>
+    <div class="aktionen">
+      <button type="submit">Anlegen</button>
+      <a class="btn-ghost" href="/">Abbrechen</a>
+    </div>
+  </form>
+{% endblock %}

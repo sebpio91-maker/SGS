@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Entwurf prüfen – {{ norm.kurzbezeichnung }}{% endblock %}
+{% block content %}
+  <p><a class="btn-ghost" href="/normen/{{ norm.id }}">&larr; Zurück zu {{ norm.kurzbezeichnung }}</a></p>
+  <h1>Entwurf prüfen: {{ anzahl }} erkannte Abschnitte</h1>
+  <p class="muted">
+    Bitte prüfen und korrigieren. Nur angehakte Zeilen werden als Prüfpunkte übernommen.
+    Die Erkennung ist eine einfache Heuristik – Fehler sind normal, gerade bei mehrspaltigem Layout.
+  </p>
+
+  {% if anzahl == 0 %}
+    <p>Es konnten keine Kapitel erkannt werden. Bitte lege die Prüfpunkte direkt in der Tabelle der Norm an.</p>
+  {% else %}
+  <form method="post" action="/normen/{{ norm.id }}/upload/uebernehmen">
+    <table class="tabelle">
+      <thead>
+        <tr>
+          <th style="width:4%">✓</th>
+          <th style="width:8%">Kapitel</th>
+          <th style="width:20%">Überschrift</th>
+          <th style="width:10%">Relevant</th>
+          <th>Inhalt</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in entwuerfe %}
+        <tr>
+          <td><input type="checkbox" name="uebernehmen_{{ loop.index0 }}" checked></td>
+          <td><input type="text" name="kapitel_{{ loop.index0 }}" value="{{ e.kapitel }}"></td>
+          <td><input type="text" name="ueberschrift_{{ loop.index0 }}" value="{{ e.ueberschrift }}"></td>
+          <td>
+            <select name="relevanz_{{ loop.index0 }}">
+              {% for r in relevanz_optionen %}
+              <option value="{{ r }}" {% if r == "Nein" %}selected{% endif %}>{{ r }}</option>
+              {% endfor %}
+            </select>
+          </td>
+          <td><textarea name="inhalt_{{ loop.index0 }}" rows="2">{{ e.inhalt or "" }}</textarea></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="aktionen">
+      <button type="submit">Ausgewählte übernehmen</button>
+      <a class="btn-ghost" href="/normen/{{ norm.id }}">Abbrechen</a>
+    </div>
+  </form>
+  {% endif %}
+{% endblock %}
