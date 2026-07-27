@@ -1,4 +1,9 @@
-# SGS – Normen-Datenbank
+# SGS – Prüf- und Kostendatenbanken
+
+Mehrere eigenständige Projekte, jeweils als einzelne HTML-Datei ohne
+Installation/Server/Berechtigungen nutzbar (siehe jeweiliges Unterverzeichnis).
+
+## Projekt 1: Normen-Datenbank
 
 Werkzeuge zur Pflege einer Datenbank von Normen und ihren Prüfpunkten
 (Kapitel, Überschrift, Prüfungsrelevanz, Inhalt), als Grundlage für spätere
@@ -10,7 +15,7 @@ Startdaten (in beiden Varianten): DIN EN 581-1, -2 und -3 (Kapitel +
 Prüfungsrelevanz), übernommen aus dem `NORMEN`-Blatt der bestehenden
 `Normenauswahl.xlsm`.
 
-## Variante 1 (empfohlen für den Arbeits-PC): `Normen-Datenbank-Offline/`
+### Variante 1 (empfohlen für den Arbeits-PC): `Normen-Datenbank-Offline/`
 
 Eine einzelne HTML-Datei, kein Python, keine Installation, kein Server –
 einfach per Doppelklick öffnen. Speichert automatisch im Browser (Local
@@ -20,7 +25,7 @@ einer gemeinsamen Datenbank zu vereinen, plus CSV-Export für Excel.
 
 Details und Arbeitsablauf: siehe `Normen-Datenbank-Offline/README.md`.
 
-## Variante 2 (falls später ein echter Server/geteilte Datenbank gebraucht wird): `app/`
+### Variante 2 (falls später ein echter Server/geteilte Datenbank gebraucht wird): `app/`
 
 Eine kleine Web-App (Python/FastAPI + SQLite) mit denselben Daten und
 zusätzlich einem einfachen, heuristischen PDF-Upload zur Prüfpunkt-Extraktion.
@@ -66,3 +71,13 @@ app/
   static/         CSS/JS
 data/normen.db    SQLite-Datenbankdatei (wird automatisch angelegt)
 ```
+
+## Projekt 2: KV-Monitoring – `KV-Monitoring-Offline/`
+
+Arbeitsvorrat (aus SAP-Export), Prüfaufträge (PA) und Kostenvoranschläge (KV)
+für **mechanische Prüfungen**. Ebenfalls eine einzelne HTML-Datei ohne
+Installation. Kernidee: bestehende KVs durchsuchen und als Vorlage für neue,
+ähnliche Projekte duplizieren, plus ein wiederverwendbarer
+Prüfpositionen-Katalog mit Standardkosten/SAP-Codes zum schnellen Befüllen.
+
+Details und Arbeitsablauf: siehe `KV-Monitoring-Offline/README.md`.
