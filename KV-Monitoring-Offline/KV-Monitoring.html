@@ -470,6 +470,16 @@ function normalisiereVkBuero(wert) {
   return text;
 }
 
+/* IAN einheitlich ohne führende Nullen/Leerzeichen behandeln, damit z. B. "070123" (Text-Zelle)
+   und 70123 (Zahlen-Zelle) beim SAP-Excel-Import als dieselbe IAN erkannt werden - sonst könnten
+   identische Aufträge als vermeintlich "neu" doppelt in den Arbeitsvorrat übernommen werden. */
+function normalisiereIan(wert) {
+  if (wert === null || wert === undefined || wert === "") return "";
+  const text = String(wert).trim();
+  if (/^\d+$/.test(text)) return String(Number(text));
+  return text;
+}
+
 /* Warengruppe immer als ###.### darstellen, z. B. "385030" oder "385.030" -> "385.030".
    Nur bei genau 6 Ziffern formatieren; Abweichendes wird unverändert gelassen statt geraten. */
 function normalisiereWarengruppe(wert) {
@@ -798,6 +808,7 @@ function oeffneArbeitsvorratModal(eintrag) {
     box.querySelectorAll("[data-feld]").forEach((el) => {
       eintrag[el.dataset.feld] = el.type === "checkbox" ? el.checked : el.value;
     });
+    eintrag.ian = normalisiereIan(eintrag.ian);
     eintrag.vkBuero = normalisiereVkBuero(eintrag.vkBuero);
     eintrag.warengruppe = normalisiereWarengruppe(eintrag.warengruppe);
     if (!data.arbeitsvorrat.includes(eintrag)) data.arbeitsvorrat.unshift(eintrag);
@@ -864,7 +875,7 @@ function fuelleAusPa(eintrag, ueberschreiben) {
 
 /* Auf der PA-Detailseite steht "IAN-Vorgänger" oft mit Charge-Suffix ("463304 / 2404") -
    für Suche/Verknüpfung wird nur die führende Zahl gebraucht, analog zur Haupt-IAN. */
-function vorgaengerIanAus(pa) { return pa ? leiteFuehrendeZahlAb(pa.ianVorgaenger) : ""; }
+function vorgaengerIanAus(pa) { return pa ? normalisiereIan(leiteFuehrendeZahlAb(pa.ianVorgaenger)) : ""; }
 
 /* Felder, die beim Vorgänger-Vergleich gegenübergestellt werden (Kopfdaten + Prüfumfang). */
 const PA_VERGLEICH_KOPF_FELDER = [
@@ -1028,7 +1039,7 @@ function parseArbeitsvorratExcel(workbook) {
       const idx = spalten[f];
       eintrag[f] = idx === -1 || idx === undefined ? "" : excelWertZuText(row[idx]);
     });
-    eintrag.ian = spalten.ian !== -1 ? excelWertZuText(row[spalten.ian]) : leiteFuehrendeZahlAb(eintrag.bestellnummer);
+    eintrag.ian = normalisiereIan(spalten.ian !== -1 ? excelWertZuText(row[spalten.ian]) : leiteFuehrendeZahlAb(eintrag.bestellnummer));
     eintrag.vkBuero = normalisiereVkBuero(eintrag.vkBuero);
     eintrag.mechErledigt = spalten.kvMech === -1 ? false : normalisiere(row[spalten.kvMech]) === "x";
     ARBEITSVORRAT_PA_FELDER.forEach((f) => (eintrag[f] = ""));
@@ -1069,6 +1080,11 @@ function verarbeiteArbeitsvorratUpload(neueEintraege) {
   });
 
   wirklichNeu.forEach((n) => data.arbeitsvorrat.push(n));
+
+  /* Nach einem Upload auf "Gesamtliste" umschalten - sonst könnten frisch importierte Zeilen mit
+     bereits gesetztem "Mech. erledigt" in der gefilterten "Arbeitsvorrat"-Ansicht unsichtbar
+     bleiben und der Import fälschlich wie fehlgeschlagen wirken. */
+  arbeitsvorratFilter.mechErledigt = "";
 
   if (duplikate.length === 0) {
     speichereInLocalStorage();
@@ -1461,7 +1477,7 @@ async function extrahierePaAusDatei(datei) {
 /* Leitet die Kopfdaten-Felder aus einer Feldliste ab (egal ob roh aus der PDF oder nach Review). */
 function leitePaKopfdatenAb(felder, rohtext, erzwingeIan) {
   const findeWert = (regex) => { const t = felder.find((f) => regex.test(f.schluessel)); return t ? t.wert : ""; };
-  const ian = erzwingeIan || leiteFuehrendeZahlAb(findeWert(/^ian \/ charge$/i));
+  const ian = normalisiereIan(erzwingeIan || leiteFuehrendeZahlAb(findeWert(/^ian \/ charge$/i)));
   return {
     ian,
     artikelbezeichnung: findeWert(/^artikelbezeichnung$/i),

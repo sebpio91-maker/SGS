@@ -169,6 +169,18 @@ das sollte laut Beschreibung normalerweise nicht vorkommen, ist aber als
 Sicherheitsnetz eingebaut. Gibt es keine Abweichungen, werden neue Zeilen
 ohne Rückfrage direkt hinzugefügt.
 
+**IAN wird beim Abgleich vereinheitlicht:** wie VK Büro wird auch die IAN
+unabhängig von führenden Nullen behandelt (z. B. "070123" und "70123" gelten
+als dieselbe IAN) — sowohl direkt aus einer IAN-Spalte als auch aus der
+führenden Zahl der Bestellnummer abgeleitet. Damit werden Zeilen aus
+unterschiedlich formatierten Exporten korrekt demselben Arbeitsvorrat-Eintrag
+zugeordnet, statt versehentlich als neue Duplikate angelegt zu werden.
+
+Nach jedem Upload wechselt die Ansicht automatisch auf **„Gesamtliste"** —
+so bleiben frisch importierte Zeilen immer sichtbar, auch wenn einzelne davon
+bereits als „Mech. erledigt" markiert sind (die in der Ansicht „Arbeitsvorrat"
+sonst ausgeblendet wären).
+
 ## Bewusst so gelöst / nicht enthalten
 
 - **Nur mechanische Prüfungen.** Chemie/LFGB, PSI, Verpackung etc. aus der
