@@ -5,7 +5,7 @@ und Kostenvoranschlägen (KV) für mechanische Prüfungen. Läuft komplett im
 Browser, ohne Server, ohne Python, ohne Installation, ohne besondere
 Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
 
-## Die vier Reiter
+## Die fünf Reiter
 
 - **Arbeitsvorrat** – der Arbeitsvorrat aus dem SAP-Export. Startet leer
   (keine Beispieldaten mehr vorbefüllt). Oben lässt sich zwischen zwei
@@ -206,16 +206,33 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   Prüfpositionen mit Standardkosten und SAP-Code, vorbefüllt aus der
   bestehenden KV-Vorlage. Hier pflegen, wenn sich Preise ändern oder neue
   Prüfarten dazukommen.
+- **Prüfgrundlagen** – die Datenquelle der Warengruppen-Empfehlung im KV
+  (siehe oben) ist jetzt **direkt in der Oberfläche bearbeitbar und neu
+  anlegbar**, nicht mehr nur fest eingebettet. Zuerst nach **Warengruppe**
+  gruppiert (auf-/zuklappbar), darunter nach **Produkt** sortiert — jede
+  Zeile mit Norm, Kosten Sicherheit & Norm, Anzahl Muster, Trivial-/
+  KEZ-Kennzeichnung sowie FFU- und StiWa-Hinweis+Kosten, alle Felder direkt
+  editierbar (Autosave wie überall). **„+ Neue Prüfgrundlage"** legt eine
+  leere Zeile in der Gruppe „(ohne Warengruppe)" an; sobald ein
+  Warengruppen-Code eingetragen und das Feld verlassen wird, wandert die
+  Zeile automatisch in die passende (neue oder bestehende) Gruppe. Über die
+  Suche oben lässt sich nach Warengruppe, Produkt, Norm oder Bemerkung
+  filtern. Änderungen wirken sich sofort auf die Warengruppen-Empfehlung im
+  KV-Reiter aus — dort wird immer der aktuelle Stand dieser Tabelle
+  nachgeschlagen. Auch bei **⬇ Sichern/⬆ Laden (JSON)**, **🔀
+  Zusammenführen** und **📄 CSV-Export** wie die übrigen Reiter behandelt
+  (Zusammenführen erkennt gleiche Einträge an Warengruppen-Code + Produkt).
 
 ## Datenquelle der Warengruppen-Empfehlung und SAP-Codes
 
-Die Warengruppen-Mechanik-Referenz (185 Zeilen) und der Produktspezifikationen-
-Parameterkatalog (62 Zeilen) stammen aus `Preisliste_Mechanik_v2.xlsm`
-(Blätter „Mechanik" und „Produktspezifikationen"). Es sind feste Referenzdaten,
-die beim Bauen der Datei mit eingebettet werden — keine Bearbeitung über die
-Oberfläche, kein Autosave. Sollen sich Preise/Normen/Produkte ändern oder neue
-Warengruppen dazukommen, bitte die aktualisierte Excel-Datei erneut schicken,
-dann wird eine neue Version des Tools damit gebaut. Dabei wurden auch die
+Die Warengruppen-Mechanik-Referenz (185 Zeilen, jetzt der Reiter
+„Prüfgrundlagen") und der Produktspezifikationen-Parameterkatalog (62 Zeilen)
+stammen ursprünglich aus `Preisliste_Mechanik_v2.xlsm` (Blätter „Mechanik" und
+„Produktspezifikationen") und sind der **Startbestand** beim allerersten
+Öffnen des Tools. Die Prüfgrundlagen sind seitdem über den gleichnamigen
+Reiter bearbeit- und erweiterbar (siehe oben); der Produktspezifikationen-
+Katalog ist weiterhin nur durchsuchbar, nicht editierbar — bei Bedarf bitte
+Bescheid geben, dann wird das analog nachgerüstet. Dabei wurden auch die
 SAP-Codes im Prüfpositionen-Katalog gegen die reale SAP-Bestellzeilen-Liste
 (Blatt „SAP") korrigiert — u. a. „MECH_SICHERHEIT_TS" statt der zuvor
 angenommenen „MECH_S_NORM_TS", und „FFU_TS" als gemeinsamer Code für
