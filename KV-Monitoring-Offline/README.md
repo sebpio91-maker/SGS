@@ -59,7 +59,20 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   ausgelesenen Feldern. Über **„📄 PA-PDF hochladen"** wird eine Prüfauftrag-PDF
   eingelesen und automatisch (heuristisch) in Schlüssel/Wert-Paare zerlegt;
   vor der Übernahme gibt es eine Prüf-/Korrekturseite. Der Rohtext bleibt zum
-  Nachschlagen erhalten.
+  Nachschlagen erhalten. Die Detailseite eines Prüfauftrags ist in drei
+  Bereiche gegliedert:
+  - **Kopfdaten**: IAN/Charge, Warengruppe, Artikelbezeichnung, Artikelkategorie,
+    IAN-Vorgänger, Früh. LT, Lieferant – direkt editierbar.
+  - **Prüfumfang**: der Fließtext-Absatz aus der PDF (30% SPU/QSP, ALT, 100% PSI
+    usw.), die **ALT-Zeile ist hervorgehoben**, da sie meist am relevantesten ist.
+  - **Maße, Gewicht, Qualität, Material, Markenreferenz, Garantie**: werden
+    **blockweise statt zeilenweise dargestellt** – enthält die PDF
+    „Style_A, …:"/„Style_B, …:"-Kennzeichnungen, wird automatisch pro Style ein
+    eigener Block gezeigt (z. B. bei einem Artikel mit vier Farb-/Gewichtsvarianten
+    vier Blöcke je Feld). Bei einstiligen Artikeln erscheint ein einzelner Block.
+    Da das Layout nicht in jeder PDF gleich eindeutig ist, bleibt darunter
+    weiterhin die vollständige, editierbare Rohliste aller erkannten Felder als
+    Korrekturmöglichkeit erhalten.
 - **Kostenvoranschläge (KV)** – das Herzstück: pro IAN ein KV mit
   Stammdaten und einer Tabelle mechanischer Prüfpositionen (Kategorie,
   Bezeichnung, Kürzel, SAP-Code, Kosten, Anzahl, Summe, aktiv/inaktiv).

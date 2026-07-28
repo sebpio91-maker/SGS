@@ -92,6 +92,13 @@ tr#arbeitsvorrat-filter-zeile select, tr#arbeitsvorrat-filter-zeile input[type=t
 .ms-liste label:hover { background:#f0f4f3; }
 .ms-liste label input { width:auto; }
 .ms-liste .ms-leer { color:var(--muted); font-size:0.78rem; padding:0.3rem 0; }
+.pruefumfang-zeile { font-size:0.88rem; padding:0.2rem 0; }
+.pruefumfang-alt { font-size:0.92rem; font-weight:700; padding:0.35rem 0.6rem; background:#eef2f1; border-left:3px solid var(--accent); border-radius:4px; margin:0.2rem 0; }
+.pa-block-feld { margin-bottom:1rem; }
+.pa-block-feld h3 { font-size:0.95rem; margin:0 0 0.4rem; color:var(--accent-dark); }
+.stil-block { border-left:3px solid var(--border); padding:0.4rem 0.8rem; margin-bottom:0.5rem; background:#faf9f6; border-radius:0 4px 4px 0; }
+.stil-block .stil-name { font-weight:600; font-size:0.85rem; margin-bottom:0.25rem; color:var(--accent-dark); }
+.stil-block .stil-inhalt { white-space:pre-wrap; font-size:0.85rem; }
 .zeile-aktionen { display:flex; gap:0.25rem; white-space:nowrap; }
 .leerzustand { padding:2rem; text-align:center; color:var(--muted); }
 .hinweis { font-size:0.8rem; color:var(--muted); margin:0.3rem 0 0.8rem; }
@@ -944,7 +951,7 @@ function schliesseOverlay() {
 
 /* ================= PRÜFAUFTRÄGE (PA) ================= */
 
-const PA_KOPF_FELDER = ["ian", "artikelbezeichnung", "warengruppe"];
+const PA_KOPF_FELDER = ["ian", "artikelbezeichnung", "warengruppe", "artikelkategorie", "ianVorgaenger", "fruehLt", "lieferant", "pruefumfang"];
 
 function gefiltertePa() {
   const q = normalisiere(suchbegriffe.pruefauftraege);
@@ -967,6 +974,36 @@ function renderPaListe() {
   ul.querySelectorAll("li[data-id]").forEach((li) => li.addEventListener("click", () => { aktivePaId = li.dataset.id; renderPaTab(); }));
 }
 
+function renderPaPruefumfangKarte(pa) {
+  if (!pa.pruefumfang) return "";
+  const zeilen = pa.pruefumfang.split("\n").filter((z) => z.trim());
+  const zeilenHtml = zeilen.map((z) => {
+    const istAlt = /^ALT\b/i.test(z.trim());
+    return `<div class="${istAlt ? "pruefumfang-alt" : "pruefumfang-zeile"}">${escapeHtml(z)}</div>`;
+  }).join("");
+  return `<div class="card"><h2>Prüfumfang</h2>${zeilenHtml}</div>`;
+}
+
+function renderPaBlockKarte(pa) {
+  const abschnitte = PA_BLOCKFELDER.map((feldname) => {
+    const eintraege = (pa.felder || []).filter((f) => normalisiere(f.schluessel) === normalisiere(feldname));
+    if (!eintraege.length) return "";
+    const bloeckeHtml = eintraege.map((e) => {
+      const bloecke = trenneNachStyle(e.wert);
+      return bloecke.map((b) => `
+        <div class="stil-block">
+          ${b.style ? `<div class="stil-name">${escapeHtml(b.style)}</div>` : ""}
+          <div class="stil-inhalt">${b.inhalt ? escapeHtml(b.inhalt) : '<span class="muted">–</span>'}</div>
+        </div>`).join("");
+    }).join("");
+    return `<div class="pa-block-feld"><h3>${escapeHtml(feldname)}</h3>${bloeckeHtml}</div>`;
+  }).filter(Boolean).join("");
+  if (!abschnitte) return "";
+  return `<div class="card"><h2>Maße, Gewicht, Qualität, Material, Markenreferenz, Garantie</h2>
+    <p class="hinweis">Automatisch nach Style getrennt, sofern die PDF entsprechende „Style_…"-Kennzeichnungen enthält.</p>
+    ${abschnitte}</div>`;
+}
+
 function renderPaDetail() {
   const panel = document.getElementById("detail-panel-pa");
   const pa = data.pruefauftraege.find((p) => p.id === aktivePaId);
@@ -981,14 +1018,21 @@ function renderPaDetail() {
         <label>IAN / Charge<input type="text" data-feld="ian" value="${escapeHtml(pa.ian)}"></label>
         <label>Warengruppe<input type="text" data-feld="warengruppe" value="${escapeHtml(pa.warengruppe)}"></label>
         <label class="volle-breite">Artikelbezeichnung<input type="text" data-feld="artikelbezeichnung" value="${escapeHtml(pa.artikelbezeichnung)}"></label>
+        <label>Artikelkategorie<input type="text" data-feld="artikelkategorie" value="${escapeHtml(pa.artikelkategorie)}"></label>
+        <label>IAN-Vorgänger<input type="text" data-feld="ianVorgaenger" value="${escapeHtml(pa.ianVorgaenger)}"></label>
+        <label>Früh. LT<input type="text" data-feld="fruehLt" value="${escapeHtml(pa.fruehLt)}"></label>
+        <label>Lieferant<input type="text" data-feld="lieferant" value="${escapeHtml(pa.lieferant)}"></label>
       </div>
       <div class="toolbar-zeile" style="margin-top:0.8rem">
         ${arbeitsvorratTreffer ? `<button class="ghost small" id="pa-in-arbeitsvorrat-uebernehmen">↺ Warengruppe/Styles/LFGB/Trivial in den Arbeitsvorrat übernehmen</button>` : `<span class="muted">Kein Arbeitsvorrat-Eintrag mit dieser IAN gefunden.</span>`}
         <button class="danger small" id="pa-loeschen" style="margin-left:auto">Prüfauftrag löschen</button>
       </div>
     </div>
+    ${renderPaPruefumfangKarte(pa)}
+    ${renderPaBlockKarte(pa)}
     <div class="card">
-      <div class="toolbar-zeile"><h2 style="margin:0">Ausgelesene Felder</h2><div class="spacer"></div><button class="ghost" id="pa-feld-hinzufuegen">+ Feld hinzufügen</button></div>
+      <div class="toolbar-zeile"><h2 style="margin:0">Alle ausgelesenen Felder</h2><div class="spacer"></div><button class="ghost" id="pa-feld-hinzufuegen">+ Feld hinzufügen</button></div>
+      <p class="hinweis">Vollständige, editierbare Liste aller erkannten Felder (inkl. der oben hervorgehobenen) - hier korrigieren, falls die Erkennung daneben lag.</p>
       <div class="tabellen-wrapper">
         <table class="tabelle">
           <thead><tr><th style="width:28%">Schlüssel</th><th>Wert</th><th style="width:6%">Aktion</th></tr></thead>
@@ -1042,7 +1086,7 @@ function renderPaFelderTabelle(pa) {
 function renderPaTab() { renderPaListe(); renderPaDetail(); }
 
 document.getElementById("btn-neue-pa").addEventListener("click", () => {
-  const pa = { id: neueId(), ian: "", artikelbezeichnung: "", warengruppe: "", felder: [], rohtext: "" };
+  const pa = { id: neueId(), ian: "", artikelbezeichnung: "", warengruppe: "", artikelkategorie: "", ianVorgaenger: "", fruehLt: "", lieferant: "", pruefumfang: "", felder: [], rohtext: "" };
   data.pruefauftraege.unshift(pa);
   aktivePaId = pa.id;
   speichereInLocalStorage();
@@ -1089,7 +1133,43 @@ async function extrahierePdfZeilen(datei) {
 }
 
 const PA_NOISE_RE = /^(Prüfauftrag\s|VERTRAULICH|Seite\s\d|^\d+\s*\/\s*\d+$)/i;
-const PA_KEY_RE = /^([^\t]{2,50}):\s*\t?(.*)$/;
+/* Lazy-Quantifier (?): bei mehreren Doppelpunkten in einer Zeile (z. B. "Maße: Style_A, ...: ")
+   muss der ERSTE Doppelpunkt als Label-Ende gelten, nicht der letzte innerhalb des 50-Zeichen-Fensters. */
+const PA_KEY_RE = /^([^\t]{2,50}?):\s*\t?(.*)$/;
+
+/* Bekannte Feldbezeichnungen aus dem OWIM/Lidl-Prüfauftrag-Formular. Nur diese (bzw. das allererste,
+   noch unbekannte Feld) dürfen ein neues Feld eröffnen - alles andere (Style_-Unterzeilen, "Technische
+   Daten:", "Artikelmerkmale:", "Kennzeichnung:" usw.) wird als Fortsetzung des zuletzt erkannten
+   Feldes behandelt. Ohne diese Liste würde jede solche Unterzeile fälschlich ein eigenes Feld eröffnen
+   und z. B. "Maße" bei mehreren Styles vorzeitig abschneiden. */
+const PA_BEKANNTE_FELDER = [
+  "IAN / Charge", "Artikelbezeichnung", "Listungsart", "Artikelkategorie", "IAN-Vorgänger", "VE", "EKL",
+  "Früh. LT", "Warenbereich", "QM Ansprechparter", "Warengruppe", "Kostenstelle", "Text", "Ref.Vg EU/USA",
+  "Lizenznehmer Lidl", "Lieferant", "Ansprechpartner", "Tel.-Nr.", "Fax", "E-mail",
+  "Produktionsst.-ID", "Produktionsstätte", "Herkunftsland", "Anm. Herkunftsland",
+  "Artikel", "Marke Lidl", "Marke Kaufland", "Maße", "Gewicht", "Brutto-Kolli-Gewicht", "Qualität",
+  "Material", "Materialstärke", "Farbe", "Markenreferenz", "Abweichende Traglast", "IOT",
+  "Referenzprüfung", "Garantie", "Rücknahmegarantie", "Zertifizierungen", "RF-Sicherung", "Batterietyp",
+  "Verpackung", "Verpackung Zusatz", "Sonstige Merkmale"
+];
+const PA_BEKANNTE_FELDER_SET = new Set(PA_BEKANNTE_FELDER.map((f) => normalisiere(f)));
+
+/* Felder, deren Wert häufig pro Style aufgeschlüsselt ist ("Style_A, ...: ... Style_B, ...: ..."). */
+const PA_BLOCKFELDER = ["Maße", "Gewicht", "Qualität", "Material", "Markenreferenz", "Garantie"];
+const PA_STYLE_HEADER_RE = /^(Style_[^\n:]+):\s*$/gm;
+
+/* Zerlegt einen Feldwert in Style-Blöcke, falls "Style_X, ...:"-Kopfzeilen enthalten sind.
+   Ohne solche Kopfzeilen gibt es genau einen Block ohne Style-Label (einstiliger Artikel). */
+function trenneNachStyle(text) {
+  if (!text) return [];
+  const treffer = [...text.matchAll(PA_STYLE_HEADER_RE)];
+  if (!treffer.length) return [{ style: "", inhalt: text.trim() }];
+  return treffer.map((t, i) => {
+    const start = t.index + t[0].length;
+    const ende = i + 1 < treffer.length ? treffer[i + 1].index : text.length;
+    return { style: t[1].trim(), inhalt: text.slice(start, ende).trim() };
+  });
+}
 
 function extrahierePaFelderAusZeilen(zeilen) {
   const eintraege = [];
@@ -1098,15 +1178,54 @@ function extrahierePaFelderAusZeilen(zeilen) {
     const z = (zeile || "").trim();
     if (!z || PA_NOISE_RE.test(z)) return;
     const m = z.match(PA_KEY_RE);
-    if (m && m[1].trim().length <= 50 && !/^\d+([.,]\d+)?$/.test(m[1].trim())) {
+    const schluessel = m ? m[1].trim() : null;
+    const gueltigerSchluessel = schluessel && schluessel.length <= 50 && !/^\d+([.,]\d+)?$/.test(schluessel);
+    const eroeffnetNeuesFeld = gueltigerSchluessel && (PA_BEKANNTE_FELDER_SET.has(normalisiere(schluessel)) || !aktuell);
+    if (eroeffnetNeuesFeld) {
       if (aktuell) eintraege.push(aktuell);
-      aktuell = { schluessel: m[1].trim(), wert: m[2].trim() };
+      aktuell = { schluessel, wert: m[2].trim() };
     } else if (aktuell) {
       aktuell.wert = (aktuell.wert ? aktuell.wert + "\n" : "") + z;
     }
   });
   if (aktuell) eintraege.push(aktuell);
+  eintraege.forEach((e) => {
+    if (PA_BLOCKFELDER.some((f) => normalisiere(f) === normalisiere(e.schluessel))) {
+      e.stilBloecke = trenneNachStyle(e.wert);
+    }
+  });
   return eintraege;
+}
+
+/* "Prüfumfang" (v. a. die ALT-Zeile) steht im Formular nicht als normales "Label: Wert"-Paar, sondern
+   als Fließtext-Absatz an anderer Stelle im Dokument. Erkennung über die bekannten Prüfphasen-Präfixe
+   statt über die generische Feld-Heuristik. */
+const PA_PRUEFPHASE_ZEILE_RE = /^(30\s*%|ALT\b|100\s*%|SLT\b)/i;
+/* Zeilen, die einen laufenden Fund sicher beenden (u. a. die Wochenfrist-Tabelle oben im Dokument,
+   die dieselben Präfixe wie der echte Prüfumfang-Absatz verwendet, aber nicht gemeint ist). */
+const PA_PRUEFUMFANG_GRENZE_RE = /^(Prüfphase|Prüfberichte|Analytik:|Bei Themen|QS_Report|Prüfauftrag\s)/i;
+
+/* Es kann mehrere Fundstellen mit denselben Präfixen geben (Wochenfrist-Tabelle vs. echter
+   Prüfumfang-Absatz) - der echte Prüfumfang steht im Formular immer als letzte davon. */
+function extrahierePruefumfang(zeilen) {
+  const laeufe = [];
+  let aktuellerLauf = null;
+  zeilen.forEach((zeile) => {
+    const z = (zeile || "").trim();
+    if (!z || PA_NOISE_RE.test(z)) return;
+    if (PA_PRUEFPHASE_ZEILE_RE.test(z)) {
+      if (!aktuellerLauf) { aktuellerLauf = []; laeufe.push(aktuellerLauf); }
+      aktuellerLauf.push(z);
+      return;
+    }
+    if (!aktuellerLauf) return;
+    if (PA_PRUEFUMFANG_GRENZE_RE.test(z)) { aktuellerLauf = null; return; }
+    const m = z.match(PA_KEY_RE);
+    const schluessel = m ? normalisiere(m[1].trim()) : null;
+    if (schluessel && PA_BEKANNTE_FELDER_SET.has(schluessel)) { aktuellerLauf = null; return; }
+    aktuellerLauf[aktuellerLauf.length - 1] += " " + z;
+  });
+  return laeufe.length ? laeufe[laeufe.length - 1].join("\n") : "";
 }
 
 document.getElementById("btn-pa-upload").addEventListener("click", () => document.getElementById("pa-upload-input").click());
@@ -1177,10 +1296,18 @@ function zeigePaUploadReview(felder, rohtext, erzwingeIan) {
       const wert = box.querySelector(`.pa-review-wert[data-idx="${i}"]`).value.trim();
       uebernommen.push({ schluessel, wert });
     });
+    uebernommen.forEach((e) => {
+      if (PA_BLOCKFELDER.some((f) => normalisiere(f) === normalisiere(e.schluessel))) e.stilBloecke = trenneNachStyle(e.wert);
+    });
     const findeWert = (regex) => { const t = uebernommen.find((f) => regex.test(f.schluessel)); return t ? t.wert : ""; };
-    const ian = erzwingeIan || leiteFuehrendeZahlAb(findeWert(/^ian/i));
+    const ian = erzwingeIan || leiteFuehrendeZahlAb(findeWert(/^ian \/ charge$/i));
     const artikelbezeichnung = findeWert(/^artikelbezeichnung$/i);
-    const warengruppe = findeWert(/^warengruppe$/i);
+    const warengruppe = normalisiereWarengruppe(findeWert(/^warengruppe$/i));
+    const artikelkategorie = findeWert(/^artikelkategorie$/i);
+    const ianVorgaenger = findeWert(/^ian-vorgänger$/i);
+    const fruehLt = findeWert(/^früh\.?\s*lt$/i);
+    const lieferant = findeWert(/^lieferant$/i);
+    const pruefumfang = extrahierePruefumfang(rohtext.split("\n"));
 
     const bestehende = ian ? data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(ian)) : null;
     let ziel;
@@ -1196,6 +1323,8 @@ function zeigePaUploadReview(felder, rohtext, erzwingeIan) {
       data.pruefauftraege.unshift(ziel);
     }
     ziel.ian = ian; ziel.artikelbezeichnung = artikelbezeichnung; ziel.warengruppe = warengruppe;
+    ziel.artikelkategorie = artikelkategorie; ziel.ianVorgaenger = ianVorgaenger; ziel.fruehLt = fruehLt;
+    ziel.lieferant = lieferant; ziel.pruefumfang = pruefumfang;
     ziel.felder = uebernommen; ziel.rohtext = rohtext;
     aktivePaId = ziel.id;
 
