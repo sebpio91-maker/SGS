@@ -8,7 +8,14 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
 ## Die vier Reiter
 
 - **Arbeitsvorrat** – der Arbeitsvorrat aus dem SAP-Export. Startet leer
-  (keine Beispieldaten mehr vorbefüllt) — über
+  (keine Beispieldaten mehr vorbefüllt). Oben lässt sich zwischen zwei
+  **Ansichten** umschalten: **„Arbeitsvorrat (offene Mechanik)"** (Standard)
+  zeigt nur Einträge, bei denen „Mech. erledigt" noch nicht gesetzt ist —
+  der eigentliche Tagesarbeitsvorrat; **„Gesamtliste (alle jemals
+  hochgeladenen)"** zeigt wirklich alle Einträge unabhängig vom
+  Mech.-Status, als Archiv/Nachschlagewerk. Beide Ansichten teilen sich alle
+  übrigen Filter; „Filter zurücksetzen" leert diese, lässt aber die gewählte
+  Ansicht unangetastet. Über
   **„📥 SAP-Export hochladen"** lässt sich der Arbeitsvorrat mit einem neuen
   Excel-Export weiter füllen (unterstützt sowohl den bereits angereicherten
   Export als auch den rohen SAP-Export mit den Spalten Vertriebsbeleg/

@@ -68,9 +68,15 @@ nav.tabs button.aktiv { background:var(--card); color:var(--accent-dark); font-w
 .badge.nein { background:#f1efe9; color:var(--muted); }
 .pa-badge { cursor:pointer; border:none; font-family:inherit; font-weight:600; white-space:nowrap; }
 .pa-badge:hover { filter:brightness(0.95); }
-.sp-suche-link { text-decoration:none; margin-left:0.3rem; opacity:0.7; }
-.sp-suche-link:hover { opacity:1; }
+.sp-suche-link { display:inline-flex; align-items:center; vertical-align:middle; text-decoration:none; margin-left:0.3rem; color:var(--muted); }
+.sp-suche-link:hover { color:var(--accent); }
 .vergleich-abweichung td { background:#fff6e0; }
+.segment-toggle { display:inline-flex; border:1px solid var(--border); border-radius:6px; overflow:hidden; margin-bottom:0.8rem; }
+.segment-toggle button { padding:0.45rem 0.9rem; border:none; border-radius:0; background:#fff; color:var(--muted); font-weight:600; }
+.segment-toggle button:hover { background:#f0f4f3; }
+.segment-toggle button + button { border-left:1px solid var(--border); }
+.segment-toggle button.aktiv { background:var(--accent); color:#fff; }
+.segment-toggle button.aktiv:hover { background:var(--accent-dark); }
 
 .tabellen-wrapper { overflow-x:auto; border:1px solid var(--border); border-radius:8px; background:var(--card); max-height:70vh; overflow-y:auto; }
 table.tabelle { width:100%; border-collapse:collapse; }
@@ -83,6 +89,7 @@ table.tabelle input:hover, table.tabelle select:hover, table.tabelle textarea:ho
 table.tabelle input:focus, table.tabelle select:focus, table.tabelle textarea:focus { border-color:var(--border); background:#fdfdfc; }
 table.tabelle.readonly td { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px; }
 table.tabelle.readonly td.zentriert { text-align:center; }
+#arbeitsvorrat-tabelle td:first-child { overflow:visible; text-overflow:clip; }
 tr#arbeitsvorrat-filter-zeile th { background:#f7f9f8; padding:0.25rem 0.4rem; }
 tr#arbeitsvorrat-filter-zeile select, tr#arbeitsvorrat-filter-zeile input[type=text] { width:100%; font-size:0.78rem; padding:0.15rem; border:1px solid var(--border); border-radius:4px; font-family:inherit; }
 .ms-btn { width:100%; text-align:left; font-size:0.78rem; padding:0.18rem 0.35rem; border:1px solid var(--border); border-radius:4px; background:#fff; cursor:pointer; color:var(--text); }
@@ -150,7 +157,7 @@ input[type=file] { display:none; }
 <section class="seite" id="seite-arbeitsvorrat">
   <div class="card">
     <div class="toolbar-zeile">
-      <h2 style="margin:0">Arbeitsvorrat</h2>
+      <h2 style="margin:0" id="arbeitsvorrat-titel">Arbeitsvorrat</h2>
       <span class="zaehler" id="arbeitsvorrat-zaehler"></span>
       <div class="spacer"></div>
       <button class="ghost" id="btn-arbeitsvorrat-filter-zuruecksetzen">Filter zurücksetzen</button>
@@ -159,7 +166,11 @@ input[type=file] { display:none; }
       <input type="file" id="arbeitsvorrat-upload-input" accept=".xlsx,.xlsm,.xls">
       <input type="file" id="arbeitsvorrat-pa-upload-input" accept="application/pdf">
     </div>
-    <p class="hinweis">Bezeichnung, Lieferant, Angelegt am und Sachbearbeiter kommen aus dem SAP-Export. Warengruppe, Styles, LFGB? und Trivial? werden — wenn möglich — aus dem verknüpften Prüfauftrag übernommen (siehe Reiter „Prüfaufträge"). „Mech. erledigt" ist nur ein Haken, ob der KV von mechanischer Seite fertig ist; anklicken zum Umschalten. Die Spalte „PA" zeigt, sobald zu einer IAN ein Prüfauftrag vorliegt, dessen Stand (Datum der PDF) als klickbares Feld — Klick öffnet direkt den Prüfauftrag. Unter der Kopfzeile lässt sich die Tabelle filtern: IAN als Freitext; VK Büro, Lieferant und Warengruppe als durchsuchbare Mehrfachauswahl (anklicken, tippen zum Suchen, mehrere Häkchen setzen); Sachbearbeiter, LFGB?, Trivial? und Mech. erledigt als einfaches Dropdown. VK Büro wird unabhängig von führenden Nullen zusammengefasst (070 = 70), Warengruppe immer als ###.### angezeigt.</p>
+    <div class="segment-toggle" id="arbeitsvorrat-ansicht-toggle">
+      <button type="button" data-ansicht="nein">Arbeitsvorrat (offene Mechanik)</button>
+      <button type="button" data-ansicht="">Gesamtliste (alle jemals hochgeladenen)</button>
+    </div>
+    <p class="hinweis"><strong>Arbeitsvorrat</strong> zeigt nur Einträge, bei denen die Mechanik noch offen ist (Standardansicht); <strong>Gesamtliste</strong> zeigt alle jemals hochgeladenen Aufträge unabhängig vom Mech.-Status — oben umschaltbar. Bezeichnung, Lieferant, Angelegt am und Sachbearbeiter kommen aus dem SAP-Export. Warengruppe, Styles, LFGB? und Trivial? werden — wenn möglich — aus dem verknüpften Prüfauftrag übernommen (siehe Reiter „Prüfaufträge"). „Mech. erledigt" ist nur ein Haken, ob der KV von mechanischer Seite fertig ist; anklicken zum Umschalten. Die Spalte „PA" zeigt, sobald zu einer IAN ein Prüfauftrag vorliegt, dessen Stand (Datum der PDF) als klickbares Feld — Klick öffnet direkt den Prüfauftrag. Unter der Kopfzeile lässt sich die Tabelle filtern: IAN als Freitext; VK Büro, Lieferant und Warengruppe als durchsuchbare Mehrfachauswahl (anklicken, tippen zum Suchen, mehrere Häkchen setzen); Sachbearbeiter, LFGB?, Trivial? und Mech. erledigt als einfaches Dropdown. VK Büro wird unabhängig von führenden Nullen zusammengefasst (070 = 70), Warengruppe immer als ###.### angezeigt. „Filter zurücksetzen" setzt alle Filter außer der Arbeitsvorrat/Gesamtliste-Ansicht zurück.</p>
     <div class="tabellen-wrapper">
       <table class="tabelle readonly" id="arbeitsvorrat-tabelle">
         <thead>
@@ -317,10 +328,13 @@ function normalisiere(wert) { return (wert === null || wert === undefined ? "" :
 const SHAREPOINT_SUCHE_BASIS = "https://sgs.sharepoint.com/sites/de-cp-hamfiles/_layouts/15/search.aspx/siteall?q=";
 function sharepointSucheUrl(ian) { return SHAREPOINT_SUCHE_BASIS + encodeURIComponent(ian || ""); }
 /* Kleiner Link neben einer IAN, der in einem neuen Tab die SharePoint-Suche nach genau dieser
-   IAN öffnet. Ohne IAN wird kein Link gerendert. */
+   IAN öffnet. Ohne IAN wird kein Link gerendert. Verwendet ein Inline-SVG statt des 🔍-Emojis,
+   da Emoji-Glyphen je nach Betriebssystem/Schriftart unterschiedlich (und teils inkonsistent
+   zwischen Zeilen) gerendert werden - das SVG sieht überall identisch aus. */
 function sharepointSucheLink(ian, klasse) {
   if (!ian) return "";
-  return `<a class="sp-suche-link${klasse ? " " + klasse : ""}" href="${escapeHtml(sharepointSucheUrl(ian))}" target="_blank" rel="noopener noreferrer" title="Auf SharePoint nach IAN ${escapeHtml(ian)} suchen">🔍</a>`;
+  const svg = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><line x1="19.5" y1="19.5" x2="15" y2="15"></line></svg>`;
+  return `<a class="sp-suche-link${klasse ? " " + klasse : ""}" href="${escapeHtml(sharepointSucheUrl(ian))}" target="_blank" rel="noopener noreferrer" title="Auf SharePoint nach IAN ${escapeHtml(ian)} suchen">${svg}</a>`;
 }
 function zahlOderLeer(v) { return (v === null || v === undefined || v === "") ? "" : v; }
 
@@ -479,7 +493,23 @@ const ARBEITSVORRAT_MULTISELECT_FELDER = ["vkBuero", "lieferant", "warengruppe"]
 /* Felder mit einfachem Dropdown (genau ein Wert oder "Alle"). */
 const ARBEITSVORRAT_SELECT_FELDER = ["sachbearbeiter", "lfgb", "trivial", "mechErledigt"];
 
-let arbeitsvorratFilter = { ian: "", vkBuero: [], lieferant: [], warengruppe: [], sachbearbeiter: "", lfgb: "", trivial: "", mechErledigt: "" };
+/* mechErledigt startet auf "nein" (= Ansicht "Arbeitsvorrat"), da das der tägliche Arbeitsmodus
+   ist - alles, wo die Mechanik noch offen ist. "Gesamtliste" (alle jemals hochgeladenen Aufträge,
+   unabhängig vom Mech.-Status) ist über den Ansicht-Umschalter erreichbar. */
+let arbeitsvorratFilter = { ian: "", vkBuero: [], lieferant: [], warengruppe: [], sachbearbeiter: "", lfgb: "", trivial: "", mechErledigt: "nein" };
+
+/* Synchronisiert den Arbeitsvorrat/Gesamtliste-Umschalter (aktive Schaltfläche + Kartentitel)
+   mit dem aktuellen mechErledigt-Filter - unabhängig davon, ob der über den Umschalter selbst
+   oder über das normale "Mech. erledigt"-Dropdown in der Filterzeile gesetzt wurde. */
+function aktualisiereAnsichtToggle() {
+  const toggle = document.getElementById("arbeitsvorrat-ansicht-toggle");
+  if (!toggle) return;
+  const istOffenAnsicht = arbeitsvorratFilter.mechErledigt === "nein";
+  toggle.querySelectorAll("button[data-ansicht]").forEach((btn) => {
+    btn.classList.toggle("aktiv", btn.dataset.ansicht === arbeitsvorratFilter.mechErledigt);
+  });
+  document.getElementById("arbeitsvorrat-titel").textContent = istOffenAnsicht ? "Arbeitsvorrat" : "Gesamtliste";
+}
 
 function gefiltertArbeitsvorrat() {
   let liste = data.arbeitsvorrat;
@@ -630,6 +660,7 @@ function renderArbeitsvorratFilterZeile() {
     sel.addEventListener("change", () => {
       arbeitsvorratFilter[sel.dataset.filterfeld] = sel.value;
       renderArbeitsvorratKoerper();
+      aktualisiereAnsichtToggle();
     });
   });
   tr.querySelectorAll("input[data-filterfeld-text]").forEach((input) => {
@@ -639,11 +670,21 @@ function renderArbeitsvorratFilterZeile() {
     });
   });
   ARBEITSVORRAT_MULTISELECT_FELDER.forEach((feld) => initialisiereMehrfachauswahl(feld));
+  aktualisiereAnsichtToggle();
 }
+
+document.getElementById("arbeitsvorrat-ansicht-toggle").querySelectorAll("button[data-ansicht]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    arbeitsvorratFilter.mechErledigt = btn.dataset.ansicht;
+    renderArbeitsvorratTab();
+  });
+});
 
 document.getElementById("btn-arbeitsvorrat-filter-zuruecksetzen").addEventListener("click", () => {
   ARBEITSVORRAT_MULTISELECT_FELDER.forEach((f) => (arbeitsvorratFilter[f] = []));
-  ARBEITSVORRAT_SELECT_FELDER.forEach((f) => (arbeitsvorratFilter[f] = ""));
+  /* mechErledigt bewusst ausgenommen - das ist die Arbeitsvorrat/Gesamtliste-Ansicht, kein
+     "normaler" Filter, und soll beim Zurücksetzen der übrigen Filter erhalten bleiben. */
+  ARBEITSVORRAT_SELECT_FELDER.forEach((f) => { if (f !== "mechErledigt") arbeitsvorratFilter[f] = ""; });
   arbeitsvorratFilter.ian = "";
   suchbegriffe.arbeitsvorrat = "";
   if (aktiverTab === "arbeitsvorrat") document.getElementById("suche").value = "";
