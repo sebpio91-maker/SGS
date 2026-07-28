@@ -7,9 +7,8 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
 
 ## Die vier Reiter
 
-- **Arbeitsvorrat** – der Arbeitsvorrat aus dem SAP-Export. Beim ersten
-  Öffnen bereits mit allen 1.230 Zeilen aus der bestehenden
-  `HL_KV_Monitoring_PA_ab_SeptMAK.xlsx` (Blatt „Tabelle1") gefüllt. Über
+- **Arbeitsvorrat** – der Arbeitsvorrat aus dem SAP-Export. Startet leer
+  (keine Beispieldaten mehr vorbefüllt) — über
   **„📥 SAP-Export hochladen"** lässt sich der Arbeitsvorrat mit einem neuen
   Excel-Export weiter füllen (unterstützt sowohl den bereits angereicherten
   Export als auch den rohen SAP-Export mit den Spalten Vertriebsbeleg/
