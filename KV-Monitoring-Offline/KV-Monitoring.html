@@ -185,7 +185,10 @@ input[type=file] { display:none; }
     <button id="btn-neue-pa">+ Neuer Prüfauftrag (manuell)</button>
     <button id="btn-pa-upload">📄 PA-PDF hochladen</button>
     <input type="file" id="pa-upload-input" accept="application/pdf">
+    <button id="btn-pa-upload-mehrere">📄📄 Mehrere PA-PDFs hochladen</button>
+    <input type="file" id="pa-upload-mehrere-input" accept="application/pdf" multiple>
   </div>
+  <p class="hinweis">Beim Mehrfach-Upload gibt es keine Feld-für-Feld-Prüfseite je Datei — jede PDF wird automatisch anhand der erkannten IAN mit einem passenden Arbeitsvorrat-Eintrag verknüpft. Am Ende erscheint eine Zusammenfassung; einzelne Prüfaufträge lassen sich danach wie gewohnt in der Liste prüfen/korrigieren.</p>
 </section>
 
 <section class="seite" id="seite-kvs" hidden>
@@ -709,7 +712,7 @@ function arbeitsvorratFormularHtml(eintrag) {
   const feldLabel = {
     ian: "IAN", auftrag: "Auftrag", vkBuero: "VK Büro", bestellnummer: "Bestellnummer", bezeichnung: "Bezeichnung (SAP)",
     lieferant: "Lieferant (SAP)", angelegtAm: "Angelegt am (SAP)", sachbearbeiter: "Sachbearbeiter (SAP)", link: "Link",
-    warengruppe: "Warengruppe (aus PA)", anzahlStyles: "Anzahl Styles (aus PA)", lfgb: "LFGB? (aus PA)", trivial: "Trivial? (aus PA)",
+    warengruppe: "Warengruppe (aus PA)", anzahlStyles: "Anzahl Styles (aus PA)", lfgb: "LFGB? (manuell, bei KV-Erstellung)", trivial: "Trivial? (manuell, bei KV-Erstellung)",
     alteWarengruppe: "ALTE Warengruppe", bemerkung: "Bemerkung", versand: "Versand", uvUndKlimawechsel: "UV und Klimawechsel"
   };
   const textFelder = ARBEITSVORRAT_FELDER.filter((f) => f !== "mechErledigt").map((f) => {
@@ -727,7 +730,7 @@ function oeffneArbeitsvorratModal(eintrag) {
     ${arbeitsvorratFormularHtml(eintrag)}
     <div class="overlay-actions">
       <button id="av-speichern">Speichern</button>
-      ${hatPa ? `<button class="ghost" id="av-aus-pa">↺ Warengruppe/Styles/LFGB/Trivial aus PA übernehmen</button>` : `<span class="muted" style="align-self:center">Kein Prüfauftrag mit dieser IAN gefunden.</span>`}
+      ${hatPa ? `<button class="ghost" id="av-aus-pa">↺ Warengruppe/Styles aus PA übernehmen</button>` : `<span class="muted" style="align-self:center">Kein Prüfauftrag mit dieser IAN gefunden.</span>`}
       <button class="ghost" id="av-abbrechen">Abbrechen</button>
       <button class="danger" id="av-loeschen" style="margin-left:auto">Eintrag löschen</button>
     </div>`;
@@ -779,7 +782,7 @@ function neuerKvAusArbeitsvorrat(eintrag) {
   renderKvTab();
 }
 
-/* ---------- Warengruppe/Styles/LFGB/Trivial aus verknüpftem Prüfauftrag übernehmen ---------- */
+/* ---------- Warengruppe/Styles aus verknüpftem Prüfauftrag übernehmen ---------- */
 
 function fuelleAusPa(eintrag, ueberschreiben) {
   const pa = data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(eintrag.ian));
@@ -787,9 +790,11 @@ function fuelleAusPa(eintrag, ueberschreiben) {
   const finde = (regex) => { const f = (pa.felder || []).find((fe) => regex.test(fe.schluessel)); return f ? f.wert : ""; };
   const kandidaten = {
     warengruppe: normalisiereWarengruppe(pa.warengruppe || finde(/^warengruppe$/i)),
-    lfgb: finde(/lfgb/i),
-    trivial: finde(/trivial/i),
-    anzahlStyles: finde(/anzahl.*style|style.*anzahl|styleanzahl/i)
+    /* LFGB? und Trivial? stehen in keiner bekannten PA-PDF als eigenes Feld - lassen sich nicht
+       auslesen und müssen bei der KV-Erstellung manuell gewählt werden. */
+    lfgb: "",
+    trivial: "",
+    anzahlStyles: ermittleAnzahlStyles(pa.felder)
   };
   let geaendert = false;
   ARBEITSVORRAT_PA_FELDER.forEach((f) => {
@@ -934,7 +939,7 @@ function verarbeiteArbeitsvorratUpload(neueEintraege) {
 function zeigeUploadDuplikatOverlay(anzahlNeu, duplikate) {
   const box = document.getElementById("overlay-box");
   let html = `<h2>SAP-Export: IANs mit abweichenden Daten gefunden</h2>
-    <p class="hinweis">${anzahlNeu} neue Einträge wurden bereits hinzugefügt. Für ${duplikate.length} IAN(s), die schon vorhanden sind, weichen die SAP-Werte in der Datei ab. Das kommt normalerweise nicht vor — bitte pro Fall entscheiden. (Warengruppe/Styles/LFGB/Trivial sind hiervon nicht betroffen, die kommen aus dem Prüfauftrag.)</p>`;
+    <p class="hinweis">${anzahlNeu} neue Einträge wurden bereits hinzugefügt. Für ${duplikate.length} IAN(s), die schon vorhanden sind, weichen die SAP-Werte in der Datei ab. Das kommt normalerweise nicht vor — bitte pro Fall entscheiden. (Warengruppe/Styles sind hiervon nicht betroffen, die kommen aus dem Prüfauftrag; LFGB/Trivial werden ohnehin nur manuell bei der KV-Erstellung gesetzt.)</p>`;
   duplikate.forEach((d, i) => {
     html += `<div class="merge-item">
       <strong>IAN ${escapeHtml(d.vorhanden.ian)} — ${escapeHtml(d.vorhanden.bezeichnung)}</strong>
@@ -1057,7 +1062,7 @@ function renderPaDetail() {
         <label>Stand der PDF<input type="text" data-feld="stand" value="${escapeHtml(pa.stand)}"></label>
       </div>
       <div class="toolbar-zeile" style="margin-top:0.8rem">
-        ${arbeitsvorratTreffer ? `<button class="ghost small" id="pa-in-arbeitsvorrat-uebernehmen">↺ Warengruppe/Styles/LFGB/Trivial in den Arbeitsvorrat übernehmen</button>` : `<span class="muted">Kein Arbeitsvorrat-Eintrag mit dieser IAN gefunden.</span>`}
+        ${arbeitsvorratTreffer ? `<button class="ghost small" id="pa-in-arbeitsvorrat-uebernehmen">↺ Warengruppe/Styles in den Arbeitsvorrat übernehmen</button>` : `<span class="muted">Kein Arbeitsvorrat-Eintrag mit dieser IAN gefunden.</span>`}
         <button class="danger small" id="pa-loeschen" style="margin-left:auto">Prüfauftrag löschen</button>
       </div>
     </div>
@@ -1207,6 +1212,21 @@ function trenneNachStyle(text) {
   });
 }
 
+/* Die Anzahl Styles steht in keiner PA-PDF als eigenes Feld - sie wird stattdessen aus der
+   Anzahl unterschiedlicher "Style_X"-Blöcke in den Style-Feldern (Maße, Gewicht, ...) abgeleitet.
+   Ohne erkennbare Style-Kennzeichnung wird von einem einzigen (einstiligen) Artikel ausgegangen. */
+function ermittleAnzahlStyles(felder) {
+  if (!felder || !felder.length) return "";
+  let max = 0;
+  PA_BLOCKFELDER.forEach((feldname) => {
+    (felder || []).filter((f) => normalisiere(f.schluessel) === normalisiere(feldname)).forEach((e) => {
+      const benannteBloecke = trenneNachStyle(e.wert).filter((b) => b.style).length;
+      if (benannteBloecke > max) max = benannteBloecke;
+    });
+  });
+  return String(max > 0 ? max : 1);
+}
+
 function extrahierePaFelderAusZeilen(zeilen) {
   const eintraege = [];
   let aktuell = null;
@@ -1274,6 +1294,63 @@ function extrahierePaStand(dateiname, rohtext) {
   return "";
 }
 
+/* Liest eine einzelne PA-PDF-Datei vollständig ein (Zeilen -> Felder -> Rohtext -> Stand).
+   Gemeinsam genutzt von Einzel-Upload, Zeilen-Upload und Mehrfach-Upload. */
+async function extrahierePaAusDatei(datei) {
+  const zeilen = await extrahierePdfZeilen(datei);
+  const felder = extrahierePaFelderAusZeilen(zeilen);
+  const rohtext = zeilen.join("\n");
+  const stand = extrahierePaStand(datei.name, rohtext);
+  return { felder, rohtext, stand };
+}
+
+/* Leitet die Kopfdaten-Felder aus einer Feldliste ab (egal ob roh aus der PDF oder nach Review). */
+function leitePaKopfdatenAb(felder, rohtext, erzwingeIan) {
+  const findeWert = (regex) => { const t = felder.find((f) => regex.test(f.schluessel)); return t ? t.wert : ""; };
+  const ian = erzwingeIan || leiteFuehrendeZahlAb(findeWert(/^ian \/ charge$/i));
+  return {
+    ian,
+    artikelbezeichnung: findeWert(/^artikelbezeichnung$/i),
+    warengruppe: normalisiereWarengruppe(findeWert(/^warengruppe$/i)),
+    artikelkategorie: findeWert(/^artikelkategorie$/i),
+    ianVorgaenger: findeWert(/^ian-vorgänger$/i),
+    fruehLt: findeWert(/^früh\.?\s*lt$/i),
+    lieferant: findeWert(/^lieferant$/i),
+    pruefumfang: extrahierePruefumfang(rohtext.split("\n"))
+  };
+}
+
+/* Legt aus extrahierten PA-Feldern einen Prüfauftrag an/aktualisiert ihn und verknüpft ihn
+   automatisch mit einem passenden Arbeitsvorrat-Eintrag (per IAN). Gemeinsam genutzt vom
+   Einzel-Review (mit Rückfrage bei Konflikt) und vom Mehrfach-Upload (ohne Rückfrage, damit der
+   Stapel nicht durch Dialoge unterbrochen wird). */
+function legePaAusFeldernAn(felder, rohtext, erzwingeIan, stand, frageBeiKonflikt) {
+  const kopf = leitePaKopfdatenAb(felder, rohtext, erzwingeIan);
+  const bestehende = kopf.ian ? data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(kopf.ian)) : null;
+  let ziel, aktualisiert = false;
+  if (bestehende) {
+    if (frageBeiKonflikt && !confirm(`Für IAN "${kopf.ian}" existiert bereits ein Prüfauftrag. Vorhandenen mit den neuen Daten aktualisieren?\n\nOK = aktualisieren, Abbrechen = neuen separaten Prüfauftrag anlegen.`)) {
+      ziel = { id: neueId() };
+      data.pruefauftraege.unshift(ziel);
+    } else {
+      ziel = bestehende;
+      aktualisiert = true;
+    }
+  } else {
+    ziel = { id: neueId() };
+    data.pruefauftraege.unshift(ziel);
+  }
+  ziel.ian = kopf.ian; ziel.artikelbezeichnung = kopf.artikelbezeichnung; ziel.warengruppe = kopf.warengruppe;
+  ziel.artikelkategorie = kopf.artikelkategorie; ziel.ianVorgaenger = kopf.ianVorgaenger; ziel.fruehLt = kopf.fruehLt;
+  ziel.lieferant = kopf.lieferant; ziel.pruefumfang = kopf.pruefumfang;
+  ziel.felder = felder; ziel.rohtext = rohtext; ziel.stand = stand || "";
+
+  const zielArbeitsvorrat = kopf.ian ? data.arbeitsvorrat.find((a) => normalisiere(a.ian) === normalisiere(kopf.ian)) : null;
+  if (zielArbeitsvorrat) fuelleAusPa(zielArbeitsvorrat, false);
+
+  return { pa: ziel, ian: kopf.ian, artikelbezeichnung: kopf.artikelbezeichnung, verknuepft: !!zielArbeitsvorrat, aktualisiert };
+}
+
 document.getElementById("btn-pa-upload").addEventListener("click", () => document.getElementById("pa-upload-input").click());
 document.getElementById("pa-upload-input").addEventListener("change", async (e) => {
   const datei = e.target.files[0];
@@ -1281,10 +1358,8 @@ document.getElementById("pa-upload-input").addEventListener("change", async (e) 
   if (!datei) return;
   zeigeStatus("PDF wird gelesen…", "");
   try {
-    const zeilen = await extrahierePdfZeilen(datei);
-    const felder = extrahierePaFelderAusZeilen(zeilen);
-    const rohtext = zeilen.join("\n");
-    zeigePaUploadReview(felder, rohtext, null, extrahierePaStand(datei.name, rohtext));
+    const { felder, rohtext, stand } = await extrahierePaAusDatei(datei);
+    zeigePaUploadReview(felder, rohtext, null, stand);
   } catch (err) {
     alert("PDF konnte nicht gelesen werden: " + err.message);
   } finally {
@@ -1304,16 +1379,68 @@ document.getElementById("arbeitsvorrat-pa-upload-input").addEventListener("chang
   if (!zielEintrag) return;
   zeigeStatus("PDF wird gelesen…", "");
   try {
-    const zeilen = await extrahierePdfZeilen(datei);
-    const felder = extrahierePaFelderAusZeilen(zeilen);
-    const rohtext = zeilen.join("\n");
-    zeigePaUploadReview(felder, rohtext, zielEintrag.ian, extrahierePaStand(datei.name, rohtext));
+    const { felder, rohtext, stand } = await extrahierePaAusDatei(datei);
+    zeigePaUploadReview(felder, rohtext, zielEintrag.ian, stand);
   } catch (err) {
     alert("PDF konnte nicht gelesen werden: " + err.message);
   } finally {
     zeigeStatus("", "");
   }
 });
+
+/* Mehrfach-Upload: mehrere PA-PDFs auf einmal einlesen, ohne Feld-für-Feld-Review je Datei -
+   jede PDF wird automatisch per erkannter IAN mit dem passenden Arbeitsvorrat-Eintrag verknüpft.
+   Am Ende gibt es eine Zusammenfassung; einzelne Prüfaufträge lassen sich danach wie gewohnt im
+   Reiter „Prüfaufträge" prüfen/korrigieren. */
+document.getElementById("btn-pa-upload-mehrere").addEventListener("click", () => document.getElementById("pa-upload-mehrere-input").click());
+document.getElementById("pa-upload-mehrere-input").addEventListener("change", async (e) => {
+  const dateien = Array.from(e.target.files || []);
+  e.target.value = "";
+  if (!dateien.length) return;
+  const ergebnisse = [];
+  for (const datei of dateien) {
+    zeigeStatus(`PDFs werden gelesen… (${ergebnisse.length + 1}/${dateien.length}: ${datei.name})`, "");
+    try {
+      const { felder, rohtext, stand } = await extrahierePaAusDatei(datei);
+      const r = legePaAusFeldernAn(felder, rohtext, null, stand, false);
+      ergebnisse.push({ dateiname: datei.name, fehler: null, ...r });
+    } catch (err) {
+      ergebnisse.push({ dateiname: datei.name, fehler: err.message });
+    }
+  }
+  speichereInLocalStorage();
+  renderAlles();
+  const letzteErfolgreiche = [...ergebnisse].reverse().find((r) => r.pa);
+  if (letzteErfolgreiche) aktivePaId = letzteErfolgreiche.pa.id;
+  renderPaTab();
+  zeigeStatus("", "");
+  zeigePaMehrfachUploadZusammenfassung(ergebnisse);
+});
+
+function zeigePaMehrfachUploadZusammenfassung(ergebnisse) {
+  const box = document.getElementById("overlay-box");
+  const erfolgreich = ergebnisse.filter((r) => !r.fehler);
+  const verknuepftAnzahl = erfolgreich.filter((r) => r.verknuepft).length;
+  let html = `<h2>${ergebnisse.length} PA-PDF(s) verarbeitet</h2>
+    <p class="hinweis">${erfolgreich.length} von ${ergebnisse.length} erfolgreich eingelesen, davon ${verknuepftAnzahl} automatisch mit einem bestehenden Arbeitsvorrat-Eintrag verknüpft (per IAN). Ohne Treffer im Arbeitsvorrat wird trotzdem ein Prüfauftrag angelegt — jeder lässt sich danach im Reiter „Prüfaufträge" einzeln prüfen/korrigieren.</p>
+    <table class="tabelle"><thead><tr><th>Datei</th><th>IAN</th><th>Artikelbezeichnung</th><th>Status</th></tr></thead><tbody>`;
+  ergebnisse.forEach((r) => {
+    if (r.fehler) {
+      html += `<tr><td>${escapeHtml(r.dateiname)}</td><td colspan="2" class="muted">Fehler: ${escapeHtml(r.fehler)}</td><td>❌</td></tr>`;
+      return;
+    }
+    const status = !r.ian
+      ? "⚠ keine IAN erkannt"
+      : r.verknuepft
+        ? (r.aktualisiert ? "🔄 aktualisiert &amp; verknüpft" : "✅ verknüpft")
+        : (r.aktualisiert ? "🔄 aktualisiert" : "✅ angelegt (kein Arbeitsvorrat-Treffer)");
+    html += `<tr><td>${escapeHtml(r.dateiname)}</td><td>${escapeHtml(r.ian || "–")}</td><td>${escapeHtml(r.artikelbezeichnung || "")}</td><td>${status}</td></tr>`;
+  });
+  html += `</tbody></table><div class="overlay-actions"><button id="pa-mehrfach-schliessen">Schließen</button></div>`;
+  box.innerHTML = html;
+  document.getElementById("pa-mehrfach-schliessen").addEventListener("click", schliesseOverlay);
+  document.getElementById("overlay").classList.add("sichtbar");
+}
 
 function zeigePaUploadReview(felder, rohtext, erzwingeIan, stand) {
   const box = document.getElementById("overlay-box");
@@ -1347,42 +1474,12 @@ function zeigePaUploadReview(felder, rohtext, erzwingeIan, stand) {
     uebernommen.forEach((e) => {
       if (PA_BLOCKFELDER.some((f) => normalisiere(f) === normalisiere(e.schluessel))) e.stilBloecke = trenneNachStyle(e.wert);
     });
-    const findeWert = (regex) => { const t = uebernommen.find((f) => regex.test(f.schluessel)); return t ? t.wert : ""; };
-    const ian = erzwingeIan || leiteFuehrendeZahlAb(findeWert(/^ian \/ charge$/i));
-    const artikelbezeichnung = findeWert(/^artikelbezeichnung$/i);
-    const warengruppe = normalisiereWarengruppe(findeWert(/^warengruppe$/i));
-    const artikelkategorie = findeWert(/^artikelkategorie$/i);
-    const ianVorgaenger = findeWert(/^ian-vorgänger$/i);
-    const fruehLt = findeWert(/^früh\.?\s*lt$/i);
-    const lieferant = findeWert(/^lieferant$/i);
-    const pruefumfang = extrahierePruefumfang(rohtext.split("\n"));
-
-    const bestehende = ian ? data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(ian)) : null;
-    let ziel;
-    if (bestehende) {
-      if (!confirm(`Für IAN "${ian}" existiert bereits ein Prüfauftrag. Vorhandenen mit den neuen Daten aktualisieren?\n\nOK = aktualisieren, Abbrechen = neuen separaten Prüfauftrag anlegen.`)) {
-        ziel = { id: neueId() };
-        data.pruefauftraege.unshift(ziel);
-      } else {
-        ziel = bestehende;
-      }
-    } else {
-      ziel = { id: neueId() };
-      data.pruefauftraege.unshift(ziel);
-    }
-    ziel.ian = ian; ziel.artikelbezeichnung = artikelbezeichnung; ziel.warengruppe = warengruppe;
-    ziel.artikelkategorie = artikelkategorie; ziel.ianVorgaenger = ianVorgaenger; ziel.fruehLt = fruehLt;
-    ziel.lieferant = lieferant; ziel.pruefumfang = pruefumfang;
-    ziel.felder = uebernommen; ziel.rohtext = rohtext; ziel.stand = stand || "";
-    aktivePaId = ziel.id;
-
-    const zielArbeitsvorrat = data.arbeitsvorrat.find((a) => normalisiere(a.ian) === normalisiere(ian));
-    if (zielArbeitsvorrat) fuelleAusPa(zielArbeitsvorrat, false);
+    const ergebnis = legePaAusFeldernAn(uebernommen, rohtext, erzwingeIan, stand, true);
 
     speichereInLocalStorage();
     schliesseOverlay();
     renderAlles();
-    aktivePaId = ziel.id;
+    aktivePaId = ergebnis.pa.id;
     renderPaTab();
     zeigeStatus("PA-Daten übernommen · " + jetzt(), "ok");
   });

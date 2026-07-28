@@ -46,23 +46,35 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   geraten.
 
   **Datenherkunft je Feld:** Bezeichnung, Lieferant, Angelegt am und
-  Sachbearbeiter kommen aus dem SAP-Export. Warengruppe, Anzahl Styles,
-  LFGB? und Trivial? kommen bewusst **nicht** aus SAP, sondern — wenn im
-  verknüpften Prüfauftrag (PA) vorhanden — von dort; ein SAP-Excel-Upload
-  lässt diese vier Felder daher unangetastet. Sobald zu einer IAN ein PA
-  hochgeladen wird, werden sie automatisch befüllt (nur wenn noch leer);
-  über „↺ … aus PA übernehmen" (im Bearbeiten-Dialog bzw. auf der
-  PA-Detailseite) lässt sich das auch nachträglich/erzwungen anstoßen.
-  „Mech. erledigt" ist nur ein anklickbarer Haken direkt in der Tabelle —
-  reiner Status, ob der KV von mechanischer Seite fertig ist. Die
+  Sachbearbeiter kommen aus dem SAP-Export. Warengruppe und Anzahl Styles
+  kommen bewusst **nicht** aus SAP, sondern — wenn im verknüpften
+  Prüfauftrag (PA) vorhanden — von dort; ein SAP-Excel-Upload lässt diese
+  Felder daher unangetastet. Sobald zu einer IAN ein PA hochgeladen wird,
+  werden sie automatisch befüllt (nur wenn noch leer); über „↺ … aus PA
+  übernehmen" (im Bearbeiten-Dialog bzw. auf der PA-Detailseite) lässt sich
+  das auch nachträglich/erzwungen anstoßen. **Anzahl Styles** steht in
+  keiner PA-PDF als eigenes Feld — sie wird aus der Anzahl unterschiedlicher
+  „Style_X"-Blöcke in den Style-Feldern (Maße, Gewicht, …) abgeleitet; ohne
+  erkennbare Style-Kennzeichnung wird von einem einzigen Style ausgegangen.
+  **LFGB? und Trivial? lassen sich aus der PA-PDF nicht auslesen** (dort
+  gibt es dafür kein Feld) und müssen bei der KV-Erstellung manuell gewählt
+  werden. „Mech. erledigt" ist nur ein anklickbarer Haken direkt in der
+  Tabelle — reiner Status, ob der KV von mechanischer Seite fertig ist. Die
   Muster-Anzahl-Felder und „KV CU" aus der ursprünglichen Excel wurden
   entfernt, da die Musteranzahl erst bei der KV-Erstellung festgelegt wird
   und „KV CU" hier nicht gebraucht wird.
 - **Prüfaufträge (PA)** – ein Eintrag pro IAN mit den aus der PA-PDF
   ausgelesenen Feldern. Über **„📄 PA-PDF hochladen"** wird eine Prüfauftrag-PDF
   eingelesen und automatisch (heuristisch) in Schlüssel/Wert-Paare zerlegt;
-  vor der Übernahme gibt es eine Prüf-/Korrekturseite. Der Rohtext bleibt zum
-  Nachschlagen erhalten. Der **Stand der PDF** (aus dem Dateinamen, z. B.
+  vor der Übernahme gibt es eine Prüf-/Korrekturseite. Über **„📄📄 Mehrere
+  PA-PDFs hochladen"** lassen sich stattdessen mehrere PDFs auf einmal
+  auswählen — hier gibt es *keine* Feld-für-Feld-Prüfseite je Datei, jede
+  PDF wird automatisch anhand der erkannten IAN mit dem passenden
+  Arbeitsvorrat-Eintrag verknüpft (fehlt ein Treffer, wird trotzdem ein
+  Prüfauftrag angelegt). Am Ende erscheint eine Zusammenfassung mit Status
+  je Datei (verknüpft/aktualisiert/keine IAN erkannt/Fehler); einzelne
+  Prüfaufträge lassen sich danach wie gewohnt in der Liste prüfen und
+  korrigieren. Der Rohtext bleibt zum Nachschlagen erhalten. Der **Stand der PDF** (aus dem Dateinamen, z. B.
   „…_Stand_16.07.2026.pdf", ersatzweise aus dem Seitenfuß der PDF) wird
   automatisch erkannt, als Badge oben auf der Detailseite sowie in der
   Prüfauftrag-Liste angezeigt und ist bei Bedarf im Kopf-Formular korrigierbar.
