@@ -207,21 +207,40 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   bestehenden KV-Vorlage. Hier pflegen, wenn sich Preise ändern oder neue
   Prüfarten dazukommen.
 - **Prüfgrundlagen** – die Datenquelle der Warengruppen-Empfehlung im KV
-  (siehe oben) ist jetzt **direkt in der Oberfläche bearbeitbar und neu
-  anlegbar**, nicht mehr nur fest eingebettet. Zuerst nach **Warengruppe**
-  gruppiert (auf-/zuklappbar), darunter nach **Produkt** sortiert — jede
-  Zeile mit Norm, Kosten Sicherheit & Norm, Anzahl Muster, Trivial-/
-  KEZ-Kennzeichnung sowie FFU- und StiWa-Hinweis+Kosten, alle Felder direkt
-  editierbar (Autosave wie überall). **„+ Neue Prüfgrundlage"** legt eine
-  leere Zeile in der Gruppe „(ohne Warengruppe)" an; sobald ein
-  Warengruppen-Code eingetragen und das Feld verlassen wird, wandert die
-  Zeile automatisch in die passende (neue oder bestehende) Gruppe. Über die
-  Suche oben lässt sich nach Warengruppe, Produkt, Norm oder Bemerkung
-  filtern. Änderungen wirken sich sofort auf die Warengruppen-Empfehlung im
-  KV-Reiter aus — dort wird immer der aktuelle Stand dieser Tabelle
-  nachgeschlagen. Auch bei **⬇ Sichern/⬆ Laden (JSON)**, **🔀
+  (siehe oben) ist **direkt in der Oberfläche bearbeitbar und neu anlegbar**,
+  nicht mehr nur fest eingebettet. Zuerst nach **Warengruppe** gruppiert
+  (auf-/zuklappbar), darunter nach **Produkt** sortiert. Die Übersichtszeile
+  je Produkt zeigt nur das Nötigste (Produkt, Normen, Kosten Sicherheit &
+  Norm, Anzahl Muster, Kennzeichnungs-Badges, ob FFU/StiWa hinterlegt sind) —
+  der Warengruppen-Code selbst wird hier bewusst **nicht** als eigene Spalte
+  angezeigt (steht ja schon im Gruppenkopf), ist aber weiterhin die Basis für
+  die Zuordnung. **Auf eine Zeile klicken** (oder ✏️) öffnet die
+  Detailansicht zum Bearbeiten; **„+ Neue Prüfgrundlage"** öffnet sie leer.
+  Änderungen werden erst mit „Speichern" übernommen — „Abbrechen" verwirft
+  sie wieder vollständig, inklusive aller Normen-/Materialien-Einträge.
+  Sobald der Warengruppen-Code gespeichert wird, wandert der Eintrag
+  automatisch in die passende (neue oder bestehende) Gruppe.
+
+  In der Detailansicht sind **Normen jetzt eine Mehrfachauswahl** (mehrere
+  Normen pro Prüfgrundlage möglich, z. B. wenn mehrere Regelwerke gelten) und
+  jeder der drei Prüfblöcke — **Sicherheit & Norm, FFU/Fitting, NGO/StiWa** —
+  hat sein eigenes **„Materialien"-Feld** (ebenfalls Mehrfachauswahl, z. B.
+  „Edelstahl, Kunststoff"), falls die Prüfanforderung materialabhängig ist.
+  Neu ist außerdem das Feld **„Kennzeichnung über GPSR hinaus"**: ein Haken
+  bedeutet, dass die Norm Kennzeichnungsanforderungen enthält, die über die
+  GPSR-Basisanforderungen hinausgehen — erscheint als Badge in der Übersicht
+  und in der Warengruppen-Empfehlung im KV.
+
+  Über die Suche oben lässt sich nach Warengruppe, Produkt, Norm, Materialien
+  oder Bemerkung filtern. Änderungen wirken sich sofort auf die
+  Warengruppen-Empfehlung im KV-Reiter aus (inkl. der neuen Materialien- und
+  Kennzeichnung-Anzeige dort) — dort wird immer der aktuelle Stand dieser
+  Tabelle nachgeschlagen. Auch bei **⬇ Sichern/⬆ Laden (JSON)**, **🔀
   Zusammenführen** und **📄 CSV-Export** wie die übrigen Reiter behandelt
-  (Zusammenführen erkennt gleiche Einträge an Warengruppen-Code + Produkt).
+  (Zusammenführen erkennt gleiche Einträge an Warengruppen-Code + Produkt;
+  Dateien aus einer älteren Tool-Version mit dem alten einzeiligen
+  „Norm"-Feld werden beim Laden/Zusammenführen automatisch auf die neue
+  Mehrfachauswahl-Form migriert).
 
 ## Datenquelle der Warengruppen-Empfehlung und SAP-Codes
 
