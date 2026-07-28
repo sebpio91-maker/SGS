@@ -81,3 +81,13 @@ Installation. Kernidee: bestehende KVs durchsuchen und als Vorlage für neue,
 Prüfpositionen-Katalog mit Standardkosten/SAP-Codes zum schnellen Befüllen.
 
 Details und Arbeitsablauf: siehe `KV-Monitoring-Offline/README.md`.
+
+### Zentrale Version für mehrere Personen gleichzeitig: `KV-Monitoring-SharePoint/`
+
+Dieselben Daten als Excel-Arbeitsmappe mit Excel-Tabellen statt als lokale
+HTML-Datei, gedacht zum Hochladen in eine SharePoint-Dokumentbibliothek/
+OneDrive und dortiger Bearbeitung per Excel Online (Co-Authoring) – dadurch
+sehen alle Beteiligten denselben Stand in Echtzeit, ohne manuelles
+Zusammenführen. Dafür entfallen der automatische PDF-/Excel-Upload und die
+"Als Vorlage duplizieren"-Funktion; Details in
+`KV-Monitoring-SharePoint/README.md`.
