@@ -19,15 +19,19 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   zum Bearbeiten; **„📄" lädt direkt eine PA-PDF für genau dieses Projekt
   hoch** (die IAN steht dabei schon fest und wird nicht erst aus der PDF
   geraten); „+ KV" legt direkt einen neuen Kostenvoranschlag für diese IAN
-  an. **VK Büro** wird jetzt als eigene Spalte angezeigt. Unter der
-  Kopfzeile der Tabelle gibt es **Filter**: IAN als Freitextfeld
-  (Teiltreffer); **VK Büro, Lieferant und Warengruppe als durchsuchbare
-  Mehrfachauswahl** — anklicken öffnet ein Panel mit Suchfeld und
-  Checkbox-Liste, mehrere Werte gleichzeitig ankreuzbar (inkl. „Alle"/„Keine"
-  für die gerade sichtbare/gefilterte Liste); Sachbearbeiter, LFGB?,
-  Trivial? und Mech. erledigt als einfaches Dropdown. Alles kombinierbar,
-  zusätzlich zur Volltextsuche oben. „Filter zurücksetzen" setzt alles
-  wieder auf „Alle" zurück.
+  an. **VK Büro** wird jetzt als eigene Spalte angezeigt. Die Spalte **„PA"**
+  zeigt auf einen Blick, ob zu dieser IAN bereits ein Prüfauftrag hochgeladen
+  wurde: liegt einer vor, erscheint ein anklickbares Feld mit dem **Stand der
+  PA-PDF** (Datum aus dem Dateinamen bzw. ersatzweise aus dem Seitenfuß der
+  PDF), ein Klick springt direkt zum Prüfauftrag; fehlt einer, steht dort nur
+  ein „–". Unter der Kopfzeile der Tabelle gibt es **Filter**: IAN als
+  Freitextfeld (Teiltreffer); **VK Büro, Lieferant und Warengruppe als
+  durchsuchbare Mehrfachauswahl** — anklicken öffnet ein Panel mit Suchfeld
+  und Checkbox-Liste, mehrere Werte gleichzeitig ankreuzbar (inkl.
+  „Alle"/„Keine" für die gerade sichtbare/gefilterte Liste); Sachbearbeiter,
+  LFGB?, Trivial? und Mech. erledigt als einfaches Dropdown. Alles
+  kombinierbar, zusätzlich zur Volltextsuche oben. „Filter zurücksetzen"
+  setzt alles wieder auf „Alle" zurück.
 
   **VK Büro wird vereinheitlicht:** „0070", „070" und „70" gelten als
   derselbe Wert (führende Nullen werden ignoriert) — sowohl bei der Anzeige
@@ -59,12 +63,18 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   ausgelesenen Feldern. Über **„📄 PA-PDF hochladen"** wird eine Prüfauftrag-PDF
   eingelesen und automatisch (heuristisch) in Schlüssel/Wert-Paare zerlegt;
   vor der Übernahme gibt es eine Prüf-/Korrekturseite. Der Rohtext bleibt zum
-  Nachschlagen erhalten. Die Detailseite eines Prüfauftrags ist in drei
-  Bereiche gegliedert:
+  Nachschlagen erhalten. Der **Stand der PDF** (aus dem Dateinamen, z. B.
+  „…_Stand_16.07.2026.pdf", ersatzweise aus dem Seitenfuß der PDF) wird
+  automatisch erkannt, als Badge oben auf der Detailseite sowie in der
+  Prüfauftrag-Liste angezeigt und ist bei Bedarf im Kopf-Formular korrigierbar.
+  Die Detailseite eines Prüfauftrags ist in drei Bereiche gegliedert:
   - **Kopfdaten**: IAN/Charge, Warengruppe, Artikelbezeichnung, Artikelkategorie,
-    IAN-Vorgänger, Früh. LT, Lieferant – direkt editierbar.
+    IAN-Vorgänger, Früh. LT, Lieferant, Stand der PDF – direkt editierbar.
   - **Prüfumfang**: der Fließtext-Absatz aus der PDF (30% SPU/QSP, ALT, 100% PSI
     usw.), die **ALT-Zeile ist hervorgehoben**, da sie meist am relevantesten ist.
+    Das Institut/Datum-Klammerelement (z. B. „(18.06.2026: SGS Hamburg)") und der
+    „bestehend aus"-Verbinder werden für die Anzeige automatisch entfernt, da
+    Institut und Datum bereits im Kopf des Prüfauftrags stehen.
   - **Maße, Gewicht, Qualität, Material, Markenreferenz, Garantie**: werden
     **blockweise statt zeilenweise dargestellt** – enthält die PDF
     „Style_A, …:"/„Style_B, …:"-Kennzeichnungen, wird automatisch pro Style ein
@@ -72,7 +82,9 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     vier Blöcke je Feld). Bei einstiligen Artikeln erscheint ein einzelner Block.
     Da das Layout nicht in jeder PDF gleich eindeutig ist, bleibt darunter
     weiterhin die vollständige, editierbare Rohliste aller erkannten Felder als
-    Korrekturmöglichkeit erhalten.
+    Korrekturmöglichkeit erhalten — standardmäßig **eingeklappt** hinter „Alle
+    ausgelesenen Felder anzeigen/bearbeiten", da sie im Alltag selten gebraucht
+    wird.
 - **Kostenvoranschläge (KV)** – das Herzstück: pro IAN ein KV mit
   Stammdaten und einer Tabelle mechanischer Prüfpositionen (Kategorie,
   Bezeichnung, Kürzel, SAP-Code, Kosten, Anzahl, Summe, aktiv/inaktiv).
