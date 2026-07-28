@@ -1034,7 +1034,7 @@ function renderPaBlockKarte(pa) {
   }).filter(Boolean).join("");
   if (!abschnitte) return "";
   return `<div class="card"><h2>Maße, Gewicht, Qualität, Material, Markenreferenz, Garantie</h2>
-    <p class="hinweis">Automatisch nach Style getrennt, sofern die PDF entsprechende „Style_…"-Kennzeichnungen enthält.</p>
+    <p class="hinweis">Automatisch nach Style getrennt, sofern die PDF entsprechende „Style_…"- oder HG-Code-Kennzeichnungen (z. B. „HG09747A") enthält.</p>
     ${abschnitte}</div>`;
 }
 
@@ -1198,12 +1198,19 @@ const PA_BEKANNTE_FELDER_SET = new Set(PA_BEKANNTE_FELDER.map((f) => normalisier
 /* Felder, deren Wert häufig pro Style aufgeschlüsselt ist ("Style_A, ...: ... Style_B, ...: ..."). */
 const PA_BLOCKFELDER = ["Maße", "Gewicht", "Qualität", "Material", "Markenreferenz", "Garantie"];
 const PA_STYLE_HEADER_RE = /^(Style_[^\n:]+):\s*$/gm;
+/* Manche PAs benennen die Styles/Varianten nicht mit "Style_X:", sondern mit einem HG-Code
+   (z. B. "HG09747A"), der am Zeilenanfang steht - mal als eigene Kopfzeile mit Doppelpunkt
+   ("HG09747A:"), mal direkt gefolgt vom Wert in derselben Zeile, mit oder ohne Doppelpunkt
+   ("HG09747A: Platte: MDF" bzw. "HG09747A 600 x 320 x 22 mm"). */
+const PA_HG_HEADER_RE = /^(HG\d{3,}[A-Z]?):?[ \t]*/gm;
 
-/* Zerlegt einen Feldwert in Style-Blöcke, falls "Style_X, ...:"-Kopfzeilen enthalten sind.
-   Ohne solche Kopfzeilen gibt es genau einen Block ohne Style-Label (einstiliger Artikel). */
+/* Zerlegt einen Feldwert in Style-Blöcke, falls "Style_X, ...:"- oder "HG..."-Kopfzeilen
+   enthalten sind. Ohne solche Kopfzeilen gibt es genau einen Block ohne Style-Label
+   (einstiliger Artikel). */
 function trenneNachStyle(text) {
   if (!text) return [];
-  const treffer = [...text.matchAll(PA_STYLE_HEADER_RE)];
+  let treffer = [...text.matchAll(PA_STYLE_HEADER_RE)];
+  if (!treffer.length) treffer = [...text.matchAll(PA_HG_HEADER_RE)];
   if (!treffer.length) return [{ style: "", inhalt: text.trim() }];
   return treffer.map((t, i) => {
     const start = t.index + t[0].length;

@@ -90,7 +90,11 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     **blockweise statt zeilenweise dargestellt** – enthält die PDF
     „Style_A, …:"/„Style_B, …:"-Kennzeichnungen, wird automatisch pro Style ein
     eigener Block gezeigt (z. B. bei einem Artikel mit vier Farb-/Gewichtsvarianten
-    vier Blöcke je Feld). Bei einstiligen Artikeln erscheint ein einzelner Block.
+    vier Blöcke je Feld). Manche PAs benennen Varianten stattdessen mit einem
+    HG-Code (z. B. „HG09747A") direkt am Zeilenanfang statt mit „Style_…:" —
+    auch das wird erkannt, unabhängig davon, ob der HG-Code als eigene
+    Kopfzeile steht oder direkt gefolgt vom Wert (mit oder ohne Doppelpunkt)
+    in derselben Zeile. Bei einstiligen Artikeln erscheint ein einzelner Block.
     Da das Layout nicht in jeder PDF gleich eindeutig ist, bleibt darunter
     weiterhin die vollständige, editierbare Rohliste aller erkannten Felder als
     Korrekturmöglichkeit erhalten — standardmäßig **eingeklappt** hinter „Alle
