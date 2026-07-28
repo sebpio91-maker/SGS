@@ -135,7 +135,7 @@ input[type=file] { display:none; }
       <input type="file" id="arbeitsvorrat-upload-input" accept=".xlsx,.xlsm,.xls">
       <input type="file" id="arbeitsvorrat-pa-upload-input" accept="application/pdf">
     </div>
-    <p class="hinweis">Bezeichnung, Lieferant, Angelegt am und Sachbearbeiter kommen aus dem SAP-Export. Warengruppe, Styles, LFGB? und Trivial? werden — wenn möglich — aus dem verknüpften Prüfauftrag übernommen (siehe Reiter „Prüfaufträge"). „Mech. erledigt" ist nur ein Haken, ob der KV von mechanischer Seite fertig ist; anklicken zum Umschalten. Über die Dropdowns unter der Kopfzeile lässt sich die Tabelle filtern.</p>
+    <p class="hinweis">Bezeichnung, Lieferant, Angelegt am und Sachbearbeiter kommen aus dem SAP-Export. Warengruppe, Styles, LFGB? und Trivial? werden — wenn möglich — aus dem verknüpften Prüfauftrag übernommen (siehe Reiter „Prüfaufträge"). „Mech. erledigt" ist nur ein Haken, ob der KV von mechanischer Seite fertig ist; anklicken zum Umschalten. Unter der Kopfzeile lässt sich die Tabelle filtern: IAN als Freitext, alle anderen Spalten per Dropdown. VK Büro wird unabhängig von führenden Nullen zusammengefasst (070 = 70).</p>
     <div class="tabellen-wrapper">
       <table class="tabelle readonly" id="arbeitsvorrat-tabelle">
         <thead>
@@ -412,9 +412,17 @@ function renderAlles() {
 
 /* ================= ARBEITSVORRAT ================= */
 
+/* VK Büro einheitlich ohne führende Nullen behandeln: "0070"/"70" sind derselbe Wert. */
+function normalisiereVkBuero(wert) {
+  if (wert === null || wert === undefined || wert === "") return "";
+  const text = String(wert).trim();
+  if (/^\d+$/.test(text)) return String(Number(text));
+  return text;
+}
+
 /* Spalten mit Dropdown-Filter in der Filterzeile der Arbeitsvorrat-Tabelle. */
 const ARBEITSVORRAT_FILTER_FELDER = ["vkBuero", "lieferant", "sachbearbeiter", "warengruppe", "lfgb", "trivial", "mechErledigt"];
-let arbeitsvorratFilter = { vkBuero: "", lieferant: "", sachbearbeiter: "", warengruppe: "", lfgb: "", trivial: "", mechErledigt: "" };
+let arbeitsvorratFilter = { ian: "", vkBuero: "", lieferant: "", sachbearbeiter: "", warengruppe: "", lfgb: "", trivial: "", mechErledigt: "" };
 
 function gefiltertArbeitsvorrat() {
   let liste = data.arbeitsvorrat;
@@ -422,10 +430,14 @@ function gefiltertArbeitsvorrat() {
     const wert = arbeitsvorratFilter[f];
     if (wert === "") return;
     liste = liste.filter((r) => {
-      const rWert = f === "mechErledigt" ? (r.mechErledigt ? "ja" : "nein") : normalisiere(r[f]);
+      const rWert = f === "mechErledigt" ? (r.mechErledigt ? "ja" : "nein")
+        : f === "vkBuero" ? normalisiere(normalisiereVkBuero(r.vkBuero))
+        : normalisiere(r[f]);
       return rWert === wert;
     });
   });
+  const ianFilter = normalisiere(arbeitsvorratFilter.ian);
+  if (ianFilter) liste = liste.filter((r) => normalisiere(r.ian).includes(ianFilter));
   const q = normalisiere(suchbegriffe.arbeitsvorrat);
   if (q) liste = liste.filter((r) => ARBEITSVORRAT_FELDER.some((f) => normalisiere(r[f]).includes(q)));
   return liste;
@@ -441,7 +453,9 @@ function jaNeinBadge(wert) {
 function distinkteWerte(feld) {
   const werte = new Set();
   data.arbeitsvorrat.forEach((r) => {
-    const w = feld === "mechErledigt" ? (r.mechErledigt ? "Ja" : "Nein") : r[feld];
+    const w = feld === "mechErledigt" ? (r.mechErledigt ? "Ja" : "Nein")
+      : feld === "vkBuero" ? normalisiereVkBuero(r.vkBuero)
+      : r[feld];
     if (w !== null && w !== undefined && w !== "") werte.add(String(w));
   });
   return Array.from(werte).sort((a, b) => a.localeCompare(b, "de", { numeric: true }));
@@ -449,10 +463,14 @@ function distinkteWerte(feld) {
 
 function renderArbeitsvorratFilterZeile() {
   const tr = document.getElementById("arbeitsvorrat-filter-zeile");
-  const filterLabel = { vkBuero: "VK Büro", lieferant: "Lieferant", sachbearbeiter: "Sachbearbeiter", warengruppe: "Warengruppe", lfgb: "LFGB?", trivial: "Trivial?", mechErledigt: "Mech. erledigt" };
-  const spaltenReihenfolge = ["", "vkBuero", "", "lieferant", "", "sachbearbeiter", "warengruppe", "", "lfgb", "trivial", "mechErledigt", "", ""];
-  tr.innerHTML = spaltenReihenfolge.map((feld) => {
-    if (!feld) return "<th></th>";
+  const spaltenReihenfolge = ["ian:text", "vkBuero", "", "lieferant", "", "sachbearbeiter", "warengruppe", "", "lfgb", "trivial", "mechErledigt", "", ""];
+  tr.innerHTML = spaltenReihenfolge.map((eintragTyp) => {
+    if (!eintragTyp) return "<th></th>";
+    if (eintragTyp.endsWith(":text")) {
+      const feld = eintragTyp.split(":")[0];
+      return `<th><input type="text" data-filterfeld-text="${feld}" placeholder="Filtern…" value="${escapeHtml(arbeitsvorratFilter[feld])}"></th>`;
+    }
+    const feld = eintragTyp;
     const optionen = distinkteWerte(feld);
     const aktuell = arbeitsvorratFilter[feld];
     return `<th><select data-filterfeld="${feld}">
@@ -463,7 +481,13 @@ function renderArbeitsvorratFilterZeile() {
   tr.querySelectorAll("select[data-filterfeld]").forEach((sel) => {
     sel.addEventListener("change", () => {
       arbeitsvorratFilter[sel.dataset.filterfeld] = sel.value;
-      renderArbeitsvorratTab();
+      renderArbeitsvorratKoerper();
+    });
+  });
+  tr.querySelectorAll("input[data-filterfeld-text]").forEach((input) => {
+    input.addEventListener("input", () => {
+      arbeitsvorratFilter[input.dataset.filterfeldText] = input.value;
+      renderArbeitsvorratKoerper();
     });
   });
 }
@@ -478,10 +502,16 @@ document.getElementById("btn-arbeitsvorrat-filter-zuruecksetzen").addEventListen
 let arbeitsvorratPaZielId = null;
 
 function renderArbeitsvorratTab() {
+  renderArbeitsvorratFilterZeile();
+  renderArbeitsvorratKoerper();
+}
+
+/* Rendert nur Zähler + Tabellenzeilen (nicht die Filterzeile selbst), damit ein Filtereingabefeld
+   beim Tippen nicht durch ein Neuaufbauen der Filterzeile den Fokus verliert. */
+function renderArbeitsvorratKoerper() {
   const tbody = document.getElementById("arbeitsvorrat-body");
   const liste = gefiltertArbeitsvorrat();
   document.getElementById("arbeitsvorrat-zaehler").textContent = `${liste.length} von ${data.arbeitsvorrat.length} Einträgen`;
-  renderArbeitsvorratFilterZeile();
 
   if (!liste.length) {
     tbody.innerHTML = '<tr><td colspan="13" class="leerzustand">Keine Einträge gefunden.</td></tr>';
@@ -491,7 +521,7 @@ function renderArbeitsvorratTab() {
   tbody.innerHTML = liste.map((r) => `
     <tr data-id="${r.id}">
       <td><strong>${escapeHtml(r.ian)}</strong></td>
-      <td>${escapeHtml(r.vkBuero)}</td>
+      <td>${escapeHtml(normalisiereVkBuero(r.vkBuero))}</td>
       <td title="${escapeHtml(r.bezeichnung)}">${escapeHtml(r.bezeichnung)}</td>
       <td title="${escapeHtml(r.lieferant)}">${escapeHtml(r.lieferant)}</td>
       <td>${escapeHtml(r.angelegtAm)}</td>
@@ -560,6 +590,7 @@ function oeffneArbeitsvorratModal(eintrag) {
     box.querySelectorAll("[data-feld]").forEach((el) => {
       eintrag[el.dataset.feld] = el.type === "checkbox" ? el.checked : el.value;
     });
+    eintrag.vkBuero = normalisiereVkBuero(eintrag.vkBuero);
     if (!data.arbeitsvorrat.includes(eintrag)) data.arbeitsvorrat.unshift(eintrag);
     speichereInLocalStorage();
     schliesseOverlay();
@@ -697,6 +728,7 @@ function parseArbeitsvorratExcel(workbook) {
       eintrag[f] = idx === -1 || idx === undefined ? "" : excelWertZuText(row[idx]);
     });
     eintrag.ian = spalten.ian !== -1 ? excelWertZuText(row[spalten.ian]) : leiteFuehrendeZahlAb(eintrag.bestellnummer);
+    eintrag.vkBuero = normalisiereVkBuero(eintrag.vkBuero);
     eintrag.mechErledigt = spalten.kvMech === -1 ? false : normalisiere(row[spalten.kvMech]) === "x";
     ARBEITSVORRAT_PA_FELDER.forEach((f) => (eintrag[f] = ""));
     if (eintrag.ian === "" || eintrag.ian === null) continue;
@@ -728,7 +760,10 @@ function verarbeiteArbeitsvorratUpload(neueEintraege) {
     const key = normalisiere(n.ian);
     const vorhanden = bestehende.get(key);
     if (!vorhanden) { wirklichNeu.push(n); return; }
-    const unterschiedlich = ARBEITSVORRAT_SAP_FELDER.some((f) => normalisiere(vorhanden[f]) !== normalisiere(n[f]));
+    const unterschiedlich = ARBEITSVORRAT_SAP_FELDER.some((f) => {
+      if (f === "vkBuero") return normalisiereVkBuero(vorhanden[f]) !== normalisiereVkBuero(n[f]);
+      return normalisiere(vorhanden[f]) !== normalisiere(n[f]);
+    });
     if (unterschiedlich) duplikate.push({ vorhanden, neu: n });
   });
 

@@ -20,10 +20,18 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   hoch** (die IAN steht dabei schon fest und wird nicht erst aus der PDF
   geraten); „+ KV" legt direkt einen neuen Kostenvoranschlag für diese IAN
   an. **VK Büro** wird jetzt als eigene Spalte angezeigt. Unter der
-  Kopfzeile der Tabelle gibt es **Dropdown-Filter** für VK Büro, Lieferant,
-  Sachbearbeiter, Warengruppe, LFGB?, Trivial? und Mech. erledigt
-  (kombinierbar, zusätzlich zur Volltextsuche oben) — „Filter zurücksetzen"
-  setzt alles wieder auf „Alle" zurück.
+  Kopfzeile der Tabelle gibt es **Filter**: IAN als Freitextfeld (Teiltreffer),
+  alle anderen Spalten (VK Büro, Lieferant, Sachbearbeiter, Warengruppe,
+  LFGB?, Trivial?, Mech. erledigt) als Dropdown — beliebig kombinierbar,
+  zusätzlich zur Volltextsuche oben. „Filter zurücksetzen" setzt alles
+  wieder auf „Alle" zurück.
+
+  **VK Büro wird vereinheitlicht:** „0070", „070" und „70" gelten als
+  derselbe Wert (führende Nullen werden ignoriert) — sowohl bei der Anzeige
+  und im Filter-Dropdown als auch beim Excel-Upload und beim
+  Duplikat-Abgleich. Der rohe SAP-Export liefert das Verkaufsbüro z. B. als
+  „0070", die bereits angereicherte Monitoring-Tabelle als „70" — beide
+  landen als „70" im Arbeitsvorrat.
 
   **Datenherkunft je Feld:** Bezeichnung, Lieferant, Angelegt am und
   Sachbearbeiter kommen aus dem SAP-Export. Warengruppe, Anzahl Styles,
