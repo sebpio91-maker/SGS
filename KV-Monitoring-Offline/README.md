@@ -16,8 +16,14 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   Verkaufsbüro/Bestellnummer/Bezeichnung/Importeur/Angelegt am/
   Sachbearbeiter — die IAN wird in dem Fall automatisch aus der führenden
   Zahl der Bestellnummer abgeleitet). Eine Zeile anklicken (✏️) öffnet sie
-  zum Bearbeiten; „+ KV" legt direkt einen neuen Kostenvoranschlag für diese
-  IAN an.
+  zum Bearbeiten; **„📄" lädt direkt eine PA-PDF für genau dieses Projekt
+  hoch** (die IAN steht dabei schon fest und wird nicht erst aus der PDF
+  geraten); „+ KV" legt direkt einen neuen Kostenvoranschlag für diese IAN
+  an. **VK Büro** wird jetzt als eigene Spalte angezeigt. Unter der
+  Kopfzeile der Tabelle gibt es **Dropdown-Filter** für VK Büro, Lieferant,
+  Sachbearbeiter, Warengruppe, LFGB?, Trivial? und Mech. erledigt
+  (kombinierbar, zusätzlich zur Volltextsuche oben) — „Filter zurücksetzen"
+  setzt alles wieder auf „Alle" zurück.
 
   **Datenherkunft je Feld:** Bezeichnung, Lieferant, Angelegt am und
   Sachbearbeiter kommen aus dem SAP-Export. Warengruppe, Anzahl Styles,

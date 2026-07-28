@@ -78,6 +78,8 @@ table.tabelle input:hover, table.tabelle select:hover, table.tabelle textarea:ho
 table.tabelle input:focus, table.tabelle select:focus, table.tabelle textarea:focus { border-color:var(--border); background:#fdfdfc; }
 table.tabelle.readonly td { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px; }
 table.tabelle.readonly td.zentriert { text-align:center; }
+tr#arbeitsvorrat-filter-zeile th { background:#f7f9f8; padding:0.25rem 0.4rem; }
+tr#arbeitsvorrat-filter-zeile select { width:100%; font-size:0.78rem; padding:0.15rem; border:1px solid var(--border); border-radius:4px; font-family:inherit; }
 .zeile-aktionen { display:flex; gap:0.25rem; white-space:nowrap; }
 .leerzustand { padding:2rem; text-align:center; color:var(--muted); }
 .hinweis { font-size:0.8rem; color:var(--muted); margin:0.3rem 0 0.8rem; }
@@ -127,19 +129,22 @@ input[type=file] { display:none; }
       <h2 style="margin:0">Arbeitsvorrat</h2>
       <span class="zaehler" id="arbeitsvorrat-zaehler"></span>
       <div class="spacer"></div>
+      <button class="ghost" id="btn-arbeitsvorrat-filter-zuruecksetzen">Filter zurücksetzen</button>
       <button class="ghost" id="btn-neuer-arbeitsvorrat-eintrag">+ Neuer Eintrag</button>
       <button id="btn-arbeitsvorrat-upload">📥 SAP-Export hochladen (Excel)</button>
       <input type="file" id="arbeitsvorrat-upload-input" accept=".xlsx,.xlsm,.xls">
+      <input type="file" id="arbeitsvorrat-pa-upload-input" accept="application/pdf">
     </div>
-    <p class="hinweis">Bezeichnung, Lieferant, Angelegt am und Sachbearbeiter kommen aus dem SAP-Export. Warengruppe, Styles, LFGB? und Trivial? werden — wenn möglich — aus dem verknüpften Prüfauftrag übernommen (siehe Reiter „Prüfaufträge"). „Mech. erledigt" ist nur ein Haken, ob der KV von mechanischer Seite fertig ist; anklicken zum Umschalten.</p>
+    <p class="hinweis">Bezeichnung, Lieferant, Angelegt am und Sachbearbeiter kommen aus dem SAP-Export. Warengruppe, Styles, LFGB? und Trivial? werden — wenn möglich — aus dem verknüpften Prüfauftrag übernommen (siehe Reiter „Prüfaufträge"). „Mech. erledigt" ist nur ein Haken, ob der KV von mechanischer Seite fertig ist; anklicken zum Umschalten. Über die Dropdowns unter der Kopfzeile lässt sich die Tabelle filtern.</p>
     <div class="tabellen-wrapper">
       <table class="tabelle readonly" id="arbeitsvorrat-tabelle">
         <thead>
           <tr>
-            <th>IAN</th><th>Bezeichnung</th><th>Lieferant</th><th>Angelegt am</th><th>Sachbearbeiter</th>
+            <th>IAN</th><th>VK Büro</th><th>Bezeichnung</th><th>Lieferant</th><th>Angelegt am</th><th>Sachbearbeiter</th>
             <th>Warengruppe</th><th>Styles</th><th>LFGB?</th><th>Trivial?</th><th>Mech. erledigt</th>
             <th>Bemerkung</th><th>Aktion</th>
           </tr>
+          <tr id="arbeitsvorrat-filter-zeile"></tr>
         </thead>
         <tbody id="arbeitsvorrat-body"></tbody>
       </table>
@@ -407,10 +412,23 @@ function renderAlles() {
 
 /* ================= ARBEITSVORRAT ================= */
 
+/* Spalten mit Dropdown-Filter in der Filterzeile der Arbeitsvorrat-Tabelle. */
+const ARBEITSVORRAT_FILTER_FELDER = ["vkBuero", "lieferant", "sachbearbeiter", "warengruppe", "lfgb", "trivial", "mechErledigt"];
+let arbeitsvorratFilter = { vkBuero: "", lieferant: "", sachbearbeiter: "", warengruppe: "", lfgb: "", trivial: "", mechErledigt: "" };
+
 function gefiltertArbeitsvorrat() {
+  let liste = data.arbeitsvorrat;
+  ARBEITSVORRAT_FILTER_FELDER.forEach((f) => {
+    const wert = arbeitsvorratFilter[f];
+    if (wert === "") return;
+    liste = liste.filter((r) => {
+      const rWert = f === "mechErledigt" ? (r.mechErledigt ? "ja" : "nein") : normalisiere(r[f]);
+      return rWert === wert;
+    });
+  });
   const q = normalisiere(suchbegriffe.arbeitsvorrat);
-  if (!q) return data.arbeitsvorrat;
-  return data.arbeitsvorrat.filter((r) => ARBEITSVORRAT_FELDER.some((f) => normalisiere(r[f]).includes(q)));
+  if (q) liste = liste.filter((r) => ARBEITSVORRAT_FELDER.some((f) => normalisiere(r[f]).includes(q)));
+  return liste;
 }
 
 function jaNeinBadge(wert) {
@@ -420,19 +438,60 @@ function jaNeinBadge(wert) {
   return `<span class="badge nein">${escapeHtml(wert)}</span>`;
 }
 
+function distinkteWerte(feld) {
+  const werte = new Set();
+  data.arbeitsvorrat.forEach((r) => {
+    const w = feld === "mechErledigt" ? (r.mechErledigt ? "Ja" : "Nein") : r[feld];
+    if (w !== null && w !== undefined && w !== "") werte.add(String(w));
+  });
+  return Array.from(werte).sort((a, b) => a.localeCompare(b, "de", { numeric: true }));
+}
+
+function renderArbeitsvorratFilterZeile() {
+  const tr = document.getElementById("arbeitsvorrat-filter-zeile");
+  const filterLabel = { vkBuero: "VK Büro", lieferant: "Lieferant", sachbearbeiter: "Sachbearbeiter", warengruppe: "Warengruppe", lfgb: "LFGB?", trivial: "Trivial?", mechErledigt: "Mech. erledigt" };
+  const spaltenReihenfolge = ["", "vkBuero", "", "lieferant", "", "sachbearbeiter", "warengruppe", "", "lfgb", "trivial", "mechErledigt", "", ""];
+  tr.innerHTML = spaltenReihenfolge.map((feld) => {
+    if (!feld) return "<th></th>";
+    const optionen = distinkteWerte(feld);
+    const aktuell = arbeitsvorratFilter[feld];
+    return `<th><select data-filterfeld="${feld}">
+      <option value="">Alle</option>
+      ${optionen.map((o) => `<option value="${escapeHtml(normalisiere(o))}" ${normalisiere(o) === aktuell ? "selected" : ""}>${escapeHtml(o)}</option>`).join("")}
+    </select></th>`;
+  }).join("");
+  tr.querySelectorAll("select[data-filterfeld]").forEach((sel) => {
+    sel.addEventListener("change", () => {
+      arbeitsvorratFilter[sel.dataset.filterfeld] = sel.value;
+      renderArbeitsvorratTab();
+    });
+  });
+}
+
+document.getElementById("btn-arbeitsvorrat-filter-zuruecksetzen").addEventListener("click", () => {
+  Object.keys(arbeitsvorratFilter).forEach((f) => (arbeitsvorratFilter[f] = ""));
+  suchbegriffe.arbeitsvorrat = "";
+  if (aktiverTab === "arbeitsvorrat") document.getElementById("suche").value = "";
+  renderArbeitsvorratTab();
+});
+
+let arbeitsvorratPaZielId = null;
+
 function renderArbeitsvorratTab() {
   const tbody = document.getElementById("arbeitsvorrat-body");
   const liste = gefiltertArbeitsvorrat();
   document.getElementById("arbeitsvorrat-zaehler").textContent = `${liste.length} von ${data.arbeitsvorrat.length} Einträgen`;
+  renderArbeitsvorratFilterZeile();
 
   if (!liste.length) {
-    tbody.innerHTML = '<tr><td colspan="12" class="leerzustand">Keine Einträge gefunden.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="13" class="leerzustand">Keine Einträge gefunden.</td></tr>';
     return;
   }
 
   tbody.innerHTML = liste.map((r) => `
     <tr data-id="${r.id}">
       <td><strong>${escapeHtml(r.ian)}</strong></td>
+      <td>${escapeHtml(r.vkBuero)}</td>
       <td title="${escapeHtml(r.bezeichnung)}">${escapeHtml(r.bezeichnung)}</td>
       <td title="${escapeHtml(r.lieferant)}">${escapeHtml(r.lieferant)}</td>
       <td>${escapeHtml(r.angelegtAm)}</td>
@@ -444,7 +503,8 @@ function renderArbeitsvorratTab() {
       <td class="zentriert"><input type="checkbox" data-action="mech-toggle" ${r.mechErledigt ? "checked" : ""}></td>
       <td title="${escapeHtml(r.bemerkung)}">${escapeHtml(r.bemerkung)}</td>
       <td class="zeile-aktionen">
-        <button class="ghost small" data-action="bearbeiten">✏️</button>
+        <button class="ghost small" data-action="bearbeiten" title="Bearbeiten">✏️</button>
+        <button class="ghost small" data-action="pa-hochladen" title="PA-PDF für dieses Projekt hochladen">📄</button>
         <button class="small" data-action="neuer-kv" title="Neuen KV aus diesem Eintrag anlegen">+ KV</button>
       </td>
     </tr>`).join("");
@@ -453,6 +513,10 @@ function renderArbeitsvorratTab() {
     const eintrag = data.arbeitsvorrat.find((r) => r.id === tr.dataset.id);
     tr.querySelector('[data-action="bearbeiten"]').addEventListener("click", () => oeffneArbeitsvorratModal(eintrag));
     tr.querySelector('[data-action="neuer-kv"]').addEventListener("click", () => neuerKvAusArbeitsvorrat(eintrag));
+    tr.querySelector('[data-action="pa-hochladen"]').addEventListener("click", () => {
+      arbeitsvorratPaZielId = eintrag.id;
+      document.getElementById("arbeitsvorrat-pa-upload-input").click();
+    });
     tr.querySelector('[data-action="mech-toggle"]').addEventListener("change", (e) => {
       eintrag.mechErledigt = e.target.checked;
       speichereInLocalStorage();
@@ -899,10 +963,32 @@ document.getElementById("pa-upload-input").addEventListener("change", async (e) 
   }
 });
 
-function zeigePaUploadReview(felder, rohtext) {
+/* PA-Upload direkt aus einer Arbeitsvorrat-Zeile heraus (📄-Button): die IAN steht schon fest,
+   wird nicht erst aus der PDF geraten. */
+document.getElementById("arbeitsvorrat-pa-upload-input").addEventListener("change", async (e) => {
+  const datei = e.target.files[0];
+  const zielId = arbeitsvorratPaZielId;
+  e.target.value = "";
+  arbeitsvorratPaZielId = null;
+  if (!datei || !zielId) return;
+  const zielEintrag = data.arbeitsvorrat.find((r) => r.id === zielId);
+  if (!zielEintrag) return;
+  zeigeStatus("PDF wird gelesen…", "");
+  try {
+    const zeilen = await extrahierePdfZeilen(datei);
+    const felder = extrahierePaFelderAusZeilen(zeilen);
+    zeigePaUploadReview(felder, zeilen.join("\n"), zielEintrag.ian);
+  } catch (err) {
+    alert("PDF konnte nicht gelesen werden: " + err.message);
+  } finally {
+    zeigeStatus("", "");
+  }
+});
+
+function zeigePaUploadReview(felder, rohtext, erzwingeIan) {
   const box = document.getElementById("overlay-box");
   let html = `<h2>PA-PDF: ${felder.length} erkannte Felder prüfen</h2>
-    <p class="hinweis">Bitte prüfen/korrigieren. Nur angehakte Zeilen werden übernommen. Die Erkennung ist eine einfache Heuristik.</p>
+    <p class="hinweis">Bitte prüfen/korrigieren. Nur angehakte Zeilen werden übernommen. Die Erkennung ist eine einfache Heuristik.${erzwingeIan ? ` Wird dem Arbeitsvorrat-Eintrag <strong>IAN ${escapeHtml(erzwingeIan)}</strong> zugeordnet, unabhängig davon, was in der PDF als IAN erkannt wird.` : ""}</p>
     <table class="tabelle"><thead><tr><th style="width:4%">✓</th><th style="width:26%">Schlüssel</th><th>Wert</th></tr></thead><tbody>`;
   felder.forEach((f, i) => {
     html += `<tr>
@@ -929,7 +1015,7 @@ function zeigePaUploadReview(felder, rohtext) {
       uebernommen.push({ schluessel, wert });
     });
     const findeWert = (regex) => { const t = uebernommen.find((f) => regex.test(f.schluessel)); return t ? t.wert : ""; };
-    const ian = leiteFuehrendeZahlAb(findeWert(/^ian/i));
+    const ian = erzwingeIan || leiteFuehrendeZahlAb(findeWert(/^ian/i));
     const artikelbezeichnung = findeWert(/^artikelbezeichnung$/i);
     const warengruppe = findeWert(/^warengruppe$/i);
 
