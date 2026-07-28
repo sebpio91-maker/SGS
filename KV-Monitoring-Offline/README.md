@@ -125,13 +125,45 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   Stammdaten und einer Tabelle mechanischer Prüfpositionen (Kategorie,
   Bezeichnung, Kürzel, SAP-Code, Kosten, Anzahl, Summe, aktiv/inaktiv). Auch
   hier erscheint — sofern der verknüpfte Prüfauftrag eine „IAN-Vorgänger"
-  enthält — dieselbe Vorgänger-Artikel-Karte wie bei den Prüfaufträgen.
-  Positionen lassen sich aus dem Katalog übernehmen (Kosten/SAP-Code werden
-  vorausgefüllt) oder frei anlegen. **„⧉ Als Vorlage für neuen KV
-  duplizieren"** kopiert einen bestehenden KV (z. B. eines Wiederholartikels)
-  als Ausgangspunkt für einen neuen. Über die Suche oben lassen sich
-  bestehende KVs nach IAN/Artikel/Warengruppe/Lieferant durchsuchen, um einen
-  passenden zum Duplizieren zu finden.
+  enthält — dieselbe Vorgänger-Artikel-Karte wie bei den Prüfaufträgen,
+  ergänzt um **„↺ Prüfpositionen aus Vorgänger-KV übernehmen"**: kopiert alle
+  aktiven Positionen des Vorgänger-KVs (mit dessen tatsächlichen Kosten/
+  Anzahl, nicht den Katalog-Standardwerten) in den aktuellen KV; bereits
+  vorhandene Positionen werden dabei übersprungen, ein zweiter Klick legt also
+  nichts doppelt an.
+
+  **Prüfumfang-Übersicht** – zeigt automatisch, welche der besprochenen
+  Prüfumfang-Kategorien im Prüfumfang des verknüpften Prüfauftrags erkannt
+  wurden („im Prüfumfang" bzw. „nicht erkannt"):
+  - **Chemie / LFGB** und **Selbstauskunft** erscheinen nur informativ —
+    beide sind bewusst nicht Teil dieses mechanischen KVs.
+  - **Sicherheit & Norm / Sonder- & Funktionsparameter**: die zugehörigen
+    Katalog-Positionen (Sicherheits-/Normprüfung, Kennzeichnung, BDA,
+    optischer Abgleich, Mustereinlagerung) werden automatisch als
+    „Vorschlag" markiert. Der **Akkusicherheitskurzcheck** wird dabei nur
+    vorgeschlagen, wenn das aus dem Prüfauftrag ausgelesene Feld
+    „Batterietyp" auf eine tatsächlich vorhandene Batterie/einen Akku
+    hindeutet (nicht „keine"/„nein"/leer) — sonst bleibt er manuell
+    hinzufügbar, aber ohne Vorschlags-Markierung.
+  - **(Physikalische-) Produktspezifikationen**: hängt von Auslobungen im
+    KV ab, dafür ist noch keine automatische Zuordnung hinterlegt — Katalog-
+    Positionen lassen sich hier vorerst nur manuell hinzufügen.
+  - **FFU/Fitting** und **NGO**: werden vorgeschlagen, sobald im Prüfumfang
+    erkannt.
+  - **Referenzprüfung**: zeigt zusätzlich die „Markenreferenz" aus dem
+    Prüfauftrag an (das Referenzprodukt, gegen das verglichen wird).
+
+  Bei jeder relevanten Kategorie lässt sich per **„+ hinzufügen"** eine
+  einzelne Katalog-Position oder per **„Alle Vorschläge übernehmen"** alle
+  markierten Positionen auf einmal in die Prüfpositionen-Tabelle unten
+  eintragen — dort dann wie gewohnt Kosten/Anzahl anpassen, deaktivieren oder
+  entfernen. Positionen lassen sich außerdem klassisch aus dem Katalog-
+  Dropdown übernehmen (Kosten/SAP-Code werden vorausgefüllt) oder frei
+  anlegen. **„⧉ Als Vorlage für neuen KV duplizieren"** kopiert einen
+  bestehenden KV (z. B. eines Wiederholartikels) komplett als Ausgangspunkt
+  für einen neuen. Über die Suche oben lassen sich bestehende KVs nach
+  IAN/Artikel/Warengruppe/Lieferant durchsuchen, um einen passenden zum
+  Duplizieren zu finden.
 - **Prüfpositionen-Katalog** – die wiederverwendbaren mechanischen
   Prüfpositionen mit Standardkosten und SAP-Code, vorbefüllt aus der
   bestehenden KV-Vorlage. Hier pflegen, wenn sich Preise ändern oder neue

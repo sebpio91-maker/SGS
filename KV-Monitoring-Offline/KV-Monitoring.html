@@ -71,6 +71,11 @@ nav.tabs button.aktiv { background:var(--card); color:var(--accent-dark); font-w
 .sp-suche-link { display:inline-flex; align-items:center; vertical-align:middle; text-decoration:none; margin-left:0.3rem; color:var(--muted); }
 .sp-suche-link:hover { color:var(--accent); }
 .vergleich-abweichung td { background:#fff6e0; }
+.pruefumfang-kat { border:1px solid var(--border); border-radius:6px; padding:0.6rem 0.8rem; margin-bottom:0.6rem; }
+.pruefumfang-kat-kopf { display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; }
+.pruefumfang-position { display:flex; align-items:center; justify-content:space-between; gap:0.5rem; padding:0.3rem 0; border-top:1px solid var(--border); font-size:0.85rem; }
+.pruefumfang-position:first-of-type { border-top:none; margin-top:0.3rem; }
+.pruefumfang-position-vorschlag { background:#f2f8f1; margin:0 -0.4rem; padding:0.3rem 0.4rem; border-radius:4px; border-top:none; }
 .segment-toggle { display:inline-flex; border:1px solid var(--border); border-radius:6px; overflow:hidden; margin-bottom:0.8rem; }
 .segment-toggle button { padding:0.45rem 0.9rem; border:none; border-radius:0; background:#fff; color:var(--muted); font-weight:600; }
 .segment-toggle button:hover { background:#f0f4f3; }
@@ -938,8 +943,10 @@ function renderVorgaengerVergleichHtml(pa, vorgaengerPa) {
    direkte Sprünge zu dessen Prüfauftrag/KV sowie eine Vergleichstabelle (aktuell vs. Vorgänger).
    Wichtig vor allem bei der KV-Erstellung, da Daten des Vorgängers oft als Ausgangspunkt
    übernommen werden können (nach Prüfung). aktuellePa (optional) ist der PA, gegen den verglichen
-   wird - auf der PA-Detailseite der Prüfauftrag selbst, auf der KV-Detailseite der verknüpfte PA. */
-function renderVorgaengerKarte(vorgaengerIan, aktuellePa) {
+   wird - auf der PA-Detailseite der Prüfauftrag selbst, auf der KV-Detailseite der verknüpfte PA.
+   aktuelleKv (optional, nur auf der KV-Detailseite) ermöglicht die direkte Übernahme der
+   Prüfpositionen des Vorgänger-KVs in den gerade bearbeiteten KV. */
+function renderVorgaengerKarte(vorgaengerIan, aktuellePa, aktuelleKv) {
   if (!vorgaengerIan) return "";
   const vorgaengerPa = data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(vorgaengerIan));
   const vorgaengerKv = data.kvs.find((k) => normalisiere(k.ian) === normalisiere(vorgaengerIan));
@@ -954,18 +961,38 @@ function renderVorgaengerKarte(vorgaengerIan, aktuellePa) {
         <div class="toolbar-zeile">
           ${vorgaengerPa ? `<button class="ghost small" data-action="vorgaenger-pa-anzeigen" data-id="${vorgaengerPa.id}">→ Prüfauftrag des Vorgängers${vorgaengerPa.artikelbezeichnung ? ` (${escapeHtml(vorgaengerPa.artikelbezeichnung)})` : ""}</button>` : `<span class="muted">Kein Prüfauftrag zum Vorgänger im System.</span>`}
           ${vorgaengerKv ? `<button class="ghost small" data-action="vorgaenger-kv-anzeigen" data-id="${vorgaengerKv.id}">→ KV des Vorgängers (${kvGesamtsumme(vorgaengerKv).toFixed(2)} €)</button>` : `<span class="muted">Kein KV zum Vorgänger im System.</span>`}
+          ${aktuelleKv && vorgaengerKv && vorgaengerKv.positionen.length ? `<button class="ghost small" data-action="vorgaenger-positionen-uebernehmen">↺ Prüfpositionen aus Vorgänger-KV übernehmen</button>` : ""}
         </div>
         ${aktuellePa && vorgaengerPa ? renderVorgaengerVergleichHtml(aktuellePa, vorgaengerPa) : ""}`
       : `<p class="hinweis">Kein Prüfauftrag oder KV zu dieser Vorgänger-IAN im System vorhanden — ggf. über 🔍 auf SharePoint suchen.</p>`}
   </div>`;
 }
 
-/* Verdrahtet die Sprung-Buttons einer renderVorgaengerKarte()-Karte innerhalb von panel. */
-function initialisiereVorgaengerKarte(panel) {
+/* Verdrahtet die Sprung-Buttons einer renderVorgaengerKarte()-Karte innerhalb von panel.
+   aktuelleKv (optional) wird nur für den "Positionen übernehmen"-Button auf der KV-Detailseite
+   gebraucht. */
+function initialisiereVorgaengerKarte(panel, aktuelleKv) {
   const paBtn = panel.querySelector('[data-action="vorgaenger-pa-anzeigen"]');
   if (paBtn) paBtn.addEventListener("click", () => { aktivePaId = paBtn.dataset.id; renderPaTab(); });
   const kvBtn = panel.querySelector('[data-action="vorgaenger-kv-anzeigen"]');
   if (kvBtn) kvBtn.addEventListener("click", () => { aktiveKvId = kvBtn.dataset.id; wechsleTab("kvs"); });
+  const positionenBtn = panel.querySelector('[data-action="vorgaenger-positionen-uebernehmen"]');
+  if (positionenBtn && aktuelleKv) {
+    positionenBtn.addEventListener("click", () => {
+      const vorgaengerIan = vorgaengerIanAus(data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(aktuelleKv.ian)));
+      const vorgaengerKv = data.kvs.find((k) => normalisiere(k.ian) === normalisiere(vorgaengerIan));
+      if (!vorgaengerKv) return;
+      let uebernommen = 0;
+      vorgaengerKv.positionen.filter((p) => p.aktiv).forEach((p) => {
+        if (kvHatPosition(aktuelleKv, p)) return;
+        aktuelleKv.positionen.push({ id: neueId(), kategorie: p.kategorie, bezeichnung: p.bezeichnung, kuerzel: p.kuerzel, sapCode: p.sapCode, kosten: p.kosten, anzahl: p.anzahl, aktiv: true });
+        uebernommen++;
+      });
+      speichereInLocalStorage();
+      renderKvDetail();
+      zeigeStatus(uebernommen ? `${uebernommen} Position(en) aus Vorgänger-KV übernommen · ${jetzt()}` : "Alle Positionen des Vorgänger-KVs waren bereits vorhanden", "ok");
+    });
+  }
 }
 
 /* ---------- Excel-Upload für Arbeitsvorrat (SAP-Export) ---------- */
@@ -1381,6 +1408,8 @@ const PA_BEKANNTE_FELDER = [
   "Artikel", "Marke Lidl", "Marke Kaufland", "Maße", "Gewicht", "Brutto-Kolli-Gewicht", "Qualität",
   "Material", "Materialstärke", "Farbe", "Markenreferenz", "Abweichende Traglast", "IOT",
   "Referenzprüfung", "Garantie", "Rücknahmegarantie", "Zertifizierungen", "RF-Sicherung", "Batterietyp",
+  "Produktionsstätte der Batterie(n)", "Batterie im Lieferumfang", "Restlaufzeit in Tagen",
+  "Sicherheitsdatenblatt", "Sicherheitsdatenblatt Gefahrgut",
   "Verpackung", "Verpackung Zusatz", "Sonstige Merkmale"
 ];
 const PA_BEKANNTE_FELDER_SET = new Set(PA_BEKANNTE_FELDER.map((f) => normalisiere(f)));
@@ -1683,6 +1712,177 @@ function zeigePaUploadReview(felder, rohtext, erzwingeIan, stand) {
   document.getElementById("overlay").classList.add("sichtbar");
 }
 
+/* ---------- Prüfumfang-Kategorien für die KV-Erstellung ---------- */
+
+/* Die im Prüfauftrag genannten Prüfumfang-Kategorien, wie besprochen. katalogKategorie
+   verknüpft die Kategorie mit dem gleichnamigen Feld im Prüfpositionen-Katalog (data.katalog),
+   damit passende Positionen automatisch vorgeschlagen werden können. erkennungRegex sucht die
+   Kategorie im (bereinigten) Prüfumfang-Text des Prüfauftrags - bewusst als einzelnes
+   Schlüsselwort/-muster statt exakter Phrase, da dieselbe Kategorie in echten PA-PDFs
+   unterschiedlich formuliert vorkommt (z. B. "Sicherheit & Norm / Sonder- & Funktionsparameter"
+   vs. "Sicherheit & Norm / Sonderprüfung"; "Chemie/LFGB" vs. "Chemie / LFGB"). */
+const PA_PRUEFUMFANG_KATEGORIEN = [
+  {
+    id: "chemie", anzeigeName: "Chemie / LFGB", katalogKategorie: null, mechanischRelevant: false,
+    erkennungRegex: /chemie/i,
+    beschreibung: "Chemieprüfungen — aktuell nicht relevant für diesen mechanischen KV."
+  },
+  {
+    id: "sicherheitNorm", anzeigeName: "Sicherheit & Norm / Sonder- & Funktionsparameter",
+    katalogKategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", mechanischRelevant: true,
+    erkennungRegex: /sicherheit\s*&\s*norm/i,
+    beschreibung: "Mechanische Sicherheit, Kennzeichnung von Produkt und Verpackung, Bedienungsanleitung; bei Produkten mit Batterie/Akku zusätzlich Akkusicherheitskurzcheck und optischer Abgleich."
+  },
+  {
+    id: "selbstauskunft", anzeigeName: "Selbstauskunft", katalogKategorie: null, mechanischRelevant: false,
+    erkennungRegex: /selbstauskunft/i,
+    beschreibung: "Vom Lieferanten einzureichendes Dokument — zunächst nicht relevant für diesen KV."
+  },
+  {
+    id: "produktspezifikationen", anzeigeName: "(Physikalische-) Produktspezifikationen",
+    katalogKategorie: "(physikalische-) Produktspezifikation", mechanischRelevant: true,
+    erkennungRegex: /produktspezifikation/i,
+    beschreibung: "Abhängig von bestimmten Auslobungen im KV. Automatische Vorschläge folgen, sobald die dafür vorgesehene Zuordnungsdatei vorliegt — bis dahin Positionen manuell auswählen."
+  },
+  {
+    id: "ffuFitting", anzeigeName: "FFU/Fitting", katalogKategorie: "FFU/Fitting", mechanischRelevant: true,
+    erkennungRegex: /ffu/i,
+    beschreibung: "Gebrauchstauglichkeitsprüfung."
+  },
+  {
+    id: "ngo", anzeigeName: "NGO", katalogKategorie: "NGO", mechanischRelevant: true,
+    erkennungRegex: /\bngo\b/i,
+    beschreibung: "Prüfung des Produkts nach StiWa-Vorgaben."
+  },
+  {
+    id: "referenzpruefung", anzeigeName: "Referenzprüfung", katalogKategorie: "Referenzprüfung", mechanischRelevant: true,
+    erkennungRegex: /referenzpr[uü]fung/i,
+    beschreibung: "Gebrauchstauglichkeit im Vergleich zu den Ergebnissen des Referenzprodukts (siehe Markenreferenz)."
+  }
+];
+
+function erkennePruefumfangKategorien(pruefumfangText) {
+  const text = pruefumfangText || "";
+  return PA_PRUEFUMFANG_KATEGORIEN.filter((k) => k.erkennungRegex.test(text));
+}
+
+/* Akkusicherheitskurzcheck nur vorschlagen, wenn der Prüfauftrag im Feld "Batterietyp" auf eine
+   tatsächlich vorhandene Batterie/einen Akku hinweist (nicht "keine"/"nein"/leer). Nur die erste
+   Zeile des Werts prüfen: "Batterietyp" nimmt in manchen PDFs (wegen umgebrochener Unterlabels
+   wie "Produktionsstätte der Batterie(n):") weitere Zeilen als Fortsetzungstext auf, wodurch ein
+   exakter Vergleich des gesamten Werts fälschlich fehlschlagen würde. */
+function paHatBatterie(pa) {
+  if (!pa) return false;
+  const eintrag = (pa.felder || []).find((f) => normalisiere(f.schluessel) === "batterietyp");
+  if (!eintrag) return false;
+  const ersteZeile = normalisiere(String(eintrag.wert || "").split("\n")[0]);
+  return !!ersteZeile && ersteZeile !== "keine" && ersteZeile !== "nein" && ersteZeile !== "-" && ersteZeile !== "n/a";
+}
+
+/* Katalog-Positionen, die für eine Kategorie automatisch vorgeschlagen werden - nur wenn die
+   Kategorie im Prüfumfang des verknüpften Prüfauftrags erkannt wurde. Produktspezifikationen
+   bekommen bewusst noch keine Automatik (siehe Kategorie-Beschreibung); beim
+   Akkusicherheitskurzcheck entscheidet paHatBatterie(). */
+function ermittleVorschlagsPositionen(kategorie, pa) {
+  if (!kategorie.mechanischRelevant || !kategorie.katalogKategorie) return [];
+  if (!erkennePruefumfangKategorien(pa ? pa.pruefumfang : "").some((k) => k.id === kategorie.id)) return [];
+  if (kategorie.id === "produktspezifikationen") return [];
+  const positionen = data.katalog.filter((k) => normalisiere(k.kategorie) === normalisiere(kategorie.katalogKategorie));
+  if (kategorie.id === "sicherheitNorm" && !paHatBatterie(pa)) {
+    return positionen.filter((k) => !/akkusicherheitskurzcheck/i.test(k.bezeichnung));
+  }
+  return positionen;
+}
+
+/* Ist eine Katalog-Position (nach Kategorie+Bezeichnung) bereits als aktive Position im KV
+   vorhanden? kv.positionen speichert eine unabhängige Kopie (keine feste Katalog-Referenz), da
+   Kosten/Anzahl je KV frei editierbar sein sollen - der Abgleich erfolgt daher über den Text. */
+function kvHatPosition(kv, katalogEintrag) {
+  return kv.positionen.some((p) => p.aktiv && normalisiere(p.bezeichnung) === normalisiere(katalogEintrag.bezeichnung) && normalisiere(p.kategorie) === normalisiere(katalogEintrag.kategorie));
+}
+
+function fuegeKatalogPositionHinzu(kv, katalogEintrag) {
+  if (kvHatPosition(kv, katalogEintrag)) return false;
+  kv.positionen.push({ id: neueId(), kategorie: katalogEintrag.kategorie, bezeichnung: katalogEintrag.bezeichnung, kuerzel: katalogEintrag.kuerzel, sapCode: katalogEintrag.sapCode, kosten: katalogEintrag.standardKosten, anzahl: 1, aktiv: true });
+  return true;
+}
+
+function renderKvPruefumfangUebersicht(kv, pa) {
+  if (!pa) {
+    return `<div class="card">
+      <h2>Prüfumfang-Übersicht</h2>
+      <p class="hinweis">Kein verknüpfter Prüfauftrag gefunden — sobald einer mit dieser IAN vorliegt, werden die enthaltenen Prüfumfang-Kategorien hier automatisch erkannt und passende Prüfpositionen vorgeschlagen.</p>
+    </div>`;
+  }
+  const markenreferenz = paFeldWertRoh(pa, "Markenreferenz");
+  const abschnitte = PA_PRUEFUMFANG_KATEGORIEN.map((kat) => {
+    const erkannt = erkennePruefumfangKategorien(pa.pruefumfang).some((k) => k.id === kat.id);
+    const badge = erkannt ? `<span class="badge ja">im Prüfumfang</span>` : `<span class="badge nein">nicht erkannt</span>`;
+
+    if (!kat.mechanischRelevant) {
+      return `<div class="pruefumfang-kat">
+        <div class="pruefumfang-kat-kopf"><strong>${escapeHtml(kat.anzeigeName)}</strong> ${badge} <span class="muted">— nicht Teil dieses mechanischen KVs</span></div>
+        <p class="hinweis">${escapeHtml(kat.beschreibung)}</p>
+      </div>`;
+    }
+
+    const positionen = data.katalog.filter((k) => normalisiere(k.kategorie) === normalisiere(kat.katalogKategorie));
+    const vorschlaege = new Set(ermittleVorschlagsPositionen(kat, pa).map((k) => k.id));
+    const positionenHtml = positionen.map((k) => {
+      const istVorschlag = vorschlaege.has(k.id);
+      const schonDrin = kvHatPosition(kv, k);
+      return `<div class="pruefumfang-position${istVorschlag ? " pruefumfang-position-vorschlag" : ""}">
+        <span>${escapeHtml(k.bezeichnung)} <span class="muted">(${k.standardKosten} €)</span>${istVorschlag ? ` <span class="badge ja">Vorschlag</span>` : ""}</span>
+        ${schonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="kat-position-hinzufuegen" data-katalog-id="${k.id}">+ hinzufügen</button>`}
+      </div>`;
+    }).join("") || `<p class="muted" style="margin:0.3rem 0">Keine Katalog-Positionen in dieser Kategorie hinterlegt.</p>`;
+
+    const alleVorschlaegeButton = vorschlaege.size
+      ? `<button type="button" class="ghost small" data-action="kat-vorschlaege-uebernehmen" data-kat="${kat.id}">Alle Vorschläge übernehmen</button>`
+      : "";
+
+    const zusatzHinweis = kat.id === "referenzpruefung" && markenreferenz
+      ? `<p class="hinweis"><strong>Markenreferenz (aus PA):</strong> ${escapeHtml(markenreferenz)}</p>`
+      : "";
+
+    return `<div class="pruefumfang-kat">
+      <div class="pruefumfang-kat-kopf"><strong>${escapeHtml(kat.anzeigeName)}</strong> ${badge} ${alleVorschlaegeButton}</div>
+      <p class="hinweis">${escapeHtml(kat.beschreibung)}</p>
+      ${zusatzHinweis}
+      ${positionenHtml}
+    </div>`;
+  }).join("");
+
+  return `<div class="card">
+    <h2>Prüfumfang-Übersicht</h2>
+    <p class="hinweis">Automatisch aus dem Prüfumfang des verknüpften Prüfauftrags erkannt. „Vorschlag" markiert Positionen, die dafür typischerweise anfallen — Klick auf „+ hinzufügen" bzw. „Alle Vorschläge übernehmen" trägt sie unten in die Prüfpositionen-Tabelle ein; danach dort wie gewohnt Kosten/Anzahl anpassen oder entfernen.</p>
+    ${abschnitte}
+  </div>`;
+}
+
+function initialisierePruefumfangUebersicht(panel, kv, pa) {
+  panel.querySelectorAll('[data-action="kat-position-hinzufuegen"]').forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const eintrag = data.katalog.find((k) => k.id === btn.dataset.katalogId);
+      if (!eintrag) return;
+      fuegeKatalogPositionHinzu(kv, eintrag);
+      speichereInLocalStorage();
+      renderKvDetail();
+    });
+  });
+  panel.querySelectorAll('[data-action="kat-vorschlaege-uebernehmen"]').forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const kat = PA_PRUEFUMFANG_KATEGORIEN.find((k) => k.id === btn.dataset.kat);
+      if (!kat) return;
+      let hinzugefuegt = 0;
+      ermittleVorschlagsPositionen(kat, pa).forEach((eintrag) => { if (fuegeKatalogPositionHinzu(kv, eintrag)) hinzugefuegt++; });
+      speichereInLocalStorage();
+      renderKvDetail();
+      zeigeStatus(hinzugefuegt ? `${hinzugefuegt} Position(en) übernommen · ${jetzt()}` : "Alle Vorschläge waren bereits im KV", "ok");
+    });
+  });
+}
+
 /* ================= KOSTENVORANSCHLÄGE (KV) ================= */
 
 function gefiltertKvs() {
@@ -1739,7 +1939,8 @@ function renderKvDetail() {
         <button class="danger small" id="kv-loeschen" style="margin-left:auto">KV löschen</button>
       </div>
     </div>
-    ${renderVorgaengerKarte(vorgaengerIanAus(verknuepftePa), verknuepftePa)}
+    ${renderVorgaengerKarte(vorgaengerIanAus(verknuepftePa), verknuepftePa, kv)}
+    ${renderKvPruefumfangUebersicht(kv, verknuepftePa)}
 
     <div class="card">
       <div class="toolbar-zeile">
@@ -1782,7 +1983,8 @@ function renderKvDetail() {
   if (verknuepftePa) {
     document.getElementById("kv-zur-pa").addEventListener("click", () => { aktivePaId = verknuepftePa.id; wechsleTab("pruefauftraege"); });
   }
-  initialisiereVorgaengerKarte(panel);
+  initialisiereVorgaengerKarte(panel, kv);
+  initialisierePruefumfangUebersicht(panel, kv, verknuepftePa);
   document.getElementById("kv-loeschen").addEventListener("click", () => {
     if (!confirm(`KV "${kv.ian}" wirklich löschen?`)) return;
     data.kvs = data.kvs.filter((k) => k.id !== kv.id);
