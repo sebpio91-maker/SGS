@@ -167,7 +167,11 @@ IAN bereits vor und die Werte unterscheiden sich, erscheint pro betroffener
 IAN eine Vergleichsansicht ("Aktuell behalten" / "Aus Datei übernehmen") —
 das sollte laut Beschreibung normalerweise nicht vorkommen, ist aber als
 Sicherheitsnetz eingebaut. Gibt es keine Abweichungen, werden neue Zeilen
-ohne Rückfrage direkt hinzugefügt.
+ohne Rückfrage direkt hinzugefügt. Oben in dieser Vergleichsansicht gibt es
+**„Alle: Aktuell behalten"** und **„Alle: Aus Datei übernehmen"** — setzt die
+Auswahl für alle angezeigten IANs auf einmal; einzelne IANs lassen sich
+danach trotzdem noch per Klick anders entscheiden, bevor „Entscheidungen
+anwenden" die endgültige Auswahl übernimmt.
 
 **IAN wird beim Abgleich vereinheitlicht:** wie VK Büro wird auch die IAN
 unabhängig von führenden Nullen behandelt (z. B. "070123" und "70123" gelten

@@ -1115,7 +1115,12 @@ function verarbeiteArbeitsvorratUpload(neueEintraege) {
 function zeigeUploadDuplikatOverlay(anzahlNeu, duplikate) {
   const box = document.getElementById("overlay-box");
   let html = `<h2>SAP-Export: IANs mit abweichenden Daten gefunden</h2>
-    <p class="hinweis">${anzahlNeu} neue Einträge wurden bereits hinzugefügt. Für ${duplikate.length} IAN(s), die schon vorhanden sind, weichen die SAP-Werte in der Datei ab. Das kommt normalerweise nicht vor — bitte pro Fall entscheiden. (Warengruppe/Styles sind hiervon nicht betroffen, die kommen aus dem Prüfauftrag; LFGB/Trivial werden ohnehin nur manuell bei der KV-Erstellung gesetzt.)</p>`;
+    <p class="hinweis">${anzahlNeu} neue Einträge wurden bereits hinzugefügt. Für ${duplikate.length} IAN(s), die schon vorhanden sind, weichen die SAP-Werte in der Datei ab. Das kommt normalerweise nicht vor. (Warengruppe/Styles sind hiervon nicht betroffen, die kommen aus dem Prüfauftrag; LFGB/Trivial werden ohnehin nur manuell bei der KV-Erstellung gesetzt.)</p>
+    <div class="toolbar-zeile">
+      <button type="button" class="ghost small" id="dup-alle-aktuell">Alle: Aktuell behalten</button>
+      <button type="button" class="ghost small" id="dup-alle-datei">Alle: Aus Datei übernehmen</button>
+      <span class="hinweis" style="margin:0">Setzt die Auswahl für alle unten stehenden IANs auf einmal — einzelne lassen sich danach weiterhin per Klick anders wählen.</span>
+    </div>`;
   duplikate.forEach((d, i) => {
     html += `<div class="merge-item">
       <strong>IAN ${escapeHtml(d.vorhanden.ian)} — ${escapeHtml(d.vorhanden.bezeichnung)}</strong>
@@ -1129,6 +1134,12 @@ function zeigeUploadDuplikatOverlay(anzahlNeu, duplikate) {
   });
   html += `<div class="overlay-actions"><button id="dup-anwenden">Entscheidungen anwenden</button></div>`;
   box.innerHTML = html;
+  document.getElementById("dup-alle-aktuell").addEventListener("click", () => {
+    duplikate.forEach((d, i) => { box.querySelector(`[name="dup-${i}"][value="aktuell"]`).checked = true; });
+  });
+  document.getElementById("dup-alle-datei").addEventListener("click", () => {
+    duplikate.forEach((d, i) => { box.querySelector(`[name="dup-${i}"][value="datei"]`).checked = true; });
+  });
   document.getElementById("dup-anwenden").addEventListener("click", () => {
     duplikate.forEach((d, i) => {
       const gewaehlt = box.querySelector(`[name="dup-${i}"]:checked`);
