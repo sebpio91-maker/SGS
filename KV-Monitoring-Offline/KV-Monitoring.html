@@ -68,6 +68,8 @@ nav.tabs button.aktiv { background:var(--card); color:var(--accent-dark); font-w
 .badge.nein { background:#f1efe9; color:var(--muted); }
 .pa-badge { cursor:pointer; border:none; font-family:inherit; font-weight:600; white-space:nowrap; }
 .pa-badge:hover { filter:brightness(0.95); }
+.sp-suche-link { text-decoration:none; margin-left:0.3rem; opacity:0.7; }
+.sp-suche-link:hover { opacity:1; }
 
 .tabellen-wrapper { overflow-x:auto; border:1px solid var(--border); border-radius:8px; background:var(--card); max-height:70vh; overflow-y:auto; }
 table.tabelle { width:100%; border-collapse:collapse; }
@@ -309,6 +311,16 @@ function escapeHtml(str) {
 }
 function jetzt() { return new Date().toLocaleString("de-DE"); }
 function normalisiere(wert) { return (wert === null || wert === undefined ? "" : String(wert)).trim().toLowerCase(); }
+
+/* ---------- SharePoint-Suche nach IAN ---------- */
+const SHAREPOINT_SUCHE_BASIS = "https://sgs.sharepoint.com/sites/de-cp-hamfiles/_layouts/15/search.aspx/siteall?q=";
+function sharepointSucheUrl(ian) { return SHAREPOINT_SUCHE_BASIS + encodeURIComponent(ian || ""); }
+/* Kleiner Link neben einer IAN, der in einem neuen Tab die SharePoint-Suche nach genau dieser
+   IAN öffnet. Ohne IAN wird kein Link gerendert. */
+function sharepointSucheLink(ian, klasse) {
+  if (!ian) return "";
+  return `<a class="sp-suche-link${klasse ? " " + klasse : ""}" href="${escapeHtml(sharepointSucheUrl(ian))}" target="_blank" rel="noopener noreferrer" title="Auf SharePoint nach IAN ${escapeHtml(ian)} suchen">🔍</a>`;
+}
 function zahlOderLeer(v) { return (v === null || v === undefined || v === "") ? "" : v; }
 
 /* ---------- PDF.js Worker aus eingebettetem Quelltext initialisieren ---------- */
@@ -663,7 +675,7 @@ function renderArbeitsvorratKoerper() {
     const pa = paNachIan.get(normalisiere(r.ian));
     return `
     <tr data-id="${r.id}">
-      <td><strong>${escapeHtml(r.ian)}</strong></td>
+      <td><strong>${escapeHtml(r.ian)}</strong>${sharepointSucheLink(r.ian)}</td>
       <td>${escapeHtml(normalisiereVkBuero(r.vkBuero))}</td>
       <td title="${escapeHtml(r.bezeichnung)}">${escapeHtml(r.bezeichnung)}</td>
       <td title="${escapeHtml(r.lieferant)}">${escapeHtml(r.lieferant)}</td>
@@ -1049,6 +1061,7 @@ function renderPaDetail() {
     <div class="card">
       <div class="toolbar-zeile">
         <h2 style="margin:0">${escapeHtml(pa.ian || "(ohne IAN)")}</h2>
+        ${sharepointSucheLink(pa.ian)}
         ${pa.stand ? `<span class="badge ja">Stand ${escapeHtml(pa.stand)}</span>` : ""}
       </div>
       <div class="formular-grid" id="pa-kopf-formular">
@@ -1526,7 +1539,10 @@ function renderKvDetail() {
 
   panel.innerHTML = `
     <div class="card">
-      <h2>KV ${escapeHtml(kv.ian || "(ohne IAN)")}</h2>
+      <div class="toolbar-zeile">
+        <h2 style="margin:0">KV ${escapeHtml(kv.ian || "(ohne IAN)")}</h2>
+        ${sharepointSucheLink(kv.ian)}
+      </div>
       <div class="formular-grid" id="kv-formular">
         <label>IAN<input type="text" data-feld="ian" value="${escapeHtml(kv.ian)}"></label>
         <label>SAP-Nummer<input type="text" data-feld="sapNummer" value="${escapeHtml(kv.sapNummer)}"></label>

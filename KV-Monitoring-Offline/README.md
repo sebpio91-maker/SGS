@@ -114,6 +114,15 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   bestehenden KV-Vorlage. Hier pflegen, wenn sich Preise ändern oder neue
   Prüfarten dazukommen.
 
+## SharePoint-Suche nach IAN
+
+Neben jeder IAN (in der Arbeitsvorrat-Tabelle sowie auf den Detailseiten von
+Prüfaufträgen und Kostenvoranschlägen) steht ein kleines 🔍-Symbol. Ein Klick
+öffnet in einem neuen Tab die SharePoint-Suche
+(`https://sgs.sharepoint.com/sites/de-cp-hamfiles/_layouts/15/search.aspx/siteall`)
+direkt mit dieser IAN als Suchbegriff — praktisch, um schnell vorhandene
+Unterlagen zu dieser IAN zu finden. Ohne IAN erscheint kein Symbol.
+
 ## Toolbar (oben, bereichsübergreifend)
 
 - **⬇ Sichern (JSON)** / **⬆ Datei laden (JSON)** – kompletter Stand
