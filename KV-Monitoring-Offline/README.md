@@ -132,42 +132,71 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   vorhandene Positionen werden dabei übersprungen, ein zweiter Klick legt also
   nichts doppelt an.
 
-  **Prüfumfang-Übersicht** – zeigt automatisch, welche der besprochenen
-  Prüfumfang-Kategorien im Prüfumfang des verknüpften Prüfauftrags erkannt
-  wurden („im Prüfumfang" bzw. „nicht erkannt"):
+  **Warengruppen-Empfehlung (Mechanik)** – die primäre Vorschlagsquelle,
+  wie besprochen **zuerst nach Warengruppe, dann nach Produkt**: sobald
+  „Warengruppe (neu)" gesetzt ist, wird in einer echten, vom Team gepflegten
+  Referenztabelle (205 Zeilen aus der Mechanik-Preisliste) nachgeschlagen.
+  Gibt es zu der Warengruppe mehrere Produkte (z. B. „370.030 Grillzubehör"
+  → Feuerzeug, Grillbürsten, Anzündkamin, …), erscheint eine Auswahlliste;
+  bei genau einem Treffer wird er direkt angezeigt. Für das gewählte Produkt
+  zeigt die Karte Norm, Anzahl Muster, Besonderheiten (Bemerkungen,
+  Trivial-/KEZ-Kennzeichnung) sowie die **tatsächlich hinterlegten Kosten**
+  für Sicherheit & Norm sowie – falls vorhanden – FFU und NGO/StiWa, jeweils
+  mit „+ hinzufügen" direkt in die Prüfpositionen-Tabelle. Gibt es zur
+  Warengruppe keine Referenzdaten, bleibt nur die manuelle Auswahl unten.
+
+  **Prüfumfang-Übersicht** – ergänzend dazu, automatisch aus dem Prüfumfang
+  des verknüpften Prüfauftrags erkannt („im Prüfumfang" bzw. „nicht
+  erkannt"):
   - **Chemie / LFGB** und **Selbstauskunft** erscheinen nur informativ —
     beide sind bewusst nicht Teil dieses mechanischen KVs.
-  - **Sicherheit & Norm / Sonder- & Funktionsparameter**: die zugehörigen
-    Katalog-Positionen (Sicherheits-/Normprüfung, Kennzeichnung, BDA,
-    optischer Abgleich, Mustereinlagerung) werden automatisch als
-    „Vorschlag" markiert. Der **Akkusicherheitskurzcheck** wird dabei nur
-    vorgeschlagen, wenn das aus dem Prüfauftrag ausgelesene Feld
-    „Batterietyp" auf eine tatsächlich vorhandene Batterie/einen Akku
-    hindeutet (nicht „keine"/„nein"/leer) — sonst bleibt er manuell
-    hinzufügbar, aber ohne Vorschlags-Markierung.
-  - **(Physikalische-) Produktspezifikationen**: hängt von Auslobungen im
-    KV ab, dafür ist noch keine automatische Zuordnung hinterlegt — Katalog-
-    Positionen lassen sich hier vorerst nur manuell hinzufügen.
-  - **FFU/Fitting** und **NGO**: werden vorgeschlagen, sobald im Prüfumfang
-    erkannt.
+  - **Sicherheit & Norm / Sonder- & Funktionsparameter**: die allgemeinen
+    Katalog-Positionen (Kennzeichnung, BDA, optischer Abgleich,
+    Mustereinlagerung) werden automatisch als „Vorschlag" markiert – ergänzend
+    zur produktspezifischen Empfehlung oben. Der **Akkusicherheitskurzcheck**
+    wird dabei nur vorgeschlagen, wenn das aus dem Prüfauftrag ausgelesene
+    Feld „Batterietyp" auf eine tatsächlich vorhandene Batterie/einen Akku
+    hindeutet (nicht „keine"/„nein"/leer).
+  - **(Physikalische-) Produktspezifikationen**: durchsuchbare Liste aus dem
+    echten, 62 Einträge umfassenden Parameterkatalog (Parameter, Material/
+    Kontext, Laufzeit, Norm, SAP-Code, Preis) — Suchfeld oben, „+ hinzufügen"
+    trägt die gewählte Zeile mit ihrem tatsächlichen Preis und SAP-Code ein.
+    Eine automatische Zuordnung nach Auslobungen ist noch nicht hinterlegt.
+  - **FFU/Fitting** und **NGO**: die allgemeinen Katalog-Positionen werden
+    vorgeschlagen, sobald im Prüfumfang erkannt — produktspezifische Kosten
+    dafür liefert, wenn vorhanden, die Warengruppen-Empfehlung oben.
   - **Referenzprüfung**: zeigt zusätzlich die „Markenreferenz" aus dem
     Prüfauftrag an (das Referenzprodukt, gegen das verglichen wird).
 
   Bei jeder relevanten Kategorie lässt sich per **„+ hinzufügen"** eine
-  einzelne Katalog-Position oder per **„Alle Vorschläge übernehmen"** alle
-  markierten Positionen auf einmal in die Prüfpositionen-Tabelle unten
-  eintragen — dort dann wie gewohnt Kosten/Anzahl anpassen, deaktivieren oder
-  entfernen. Positionen lassen sich außerdem klassisch aus dem Katalog-
-  Dropdown übernehmen (Kosten/SAP-Code werden vorausgefüllt) oder frei
-  anlegen. **„⧉ Als Vorlage für neuen KV duplizieren"** kopiert einen
-  bestehenden KV (z. B. eines Wiederholartikels) komplett als Ausgangspunkt
-  für einen neuen. Über die Suche oben lassen sich bestehende KVs nach
+  einzelne Position oder per **„Alle Vorschläge übernehmen"** alle markierten
+  Positionen auf einmal in die Prüfpositionen-Tabelle unten eintragen — dort
+  dann wie gewohnt Kosten/Anzahl anpassen, deaktivieren oder entfernen.
+  Positionen lassen sich außerdem klassisch aus dem Katalog-Dropdown
+  übernehmen (Kosten/SAP-Code werden vorausgefüllt) oder frei anlegen.
+  **„⧉ Als Vorlage für neuen KV duplizieren"** kopiert einen bestehenden KV
+  (z. B. eines Wiederholartikels) komplett als Ausgangspunkt für einen
+  neuen. Über die Suche oben lassen sich bestehende KVs nach
   IAN/Artikel/Warengruppe/Lieferant durchsuchen, um einen passenden zum
   Duplizieren zu finden.
 - **Prüfpositionen-Katalog** – die wiederverwendbaren mechanischen
   Prüfpositionen mit Standardkosten und SAP-Code, vorbefüllt aus der
   bestehenden KV-Vorlage. Hier pflegen, wenn sich Preise ändern oder neue
   Prüfarten dazukommen.
+
+## Datenquelle der Warengruppen-Empfehlung und SAP-Codes
+
+Die Warengruppen-Mechanik-Referenz (205 Zeilen) und der Produktspezifikationen-
+Parameterkatalog (62 Zeilen) stammen aus `Preisliste_Mechanik_v2.xlsm`
+(Blätter „Mechanik" und „Produktspezifikationen"). Es sind feste Referenzdaten,
+die beim Bauen der Datei mit eingebettet werden — keine Bearbeitung über die
+Oberfläche, kein Autosave. Sollen sich Preise/Normen/Produkte ändern oder neue
+Warengruppen dazukommen, bitte die aktualisierte Excel-Datei erneut schicken,
+dann wird eine neue Version des Tools damit gebaut. Dabei wurden auch die
+SAP-Codes im Prüfpositionen-Katalog gegen die reale SAP-Bestellzeilen-Liste
+(Blatt „SAP") korrigiert — u. a. „MECH_SICHERHEIT_TS" statt der zuvor
+angenommenen „MECH_S_NORM_TS", und „FFU_TS" als gemeinsamer Code für
+Optischer Abgleich/FFU/Referenzprüfung/NGO.
 
 ## SharePoint-Suche nach IAN
 
