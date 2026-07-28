@@ -20,18 +20,27 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   hoch** (die IAN steht dabei schon fest und wird nicht erst aus der PDF
   geraten); „+ KV" legt direkt einen neuen Kostenvoranschlag für diese IAN
   an. **VK Büro** wird jetzt als eigene Spalte angezeigt. Unter der
-  Kopfzeile der Tabelle gibt es **Filter**: IAN als Freitextfeld (Teiltreffer),
-  alle anderen Spalten (VK Büro, Lieferant, Sachbearbeiter, Warengruppe,
-  LFGB?, Trivial?, Mech. erledigt) als Dropdown — beliebig kombinierbar,
+  Kopfzeile der Tabelle gibt es **Filter**: IAN als Freitextfeld
+  (Teiltreffer); **VK Büro, Lieferant und Warengruppe als durchsuchbare
+  Mehrfachauswahl** — anklicken öffnet ein Panel mit Suchfeld und
+  Checkbox-Liste, mehrere Werte gleichzeitig ankreuzbar (inkl. „Alle"/„Keine"
+  für die gerade sichtbare/gefilterte Liste); Sachbearbeiter, LFGB?,
+  Trivial? und Mech. erledigt als einfaches Dropdown. Alles kombinierbar,
   zusätzlich zur Volltextsuche oben. „Filter zurücksetzen" setzt alles
   wieder auf „Alle" zurück.
 
   **VK Büro wird vereinheitlicht:** „0070", „070" und „70" gelten als
   derselbe Wert (führende Nullen werden ignoriert) — sowohl bei der Anzeige
-  und im Filter-Dropdown als auch beim Excel-Upload und beim
-  Duplikat-Abgleich. Der rohe SAP-Export liefert das Verkaufsbüro z. B. als
-  „0070", die bereits angereicherte Monitoring-Tabelle als „70" — beide
-  landen als „70" im Arbeitsvorrat.
+  und im Filter als auch beim Excel-Upload und beim Duplikat-Abgleich. Der
+  rohe SAP-Export liefert das Verkaufsbüro z. B. als „0070", die bereits
+  angereicherte Monitoring-Tabelle als „70" — beide landen als „70" im
+  Arbeitsvorrat.
+
+  **Warengruppe wird immer als „###.###" dargestellt** (z. B. „385030" oder
+  „385.030" → „385.030"), egal wie sie ursprünglich eingetragen/aus dem PA
+  übernommen wurde — in der Tabelle, im Filter und im CSV-Export. Werte, die
+  nicht aus genau 6 Ziffern bestehen, werden unverändert gelassen statt
+  geraten.
 
   **Datenherkunft je Feld:** Bezeichnung, Lieferant, Angelegt am und
   Sachbearbeiter kommen aus dem SAP-Export. Warengruppe, Anzahl Styles,

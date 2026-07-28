@@ -79,7 +79,19 @@ table.tabelle input:focus, table.tabelle select:focus, table.tabelle textarea:fo
 table.tabelle.readonly td { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px; }
 table.tabelle.readonly td.zentriert { text-align:center; }
 tr#arbeitsvorrat-filter-zeile th { background:#f7f9f8; padding:0.25rem 0.4rem; }
-tr#arbeitsvorrat-filter-zeile select { width:100%; font-size:0.78rem; padding:0.15rem; border:1px solid var(--border); border-radius:4px; font-family:inherit; }
+tr#arbeitsvorrat-filter-zeile select, tr#arbeitsvorrat-filter-zeile input[type=text] { width:100%; font-size:0.78rem; padding:0.15rem; border:1px solid var(--border); border-radius:4px; font-family:inherit; }
+.ms-btn { width:100%; text-align:left; font-size:0.78rem; padding:0.18rem 0.35rem; border:1px solid var(--border); border-radius:4px; background:#fff; cursor:pointer; color:var(--text); }
+.ms-btn:hover { border-color:var(--accent); }
+.ms-panel { position:absolute; top:100%; left:0; z-index:15; background:#fff; border:1px solid var(--border); border-radius:6px; box-shadow:0 4px 14px rgba(0,0,0,0.18); padding:0.5rem; width:250px; max-height:280px; display:flex; flex-direction:column; }
+.ms-panel[hidden] { display:none; }
+.ms-suche { width:100%; padding:0.3rem 0.4rem; border:1px solid var(--border); border-radius:4px; margin-bottom:0.4rem; font-size:0.82rem; font-family:inherit; }
+.ms-aktionen { display:flex; gap:0.4rem; margin-bottom:0.4rem; }
+.ms-aktionen button { flex:1; padding:0.2rem; font-size:0.75rem; }
+.ms-liste { overflow-y:auto; flex:1; border-top:1px solid var(--border); padding-top:0.3rem; }
+.ms-liste label { display:flex; align-items:center; gap:0.4rem; font-size:0.8rem; font-weight:400; padding:0.15rem 0.1rem; cursor:pointer; white-space:nowrap; border-radius:3px; }
+.ms-liste label:hover { background:#f0f4f3; }
+.ms-liste label input { width:auto; }
+.ms-liste .ms-leer { color:var(--muted); font-size:0.78rem; padding:0.3rem 0; }
 .zeile-aktionen { display:flex; gap:0.25rem; white-space:nowrap; }
 .leerzustand { padding:2rem; text-align:center; color:var(--muted); }
 .hinweis { font-size:0.8rem; color:var(--muted); margin:0.3rem 0 0.8rem; }
@@ -135,7 +147,7 @@ input[type=file] { display:none; }
       <input type="file" id="arbeitsvorrat-upload-input" accept=".xlsx,.xlsm,.xls">
       <input type="file" id="arbeitsvorrat-pa-upload-input" accept="application/pdf">
     </div>
-    <p class="hinweis">Bezeichnung, Lieferant, Angelegt am und Sachbearbeiter kommen aus dem SAP-Export. Warengruppe, Styles, LFGB? und Trivial? werden — wenn möglich — aus dem verknüpften Prüfauftrag übernommen (siehe Reiter „Prüfaufträge"). „Mech. erledigt" ist nur ein Haken, ob der KV von mechanischer Seite fertig ist; anklicken zum Umschalten. Unter der Kopfzeile lässt sich die Tabelle filtern: IAN als Freitext, alle anderen Spalten per Dropdown. VK Büro wird unabhängig von führenden Nullen zusammengefasst (070 = 70).</p>
+    <p class="hinweis">Bezeichnung, Lieferant, Angelegt am und Sachbearbeiter kommen aus dem SAP-Export. Warengruppe, Styles, LFGB? und Trivial? werden — wenn möglich — aus dem verknüpften Prüfauftrag übernommen (siehe Reiter „Prüfaufträge"). „Mech. erledigt" ist nur ein Haken, ob der KV von mechanischer Seite fertig ist; anklicken zum Umschalten. Unter der Kopfzeile lässt sich die Tabelle filtern: IAN als Freitext; VK Büro, Lieferant und Warengruppe als durchsuchbare Mehrfachauswahl (anklicken, tippen zum Suchen, mehrere Häkchen setzen); Sachbearbeiter, LFGB?, Trivial? und Mech. erledigt als einfaches Dropdown. VK Büro wird unabhängig von führenden Nullen zusammengefasst (070 = 70), Warengruppe immer als ###.### angezeigt.</p>
     <div class="tabellen-wrapper">
       <table class="tabelle readonly" id="arbeitsvorrat-tabelle">
         <thead>
@@ -420,19 +432,43 @@ function normalisiereVkBuero(wert) {
   return text;
 }
 
-/* Spalten mit Dropdown-Filter in der Filterzeile der Arbeitsvorrat-Tabelle. */
-const ARBEITSVORRAT_FILTER_FELDER = ["vkBuero", "lieferant", "sachbearbeiter", "warengruppe", "lfgb", "trivial", "mechErledigt"];
-let arbeitsvorratFilter = { ian: "", vkBuero: "", lieferant: "", sachbearbeiter: "", warengruppe: "", lfgb: "", trivial: "", mechErledigt: "" };
+/* Warengruppe immer als ###.### darstellen, z. B. "385030" oder "385.030" -> "385.030".
+   Nur bei genau 6 Ziffern formatieren; Abweichendes wird unverändert gelassen statt geraten. */
+function normalisiereWarengruppe(wert) {
+  if (wert === null || wert === undefined || wert === "") return "";
+  const text = String(wert).trim();
+  const ziffern = text.replace(/\D/g, "");
+  if (ziffern.length === 6) return ziffern.slice(0, 3) + "." + ziffern.slice(3);
+  return text;
+}
+
+/* Einheitlicher Zugriff auf den (normalisierten) Anzeige-/Vergleichswert eines Feldes. */
+function arbeitsvorratAnzeigewert(r, feld) {
+  if (feld === "mechErledigt") return r.mechErledigt ? "Ja" : "Nein";
+  if (feld === "vkBuero") return normalisiereVkBuero(r.vkBuero);
+  if (feld === "warengruppe") return normalisiereWarengruppe(r.warengruppe);
+  return r[feld];
+}
+
+/* Felder mit durchsuchbarer Mehrfachauswahl (Checkbox-Liste + Suche) in der Filterzeile. */
+const ARBEITSVORRAT_MULTISELECT_FELDER = ["vkBuero", "lieferant", "warengruppe"];
+/* Felder mit einfachem Dropdown (genau ein Wert oder "Alle"). */
+const ARBEITSVORRAT_SELECT_FELDER = ["sachbearbeiter", "lfgb", "trivial", "mechErledigt"];
+
+let arbeitsvorratFilter = { ian: "", vkBuero: [], lieferant: [], warengruppe: [], sachbearbeiter: "", lfgb: "", trivial: "", mechErledigt: "" };
 
 function gefiltertArbeitsvorrat() {
   let liste = data.arbeitsvorrat;
-  ARBEITSVORRAT_FILTER_FELDER.forEach((f) => {
+  ARBEITSVORRAT_MULTISELECT_FELDER.forEach((f) => {
+    const auswahl = arbeitsvorratFilter[f];
+    if (!auswahl.length) return;
+    liste = liste.filter((r) => auswahl.includes(normalisiere(arbeitsvorratAnzeigewert(r, f))));
+  });
+  ARBEITSVORRAT_SELECT_FELDER.forEach((f) => {
     const wert = arbeitsvorratFilter[f];
     if (wert === "") return;
     liste = liste.filter((r) => {
-      const rWert = f === "mechErledigt" ? (r.mechErledigt ? "ja" : "nein")
-        : f === "vkBuero" ? normalisiere(normalisiereVkBuero(r.vkBuero))
-        : normalisiere(r[f]);
+      const rWert = f === "mechErledigt" ? (r.mechErledigt ? "ja" : "nein") : normalisiere(r[f]);
       return rWert === wert;
     });
   });
@@ -453,24 +489,112 @@ function jaNeinBadge(wert) {
 function distinkteWerte(feld) {
   const werte = new Set();
   data.arbeitsvorrat.forEach((r) => {
-    const w = feld === "mechErledigt" ? (r.mechErledigt ? "Ja" : "Nein")
-      : feld === "vkBuero" ? normalisiereVkBuero(r.vkBuero)
-      : r[feld];
+    const w = arbeitsvorratAnzeigewert(r, feld);
     if (w !== null && w !== undefined && w !== "") werte.add(String(w));
   });
   return Array.from(werte).sort((a, b) => a.localeCompare(b, "de", { numeric: true }));
 }
 
+/* ---- Durchsuchbare Mehrfachauswahl (VK Büro / Lieferant / Warengruppe) ---- */
+
+function mehrfachauswahlLabel(feld) {
+  const n = arbeitsvorratFilter[feld].length;
+  return n === 0 ? "Alle ▾" : `${n} ausgewählt ▾`;
+}
+
+function mehrfachauswahlHtml(feld) {
+  return `<button type="button" class="ms-btn" data-ms-btn="${feld}">${mehrfachauswahlLabel(feld)}</button>
+    <div class="ms-panel" data-ms-panel="${feld}" hidden>
+      <input type="text" class="ms-suche" data-ms-suche="${feld}" placeholder="Suchen…">
+      <div class="ms-aktionen">
+        <button type="button" data-ms-action="alle" data-ms="${feld}">Alle</button>
+        <button type="button" data-ms-action="keine" data-ms="${feld}">Keine</button>
+      </div>
+      <div class="ms-liste" data-ms-liste="${feld}"></div>
+    </div>`;
+}
+
+function baueMehrfachauswahlListe(feld, suchbegriff) {
+  const container = document.querySelector(`.ms-liste[data-ms-liste="${feld}"]`);
+  if (!container) return;
+  const q = normalisiere(suchbegriff || "");
+  const optionen = distinkteWerte(feld).filter((o) => !q || normalisiere(o).includes(q));
+  if (!optionen.length) { container.innerHTML = '<div class="ms-leer">Keine Treffer.</div>'; return; }
+  container.innerHTML = optionen.map((o) => {
+    const wert = normalisiere(o);
+    const checked = arbeitsvorratFilter[feld].includes(wert);
+    return `<label><input type="checkbox" data-ms-check="${feld}" value="${escapeHtml(wert)}" ${checked ? "checked" : ""}> ${escapeHtml(o)}</label>`;
+  }).join("");
+  container.querySelectorAll(`input[data-ms-check="${feld}"]`).forEach((cb) => {
+    cb.addEventListener("change", () => {
+      const idx = arbeitsvorratFilter[feld].indexOf(cb.value);
+      if (cb.checked && idx === -1) arbeitsvorratFilter[feld].push(cb.value);
+      if (!cb.checked && idx !== -1) arbeitsvorratFilter[feld].splice(idx, 1);
+      aktualisiereMehrfachauswahlButton(feld);
+      renderArbeitsvorratKoerper();
+    });
+  });
+}
+
+function aktualisiereMehrfachauswahlButton(feld) {
+  const btn = document.querySelector(`.ms-btn[data-ms-btn="${feld}"]`);
+  if (btn) btn.textContent = mehrfachauswahlLabel(feld);
+}
+
+function sichtbareMultiselectOptionen(feld, suchbegriff) {
+  const q = normalisiere(suchbegriff || "");
+  return distinkteWerte(feld).filter((o) => !q || normalisiere(o).includes(q));
+}
+
+function schliesseAlleMehrfachauswahlPanels() {
+  document.querySelectorAll(".ms-panel").forEach((p) => (p.hidden = true));
+}
+document.addEventListener("click", schliesseAlleMehrfachauswahlPanels);
+
+function initialisiereMehrfachauswahl(feld) {
+  const btn = document.querySelector(`.ms-btn[data-ms-btn="${feld}"]`);
+  const panel = document.querySelector(`.ms-panel[data-ms-panel="${feld}"]`);
+  const suche = document.querySelector(`.ms-suche[data-ms-suche="${feld}"]`);
+  baueMehrfachauswahlListe(feld, "");
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const warGeoeffnet = !panel.hidden;
+    schliesseAlleMehrfachauswahlPanels();
+    panel.hidden = warGeoeffnet;
+    if (!warGeoeffnet) { suche.value = ""; baueMehrfachauswahlListe(feld, ""); suche.focus(); }
+  });
+  panel.addEventListener("click", (e) => e.stopPropagation());
+  suche.addEventListener("input", () => baueMehrfachauswahlListe(feld, suche.value));
+  panel.querySelector('[data-ms-action="alle"]').addEventListener("click", () => {
+    sichtbareMultiselectOptionen(feld, suche.value).forEach((o) => {
+      const w = normalisiere(o);
+      if (!arbeitsvorratFilter[feld].includes(w)) arbeitsvorratFilter[feld].push(w);
+    });
+    baueMehrfachauswahlListe(feld, suche.value);
+    aktualisiereMehrfachauswahlButton(feld);
+    renderArbeitsvorratKoerper();
+  });
+  panel.querySelector('[data-ms-action="keine"]').addEventListener("click", () => {
+    const sichtbar = new Set(sichtbareMultiselectOptionen(feld, suche.value).map((o) => normalisiere(o)));
+    arbeitsvorratFilter[feld] = arbeitsvorratFilter[feld].filter((w) => !sichtbar.has(w));
+    baueMehrfachauswahlListe(feld, suche.value);
+    aktualisiereMehrfachauswahlButton(feld);
+    renderArbeitsvorratKoerper();
+  });
+}
+
 function renderArbeitsvorratFilterZeile() {
   const tr = document.getElementById("arbeitsvorrat-filter-zeile");
-  const spaltenReihenfolge = ["ian:text", "vkBuero", "", "lieferant", "", "sachbearbeiter", "warengruppe", "", "lfgb", "trivial", "mechErledigt", "", ""];
+  const spaltenReihenfolge = ["ian:text", "vkBuero:multi", "", "lieferant:multi", "", "sachbearbeiter:select", "warengruppe:multi", "", "lfgb:select", "trivial:select", "mechErledigt:select", "", ""];
   tr.innerHTML = spaltenReihenfolge.map((eintragTyp) => {
     if (!eintragTyp) return "<th></th>";
-    if (eintragTyp.endsWith(":text")) {
-      const feld = eintragTyp.split(":")[0];
+    const [feld, typ] = eintragTyp.split(":");
+    if (typ === "text") {
       return `<th><input type="text" data-filterfeld-text="${feld}" placeholder="Filtern…" value="${escapeHtml(arbeitsvorratFilter[feld])}"></th>`;
     }
-    const feld = eintragTyp;
+    if (typ === "multi") {
+      return `<th style="position:relative">${mehrfachauswahlHtml(feld)}</th>`;
+    }
     const optionen = distinkteWerte(feld);
     const aktuell = arbeitsvorratFilter[feld];
     return `<th><select data-filterfeld="${feld}">
@@ -490,10 +614,13 @@ function renderArbeitsvorratFilterZeile() {
       renderArbeitsvorratKoerper();
     });
   });
+  ARBEITSVORRAT_MULTISELECT_FELDER.forEach((feld) => initialisiereMehrfachauswahl(feld));
 }
 
 document.getElementById("btn-arbeitsvorrat-filter-zuruecksetzen").addEventListener("click", () => {
-  Object.keys(arbeitsvorratFilter).forEach((f) => (arbeitsvorratFilter[f] = ""));
+  ARBEITSVORRAT_MULTISELECT_FELDER.forEach((f) => (arbeitsvorratFilter[f] = []));
+  ARBEITSVORRAT_SELECT_FELDER.forEach((f) => (arbeitsvorratFilter[f] = ""));
+  arbeitsvorratFilter.ian = "";
   suchbegriffe.arbeitsvorrat = "";
   if (aktiverTab === "arbeitsvorrat") document.getElementById("suche").value = "";
   renderArbeitsvorratTab();
@@ -526,7 +653,7 @@ function renderArbeitsvorratKoerper() {
       <td title="${escapeHtml(r.lieferant)}">${escapeHtml(r.lieferant)}</td>
       <td>${escapeHtml(r.angelegtAm)}</td>
       <td>${escapeHtml(r.sachbearbeiter)}</td>
-      <td>${escapeHtml(r.warengruppe)}</td>
+      <td>${escapeHtml(normalisiereWarengruppe(r.warengruppe))}</td>
       <td>${escapeHtml(r.anzahlStyles)}</td>
       <td>${jaNeinBadge(r.lfgb)}</td>
       <td>${jaNeinBadge(r.trivial)}</td>
@@ -591,6 +718,7 @@ function oeffneArbeitsvorratModal(eintrag) {
       eintrag[el.dataset.feld] = el.type === "checkbox" ? el.checked : el.value;
     });
     eintrag.vkBuero = normalisiereVkBuero(eintrag.vkBuero);
+    eintrag.warengruppe = normalisiereWarengruppe(eintrag.warengruppe);
     if (!data.arbeitsvorrat.includes(eintrag)) data.arbeitsvorrat.unshift(eintrag);
     speichereInLocalStorage();
     schliesseOverlay();
@@ -616,8 +744,8 @@ document.getElementById("btn-neuer-arbeitsvorrat-eintrag").addEventListener("cli
 function neuerKvAusArbeitsvorrat(eintrag) {
   const kv = {
     id: neueId(), ian: eintrag.ian, artikel: eintrag.bezeichnung, lieferant: eintrag.lieferant, sapNummer: "",
-    warengruppeNeu: eintrag.warengruppe, warengruppeAlt: eintrag.alteWarengruppe, lfgb: eintrag.lfgb, trivial: eintrag.trivial,
-    styleanzahl: eintrag.anzahlStyles, vkBuero: eintrag.vkBuero, notiz: "", erstelltAm: new Date().toISOString().slice(0, 10),
+    warengruppeNeu: normalisiereWarengruppe(eintrag.warengruppe), warengruppeAlt: eintrag.alteWarengruppe, lfgb: eintrag.lfgb, trivial: eintrag.trivial,
+    styleanzahl: eintrag.anzahlStyles, vkBuero: normalisiereVkBuero(eintrag.vkBuero), notiz: "", erstelltAm: new Date().toISOString().slice(0, 10),
     positionen: []
   };
   data.kvs.unshift(kv);
@@ -634,7 +762,7 @@ function fuelleAusPa(eintrag, ueberschreiben) {
   if (!pa) return false;
   const finde = (regex) => { const f = (pa.felder || []).find((fe) => regex.test(fe.schluessel)); return f ? f.wert : ""; };
   const kandidaten = {
-    warengruppe: pa.warengruppe || finde(/^warengruppe$/i),
+    warengruppe: normalisiereWarengruppe(pa.warengruppe || finde(/^warengruppe$/i)),
     lfgb: finde(/lfgb/i),
     trivial: finde(/trivial/i),
     anzahlStyles: finde(/anzahl.*style|style.*anzahl|styleanzahl/i)
@@ -1372,7 +1500,12 @@ function csvHerunterladen(zeilen, dateiname) {
 document.getElementById("btn-csv").addEventListener("click", () => {
   if (aktiverTab === "arbeitsvorrat") {
     const zeilen = [ARBEITSVORRAT_FELDER];
-    data.arbeitsvorrat.forEach((r) => zeilen.push(ARBEITSVORRAT_FELDER.map((f) => (f === "mechErledigt" ? (r[f] ? "Ja" : "Nein") : r[f]))));
+    data.arbeitsvorrat.forEach((r) => zeilen.push(ARBEITSVORRAT_FELDER.map((f) => {
+      if (f === "mechErledigt") return r[f] ? "Ja" : "Nein";
+      if (f === "vkBuero") return normalisiereVkBuero(r[f]);
+      if (f === "warengruppe") return normalisiereWarengruppe(r[f]);
+      return r[f];
+    })));
     csvHerunterladen(zeilen, "arbeitsvorrat_export.csv");
   } else if (aktiverTab === "pruefauftraege") {
     const zeilen = [["IAN", "Artikelbezeichnung", "Warengruppe", "Schlüssel", "Wert"]];
