@@ -879,7 +879,7 @@ function neuerKvAusArbeitsvorrat(eintrag) {
     id: neueId(), ian: eintrag.ian, artikel: eintrag.bezeichnung, lieferant: eintrag.lieferant, sapNummer: "",
     warengruppeNeu: normalisiereWarengruppe(eintrag.warengruppe), warengruppeAlt: eintrag.alteWarengruppe, lfgb: eintrag.lfgb, trivial: eintrag.trivial,
     styleanzahl: eintrag.anzahlStyles, vkBuero: normalisiereVkBuero(eintrag.vkBuero), notiz: "", erstelltAm: heutigesDatumLokal(),
-    mechanikProduktId: "", positionen: []
+    mechanikProduktId: "", mechanikSetbestandteile: [], positionen: []
   };
   data.kvs.unshift(kv);
   aktiveKvId = kv.id;
@@ -1836,11 +1836,29 @@ function fuegeKatalogPositionHinzu(kv, katalogEintrag) {
   return true;
 }
 
+/* Rabattfaktor auf die kombinierten Sicherheit&Norm-Kosten je nach Artikelkategorie des verknüpften
+   PA - nachgebaut aus Auswahl_LIDL (Preisliste_Hilfe_claude.xlsm): Gesamtkosten = SUMME(Kosten VP
+   je Setbestandteil) * (Grün:0,3 | Gelb:0,5 | sonst:0,7). Das Original vergleicht die Artikelkategorie
+   per exaktem String ("="Grün""); reale PA-Extraktionen liefern aber z.B. "Grün*" (Sternchen/Zusatz) -
+   hier deshalb bewusst normalisiert (klein geschrieben, ohne Sonderzeichen) statt exakt verglichen. */
+function artikelkategorieMultiplikator(pa) {
+  const roh = pa ? String(pa.artikelkategorie || "").trim() : "";
+  const norm = roh.toLowerCase().replace(/[^a-zäöü]/g, "");
+  if (norm.startsWith("grün")) return { faktor: 0.3, hinweisText: `Rabattfaktor 0,3 (Artikelkategorie „${escapeHtml(roh)}“ → Grün)` };
+  if (norm.startsWith("gelb")) return { faktor: 0.5, hinweisText: `Rabattfaktor 0,5 (Artikelkategorie „${escapeHtml(roh)}“ → Gelb)` };
+  return { faktor: 0.7, hinweisText: roh ? `Rabattfaktor 0,7 (Artikelkategorie „${escapeHtml(roh)}“ nicht als Grün/Gelb erkannt)` : `Rabattfaktor 0,7 (keine Artikelkategorie hinterlegt)` };
+}
+
 /* Warengruppen-getriebene Empfehlung: direkter Nachschlag in MECHANIK_LOOKUP nach der Warengruppe
    des KVs, mit Produkt-Auswahlliste bei mehreren Treffern (siehe mechanikTrefferFuerWarengruppe).
-   Liefert für das gewählte Produkt die konkreten, real hinterlegten Kosten für Sicherheit & Norm,
-   FFU und NGO/StiWa - das ist die primäre, Warengruppe-zuerst-dann-Produkt-Empfehlung. */
-function renderMechanikEmpfehlungKarte(kv) {
+   Liefert für das gewählte Hauptprodukt die konkreten, real hinterlegten Kosten für Sicherheit & Norm,
+   FFU und NGO/StiWa - das ist die primäre, Warengruppe-zuerst-dann-Produkt-Empfehlung. Zusätzlich
+   können - analog zu den "Setbestandteilen" in Auswahl_LIDL (Tabelle2) - weitere Produkte aus der
+   gesamten Mechanik-Referenz (nicht auf diese Warengruppe beschränkt, z.B. "Messer" zu "Messerblock")
+   dazugesucht werden; ihre Sicherheit&Norm-Kosten werden zusammen mit dem Hauptprodukt aufsummiert
+   und mit dem Artikelkategorie-Rabattfaktor zu EINER kombinierten Position verrechnet. */
+function renderMechanikEmpfehlungKarte(kv, pa) {
+  kv.mechanikSetbestandteile = kv.mechanikSetbestandteile || [];
   const warengruppe = kv.warengruppeNeu || kv.warengruppeAlt;
   if (!warengruppe) {
     return `<div class="card">
@@ -1872,13 +1890,42 @@ function renderMechanikEmpfehlungKarte(kv) {
     if (gewaehlt.trivial) badges.push(`<span class="badge ja">Trivial</span>`);
     if (gewaehlt.kez) badges.push(`<span class="badge ja">KEZ-Anforderungen</span>`);
 
-    const zeilen = [
-      { label: "Sicherheit & Norm", detail: gewaehlt.norm, kosten: gewaehlt.kostenSicherheitNorm, kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", kuerzel: "MS", sapCode: "MECH_SICHERHEIT_TS" }
-    ];
-    if (gewaehlt.ffuHinweis) zeilen.push({ label: "FFU", detail: gewaehlt.ffuHinweis, kosten: gewaehlt.kostenFfu, kategorie: "FFU/Fitting", kuerzel: "FFU", sapCode: "FFU_TS" });
-    if (gewaehlt.stiwaHinweis) zeilen.push({ label: "NGO/StiWa", detail: gewaehlt.stiwaHinweis, kosten: gewaehlt.kostenStiwa, kategorie: "NGO", kuerzel: "NGO", sapCode: "FFU_TS" });
+    const teilprodukte = kv.mechanikSetbestandteile
+      .map((sb) => ({ sb, eintrag: MECHANIK_LOOKUP.find((e) => mechanikEintragId(e) === sb.mechanikId) }))
+      .filter((x) => x.eintrag);
 
-    const positionenHtml = zeilen.map((z) => {
+    const komponenten = [{ produkt: gewaehlt.produkt, norm: gewaehlt.norm, kosten: gewaehlt.kostenSicherheitNorm }]
+      .concat(teilprodukte.map((t) => ({ produkt: t.eintrag.produkt, norm: t.eintrag.norm, kosten: t.eintrag.kostenSicherheitNorm })));
+    const bekannteKosten = komponenten.filter((k) => k.kosten !== null && k.kosten !== undefined);
+    const summeRoh = bekannteKosten.reduce((s, k) => s + Number(k.kosten), 0);
+    const { faktor, hinweisText } = artikelkategorieMultiplikator(pa);
+    const summeRabattiert = Math.round(summeRoh * faktor * 100) / 100;
+    const beschreibungSicherheitNorm = "Sicherheit & Norm: " + komponenten.map((k) => k.norm ? `${k.produkt}: ${k.norm}` : k.produkt).join("; ");
+
+    const teilprodukteHtml = teilprodukte.length
+      ? `<div class="toolbar-zeile" style="flex-wrap:wrap;gap:0.35rem;margin:0.3rem 0">${teilprodukte.map((t) => `<span class="badge nein">${escapeHtml(t.eintrag.produkt)}${t.eintrag.norm ? " · " + escapeHtml(t.eintrag.norm) : ""} <button type="button" data-action="setbestandteil-entfernen" data-id="${escapeHtml(t.sb.id)}" title="Set-Bestandteil entfernen" style="border:none;background:none;color:inherit;cursor:pointer;font:inherit;padding:0 0 0 0.3rem">✕</button></span>`).join("")}</div>`
+      : "";
+
+    const schonDrinKombi = kv.positionen.some((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere("Sicherheit & Norm / Sonder- & Funktionsparameter") && normalisiere(p.bezeichnung) === normalisiere(beschreibungSicherheitNorm));
+    const kostenTextKombi = bekannteKosten.length ? `${summeRabattiert} €` : "Preis auf Anfrage";
+
+    const kombiHtml = `<div class="pruefumfang-position pruefumfang-position-vorschlag" style="align-items:flex-start;flex-direction:column;gap:0.3rem">
+      <div class="toolbar-zeile" style="width:100%">
+        <span>${escapeHtml(beschreibungSicherheitNorm)} <span class="muted">(${kostenTextKombi})</span> <span class="badge ja">Vorschlag</span></span>
+        ${schonDrinKombi ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="mechanik-kombi-hinzufuegen" data-bezeichnung="${escapeHtml(beschreibungSicherheitNorm)}" data-kosten="${bekannteKosten.length ? summeRabattiert : 0}">+ hinzufügen</button>`}
+      </div>
+      <p class="hinweis" style="margin:0">${hinweisText}${teilprodukte.length ? ` · ${komponenten.length} Komponenten (Hauptprodukt + ${teilprodukte.length} Set-Bestandteil${teilprodukte.length === 1 ? "" : "e"})` : ""}</p>
+      ${teilprodukteHtml}
+      <label style="display:flex;flex-direction:column;gap:0.2rem;font-size:0.8rem;font-weight:600;width:100%;max-width:420px">Weiteren Set-Bestandteil hinzufügen (mehrteiliges Produkt, z. B. Messer + Messerblock)
+        <input type="text" id="setbestandteil-suche" placeholder="Produkt in der gesamten Mechanik-Referenz suchen…" style="font-family:inherit;font-size:0.85rem;padding:0.35rem 0.5rem;border:1px solid var(--border);border-radius:6px;font-weight:400">
+      </label>
+      <div id="setbestandteil-liste" style="width:100%"></div>
+    </div>`;
+
+    const zeilenExtra = [];
+    if (gewaehlt.ffuHinweis) zeilenExtra.push({ label: "FFU", detail: gewaehlt.ffuHinweis, kosten: gewaehlt.kostenFfu, kategorie: "FFU/Fitting", kuerzel: "FFU", sapCode: "FFU_TS" });
+    if (gewaehlt.stiwaHinweis) zeilenExtra.push({ label: "NGO/StiWa", detail: gewaehlt.stiwaHinweis, kosten: gewaehlt.kostenStiwa, kategorie: "NGO", kuerzel: "NGO", sapCode: "FFU_TS" });
+    const extraHtml = zeilenExtra.map((z) => {
       const bezeichnung = z.detail ? `${z.label}: ${z.detail}` : z.label;
       const schonDrin = kv.positionen.some((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere(z.kategorie) && normalisiere(p.bezeichnung) === normalisiere(bezeichnung));
       const hatKosten = z.kosten !== null && z.kosten !== undefined;
@@ -1892,7 +1939,8 @@ function renderMechanikEmpfehlungKarte(kv) {
     detailHtml = `
       <div class="toolbar-zeile" style="margin:0.4rem 0">${badges.join(" ")}</div>
       ${gewaehlt.bemerkungen ? `<p class="hinweis"><strong>Bemerkung:</strong> ${escapeHtml(gewaehlt.bemerkungen)}</p>` : ""}
-      ${positionenHtml}`;
+      ${kombiHtml}
+      ${extraHtml}`;
   }
 
   return `<div class="card">
@@ -1905,7 +1953,37 @@ function renderMechanikEmpfehlungKarte(kv) {
   </div>`;
 }
 
+/* Set-Bestandteil-Suche über die GESAMTE Mechanik-Referenz (nicht auf die Warengruppe des KVs
+   beschränkt) - baut nur die Ergebnisliste neu auf, nie das Suchfeld selbst (Fokus-Erhalt beim
+   Tippen, analog renderProduktspeziListe). */
+function renderSetbestandteilListe(kv, filterText) {
+  const container = document.getElementById("setbestandteil-liste");
+  if (!container) return;
+  const q = normalisiere(filterText);
+  if (!q) { container.innerHTML = ""; return; }
+  const ausgeschlossen = new Set([kv.mechanikProduktId, ...kv.mechanikSetbestandteile.map((s) => s.mechanikId)]);
+  const gefiltert = MECHANIK_LOOKUP.filter((e) => !ausgeschlossen.has(mechanikEintragId(e)) && normalisiere(e.produkt + " " + e.warengruppeName + " " + (e.norm || "")).includes(q));
+  const GRENZE = 20;
+  const anzeige = gefiltert.slice(0, GRENZE);
+  container.innerHTML = (anzeige.length
+    ? anzeige.map((e) => `<div class="pruefumfang-position">
+        <span>${escapeHtml(e.produkt)} <span class="muted">(${escapeHtml(e.warengruppeName)}${e.norm ? " · " + escapeHtml(e.norm) : ""})</span></span>
+        <button type="button" class="ghost small" data-action="setbestandteil-hinzufuegen" data-id="${escapeHtml(mechanikEintragId(e))}">+ Set-Bestandteil</button>
+      </div>`).join("")
+    : `<p class="muted" style="margin:0.3rem 0">Keine Treffer.</p>`)
+    + (gefiltert.length > GRENZE ? `<p class="hinweis">… und ${gefiltert.length - GRENZE} weitere — Suche eingrenzen.</p>` : "");
+
+  container.querySelectorAll('[data-action="setbestandteil-hinzufuegen"]').forEach((btn) => {
+    btn.addEventListener("click", () => {
+      kv.mechanikSetbestandteile.push({ id: neueId(), mechanikId: btn.dataset.id });
+      speichereInLocalStorage();
+      renderKvDetail();
+    });
+  });
+}
+
 function initialisiereMechanikEmpfehlungKarte(panel, kv) {
+  kv.mechanikSetbestandteile = kv.mechanikSetbestandteile || [];
   const sel = panel.querySelector("#mechanik-produkt-auswahl");
   if (sel) {
     sel.addEventListener("change", () => {
@@ -1924,6 +2002,28 @@ function initialisiereMechanikEmpfehlungKarte(panel, kv) {
       renderKvDetail();
     });
   });
+  const kombiBtn = panel.querySelector('[data-action="mechanik-kombi-hinzufuegen"]');
+  if (kombiBtn) {
+    kombiBtn.addEventListener("click", () => {
+      kv.positionen.push({
+        id: neueId(), kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: kombiBtn.dataset.bezeichnung,
+        kuerzel: "MS", sapCode: "MECH_SICHERHEIT_TS", kosten: Number(kombiBtn.dataset.kosten) || 0, anzahl: 1, aktiv: true
+      });
+      speichereInLocalStorage();
+      renderKvDetail();
+    });
+  }
+  panel.querySelectorAll('[data-action="setbestandteil-entfernen"]').forEach((btn) => {
+    btn.addEventListener("click", () => {
+      kv.mechanikSetbestandteile = kv.mechanikSetbestandteile.filter((s) => s.id !== btn.dataset.id);
+      speichereInLocalStorage();
+      renderKvDetail();
+    });
+  });
+  const sbSuche = panel.querySelector("#setbestandteil-suche");
+  if (sbSuche) {
+    sbSuche.addEventListener("input", () => renderSetbestandteilListe(kv, sbSuche.value));
+  }
 }
 
 const PRODUKTSPEZI_KATEGORIE_NAME = "(physikalische-) Produktspezifikation";
@@ -1968,7 +2068,7 @@ function renderKvPruefumfangUebersicht(kv, pa) {
   /* Die Warengruppen-Empfehlung hängt nur an kv.warengruppeNeu/-Alt, nicht am verknüpften PA -
      sie soll daher auch ohne (noch) vorhandenen Prüfauftrag erscheinen. */
   if (!pa) {
-    return `${renderMechanikEmpfehlungKarte(kv)}
+    return `${renderMechanikEmpfehlungKarte(kv, pa)}
     <div class="card">
       <h2>Prüfumfang-Übersicht</h2>
       <p class="hinweis">Kein verknüpfter Prüfauftrag gefunden — sobald einer mit dieser IAN vorliegt, werden die enthaltenen Prüfumfang-Kategorien hier automatisch erkannt.</p>
@@ -2028,7 +2128,7 @@ function renderKvPruefumfangUebersicht(kv, pa) {
     </div>`;
   }).join("");
 
-  return `${renderMechanikEmpfehlungKarte(kv)}
+  return `${renderMechanikEmpfehlungKarte(kv, pa)}
   <div class="card">
     <h2>Prüfumfang-Übersicht</h2>
     <p class="hinweis">Automatisch aus dem Prüfumfang des verknüpften Prüfauftrags erkannt. „Vorschlag" markiert Positionen, die dafür typischerweise anfallen — Klick auf „+ hinzufügen" bzw. „Alle Vorschläge übernehmen" trägt sie unten in die Prüfpositionen-Tabelle ein; danach dort wie gewohnt Kosten/Anzahl anpassen oder entfernen.</p>
@@ -2245,7 +2345,7 @@ function renderKvPositionenTabelle(kv) {
 function renderKvTab() { renderKvListe(); renderKvDetail(); }
 
 document.getElementById("btn-neuer-kv").addEventListener("click", () => {
-  const kv = { id: neueId(), ian: "", artikel: "", lieferant: "", sapNummer: "", warengruppeNeu: "", warengruppeAlt: "", lfgb: "", trivial: "", styleanzahl: "", vkBuero: "", notiz: "", erstelltAm: heutigesDatumLokal(), mechanikProduktId: "", positionen: [] };
+  const kv = { id: neueId(), ian: "", artikel: "", lieferant: "", sapNummer: "", warengruppeNeu: "", warengruppeAlt: "", lfgb: "", trivial: "", styleanzahl: "", vkBuero: "", notiz: "", erstelltAm: heutigesDatumLokal(), mechanikProduktId: "", mechanikSetbestandteile: [], positionen: [] };
   data.kvs.unshift(kv);
   aktiveKvId = kv.id;
   speichereInLocalStorage();

@@ -135,15 +135,38 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   **Warengruppen-Empfehlung (Mechanik)** – die primäre Vorschlagsquelle,
   wie besprochen **zuerst nach Warengruppe, dann nach Produkt**: sobald
   „Warengruppe (neu)" gesetzt ist, wird in einer echten, vom Team gepflegten
-  Referenztabelle (205 Zeilen aus der Mechanik-Preisliste) nachgeschlagen.
+  Referenztabelle (185 Zeilen aus der Mechanik-Preisliste) nachgeschlagen.
   Gibt es zu der Warengruppe mehrere Produkte (z. B. „370.030 Grillzubehör"
   → Feuerzeug, Grillbürsten, Anzündkamin, …), erscheint eine Auswahlliste;
-  bei genau einem Treffer wird er direkt angezeigt. Für das gewählte Produkt
-  zeigt die Karte Norm, Anzahl Muster, Besonderheiten (Bemerkungen,
-  Trivial-/KEZ-Kennzeichnung) sowie die **tatsächlich hinterlegten Kosten**
-  für Sicherheit & Norm sowie – falls vorhanden – FFU und NGO/StiWa, jeweils
-  mit „+ hinzufügen" direkt in die Prüfpositionen-Tabelle. Gibt es zur
+  bei genau einem Treffer wird er direkt angezeigt (Hauptprodukt). Für das
+  gewählte Produkt zeigt die Karte Norm, Anzahl Muster, Besonderheiten
+  (Bemerkungen, Trivial-/KEZ-Kennzeichnung) sowie – falls vorhanden – FFU
+  und NGO/StiWa mit den tatsächlich hinterlegten Kosten, jeweils mit
+  „+ hinzufügen" direkt in die Prüfpositionen-Tabelle. Gibt es zur
   Warengruppe keine Referenzdaten, bleibt nur die manuelle Auswahl unten.
+
+  Die Position **„Sicherheit & Norm"** wird als eine **kombinierte Position**
+  gebildet, nachgebaut aus dem Auswahl_LIDL-Arbeitsblatt (siehe unten):
+  - **Set-Bestandteile**: über „Weiteren Set-Bestandteil hinzufügen" lässt
+    sich die Referenztabelle **warengruppenübergreifend** nach weiteren
+    Produkten durchsuchen (z. B. „Messer" zu einem Hauptprodukt
+    „Messerblock") — praktisch für mehrteilige Produkte, bei denen jeder
+    Bestandteil eine eigene Norm/eigene Kosten hat. Jeder hinzugefügte
+    Bestandteil erscheint als entfernbarer Chip; Norm-Text und Kosten aller
+    Bestandteile (Hauptprodukt + Set-Bestandteile) werden zu einer einzigen
+    Position zusammengefasst.
+  - **Artikelkategorie-Rabattfaktor**: die Summe der Sicherheit & Norm-Kosten
+    wird automatisch mit einem Faktor je nach Artikelkategorie des
+    verknüpften Prüfauftrags multipliziert — **Grün → 0,3, Gelb → 0,5,
+    sonst/unbekannt → 0,7**. Der verwendete Faktor und die erkannte
+    Artikelkategorie werden direkt unter der Position angezeigt. Hinweis:
+    das Original vergleicht die Artikelkategorie exakt (nur „Grün"); da
+    reale Prüfaufträge auch Werte wie „Grün*" liefern, wird hier bewusst
+    normalisiert verglichen (ohne Sonderzeichen, Groß-/Kleinschreibung
+    egal), damit der Rabatt auch bei solchen Varianten korrekt greift.
+
+  FFU- und NGO/StiWa-Kosten sind vom Rabattfaktor **nicht** betroffen (im
+  Original eigenständige Positionen ohne Set-Bestandteile/Rabatt).
 
   **Prüfumfang-Übersicht** – ergänzend dazu, automatisch aus dem Prüfumfang
   des verknüpften Prüfauftrags erkannt („im Prüfumfang" bzw. „nicht
@@ -186,7 +209,7 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
 
 ## Datenquelle der Warengruppen-Empfehlung und SAP-Codes
 
-Die Warengruppen-Mechanik-Referenz (205 Zeilen) und der Produktspezifikationen-
+Die Warengruppen-Mechanik-Referenz (185 Zeilen) und der Produktspezifikationen-
 Parameterkatalog (62 Zeilen) stammen aus `Preisliste_Mechanik_v2.xlsm`
 (Blätter „Mechanik" und „Produktspezifikationen"). Es sind feste Referenzdaten,
 die beim Bauen der Datei mit eingebettet werden — keine Bearbeitung über die
@@ -197,6 +220,19 @@ SAP-Codes im Prüfpositionen-Katalog gegen die reale SAP-Bestellzeilen-Liste
 (Blatt „SAP") korrigiert — u. a. „MECH_SICHERHEIT_TS" statt der zuvor
 angenommenen „MECH_S_NORM_TS", und „FFU_TS" als gemeinsamer Code für
 Optischer Abgleich/FFU/Referenzprüfung/NGO.
+
+Die **Set-Bestandteile- und Rabattfaktor-Logik** der Sicherheit & Norm-Position
+ist aus `Preisliste_Hilfe_claude.xlsm` (Blatt „Auswahl_LIDL", dort die
+Formeln/Verknüpfungen rund um die Tabelle „Setbestandteile" sowie die
+Gesamtkosten-Formel `SUMME(Kosten VP) × (Grün:0,3 | Gelb:0,5 | sonst:0,7)`)
+nachgebaut — bewusst vereinfacht auf eine dynamische Liste statt der starren
+5 Zeilen (1 Hauptprodukt + 4 Teilprodukte) im Original. Die dortige
+„Mechanik"-Tabelle selbst (206 Zeilen) hatte keine befüllte Kosten-Spalte und
+diente nur zur Absicherung der Warengruppen-/Produktstruktur — Kostenquelle
+bleibt `Preisliste_Mechanik_v2.xlsm`. Noch nicht übernommen: die
+Neue-↔-Alte-Warengruppe-Zuordnungstabelle vom ADMIN-Blatt (347 Zeilen) sowie
+eine Lockerung der Prüfumfang-Schlüsselwort-Erkennung auf das dort verwendete,
+einfachere Teilstring-Prinzip.
 
 ## SharePoint-Suche nach IAN
 
