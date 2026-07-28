@@ -106,7 +106,14 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     Sprung-Buttons direkt dorthin — praktisch bei der KV-Erstellung, da sich
     Daten des Vorgängers oft als Ausgangspunkt übernehmen lassen (vor
     Übernahme aber immer prüfen, ob sich seitdem etwas geändert hat). Gibt es
-    keinen Treffer im System, bleibt nur der SharePoint-Suchlink.
+    keinen Treffer im System, bleibt nur der SharePoint-Suchlink. Liegt der
+    Vorgänger-Prüfauftrag im System vor, gibt es zusätzlich **„Vergleich mit
+    Vorgänger anzeigen"** — eine eingeklappte Tabelle, die Warengruppe,
+    Artikelbezeichnung, Artikelkategorie, Früh. LT, Lieferant, Prüfumfang,
+    Anzahl Styles sowie die Style-Blockfelder (Maße, Gewicht, Qualität,
+    Material, Markenreferenz, Garantie) aktuell gegen Vorgänger stellt und
+    abweichende Zeilen (⚠, gelb hinterlegt) von gleichen (✓) unterscheidet —
+    so sieht man auf einen Blick, was sich seit dem Vorgänger geändert hat.
 - **Kostenvoranschläge (KV)** – das Herzstück: pro IAN ein KV mit
   Stammdaten und einer Tabelle mechanischer Prüfpositionen (Kategorie,
   Bezeichnung, Kürzel, SAP-Code, Kosten, Anzahl, Summe, aktiv/inaktiv). Auch

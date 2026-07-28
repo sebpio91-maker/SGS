@@ -70,6 +70,7 @@ nav.tabs button.aktiv { background:var(--card); color:var(--accent-dark); font-w
 .pa-badge:hover { filter:brightness(0.95); }
 .sp-suche-link { text-decoration:none; margin-left:0.3rem; opacity:0.7; }
 .sp-suche-link:hover { opacity:1; }
+.vergleich-abweichung td { background:#fff6e0; }
 
 .tabellen-wrapper { overflow-x:auto; border:1px solid var(--border); border-radius:8px; background:var(--card); max-height:70vh; overflow-y:auto; }
 table.tabelle { width:100%; border-collapse:collapse; }
@@ -176,14 +177,7 @@ input[type=file] { display:none; }
 </section>
 
 <section class="seite" id="seite-pruefauftraege" hidden>
-  <div class="layout">
-    <div class="liste-panel">
-      <h2>Prüfaufträge</h2>
-      <ul id="pa-liste"></ul>
-    </div>
-    <div id="detail-panel-pa"></div>
-  </div>
-  <div class="toolbar-zeile" style="margin-top:0.8rem">
+  <div class="toolbar-zeile" style="margin-bottom:0.6rem">
     <button id="btn-neue-pa">+ Neuer Prüfauftrag (manuell)</button>
     <button id="btn-pa-upload">📄 PA-PDF hochladen</button>
     <input type="file" id="pa-upload-input" accept="application/pdf">
@@ -191,18 +185,25 @@ input[type=file] { display:none; }
     <input type="file" id="pa-upload-mehrere-input" accept="application/pdf" multiple>
   </div>
   <p class="hinweis">Beim Mehrfach-Upload gibt es keine Feld-für-Feld-Prüfseite je Datei — jede PDF wird automatisch anhand der erkannten IAN mit einem passenden Arbeitsvorrat-Eintrag verknüpft. Am Ende erscheint eine Zusammenfassung; einzelne Prüfaufträge lassen sich danach wie gewohnt in der Liste prüfen/korrigieren.</p>
+  <div class="layout">
+    <div class="liste-panel">
+      <h2>Prüfaufträge</h2>
+      <ul id="pa-liste"></ul>
+    </div>
+    <div id="detail-panel-pa"></div>
+  </div>
 </section>
 
 <section class="seite" id="seite-kvs" hidden>
+  <div class="toolbar-zeile" style="margin-bottom:0.6rem">
+    <button id="btn-neuer-kv">+ Neuer Kostenvoranschlag</button>
+  </div>
   <div class="layout">
     <div class="liste-panel">
       <h2>Kostenvoranschläge</h2>
       <ul id="kv-liste"></ul>
     </div>
     <div id="detail-panel-kv"></div>
-  </div>
-  <div class="toolbar-zeile" style="margin-top:0.8rem">
-    <button id="btn-neuer-kv">+ Neuer Kostenvoranschlag</button>
   </div>
 </section>
 
@@ -824,10 +825,62 @@ function fuelleAusPa(eintrag, ueberschreiben) {
    für Suche/Verknüpfung wird nur die führende Zahl gebraucht, analog zur Haupt-IAN. */
 function vorgaengerIanAus(pa) { return pa ? leiteFuehrendeZahlAb(pa.ianVorgaenger) : ""; }
 
+/* Felder, die beim Vorgänger-Vergleich gegenübergestellt werden (Kopfdaten + Prüfumfang). */
+const PA_VERGLEICH_KOPF_FELDER = [
+  { feld: "warengruppe", label: "Warengruppe" },
+  { feld: "artikelbezeichnung", label: "Artikelbezeichnung" },
+  { feld: "artikelkategorie", label: "Artikelkategorie" },
+  { feld: "fruehLt", label: "Früh. LT" },
+  { feld: "lieferant", label: "Lieferant" },
+  { feld: "pruefumfang", label: "Prüfumfang" }
+];
+
+/* Kompletter (roher) Wert eines Feldnamens aus pa.felder, unabhängig von Style-Aufteilung -
+   für den Vergleich reicht ein einfacher Textabgleich, keine Style-genaue Gegenüberstellung. */
+function paFeldWertRoh(pa, feldname) {
+  return (pa.felder || []).filter((f) => normalisiere(f.schluessel) === normalisiere(feldname)).map((f) => f.wert).join("\n");
+}
+
+/* Stellt Kopfdaten, Prüfumfang und die Style-Blockfelder (Maße, Gewicht, ...) von zwei PAs
+   gegenüber - liefert pro Feld { label, aktuell, vorgaenger, gleich }. Rein textbasierter
+   Abgleich (normalisiert), keine inhaltliche Bewertung - nur ein schneller Blick, was sich
+   gegenüber dem Vorgänger geändert hat. */
+function vergleicheMitVorgaenger(pa, vorgaengerPa) {
+  const zeilen = PA_VERGLEICH_KOPF_FELDER.map(({ feld, label }) => ({ label, aktuell: pa[feld] || "", vorgaenger: vorgaengerPa[feld] || "" }));
+  zeilen.push({ label: "Anzahl Styles", aktuell: ermittleAnzahlStyles(pa.felder), vorgaenger: ermittleAnzahlStyles(vorgaengerPa.felder) });
+  PA_BLOCKFELDER.forEach((feldname) => {
+    zeilen.push({ label: feldname, aktuell: paFeldWertRoh(pa, feldname), vorgaenger: paFeldWertRoh(vorgaengerPa, feldname) });
+  });
+  return zeilen.map((z) => ({ ...z, gleich: normalisiere(z.aktuell) === normalisiere(z.vorgaenger) }));
+}
+
+function renderVorgaengerVergleichHtml(pa, vorgaengerPa) {
+  const zeilen = vergleicheMitVorgaenger(pa, vorgaengerPa);
+  const abweichungen = zeilen.filter((z) => !z.gleich).length;
+  return `<details style="margin-top:0.6rem">
+    <summary class="muted" style="cursor:pointer">Vergleich mit Vorgänger anzeigen (${abweichungen} von ${zeilen.length} Feldern abweichend)</summary>
+    <div class="tabellen-wrapper" style="margin-top:0.5rem">
+      <table class="tabelle">
+        <thead><tr><th style="width:14%">Feld</th><th>Aktuell (IAN ${escapeHtml(pa.ian)})</th><th>Vorgänger (IAN ${escapeHtml(vorgaengerPa.ian)})</th><th style="width:5%"></th></tr></thead>
+        <tbody>
+          ${zeilen.map((z) => `<tr class="${z.gleich ? "" : "vergleich-abweichung"}">
+            <td>${escapeHtml(z.label)}</td>
+            <td style="white-space:pre-wrap">${escapeHtml(z.aktuell) || '<span class="muted">–</span>'}</td>
+            <td style="white-space:pre-wrap">${escapeHtml(z.vorgaenger) || '<span class="muted">–</span>'}</td>
+            <td class="zentriert">${z.gleich ? "✓" : "⚠"}</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>
+    </div>
+  </details>`;
+}
+
 /* Zeigt eine Karte zum Vorgänger-Artikel: SharePoint-Suchlink plus - falls im System vorhanden -
-   direkte Sprünge zu dessen Prüfauftrag/KV. Wichtig vor allem bei der KV-Erstellung, da Daten des
-   Vorgängers oft als Ausgangspunkt übernommen werden können (nach Prüfung). */
-function renderVorgaengerKarte(vorgaengerIan) {
+   direkte Sprünge zu dessen Prüfauftrag/KV sowie eine Vergleichstabelle (aktuell vs. Vorgänger).
+   Wichtig vor allem bei der KV-Erstellung, da Daten des Vorgängers oft als Ausgangspunkt
+   übernommen werden können (nach Prüfung). aktuellePa (optional) ist der PA, gegen den verglichen
+   wird - auf der PA-Detailseite der Prüfauftrag selbst, auf der KV-Detailseite der verknüpfte PA. */
+function renderVorgaengerKarte(vorgaengerIan, aktuellePa) {
   if (!vorgaengerIan) return "";
   const vorgaengerPa = data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(vorgaengerIan));
   const vorgaengerKv = data.kvs.find((k) => normalisiere(k.ian) === normalisiere(vorgaengerIan));
@@ -842,7 +895,8 @@ function renderVorgaengerKarte(vorgaengerIan) {
         <div class="toolbar-zeile">
           ${vorgaengerPa ? `<button class="ghost small" data-action="vorgaenger-pa-anzeigen" data-id="${vorgaengerPa.id}">→ Prüfauftrag des Vorgängers${vorgaengerPa.artikelbezeichnung ? ` (${escapeHtml(vorgaengerPa.artikelbezeichnung)})` : ""}</button>` : `<span class="muted">Kein Prüfauftrag zum Vorgänger im System.</span>`}
           ${vorgaengerKv ? `<button class="ghost small" data-action="vorgaenger-kv-anzeigen" data-id="${vorgaengerKv.id}">→ KV des Vorgängers (${kvGesamtsumme(vorgaengerKv).toFixed(2)} €)</button>` : `<span class="muted">Kein KV zum Vorgänger im System.</span>`}
-        </div>`
+        </div>
+        ${aktuellePa && vorgaengerPa ? renderVorgaengerVergleichHtml(aktuellePa, vorgaengerPa) : ""}`
       : `<p class="hinweis">Kein Prüfauftrag oder KV zu dieser Vorgänger-IAN im System vorhanden — ggf. über 🔍 auf SharePoint suchen.</p>`}
   </div>`;
 }
@@ -1116,7 +1170,7 @@ function renderPaDetail() {
         <button class="danger small" id="pa-loeschen" style="margin-left:auto">Prüfauftrag löschen</button>
       </div>
     </div>
-    ${renderVorgaengerKarte(vorgaengerIanAus(pa))}
+    ${renderVorgaengerKarte(vorgaengerIanAus(pa), pa)}
     ${renderPaPruefumfangKarte(pa)}
     ${renderPaBlockKarte(pa)}
     <div class="card">
@@ -1601,7 +1655,7 @@ function renderKvDetail() {
         <button class="danger small" id="kv-loeschen" style="margin-left:auto">KV löschen</button>
       </div>
     </div>
-    ${renderVorgaengerKarte(vorgaengerIanAus(verknuepftePa))}
+    ${renderVorgaengerKarte(vorgaengerIanAus(verknuepftePa), verknuepftePa)}
 
     <div class="card">
       <div class="toolbar-zeile">
