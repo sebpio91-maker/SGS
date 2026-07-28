@@ -176,6 +176,13 @@ führenden Zahl der Bestellnummer abgeleitet. Damit werden Zeilen aus
 unterschiedlich formatierten Exporten korrekt demselben Arbeitsvorrat-Eintrag
 zugeordnet, statt versehentlich als neue Duplikate angelegt zu werden.
 
+**„Angelegt am" zeigt jetzt immer das korrekte Kalenderdatum**, unabhängig
+von der Zeitzone des Rechners. Ursache war ein verbreiteter Excel-Import-Bug:
+Datums-Zellen werden als lokale Mitternacht eingelesen, aber bislang über
+`toISOString()` (UTC) in Text umgewandelt — das ließ das Datum in Zeitzonen
+östlich von UTC (z. B. Europe/Berlin) einen Tag zu früh erscheinen. Betrifft
+auch das „Erstellt am"-Datum neuer Kostenvoranschläge.
+
 Nach jedem Upload wechselt die Ansicht automatisch auf **„Gesamtliste"** —
 so bleiben frisch importierte Zeilen immer sichtbar, auch wenn einzelne davon
 bereits als „Mech. erledigt" markiert sind (die in der Ansicht „Arbeitsvorrat"

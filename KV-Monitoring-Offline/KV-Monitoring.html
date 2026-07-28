@@ -322,6 +322,13 @@ function escapeHtml(str) {
   return String(str).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 }
 function jetzt() { return new Date().toLocaleString("de-DE"); }
+/* Heutiges Datum als YYYY-MM-DD nach lokaler Zeitzone - new Date().toISOString() liefert das
+   UTC-Datum, das nahe Mitternacht in Zeitzonen östlich von UTC (z. B. Europe/Berlin) einen Tag
+   zurückliegen kann. */
+function heutigesDatumLokal() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 function normalisiere(wert) { return (wert === null || wert === undefined ? "" : String(wert)).trim().toLowerCase(); }
 
 /* ---------- SharePoint-Suche nach IAN ---------- */
@@ -837,7 +844,7 @@ function neuerKvAusArbeitsvorrat(eintrag) {
   const kv = {
     id: neueId(), ian: eintrag.ian, artikel: eintrag.bezeichnung, lieferant: eintrag.lieferant, sapNummer: "",
     warengruppeNeu: normalisiereWarengruppe(eintrag.warengruppe), warengruppeAlt: eintrag.alteWarengruppe, lfgb: eintrag.lfgb, trivial: eintrag.trivial,
-    styleanzahl: eintrag.anzahlStyles, vkBuero: normalisiereVkBuero(eintrag.vkBuero), notiz: "", erstelltAm: new Date().toISOString().slice(0, 10),
+    styleanzahl: eintrag.anzahlStyles, vkBuero: normalisiereVkBuero(eintrag.vkBuero), notiz: "", erstelltAm: heutigesDatumLokal(),
     positionen: []
   };
   data.kvs.unshift(kv);
@@ -1005,7 +1012,16 @@ function findeArbeitsvorratSheet(workbook) {
 
 function excelWertZuText(v) {
   if (v === undefined || v === null) return "";
-  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  if (v instanceof Date) {
+    /* SheetJS (cellDates:true) baut Datums-Zellen als lokale Mitternacht, nicht UTC. Mit
+       toISOString() (UTC) rutscht das Datum daher in allen Zeitzonen östlich von UTC
+       (z. B. Europe/Berlin) einen Tag zurück. Über die lokalen Getter bleibt das
+       Kalenderdatum unabhängig von der Zeitzone korrekt. */
+    const jahr = v.getFullYear();
+    const monat = String(v.getMonth() + 1).padStart(2, "0");
+    const tag = String(v.getDate()).padStart(2, "0");
+    return `${jahr}-${monat}-${tag}`;
+  }
   return v;
 }
 
@@ -1745,7 +1761,7 @@ function renderKvDetail() {
     const kopie = JSON.parse(JSON.stringify(kv));
     kopie.id = neueId();
     kopie.ian = "";
-    kopie.erstelltAm = new Date().toISOString().slice(0, 10);
+    kopie.erstelltAm = heutigesDatumLokal();
     kopie.positionen.forEach((p) => (p.id = neueId()));
     data.kvs.unshift(kopie);
     aktiveKvId = kopie.id;
@@ -1834,7 +1850,7 @@ function renderKvPositionenTabelle(kv) {
 function renderKvTab() { renderKvListe(); renderKvDetail(); }
 
 document.getElementById("btn-neuer-kv").addEventListener("click", () => {
-  const kv = { id: neueId(), ian: "", artikel: "", lieferant: "", sapNummer: "", warengruppeNeu: "", warengruppeAlt: "", lfgb: "", trivial: "", styleanzahl: "", vkBuero: "", notiz: "", erstelltAm: new Date().toISOString().slice(0, 10), positionen: [] };
+  const kv = { id: neueId(), ian: "", artikel: "", lieferant: "", sapNummer: "", warengruppeNeu: "", warengruppeAlt: "", lfgb: "", trivial: "", styleanzahl: "", vkBuero: "", notiz: "", erstelltAm: heutigesDatumLokal(), positionen: [] };
   data.kvs.unshift(kv);
   aktiveKvId = kv.id;
   speichereInLocalStorage();
