@@ -235,7 +235,25 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   oder Bemerkung filtern. Änderungen wirken sich sofort auf die
   Warengruppen-Empfehlung im KV-Reiter aus (inkl. der neuen Materialien- und
   Kennzeichnung-Anzeige dort) — dort wird immer der aktuelle Stand dieser
-  Tabelle nachgeschlagen. Auch bei **⬇ Sichern/⬆ Laden (JSON)**, **🔀
+  Tabelle nachgeschlagen.
+
+  Ganz unten in der Detailansicht lassen sich außerdem **Normen-/
+  Prüfprogramm-Dokumente hochladen** (PDF oder .docx, mehrere gleichzeitig).
+  Da das Tool komplett offline im Browser läuft und ohne Server auskommt,
+  wird dabei **nicht die Datei selbst gespeichert, sondern nur der daraus
+  ausgelesene Text** — bei PDFs über die ohnehin eingebundene Textextraktion,
+  bei .docx über einen im Tool selbst eingebauten, minimalen ZIP/XML-Reader
+  (keine Interneteinbindung nötig). Jedes hochgeladene Dokument erscheint
+  als aufklappbare Zeile mit dem vollständigen ausgelesenen Text (durchsuchbar
+  per Strg+F wie jeder andere Text auf der Seite) und lässt sich einzeln
+  wieder entfernen. Alte **.doc-Dateien** (Format vor Office 2007) werden
+  nicht unterstützt — hierfür bitte eine .docx- oder PDF-Version hochladen.
+  Die Anzahl hochgeladener Dokumente erscheint als 📄-Hinweis in der
+  Übersichtszeile. Dokumente werden **nicht** ins Zusammenführen (🔀)
+  einbezogen — sie sind lokal je Rechner hochgeladen und sollen dabei weder
+  Konflikte auslösen noch versehentlich überschrieben werden.
+
+  Auch bei **⬇ Sichern/⬆ Laden (JSON)**, **🔀
   Zusammenführen** und **📄 CSV-Export** wie die übrigen Reiter behandelt
   (Zusammenführen erkennt gleiche Einträge an Warengruppen-Code + Produkt;
   Dateien aus einer älteren Tool-Version mit dem alten einzeiligen
