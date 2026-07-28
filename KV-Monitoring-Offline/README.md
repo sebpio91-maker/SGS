@@ -100,9 +100,18 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     Korrekturmöglichkeit erhalten — standardmäßig **eingeklappt** hinter „Alle
     ausgelesenen Felder anzeigen/bearbeiten", da sie im Alltag selten gebraucht
     wird.
+  - **Vorgänger-Artikel**: steht in der PA-PDF eine „IAN-Vorgänger", erscheint
+    eine eigene Karte mit 🔍-Suchlink für diese Vorgänger-IAN. Liegt zu ihr
+    bereits ein Prüfauftrag und/oder KV im System vor, gibt es zusätzlich
+    Sprung-Buttons direkt dorthin — praktisch bei der KV-Erstellung, da sich
+    Daten des Vorgängers oft als Ausgangspunkt übernehmen lassen (vor
+    Übernahme aber immer prüfen, ob sich seitdem etwas geändert hat). Gibt es
+    keinen Treffer im System, bleibt nur der SharePoint-Suchlink.
 - **Kostenvoranschläge (KV)** – das Herzstück: pro IAN ein KV mit
   Stammdaten und einer Tabelle mechanischer Prüfpositionen (Kategorie,
-  Bezeichnung, Kürzel, SAP-Code, Kosten, Anzahl, Summe, aktiv/inaktiv).
+  Bezeichnung, Kürzel, SAP-Code, Kosten, Anzahl, Summe, aktiv/inaktiv). Auch
+  hier erscheint — sofern der verknüpfte Prüfauftrag eine „IAN-Vorgänger"
+  enthält — dieselbe Vorgänger-Artikel-Karte wie bei den Prüfaufträgen.
   Positionen lassen sich aus dem Katalog übernehmen (Kosten/SAP-Code werden
   vorausgefüllt) oder frei anlegen. **„⧉ Als Vorlage für neuen KV
   duplizieren"** kopiert einen bestehenden KV (z. B. eines Wiederholartikels)

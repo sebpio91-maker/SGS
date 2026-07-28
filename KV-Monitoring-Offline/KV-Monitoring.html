@@ -818,6 +818,43 @@ function fuelleAusPa(eintrag, ueberschreiben) {
   return geaendert;
 }
 
+/* ---------- Vorgänger-Artikel: Verlinkung + Datenübersicht ---------- */
+
+/* Auf der PA-Detailseite steht "IAN-Vorgänger" oft mit Charge-Suffix ("463304 / 2404") -
+   für Suche/Verknüpfung wird nur die führende Zahl gebraucht, analog zur Haupt-IAN. */
+function vorgaengerIanAus(pa) { return pa ? leiteFuehrendeZahlAb(pa.ianVorgaenger) : ""; }
+
+/* Zeigt eine Karte zum Vorgänger-Artikel: SharePoint-Suchlink plus - falls im System vorhanden -
+   direkte Sprünge zu dessen Prüfauftrag/KV. Wichtig vor allem bei der KV-Erstellung, da Daten des
+   Vorgängers oft als Ausgangspunkt übernommen werden können (nach Prüfung). */
+function renderVorgaengerKarte(vorgaengerIan) {
+  if (!vorgaengerIan) return "";
+  const vorgaengerPa = data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(vorgaengerIan));
+  const vorgaengerKv = data.kvs.find((k) => normalisiere(k.ian) === normalisiere(vorgaengerIan));
+  const gefunden = vorgaengerPa || vorgaengerKv;
+  return `<div class="card">
+    <div class="toolbar-zeile">
+      <h2 style="margin:0">Vorgänger-Artikel (IAN ${escapeHtml(vorgaengerIan)})</h2>
+      ${sharepointSucheLink(vorgaengerIan)}
+    </div>
+    ${gefunden
+      ? `<p class="hinweis">Im System vorhanden — kann als Ausgangspunkt für den neuen KV dienen, sollte vor Übernahme aber geprüft werden.</p>
+        <div class="toolbar-zeile">
+          ${vorgaengerPa ? `<button class="ghost small" data-action="vorgaenger-pa-anzeigen" data-id="${vorgaengerPa.id}">→ Prüfauftrag des Vorgängers${vorgaengerPa.artikelbezeichnung ? ` (${escapeHtml(vorgaengerPa.artikelbezeichnung)})` : ""}</button>` : `<span class="muted">Kein Prüfauftrag zum Vorgänger im System.</span>`}
+          ${vorgaengerKv ? `<button class="ghost small" data-action="vorgaenger-kv-anzeigen" data-id="${vorgaengerKv.id}">→ KV des Vorgängers (${kvGesamtsumme(vorgaengerKv).toFixed(2)} €)</button>` : `<span class="muted">Kein KV zum Vorgänger im System.</span>`}
+        </div>`
+      : `<p class="hinweis">Kein Prüfauftrag oder KV zu dieser Vorgänger-IAN im System vorhanden — ggf. über 🔍 auf SharePoint suchen.</p>`}
+  </div>`;
+}
+
+/* Verdrahtet die Sprung-Buttons einer renderVorgaengerKarte()-Karte innerhalb von panel. */
+function initialisiereVorgaengerKarte(panel) {
+  const paBtn = panel.querySelector('[data-action="vorgaenger-pa-anzeigen"]');
+  if (paBtn) paBtn.addEventListener("click", () => { aktivePaId = paBtn.dataset.id; renderPaTab(); });
+  const kvBtn = panel.querySelector('[data-action="vorgaenger-kv-anzeigen"]');
+  if (kvBtn) kvBtn.addEventListener("click", () => { aktiveKvId = kvBtn.dataset.id; wechsleTab("kvs"); });
+}
+
 /* ---------- Excel-Upload für Arbeitsvorrat (SAP-Export) ---------- */
 
 /* Alternative Spaltennamen: der rohe SAP-Export ("Sheet1": Vertriebsbeleg/Verkaufsbüro/
@@ -1079,6 +1116,7 @@ function renderPaDetail() {
         <button class="danger small" id="pa-loeschen" style="margin-left:auto">Prüfauftrag löschen</button>
       </div>
     </div>
+    ${renderVorgaengerKarte(vorgaengerIanAus(pa))}
     ${renderPaPruefumfangKarte(pa)}
     ${renderPaBlockKarte(pa)}
     <div class="card">
@@ -1118,6 +1156,7 @@ function renderPaDetail() {
     speichereInLocalStorage();
     renderPaFelderTabelle(pa);
   });
+  initialisiereVorgaengerKarte(panel);
   renderPaFelderTabelle(pa);
 }
 
@@ -1197,7 +1236,7 @@ const PA_KEY_RE = /^([^\t]{2,50}?):\s*\t?(.*)$/;
    Feldes behandelt. Ohne diese Liste würde jede solche Unterzeile fälschlich ein eigenes Feld eröffnen
    und z. B. "Maße" bei mehreren Styles vorzeitig abschneiden. */
 const PA_BEKANNTE_FELDER = [
-  "IAN / Charge", "Artikelbezeichnung", "Listungsart", "Artikelkategorie", "IAN-Vorgänger", "VE", "EKL",
+  "IAN / Charge", "Artikelbezeichnung", "Initiale Charge", "Listungsart", "Artikelkategorie", "IAN-Vorgänger", "VE", "EKL",
   "Früh. LT", "Warenbereich", "QM Ansprechparter", "Warengruppe", "Kostenstelle", "Text", "Ref.Vg EU/USA",
   "Lizenznehmer Lidl", "Lieferant", "Ansprechpartner", "Tel.-Nr.", "Fax", "E-mail",
   "Produktionsst.-ID", "Produktionsstätte", "Herkunftsland", "Anm. Herkunftsland",
@@ -1562,6 +1601,7 @@ function renderKvDetail() {
         <button class="danger small" id="kv-loeschen" style="margin-left:auto">KV löschen</button>
       </div>
     </div>
+    ${renderVorgaengerKarte(vorgaengerIanAus(verknuepftePa))}
 
     <div class="card">
       <div class="toolbar-zeile">
@@ -1604,6 +1644,7 @@ function renderKvDetail() {
   if (verknuepftePa) {
     document.getElementById("kv-zur-pa").addEventListener("click", () => { aktivePaId = verknuepftePa.id; wechsleTab("pruefauftraege"); });
   }
+  initialisiereVorgaengerKarte(panel);
   document.getElementById("kv-loeschen").addEventListener("click", () => {
     if (!confirm(`KV "${kv.ian}" wirklich löschen?`)) return;
     data.kvs = data.kvs.filter((k) => k.id !== kv.id);
