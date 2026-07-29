@@ -5,7 +5,7 @@ und Kostenvoranschlägen (KV) für mechanische Prüfungen. Läuft komplett im
 Browser, ohne Server, ohne Python, ohne Installation, ohne besondere
 Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
 
-## Die fünf Reiter
+## Die sechs Reiter
 
 - **Arbeitsvorrat** – der Arbeitsvorrat aus dem SAP-Export. Startet leer
   (keine Beispieldaten mehr vorbefüllt). Oben lässt sich zwischen zwei
@@ -259,6 +259,30 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   Dateien aus einer älteren Tool-Version mit dem alten einzeiligen
   „Norm"-Feld werden beim Laden/Zusammenführen automatisch auf die neue
   Mehrfachauswahl-Form migriert).
+- **Normen** – eigenständige Verwaltung einzelner Normen (unabhängig von den
+  Prüfgrundlagen), im Listen-/Detail-Layout wie bei Prüfaufträgen/KVs. Über
+  **„📄 Norm-PDF(s) hochladen"** lassen sich eine oder mehrere PDFs auf einmal
+  hochladen — jede Datei legt eine eigene Norm an (Bezeichnung anfangs aus
+  dem Dateinamen abgeleitet, danach frei editierbar). Wie bei den
+  Prüfgrundlagen-Dokumenten wird nur der ausgelesene Text gespeichert, nicht
+  die Datei selbst.
+
+  Zusätzlich wird versucht, die **nummerierten Abschnitte der Norm einzeln
+  als Prüfpunkte zu erkennen** (z. B. „5.3.1 Scher- und Quetschstellen beim
+  Aufstellen, Einstellen und Zusammenklappen" samt zugehörigem Text) — anhand
+  von drei echten DIN/EN-Normen entwickelt und geprüft (EN 581-1, -2, -3).
+  Das ist ein **automatischer Best-Effort-Versuch** anhand der Nummerierung:
+  bei sauber nummeriertem Fließtext funktioniert das zuverlässig, bei
+  Tabellen (z. B. Kraft-Werte-Tabellen) oder ungewöhnlichen Layouts können
+  einzelne Punkte falsch getrennt werden, fehlen oder doppelt auftauchen.
+  Deshalb ist jeder erkannte Prüfpunkt (Nummer, Titel, Text) in der
+  Detailansicht frei bearbeitbar, zusammenführbar, löschbar; über „+
+  Prüfpunkt hinzufügen" lassen sich fehlende auch von Hand ergänzen — auch
+  für Normen, die ganz ohne PDF nur manuell angelegt wurden. Der komplette
+  Rohtext der PDF bleibt zusätzlich einsehbar. Eine Verknüpfung zwischen
+  diesen Normen und der „Normen"-Mehrfachauswahl bei den Prüfgrundlagen
+  besteht noch nicht (dort weiterhin freier Text) — bei Bedarf ließe sich
+  das als nächster Schritt verbinden.
 
 ## Datenquelle der Warengruppen-Empfehlung und SAP-Codes
 

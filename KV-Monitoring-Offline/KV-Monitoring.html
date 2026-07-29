@@ -150,6 +150,12 @@ tr.klickbar:hover td { background:#faf9f6; }
 .dokument-item summary button { margin-left:auto; }
 .dokument-text { white-space:pre-wrap; font-family:inherit; font-size:0.8rem; max-height:320px; overflow-y:auto; background:#faf9f6; border-top:1px solid var(--border); padding:0.6rem 0.8rem; margin:0; }
 
+.pruefpunkt-item { border:1px solid var(--border); border-radius:6px; padding:0.5rem 0.6rem; margin-bottom:0.5rem; }
+.pruefpunkt-kopf { display:flex; gap:0.4rem; margin-bottom:0.35rem; }
+.pruefpunkt-kopf input[data-feld="titel"] { flex:1; }
+.pruefpunkt-item input, .pruefpunkt-item textarea { font-family:inherit; font-size:0.85rem; padding:0.35rem 0.5rem; border:1px solid var(--border); border-radius:6px; }
+.pruefpunkt-item textarea { width:100%; resize:vertical; }
+
 #overlay { position:fixed; inset:0; background:rgba(0,0,0,0.35); display:none; align-items:flex-start; justify-content:center; overflow-y:auto; padding:2rem 1rem; z-index:20; }
 #overlay.sichtbar { display:flex; }
 #overlay-box { background:var(--card); border-radius:10px; max-width:960px; width:100%; padding:1.2rem 1.5rem; margin-bottom:2rem; }
@@ -186,6 +192,7 @@ input[type=file] { display:none; }
   <button data-tab="kvs">Kostenvoranschläge (KV)</button>
   <button data-tab="katalog">Prüfpositionen-Katalog</button>
   <button data-tab="pruefgrundlagen">Prüfgrundlagen</button>
+  <button data-tab="normen">Normen</button>
 </nav>
 
 <section class="seite" id="seite-arbeitsvorrat">
@@ -287,6 +294,28 @@ input[type=file] { display:none; }
       sich nach Warengruppe, Produkt, Norm oder Bemerkung filtern. Wird der Warengruppen-Code eines Eintrags
       geändert, wandert die Zeile nach dem Verlassen des Feldes in die passende Gruppe.</p>
     <div id="pruefgrundlagen-gruppen"></div>
+  </div>
+</section>
+
+<section class="seite" id="seite-normen" hidden>
+  <div class="toolbar-zeile" style="margin-bottom:0.6rem">
+    <button id="btn-neue-norm">+ Neue Norm (manuell)</button>
+    <button id="btn-norm-pdf-upload">📄 Norm-PDF(s) hochladen (Prüfpunkte automatisch auslesen)</button>
+    <input type="file" id="norm-pdf-upload-input" accept="application/pdf" multiple>
+  </div>
+  <p class="hinweis">Beim PDF-Upload wird — genau wie bei den Prüfgrundlagen-Dokumenten — nur der ausgelesene
+    Text gespeichert, nicht die Datei selbst. Zusätzlich wird versucht, die nummerierten Abschnitte der Norm
+    (z. B. „5.3.1 Scher- und Quetschstellen …") automatisch als einzelne Prüfpunkte zu erkennen und
+    aufzulisten. Das ist ein automatischer Best-Effort-Versuch anhand der Nummerierung — bei Tabellen oder
+    ungewöhnlichen Layouts können einzelne Punkte falsch getrennt werden oder fehlen; unten in der
+    Detailansicht lässt sich jeder Prüfpunkt frei bearbeiten, zusammenführen, löschen oder neu anlegen.
+    Mehrere PDFs auf einmal hochladen legt für jede Datei eine eigene Norm an.</p>
+  <div class="layout">
+    <div class="liste-panel">
+      <h2>Normen</h2>
+      <ul id="normen-liste"></ul>
+    </div>
+    <div id="detail-panel-normen"></div>
   </div>
 </section>
 
@@ -510,7 +539,8 @@ let data = { arbeitsvorrat: [], pruefauftraege: [], kvs: [], katalog: [] };
 let aktiverTab = "arbeitsvorrat";
 let aktivePaId = null;
 let aktiveKvId = null;
-let suchbegriffe = { arbeitsvorrat: "", pruefauftraege: "", kvs: "", katalog: "", pruefgrundlagen: "" };
+let aktiveNormId = null;
+let suchbegriffe = { arbeitsvorrat: "", pruefauftraege: "", kvs: "", katalog: "", pruefgrundlagen: "", normen: "" };
 
 function ladeAusLocalStorage() {
   try {
@@ -543,7 +573,8 @@ function init() {
     pruefauftraege: (geladen && geladen.pruefauftraege) ? geladen.pruefauftraege : [],
     kvs: (geladen && geladen.kvs) ? geladen.kvs : [],
     katalog: (geladen && geladen.katalog && geladen.katalog.length) ? geladen.katalog : seedKatalog(),
-    pruefgrundlagen: (geladen && geladen.pruefgrundlagen && geladen.pruefgrundlagen.length) ? geladen.pruefgrundlagen : seedPruefgrundlagen()
+    pruefgrundlagen: (geladen && geladen.pruefgrundlagen && geladen.pruefgrundlagen.length) ? geladen.pruefgrundlagen : seedPruefgrundlagen(),
+    normen: (geladen && geladen.normen) ? geladen.normen : []
   };
   data.pruefgrundlagen.forEach(migrierePruefgrundlage);
 
@@ -561,9 +592,9 @@ function init() {
 function wechsleTab(tab) {
   aktiverTab = tab;
   document.querySelectorAll("nav.tabs button[data-tab]").forEach((btn) => btn.classList.toggle("aktiv", btn.dataset.tab === tab));
-  ["arbeitsvorrat", "pruefauftraege", "kvs", "katalog", "pruefgrundlagen"].forEach((t) => { document.getElementById("seite-" + t).hidden = t !== tab; });
+  ["arbeitsvorrat", "pruefauftraege", "kvs", "katalog", "pruefgrundlagen", "normen"].forEach((t) => { document.getElementById("seite-" + t).hidden = t !== tab; });
   document.getElementById("suche").value = suchbegriffe[tab] || "";
-  const labels = { arbeitsvorrat: "Arbeitsvorrat", pruefauftraege: "Prüfaufträge", kvs: "Kostenvoranschläge", katalog: "Katalog", pruefgrundlagen: "Prüfgrundlagen" };
+  const labels = { arbeitsvorrat: "Arbeitsvorrat", pruefauftraege: "Prüfaufträge", kvs: "Kostenvoranschläge", katalog: "Katalog", pruefgrundlagen: "Prüfgrundlagen", normen: "Normen" };
   document.getElementById("btn-csv").textContent = "📄 CSV-Export (" + labels[tab] + ")";
   renderAktivenTab();
 }
@@ -573,6 +604,7 @@ function renderAktivenTab() {
   else if (aktiverTab === "kvs") renderKvTab();
   else if (aktiverTab === "katalog") renderKatalogTab();
   else if (aktiverTab === "pruefgrundlagen") renderPruefgrundlagenTab();
+  else if (aktiverTab === "normen") renderNormenTab();
 }
 function renderAlles() {
   renderArbeitsvorratTab();
@@ -580,6 +612,7 @@ function renderAlles() {
   renderKvTab();
   renderKatalogTab();
   renderPruefgrundlagenTab();
+  renderNormenTab();
 }
 
 /* ================= ARBEITSVORRAT ================= */
@@ -2833,6 +2866,255 @@ function oeffnePruefgrundlageModal(entwurf) {
 
 document.getElementById("btn-neue-pruefgrundlage").addEventListener("click", () => oeffnePruefgrundlageModal(pruefgrundlageEntwurfNeu()));
 
+/* ================= NORMEN (einzeln gepflegt, PDF-Upload mit Prüfpunkt-Erkennung) =================
+   Best-Effort-Zerlegung einer Norm-PDF in einzelne, nummerierte Prüfpunkte (z. B. "5.3.1 Scher- und
+   Quetschstellen …"). Anhand von drei realen DIN/EN-Normen (EN 581-1, EN 581-2, EN 581-3) entwickelt
+   und geprüft: extrahierePdfZeilen() liefert je Zeile Text, wobei ein größerer horizontaler Abstand
+   zwischen zwei Textstücken als Tabulator "\t" markiert wird (siehe gruppierePdfZeilen). In echten
+   DIN/EN-Dokumenten steht eine Abschnittsüberschrift praktisch immer als "<Nummer>\t<Titel>" auf einer
+   eigenen Zeile (genau ein Tab), während echter Fließtext keinen oder mehrere Tabs enthält (durch
+   Blocksatz-Wortabstände, die fälschlich als Spalten erkannt werden) - das unterscheidet Überschriften
+   zuverlässig von normalem Text. Das Inhaltsverzeichnis wird über die Punktreihen davor ("......") aus-
+   geschlossen. In "Begriffe"-Abschnitten steht die Nummer (z. B. "3.1") oft allein auf einer Zeile,
+   gefolgt vom Begriff auf der nächsten - das wird als Sonderfall mit abgedeckt. Tabellen (z. B.
+   Kraft-Werte-Tabellen) können trotzdem fälschlich als weitere Prüfpunkte erkannt werden, wenn eine
+   Tabellenzelle wie eine Überschrift aussieht (Nummer+Tab+Kurztext); ein wiederholter, bereits gesehener
+   Titel wird deshalb nicht erneut als neuer Prüfpunkt gewertet, sondern dem vorherigen zugeschlagen.
+   Das bleibt ein Best-Effort-Ansatz - deshalb ist jeder erkannte Prüfpunkt in der Detailansicht frei
+   bearbeitbar, zusammenführbar, löschbar oder neu anlegbar. */
+function parsePruefpunkteAusZeilen(zeilen) {
+  const HEADING_INLINE_RE = /^(\d+(?:\.\d+){0,3}|Anhang\s+[A-Z])\s*\t\s*(.{1,90})$/;
+  const HEADING_BARE_NUMMER_RE = /^(\d+(?:\.\d+){1,3})$/;
+  const HEADING_BARE_ANHANG_RE = /^(Anhang\s+[A-Z])$/;
+
+  const punkte = [];
+  let aktuell = null;
+  const gesehenTitel = new Set();
+  let i = 0;
+  while (i < zeilen.length) {
+    const zeile = zeilen[i];
+    const inlineMatch = zeile.match(HEADING_INLINE_RE);
+    let neuerPunkt = null;
+
+    if (inlineMatch && (zeile.match(/\t/g) || []).length === 1 && !zeile.includes("....")) {
+      const titelNorm = normalisiere(inlineMatch[2]);
+      if (gesehenTitel.has(titelNorm)) {
+        if (aktuell) aktuell.textZeilen.push(zeile);
+        i += 1;
+        continue;
+      }
+      neuerPunkt = { nummer: inlineMatch[1], titel: inlineMatch[2].trim() };
+      gesehenTitel.add(titelNorm);
+      i += 1;
+    } else if (HEADING_BARE_NUMMER_RE.test(zeile) && i + 1 < zeilen.length && !HEADING_BARE_NUMMER_RE.test(zeilen[i + 1]) && !zeilen[i + 1].includes("\t")) {
+      neuerPunkt = { nummer: zeile, titel: zeilen[i + 1].trim() };
+      i += 2;
+    } else if (HEADING_BARE_ANHANG_RE.test(zeile)) {
+      neuerPunkt = { nummer: zeile, titel: "" };
+      i += 1;
+    } else {
+      if (aktuell) aktuell.textZeilen.push(zeile);
+      i += 1;
+      continue;
+    }
+    aktuell = { id: neueId(), nummer: neuerPunkt.nummer, titel: neuerPunkt.titel, textZeilen: [] };
+    punkte.push(aktuell);
+  }
+  return punkte.map((p) => ({ id: p.id, nummer: p.nummer, titel: p.titel, text: p.textZeilen.join("\n").trim() }));
+}
+
+function normEntwurfNeu() {
+  return { id: neueId(), bezeichnung: "Neue Norm", titel: "", dateiname: "", hochgeladenAm: "", rohtext: "", pruefpunkte: [] };
+}
+
+/* Liest eine Norm-PDF ein und liefert einen vollständigen Norm-Datensatz (noch nicht in data.normen
+   eingetragen) - Bezeichnung wird zunächst aus dem Dateinamen abgeleitet (ohne Endung), da sich eine
+   saubere Normbezeichnung nicht zuverlässig aus beliebigen PDF-Layouts herausparsen lässt; per Hand in
+   der Detailansicht leicht korrigierbar. */
+async function verarbeiteNormPdf(datei) {
+  const zeilen = await extrahierePdfZeilen(datei);
+  const bezeichnung = datei.name.replace(/\.pdf$/i, "").replace(/[_]+/g, " ").trim() || "Neue Norm";
+  return {
+    id: neueId(), bezeichnung, titel: "", dateiname: datei.name, hochgeladenAm: heutigesDatumLokal(),
+    rohtext: zeilen.join("\n"), pruefpunkte: parsePruefpunkteAusZeilen(zeilen)
+  };
+}
+
+function gefiltereNormen() {
+  const q = normalisiere(suchbegriffe.normen);
+  if (!q) return data.normen;
+  return data.normen.filter((n) => normalisiere([n.bezeichnung, n.titel, n.dateiname, ...(n.pruefpunkte || []).map((p) => p.nummer + " " + p.titel)].join(" ")).includes(q));
+}
+
+function renderNormenListe() {
+  const ul = document.getElementById("normen-liste");
+  const liste = gefiltereNormen();
+  if (!liste.length) { ul.innerHTML = '<li class="leer">Keine Normen gefunden.</li>'; return; }
+  ul.innerHTML = liste.map((n) => `
+    <li class="${n.id === aktiveNormId ? "aktiv" : ""}" data-id="${n.id}">
+      <strong>${escapeHtml(n.bezeichnung || "(ohne Bezeichnung)")}</strong>
+      <div class="muted">${(n.pruefpunkte || []).length} Prüfpunkt${(n.pruefpunkte || []).length === 1 ? "" : "e"}${n.dateiname ? " · " + escapeHtml(n.dateiname) : ""}</div>
+    </li>`).join("");
+  ul.querySelectorAll("li[data-id]").forEach((li) => li.addEventListener("click", () => { aktiveNormId = li.dataset.id; renderNormenTab(); }));
+}
+
+function pruefpunktZeileHtml(p) {
+  return `<div class="pruefpunkt-item" data-id="${escapeHtml(p.id)}">
+    <div class="pruefpunkt-kopf">
+      <input type="text" data-feld="nummer" value="${escapeHtml(p.nummer)}" placeholder="Nummer" style="width:6rem;font-weight:600">
+      <input type="text" data-feld="titel" value="${escapeHtml(p.titel)}" placeholder="Titel">
+      <button type="button" class="danger small" data-action="pruefpunkt-loeschen" title="Prüfpunkt löschen">🗑</button>
+    </div>
+    <textarea data-feld="text" rows="3" placeholder="Text des Prüfpunkts…">${escapeHtml(p.text)}</textarea>
+  </div>`;
+}
+
+function renderNormDetail() {
+  const panel = document.getElementById("detail-panel-normen");
+  const norm = data.normen.find((n) => n.id === aktiveNormId);
+  if (!norm) { panel.innerHTML = '<div class="card leerzustand">Keine Norm ausgewählt.</div>'; return; }
+
+  panel.innerHTML = `
+    <div class="card">
+      <div class="toolbar-zeile">
+        <h2 style="margin:0">${escapeHtml(norm.bezeichnung || "(ohne Bezeichnung)")}</h2>
+        <span class="zaehler">${(norm.pruefpunkte || []).length} Prüfpunkt${(norm.pruefpunkte || []).length === 1 ? "" : "e"}</span>
+      </div>
+      <div class="formular-grid">
+        <label>Bezeichnung<input type="text" data-feld="bezeichnung" value="${escapeHtml(norm.bezeichnung)}"></label>
+        <label>Titel<input type="text" data-feld="titel" value="${escapeHtml(norm.titel)}"></label>
+      </div>
+      <p class="hinweis">${norm.dateiname ? `Hochgeladen aus „${escapeHtml(norm.dateiname)}" am ${escapeHtml(norm.hochgeladenAm)}.` : "Manuell angelegt, ohne PDF-Upload."}</p>
+      <div class="toolbar-zeile">
+        <button class="ghost small" id="norm-pdf-erneut-upload">📄 PDF erneut hochladen (ersetzt Rohtext + Prüfpunkte)</button>
+        <input type="file" id="norm-pdf-erneut-upload-input" accept="application/pdf">
+        <button class="danger small" id="norm-loeschen" style="margin-left:auto">Norm löschen</button>
+      </div>
+      ${norm.rohtext ? `<details style="margin-top:0.6rem"><summary class="muted" style="cursor:pointer">Rohtext der PDF anzeigen (${norm.rohtext.length.toLocaleString("de-DE")} Zeichen)</summary><textarea readonly rows="10" style="width:100%;margin-top:0.4rem;font-family:monospace;font-size:0.78rem">${escapeHtml(norm.rohtext)}</textarea></details>` : ""}
+    </div>
+    <div class="card">
+      <div class="toolbar-zeile">
+        <h2 style="margin:0">Prüfpunkte</h2>
+        <div class="spacer"></div>
+        <button class="ghost small" id="pruefpunkt-hinzufuegen">+ Prüfpunkt hinzufügen</button>
+      </div>
+      <div id="pruefpunkte-liste">${(norm.pruefpunkte || []).length
+        ? norm.pruefpunkte.map((p) => pruefpunktZeileHtml(p)).join("")
+        : '<p class="muted">Noch keine Prüfpunkte - per PDF-Upload automatisch auslesen lassen oder oben manuell hinzufügen.</p>'}</div>
+    </div>`;
+
+  panel.querySelectorAll(".formular-grid [data-feld]").forEach((el) => {
+    el.addEventListener("input", () => {
+      norm[el.dataset.feld] = el.value;
+      speichereInLocalStorage();
+      renderNormenListe();
+      if (el.dataset.feld === "bezeichnung") panel.querySelector("h2").textContent = norm.bezeichnung || "(ohne Bezeichnung)";
+    });
+  });
+
+  document.getElementById("norm-loeschen").addEventListener("click", () => {
+    if (!confirm(`Norm "${norm.bezeichnung}" wirklich löschen?`)) return;
+    data.normen = data.normen.filter((n) => n.id !== norm.id);
+    aktiveNormId = data.normen.length ? data.normen[0].id : null;
+    speichereInLocalStorage();
+    renderNormenTab();
+  });
+
+  document.getElementById("norm-pdf-erneut-upload").addEventListener("click", () => document.getElementById("norm-pdf-erneut-upload-input").click());
+  document.getElementById("norm-pdf-erneut-upload-input").addEventListener("change", async (e) => {
+    const datei = e.target.files[0];
+    e.target.value = "";
+    if (!datei) return;
+    if (!confirm("Rohtext und automatisch erkannte Prüfpunkte dieser Norm durch den Inhalt der neuen PDF ersetzen? Manuell angepasste Prüfpunkte gehen dabei verloren.")) return;
+    zeigeStatus(`„${datei.name}" wird gelesen…`, "");
+    try {
+      const neu = await verarbeiteNormPdf(datei);
+      norm.dateiname = neu.dateiname;
+      norm.hochgeladenAm = neu.hochgeladenAm;
+      norm.rohtext = neu.rohtext;
+      norm.pruefpunkte = neu.pruefpunkte;
+      speichereInLocalStorage();
+      renderNormenTab();
+      zeigeStatus(`„${datei.name}" gelesen · ${neu.pruefpunkte.length} Prüfpunkt(e) erkannt · ` + jetzt(), "ok");
+    } catch (err) {
+      zeigeStatus(`Fehler beim Lesen von „${datei.name}": ${err.message}`, "");
+    }
+  });
+
+  document.getElementById("pruefpunkt-hinzufuegen").addEventListener("click", () => {
+    norm.pruefpunkte = norm.pruefpunkte || [];
+    norm.pruefpunkte.push({ id: neueId(), nummer: "", titel: "", text: "" });
+    speichereInLocalStorage();
+    renderNormDetail();
+  });
+
+  panel.querySelectorAll(".pruefpunkt-item").forEach((div) => {
+    const punkt = (norm.pruefpunkte || []).find((p) => p.id === div.dataset.id);
+    if (!punkt) return;
+    div.querySelectorAll("[data-feld]").forEach((el) => {
+      el.addEventListener("input", () => { punkt[el.dataset.feld] = el.value; speichereInLocalStorage(); });
+    });
+    div.querySelector('[data-action="pruefpunkt-loeschen"]').addEventListener("click", () => {
+      norm.pruefpunkte = norm.pruefpunkte.filter((p) => p.id !== punkt.id);
+      speichereInLocalStorage();
+      renderNormDetail();
+    });
+  });
+}
+
+function renderNormenTab() { renderNormenListe(); renderNormDetail(); }
+
+document.getElementById("btn-neue-norm").addEventListener("click", () => {
+  const norm = normEntwurfNeu();
+  data.normen.unshift(norm);
+  aktiveNormId = norm.id;
+  speichereInLocalStorage();
+  renderNormenTab();
+});
+
+document.getElementById("btn-norm-pdf-upload").addEventListener("click", () => document.getElementById("norm-pdf-upload-input").click());
+document.getElementById("norm-pdf-upload-input").addEventListener("change", async (e) => {
+  const dateien = Array.from(e.target.files || []);
+  e.target.value = "";
+  if (!dateien.length) return;
+  const ergebnisse = [];
+  for (const datei of dateien) {
+    zeigeStatus(`Norm-PDFs werden gelesen… (${ergebnisse.length + 1}/${dateien.length}: ${datei.name})`, "");
+    try {
+      const norm = await verarbeiteNormPdf(datei);
+      data.normen.unshift(norm);
+      ergebnisse.push({ dateiname: datei.name, norm, fehler: null });
+    } catch (err) {
+      ergebnisse.push({ dateiname: datei.name, fehler: err.message });
+    }
+  }
+  speichereInLocalStorage();
+  const letzteErfolgreiche = [...ergebnisse].reverse().find((r) => r.norm);
+  if (letzteErfolgreiche) aktiveNormId = letzteErfolgreiche.norm.id;
+  renderNormenTab();
+  zeigeStatus("", "");
+  zeigeNormMehrfachUploadZusammenfassung(ergebnisse);
+});
+
+function zeigeNormMehrfachUploadZusammenfassung(ergebnisse) {
+  const box = document.getElementById("overlay-box");
+  const erfolgreich = ergebnisse.filter((r) => !r.fehler);
+  let html = `<h2>${ergebnisse.length} Norm-PDF(s) verarbeitet</h2>
+    <p class="hinweis">${erfolgreich.length} von ${ergebnisse.length} erfolgreich eingelesen, jede als eigene Norm angelegt. Anzahl automatisch erkannter Prüfpunkte je Datei unten - bei Bedarf in der Detailansicht korrigieren/ergänzen.</p>
+    <table class="tabelle"><thead><tr><th>Datei</th><th>Bezeichnung</th><th>Prüfpunkte</th><th>Status</th></tr></thead><tbody>`;
+  ergebnisse.forEach((r) => {
+    if (r.fehler) {
+      html += `<tr><td>${escapeHtml(r.dateiname)}</td><td colspan="2" class="muted">Fehler: ${escapeHtml(r.fehler)}</td><td>❌</td></tr>`;
+      return;
+    }
+    html += `<tr><td>${escapeHtml(r.dateiname)}</td><td>${escapeHtml(r.norm.bezeichnung)}</td><td>${r.norm.pruefpunkte.length}</td><td>✅ angelegt</td></tr>`;
+  });
+  html += `</tbody></table><div class="overlay-actions"><button id="norm-mehrfach-schliessen">Schließen</button></div>`;
+  box.innerHTML = html;
+  document.getElementById("overlay").classList.add("sichtbar");
+  document.getElementById("norm-mehrfach-schliessen").addEventListener("click", schliesseOverlay);
+}
+
 /* ================= JSON Export/Import ================= */
 
 function ladeDatei(input) {
@@ -2865,14 +3147,16 @@ document.getElementById("datei-laden-input").addEventListener("change", async (e
     const text = await ladeDatei(e.target);
     const geparst = JSON.parse(text);
     if (!geparst || !Array.isArray(geparst.arbeitsvorrat)) throw new Error("Ungültiges Format");
-    if (!confirm(`Datei laden (${geparst.arbeitsvorrat.length} Arbeitsvorrat, ${(geparst.pruefauftraege || []).length} PA, ${(geparst.kvs || []).length} KV, ${(geparst.katalog || []).length} Katalogpositionen, ${(geparst.pruefgrundlagen || []).length} Prüfgrundlagen)? Der aktuelle Stand wird ersetzt (vorher ggf. sichern!).`)) return;
+    if (!confirm(`Datei laden (${geparst.arbeitsvorrat.length} Arbeitsvorrat, ${(geparst.pruefauftraege || []).length} PA, ${(geparst.kvs || []).length} KV, ${(geparst.katalog || []).length} Katalogpositionen, ${(geparst.pruefgrundlagen || []).length} Prüfgrundlagen, ${(geparst.normen || []).length} Normen)? Der aktuelle Stand wird ersetzt (vorher ggf. sichern!).`)) return;
     data = {
       arbeitsvorrat: geparst.arbeitsvorrat, pruefauftraege: geparst.pruefauftraege || [], kvs: geparst.kvs || [], katalog: geparst.katalog || [],
-      pruefgrundlagen: (geparst.pruefgrundlagen && geparst.pruefgrundlagen.length) ? geparst.pruefgrundlagen : seedPruefgrundlagen()
+      pruefgrundlagen: (geparst.pruefgrundlagen && geparst.pruefgrundlagen.length) ? geparst.pruefgrundlagen : seedPruefgrundlagen(),
+      normen: geparst.normen || []
     };
     data.pruefgrundlagen.forEach(migrierePruefgrundlage);
     aktivePaId = data.pruefauftraege.length ? data.pruefauftraege[0].id : null;
     aktiveKvId = data.kvs.length ? data.kvs[0].id : null;
+    aktiveNormId = data.normen.length ? data.normen[0].id : null;
     speichereInLocalStorage();
     renderAlles();
     zeigeStatus("Datei geladen · " + jetzt(), "ok");
@@ -2925,6 +3209,13 @@ document.getElementById("btn-csv").addEventListener("click", () => {
       e.ffuHinweis, (e.materialienFfu || []).join("; "), e.kostenFfu, e.stiwaHinweis, (e.materialienStiwa || []).join("; "), e.kostenStiwa, e.bemerkungen
     ]));
     csvHerunterladen(zeilen, "pruefgrundlagen_export.csv");
+  } else if (aktiverTab === "normen") {
+    const zeilen = [["Norm", "Titel", "Prüfpunkt-Nummer", "Prüfpunkt-Titel", "Prüfpunkt-Text"]];
+    data.normen.forEach((n) => {
+      if (!(n.pruefpunkte || []).length) { zeilen.push([n.bezeichnung, n.titel, "", "", ""]); return; }
+      n.pruefpunkte.forEach((p) => zeilen.push([n.bezeichnung, n.titel, p.nummer, p.titel, p.text]));
+    });
+    csvHerunterladen(zeilen, "normen_export.csv");
   }
 });
 
@@ -2934,6 +3225,8 @@ function schluesselArbeitsvorrat(r) { return normalisiere(r.ian); }
 function schluesselPa(p) { return normalisiere(p.ian); }
 function schluesselKatalog(k) { return normalisiere(k.kuerzel) + "|" + normalisiere(k.bezeichnung); }
 function schluesselPruefgrundlage(e) { return normalisiereWarengruppe(e.warengruppeCode) + "|" + normalisiere(e.produkt); }
+function schluesselNorm(n) { return normalisiere(n.bezeichnung); }
+const NORM_FELDER = ["bezeichnung", "titel", "dateiname", "rohtext", "pruefpunkte"];
 
 /* JSON.stringify-Vergleich statt strikter Gleichheit, damit auch Feld-Werte, die Arrays sind
    (z. B. Normen/Materialien-Mehrfachauswahl), inhaltlich statt nach Objektreferenz verglichen
@@ -2960,12 +3253,14 @@ function berechneMergePlan(importData) {
   const kvPlan = planFlacheListe(data.kvs, importData.kvs || [], (k) => k.id, ["ian", "artikel", "lieferant", "sapNummer", "warengruppeNeu", "warengruppeAlt", "notiz"]);
   const katalogPlan = planFlacheListe(data.katalog, importData.katalog || [], schluesselKatalog, ["kategorie", "bezeichnung", "sapCode", "standardKosten"]);
   const pruefgrundlagenPlan = planFlacheListe(data.pruefgrundlagen, importData.pruefgrundlagen || [], schluesselPruefgrundlage, PRUEFGRUNDLAGE_FELDER);
+  const normenPlan = planFlacheListe(data.normen, importData.normen || [], schluesselNorm, NORM_FELDER);
   return {
     neueAv: avPlan.neue, avKonflikte: avPlan.konflikte,
     neuePa: paPlan.neue, paKonflikte: paPlan.konflikte,
     neueKv: kvPlan.neue, kvKonflikte: kvPlan.konflikte,
     neueKatalog: katalogPlan.neue, katalogKonflikte: katalogPlan.konflikte,
-    neuePruefgrundlagen: pruefgrundlagenPlan.neue, pruefgrundlagenKonflikte: pruefgrundlagenPlan.konflikte
+    neuePruefgrundlagen: pruefgrundlagenPlan.neue, pruefgrundlagenKonflikte: pruefgrundlagenPlan.konflikte,
+    neueNormen: normenPlan.neue, normenKonflikte: normenPlan.konflikte
   };
 }
 
@@ -2987,7 +3282,7 @@ function konfliktListeHtml(typ, liste, titelFn, textFn) {
 function renderMergeUebersicht() {
   const box = document.getElementById("overlay-box");
   const p = mergePlan;
-  const anzahl = p.neueAv.length + p.avKonflikte.length + p.neuePa.length + p.paKonflikte.length + p.neueKv.length + p.kvKonflikte.length + p.neueKatalog.length + p.katalogKonflikte.length + p.neuePruefgrundlagen.length + p.pruefgrundlagenKonflikte.length;
+  const anzahl = p.neueAv.length + p.avKonflikte.length + p.neuePa.length + p.paKonflikte.length + p.neueKv.length + p.kvKonflikte.length + p.neueKatalog.length + p.katalogKonflikte.length + p.neuePruefgrundlagen.length + p.pruefgrundlagenKonflikte.length + p.neueNormen.length + p.normenKonflikte.length;
 
   let html = `<h2>Zusammenführen: Änderungen prüfen</h2>`;
   if (anzahl === 0) {
@@ -3007,6 +3302,8 @@ function renderMergeUebersicht() {
   if (p.katalogKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Katalogpositionen (${p.katalogKonflikte.length})</h3>` + konfliktListeHtml("katalogKonflikt", p.katalogKonflikte, (k) => escapeHtml(k.lokal.bezeichnung), (k) => "Kategorie: " + (k.kategorie || "") + "\nSAP-Code: " + (k.sapCode || "") + "\nStandardkosten: " + (k.standardKosten ?? "")) + `</div>`;
   if (p.neuePruefgrundlagen.length) html += `<div class="merge-section"><h3>Neue Prüfgrundlagen (${p.neuePruefgrundlagen.length})</h3>` + checkboxListeHtml("neuePruefgrundlagen", p.neuePruefgrundlagen, (e) => `<strong>${escapeHtml(e.warengruppeCode)} ${escapeHtml(e.produkt)}</strong> — ${escapeHtml((e.normen || []).join(", "))}`) + `</div>`;
   if (p.pruefgrundlagenKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Prüfgrundlagen (${p.pruefgrundlagenKonflikte.length})</h3>` + konfliktListeHtml("pruefgrundlagenKonflikt", p.pruefgrundlagenKonflikte, (k) => escapeHtml(k.lokal.warengruppeCode) + " " + escapeHtml(k.lokal.produkt), (e) => PRUEFGRUNDLAGE_FELDER.map((f) => f + ": " + (Array.isArray(e[f]) ? e[f].join(", ") : (e[f] ?? ""))).join("\n")) + `</div>`;
+  if (p.neueNormen.length) html += `<div class="merge-section"><h3>Neue Normen (${p.neueNormen.length})</h3>` + checkboxListeHtml("neueNormen", p.neueNormen, (n) => `<strong>${escapeHtml(n.bezeichnung)}</strong> — ${(n.pruefpunkte || []).length} Prüfpunkt(e)`) + `</div>`;
+  if (p.normenKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Normen (${p.normenKonflikte.length})</h3>` + konfliktListeHtml("normenKonflikt", p.normenKonflikte, (k) => escapeHtml(k.lokal.bezeichnung), (n) => "Titel: " + (n.titel || "") + "\nDatei: " + (n.dateiname || "") + "\nPrüfpunkte: " + (n.pruefpunkte || []).length) + `</div>`;
 
   html += `<div class="overlay-actions"><button id="merge-anwenden">Zusammenführung übernehmen</button><button class="ghost" id="merge-abbrechen">Abbrechen</button></div>`;
   box.innerHTML = html;
@@ -3032,6 +3329,9 @@ function wendeMergeAn() {
 
   p.neuePruefgrundlagen.forEach((e, i) => { const cb = box.querySelector(`[data-typ="neuePruefgrundlagen"][data-idx="${i}"]`); if (cb && cb.checked) data.pruefgrundlagen.push(e); });
   p.pruefgrundlagenKonflikte.forEach((k, i) => { const g = box.querySelector(`[name="pruefgrundlagenKonflikt-${i}"]:checked`); if (g && g.value === "importiert") PRUEFGRUNDLAGE_FELDER.forEach((f) => (k.lokal[f] = k.importiert[f])); });
+
+  p.neueNormen.forEach((n, i) => { const cb = box.querySelector(`[data-typ="neueNormen"][data-idx="${i}"]`); if (cb && cb.checked) data.normen.push(n); });
+  p.normenKonflikte.forEach((k, i) => { const g = box.querySelector(`[name="normenKonflikt-${i}"]:checked`); if (g && g.value === "importiert") NORM_FELDER.forEach((f) => (k.lokal[f] = k.importiert[f])); });
 
   speichereInLocalStorage();
   schliesseOverlay();
