@@ -101,6 +101,7 @@ tr#arbeitsvorrat-filter-zeile select, tr#arbeitsvorrat-filter-zeile input[type=t
 .ms-btn:hover { border-color:var(--accent); }
 .ms-panel { position:absolute; top:100%; left:0; z-index:15; background:#fff; border:1px solid var(--border); border-radius:6px; box-shadow:0 4px 14px rgba(0,0,0,0.18); padding:0.5rem; width:250px; max-height:280px; display:flex; flex-direction:column; }
 .ms-panel[hidden] { display:none; }
+.ms-panel.breit { width:min(480px, 100%); }
 .ms-suche { width:100%; padding:0.3rem 0.4rem; border:1px solid var(--border); border-radius:4px; margin-bottom:0.4rem; font-size:0.82rem; font-family:inherit; }
 .ms-aktionen { display:flex; gap:0.4rem; margin-bottom:0.4rem; }
 .ms-aktionen button { flex:1; padding:0.2rem; font-size:0.75rem; }
@@ -156,7 +157,7 @@ tr.klickbar:hover td { background:#faf9f6; }
 .ss-option:hover { background:#f0f4f3; }
 .ss-option.ss-neu { color:var(--accent-dark); font-weight:600; border-top:1px solid var(--border); margin-top:0.2rem; padding-top:0.4rem; }
 .ss-leer { padding:0.3rem 0.5rem; font-size:0.78rem; color:var(--muted); }
-.normen-feld { margin-bottom:0.7rem; }
+.normen-feld { position:relative; margin-bottom:0.7rem; }
 .normen-feld > label { font-size:0.85rem; font-weight:600; display:block; margin-bottom:0.3rem; }
 .normen-ergebnisse:not(:empty) { border:1px solid var(--border); border-radius:6px; max-height:200px; overflow-y:auto; margin-top:0.3rem; }
 .tag-chip .anlehnung-label { font-weight:400; margin-left:0.3rem; font-size:0.75rem; display:inline-flex; align-items:center; gap:0.15rem; white-space:nowrap; }
@@ -330,6 +331,13 @@ input[type=file] { display:none; }
   <div class="layout">
     <div class="liste-panel">
       <h2>Normen</h2>
+      <div class="segment-toggle" id="normen-typ-toggle" style="margin:0.5rem 0.6rem">
+        <button type="button" data-typ="" class="aktiv">Alle</button>
+        <button type="button" data-typ="norm">Normen</button>
+        <button type="button" data-typ="ppm">PPM</button>
+        <button type="button" data-typ="ppm_ffu">PPM_FFU</button>
+        <button type="button" data-typ="stiwa">StiWa</button>
+      </div>
       <ul id="normen-liste"></ul>
     </div>
     <div id="detail-panel-normen"></div>
@@ -511,6 +519,42 @@ function seedWarengruppen() {
   return [...eindeutig.values()].sort((a, b) => a.code.localeCompare(b.code));
 }
 
+/* ---------- Norm-Typ: externe Norm vs. interne Prüfprogramme (PPM/PPM_FFU/StiWa) ----------
+   Die Normendatenbank (data.normen) sammelt sowohl echte externe Normen (DIN/EN/ISO) als auch
+   interne Prüfprogramm-Kürzel (z. B. "102_PPM", "163_PPM_FFU", "StiWa 06/2014") - beide kamen in
+   der ursprünglichen Mechanik-Referenz in denselben Spalten vor. "typ" unterscheidet sie, damit
+   sich z. B. "alle internen FFU-Prüfprogramme" gezielt sammeln/filtern lassen. Automatisch anhand
+   der Bezeichnung geschätzt (PPM_FFU vor PPM prüfen, da "163_PPM_FFU" sonst fälschlich als PPM
+   erkannt würde), von Hand im Reiter "Normen" korrigierbar. */
+const NORM_TYP_OPTIONEN = [
+  { wert: "norm", label: "Norm (extern)" },
+  { wert: "ppm", label: "Prüfprogramm (PPM)" },
+  { wert: "ppm_ffu", label: "FFU-Prüfprogramm (PPM_FFU)" },
+  { wert: "stiwa", label: "StiWa-Programm" }
+];
+function normTypAusBezeichnung(bez) {
+  const b = String(bez || "");
+  if (/PPM[_\s]?FFU/i.test(b)) return "ppm_ffu";
+  if (/PPM\b/i.test(b)) return "ppm";
+  if (/^StiWa\b/i.test(b)) return "stiwa";
+  return "norm";
+}
+function normTypLabel(typ) {
+  const eintrag = NORM_TYP_OPTIONEN.find((o) => o.wert === typ);
+  return eintrag ? eintrag.label : NORM_TYP_OPTIONEN[0].label;
+}
+function normTypKuerzel(typ) {
+  return { norm: "Norm", ppm: "PPM", ppm_ffu: "PPM_FFU", stiwa: "StiWa" }[typ] || "Norm";
+}
+function normTypBadgeHtml(typ) {
+  const klasse = (!typ || typ === "norm") ? "nein" : "ja";
+  return `<span class="badge ${klasse}" style="margin-right:0.3rem">${escapeHtml(normTypKuerzel(typ))}</span>`;
+}
+function migriereNorm(n) {
+  if (!n.typ) n.typ = normTypAusBezeichnung(n.bezeichnung);
+  return n;
+}
+
 /* Norm anhand der Bezeichnung suchen oder neu anlegen - Grundlage für die Verknüpfung der
    Prüfgrundlagen-Normfelder auf echte Norm-Datensätze (Reiter "Normen") statt Freitext. Mutiert
    data.normen direkt (wie das Anlegen einer Katalogposition auch sofort persistiert wird). */
@@ -520,7 +564,7 @@ function normFindOrCreate(bezeichnungRoh) {
   const key = normalisiere(bez);
   let norm = data.normen.find((n) => normalisiere(n.bezeichnung) === key);
   if (!norm) {
-    norm = { id: neueId(), bezeichnung: bez, titel: "", dateiname: "", hochgeladenAm: "", rohtext: "", pruefpunkte: [] };
+    norm = { id: neueId(), bezeichnung: bez, titel: "", typ: normTypAusBezeichnung(bez), dateiname: "", hochgeladenAm: "", rohtext: "", pruefpunkte: [] };
     data.normen.push(norm);
   }
   return norm.id;
@@ -646,6 +690,7 @@ function init() {
     normen: (geladen && geladen.normen) ? geladen.normen : [],
     warengruppen: (geladen && geladen.warengruppen && geladen.warengruppen.length) ? geladen.warengruppen : seedWarengruppen()
   };
+  data.normen.forEach(migriereNorm);
   data.pruefgrundlagen.forEach(migrierePruefgrundlage);
 
   document.querySelectorAll("nav.tabs button[data-tab]").forEach((btn) => {
@@ -2759,12 +2804,20 @@ function pruefgrundlageBearbeiten(eintrag) {
 /* ---------- Warengruppe: durchsuchbare Einfachauswahl (Dropdown-only) ----------
    Quelle ist data.warengruppen (siehe seedWarengruppen) - Auswahl setzt Code+Name gemeinsam,
    damit sie nie auseinanderlaufen. Freitext ist hier bewusst nicht mehr möglich. */
+/* Anzeigetext einer Warengruppe - "name" enthält den Code bereits als Präfix (z. B. "250.045
+   Taschen (Funktional)"), Code+Name getrennt nochmal davorzusetzen würde ihn doppelt zeigen. */
+function warengruppeAnzeige(w) {
+  const code = normalisiereWarengruppe(w.code);
+  const name = w.name || "";
+  return normalisiere(name).startsWith(normalisiere(code)) ? name : `${code} – ${name}`;
+}
+
 function warengruppeAuswahlHtml(entwurf) {
-  const label = entwurf.warengruppeCode ? `${normalisiereWarengruppe(entwurf.warengruppeCode)} – ${entwurf.warengruppeName || ""}` : "— Warengruppe wählen —";
+  const label = entwurf.warengruppeCode ? warengruppeAnzeige({ code: entwurf.warengruppeCode, name: entwurf.warengruppeName }) : "— Warengruppe wählen —";
   return `<div class="ss-feld" data-ssfeld="warengruppe">
     <label>Warengruppe (für die Zuordnung im KV relevant)</label>
     <button type="button" class="ms-btn" id="pg-warengruppe-btn">${escapeHtml(label)}</button>
-    <div class="ms-panel" id="pg-warengruppe-panel" hidden>
+    <div class="ms-panel breit" id="pg-warengruppe-panel" hidden>
       <input type="text" class="ms-suche" placeholder="Code oder Name suchen…">
       <div class="ms-liste"></div>
     </div>
@@ -2783,13 +2836,13 @@ function initialisiereWarengruppeAuswahl(box, entwurf) {
     const norm = normalisiere(q);
     const optionen = data.warengruppen.filter((w) => !norm || normalisiere(w.code + " " + w.name).includes(norm));
     liste.innerHTML = optionen.length
-      ? optionen.map((w) => `<button type="button" class="ss-option" data-code="${escapeHtml(w.code)}" data-name="${escapeHtml(w.name)}">${escapeHtml(w.code)} – ${escapeHtml(w.name)}</button>`).join("")
+      ? optionen.map((w) => `<button type="button" class="ss-option" data-code="${escapeHtml(w.code)}" data-name="${escapeHtml(w.name)}">${escapeHtml(warengruppeAnzeige(w))}</button>`).join("")
       : `<div class="ss-leer">Keine Treffer.</div>`;
     liste.querySelectorAll(".ss-option").forEach((o) => {
       o.addEventListener("click", () => {
         entwurf.warengruppeCode = o.dataset.code;
         entwurf.warengruppeName = o.dataset.name;
-        btn.textContent = `${o.dataset.code} – ${o.dataset.name}`;
+        btn.textContent = warengruppeAnzeige({ code: o.dataset.code, name: o.dataset.name });
         panel.hidden = true;
       });
     });
@@ -2805,16 +2858,22 @@ function initialisiereWarengruppeAuswahl(box, entwurf) {
   suche.addEventListener("input", () => baueListe(suche.value));
 }
 
-/* ---------- Normen: durchsuchbare Mehrfachauswahl mit Neuanlage ----------
-   Referenziert echte Norm-Datensätze (data.normen) statt Freitext - je Auswahl zusätzlich ein
-   "in Anlehnung an"-Haken für Normen, die nicht vollständig anwendbar sind. Wird für alle drei
-   Prüfblöcke verwendet (Sicherheit & Norm, FFU/Fitting, NGO/StiWa). */
+/* ---------- Normen: durchsuchbare Dropdown-Mehrfachauswahl mit Neuanlage ----------
+   Referenziert echte Norm-Datensätze aus der Normendatenbank (data.normen, Reiter "Normen") statt
+   Freitext - je Auswahl zusätzlich ein "in Anlehnung an"-Haken für Normen, die nicht vollständig
+   anwendbar sind. Wird für alle drei Prüfblöcke verwendet (Sicherheit & Norm, FFU/Fitting,
+   NGO/StiWa). Der Button öffnet ein Dropdown mit der GESAMTEN Normendatenbank (nicht erst ab
+   Sucheingabe) - Tippen filtert; ein Treffer ohne exakte Übereinstimmung bietet "+ Neue Norm
+   anlegen" an. */
 function normenFeldHtml(feldName, label) {
   return `<div class="normen-feld" data-normenfeld="${feldName}">
     <label>${escapeHtml(label)}</label>
     <div class="tag-chips"></div>
-    <input type="text" class="normen-suche" placeholder="Norm suchen oder neu anlegen…">
-    <div class="normen-ergebnisse"></div>
+    <button type="button" class="ms-btn" data-normen-btn="${feldName}">+ Norm hinzufügen ▾</button>
+    <div class="ms-panel breit" data-normen-panel="${feldName}" hidden>
+      <input type="text" class="ms-suche" placeholder="In der Normendatenbank suchen oder neue anlegen…">
+      <div class="ms-liste"></div>
+    </div>
   </div>`;
 }
 
@@ -2825,7 +2884,7 @@ function renderNormenChips(container, entwurf, feldName) {
     ? refs.map((r, i) => {
         const norm = data.normen.find((n) => n.id === r.normId);
         const bez = norm ? norm.bezeichnung : "(gelöschte Norm)";
-        return `<span class="tag-chip">${escapeHtml(bez)}
+        return `<span class="tag-chip">${norm ? normTypBadgeHtml(norm.typ) : ""}${escapeHtml(bez)}
           <label class="anlehnung-label"><input type="checkbox" data-idx="${i}" data-rolle="anlehnung" ${r.inAnlehnungAn ? "checked" : ""}> in Anlehnung an</label>
           <button type="button" data-idx="${i}" data-rolle="entfernen" title="Entfernen">✕</button>
         </span>`;
@@ -2839,37 +2898,35 @@ function renderNormenChips(container, entwurf, feldName) {
   });
 }
 
-function renderNormenErgebnisse(container, entwurf, feldName, q) {
-  const ziel = container.querySelector(".normen-ergebnisse");
+function baueNormenListe(container, entwurf, feldName, q) {
+  const liste = container.querySelector(".ms-liste");
   const norm = normalisiere(q);
-  if (!norm) { ziel.innerHTML = ""; return; }
   const ausgeschlossen = new Set((entwurf[feldName] || []).map((r) => r.normId));
-  const treffer = data.normen.filter((n) => !ausgeschlossen.has(n.id) && normalisiere(n.bezeichnung + " " + n.titel).includes(norm)).slice(0, 15);
-  let html = treffer.map((n) => `<button type="button" class="ss-option" data-normid="${escapeHtml(n.id)}">${escapeHtml(n.bezeichnung)}${n.titel ? " – " + escapeHtml(n.titel) : ""}</button>`).join("");
+  const treffer = data.normen.filter((n) => !ausgeschlossen.has(n.id) && (!norm || normalisiere(n.bezeichnung + " " + n.titel).includes(norm))).slice(0, 60);
+  let html = treffer.map((n) => `<button type="button" class="ss-option" data-normid="${escapeHtml(n.id)}">${normTypBadgeHtml(n.typ)}${escapeHtml(n.bezeichnung)}${n.titel ? ` <span class="muted">– ${escapeHtml(n.titel)}</span>` : ""}</button>`).join("");
   const exaktVorhanden = data.normen.some((n) => normalisiere(n.bezeichnung) === norm);
-  if (!exaktVorhanden && q.trim()) html += `<button type="button" class="ss-option ss-neu" data-neu="1">+ Neue Norm „${escapeHtml(q.trim())}" anlegen</button>`;
-  ziel.innerHTML = html || `<div class="ss-leer">Keine Treffer.</div>`;
+  if (q.trim() && !exaktVorhanden) html += `<button type="button" class="ss-option ss-neu" data-neu="1">+ Neue Norm „${escapeHtml(q.trim())}" anlegen</button>`;
+  liste.innerHTML = html || `<div class="ss-leer">Keine Treffer.</div>`;
 
-  ziel.querySelectorAll("[data-normid]").forEach((btn) => {
+  liste.querySelectorAll("[data-normid]").forEach((btn) => {
     btn.addEventListener("click", () => {
       entwurf[feldName] = entwurf[feldName] || [];
       entwurf[feldName].push({ normId: btn.dataset.normid, inAnlehnungAn: false });
       renderNormenChips(container, entwurf, feldName);
-      container.querySelector(".normen-suche").value = "";
-      ziel.innerHTML = "";
+      baueNormenListe(container, entwurf, feldName, container.querySelector(".ms-suche").value);
     });
   });
-  const neuBtn = ziel.querySelector("[data-neu]");
+  const neuBtn = liste.querySelector("[data-neu]");
   if (neuBtn) {
     neuBtn.addEventListener("click", () => {
-      const neu = { id: neueId(), bezeichnung: q.trim(), titel: "", dateiname: "", hochgeladenAm: "", rohtext: "", pruefpunkte: [] };
+      const neu = { id: neueId(), bezeichnung: q.trim(), titel: "", typ: normTypAusBezeichnung(q.trim()), dateiname: "", hochgeladenAm: "", rohtext: "", pruefpunkte: [] };
       data.normen.push(neu);
       speichereInLocalStorage();
       entwurf[feldName] = entwurf[feldName] || [];
       entwurf[feldName].push({ normId: neu.id, inAnlehnungAn: false });
       renderNormenChips(container, entwurf, feldName);
-      container.querySelector(".normen-suche").value = "";
-      ziel.innerHTML = "";
+      container.querySelector(".ms-suche").value = "";
+      baueNormenListe(container, entwurf, feldName, "");
     });
   }
 }
@@ -2878,8 +2935,18 @@ function initialisiereNormenFeld(box, entwurf, feldName) {
   const container = box.querySelector(`[data-normenfeld="${feldName}"]`);
   if (!container) return;
   renderNormenChips(container, entwurf, feldName);
-  const suche = container.querySelector(".normen-suche");
-  suche.addEventListener("input", () => renderNormenErgebnisse(container, entwurf, feldName, suche.value));
+  const btn = container.querySelector(`[data-normen-btn="${feldName}"]`);
+  const panel = container.querySelector(`[data-normen-panel="${feldName}"]`);
+  const suche = panel.querySelector(".ms-suche");
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const warOffen = !panel.hidden;
+    document.querySelectorAll(".ms-panel").forEach((p) => (p.hidden = true));
+    panel.hidden = warOffen;
+    if (!warOffen) { suche.value = ""; baueNormenListe(container, entwurf, feldName, ""); suche.focus(); }
+  });
+  panel.addEventListener("click", (e) => e.stopPropagation());
+  suche.addEventListener("input", () => baueNormenListe(container, entwurf, feldName, suche.value));
 }
 
 /* Übersicht, in welchen Kostenvoranschlägen diese Prüfgrundlage verwendet wird (als Hauptprodukt
@@ -3029,7 +3096,7 @@ function parsePruefpunkteAusZeilen(zeilen) {
 }
 
 function normEntwurfNeu() {
-  return { id: neueId(), bezeichnung: "Neue Norm", titel: "", dateiname: "", hochgeladenAm: "", rohtext: "", pruefpunkte: [] };
+  return { id: neueId(), bezeichnung: "Neue Norm", titel: "", typ: "norm", dateiname: "", hochgeladenAm: "", rohtext: "", pruefpunkte: [] };
 }
 
 /* Liest eine Norm-Datei ein und liefert einen vollständigen Norm-Datensatz (noch nicht in data.normen
@@ -3041,21 +3108,27 @@ function normEntwurfNeu() {
 async function verarbeiteNormPdf(datei) {
   const istDocx = /\.docx$/i.test(datei.name);
   const bezeichnung = datei.name.replace(/\.(pdf|docx)$/i, "").replace(/[_]+/g, " ").trim() || "Neue Norm";
+  const typ = normTypAusBezeichnung(bezeichnung);
   if (istDocx) {
     const rohtext = await extrahiereDocxRohtext(datei);
-    return { id: neueId(), bezeichnung, titel: "", dateiname: datei.name, hochgeladenAm: heutigesDatumLokal(), rohtext, pruefpunkte: [] };
+    return { id: neueId(), bezeichnung, titel: "", typ, dateiname: datei.name, hochgeladenAm: heutigesDatumLokal(), rohtext, pruefpunkte: [] };
   }
   const zeilen = await extrahierePdfZeilen(datei);
   return {
-    id: neueId(), bezeichnung, titel: "", dateiname: datei.name, hochgeladenAm: heutigesDatumLokal(),
+    id: neueId(), bezeichnung, titel: "", typ, dateiname: datei.name, hochgeladenAm: heutigesDatumLokal(),
     rohtext: zeilen.join("\n"), pruefpunkte: parsePruefpunkteAusZeilen(zeilen)
   };
 }
 
+let normenTypFilter = "";
+
 function gefiltereNormen() {
   const q = normalisiere(suchbegriffe.normen);
-  if (!q) return data.normen;
-  return data.normen.filter((n) => normalisiere([n.bezeichnung, n.titel, n.dateiname, ...(n.pruefpunkte || []).map((p) => p.nummer + " " + p.titel)].join(" ")).includes(q));
+  return data.normen.filter((n) => {
+    if (normenTypFilter && (n.typ || "norm") !== normenTypFilter) return false;
+    if (!q) return true;
+    return normalisiere([n.bezeichnung, n.titel, n.dateiname, ...(n.pruefpunkte || []).map((p) => p.nummer + " " + p.titel)].join(" ")).includes(q);
+  });
 }
 
 function renderNormenListe() {
@@ -3064,11 +3137,19 @@ function renderNormenListe() {
   if (!liste.length) { ul.innerHTML = '<li class="leer">Keine Normen gefunden.</li>'; return; }
   ul.innerHTML = liste.map((n) => `
     <li class="${n.id === aktiveNormId ? "aktiv" : ""}" data-id="${n.id}">
-      <strong>${escapeHtml(n.bezeichnung || "(ohne Bezeichnung)")}</strong>
+      <strong>${normTypBadgeHtml(n.typ)}${escapeHtml(n.bezeichnung || "(ohne Bezeichnung)")}</strong>
       <div class="muted">${(n.pruefpunkte || []).length} Prüfpunkt${(n.pruefpunkte || []).length === 1 ? "" : "e"}${n.dateiname ? " · " + escapeHtml(n.dateiname) : ""}</div>
     </li>`).join("");
   ul.querySelectorAll("li[data-id]").forEach((li) => li.addEventListener("click", () => { aktiveNormId = li.dataset.id; renderNormenTab(); }));
 }
+
+document.getElementById("normen-typ-toggle").querySelectorAll("button[data-typ]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    normenTypFilter = btn.dataset.typ;
+    document.querySelectorAll("#normen-typ-toggle button").forEach((b) => b.classList.toggle("aktiv", b === btn));
+    renderNormenListe();
+  });
+});
 
 function pruefpunktZeileHtml(p) {
   return `<div class="pruefpunkt-item" data-id="${escapeHtml(p.id)}">
@@ -3095,6 +3176,7 @@ function renderNormDetail() {
       <div class="formular-grid">
         <label>Bezeichnung<input type="text" data-feld="bezeichnung" value="${escapeHtml(norm.bezeichnung)}"></label>
         <label>Titel<input type="text" data-feld="titel" value="${escapeHtml(norm.titel)}"></label>
+        <label>Typ<select data-feld="typ">${NORM_TYP_OPTIONEN.map((o) => `<option value="${o.wert}" ${(norm.typ || "norm") === o.wert ? "selected" : ""}>${escapeHtml(o.label)}</option>`).join("")}</select></label>
       </div>
       <p class="hinweis">${norm.dateiname ? `Hochgeladen aus „${escapeHtml(norm.dateiname)}" am ${escapeHtml(norm.hochgeladenAm)}.` : "Manuell angelegt, ohne PDF-Upload."}</p>
       <div class="toolbar-zeile">
@@ -3266,6 +3348,7 @@ document.getElementById("datei-laden-input").addEventListener("change", async (e
       normen: geparst.normen || [],
       warengruppen: (geparst.warengruppen && geparst.warengruppen.length) ? geparst.warengruppen : seedWarengruppen()
     };
+    data.normen.forEach(migriereNorm);
     data.pruefgrundlagen.forEach(migrierePruefgrundlage);
     aktivePaId = data.pruefauftraege.length ? data.pruefauftraege[0].id : null;
     aktiveKvId = data.kvs.length ? data.kvs[0].id : null;
@@ -3323,10 +3406,11 @@ document.getElementById("btn-csv").addEventListener("click", () => {
     ]));
     csvHerunterladen(zeilen, "pruefgrundlagen_export.csv");
   } else if (aktiverTab === "normen") {
-    const zeilen = [["Norm", "Titel", "Prüfpunkt-Nummer", "Prüfpunkt-Titel", "Prüfpunkt-Text"]];
+    const zeilen = [["Norm", "Titel", "Typ", "Prüfpunkt-Nummer", "Prüfpunkt-Titel", "Prüfpunkt-Text"]];
     data.normen.forEach((n) => {
-      if (!(n.pruefpunkte || []).length) { zeilen.push([n.bezeichnung, n.titel, "", "", ""]); return; }
-      n.pruefpunkte.forEach((p) => zeilen.push([n.bezeichnung, n.titel, p.nummer, p.titel, p.text]));
+      const typLabel = normTypLabel(n.typ);
+      if (!(n.pruefpunkte || []).length) { zeilen.push([n.bezeichnung, n.titel, typLabel, "", "", ""]); return; }
+      n.pruefpunkte.forEach((p) => zeilen.push([n.bezeichnung, n.titel, typLabel, p.nummer, p.titel, p.text]));
     });
     csvHerunterladen(zeilen, "normen_export.csv");
   }
@@ -3339,7 +3423,7 @@ function schluesselPa(p) { return normalisiere(p.ian); }
 function schluesselKatalog(k) { return normalisiere(k.kuerzel) + "|" + normalisiere(k.bezeichnung); }
 function schluesselPruefgrundlage(e) { return normalisiereWarengruppe(e.warengruppeCode) + "|" + normalisiere(e.produkt); }
 function schluesselNorm(n) { return normalisiere(n.bezeichnung); }
-const NORM_FELDER = ["bezeichnung", "titel", "dateiname", "rohtext", "pruefpunkte"];
+const NORM_FELDER = ["bezeichnung", "titel", "typ", "dateiname", "rohtext", "pruefpunkte"];
 
 /* JSON.stringify-Vergleich statt strikter Gleichheit, damit auch Feld-Werte, die Arrays sind
    (z. B. Normen/Materialien-Mehrfachauswahl), inhaltlich statt nach Objektreferenz verglichen
@@ -3360,6 +3444,7 @@ function planFlacheListe(lokal, importiert, schluesselFn, vergleichFelder) {
 let mergePlan = null;
 
 function berechneMergePlan(importData) {
+  (importData.normen || []).forEach(migriereNorm);
   (importData.pruefgrundlagen || []).forEach(migrierePruefgrundlage);
   const avPlan = planFlacheListe(data.arbeitsvorrat, importData.arbeitsvorrat || [], schluesselArbeitsvorrat, ARBEITSVORRAT_FELDER);
   const paPlan = planFlacheListe(data.pruefauftraege, importData.pruefauftraege || [], schluesselPa, ["artikelbezeichnung", "warengruppe"]);
@@ -3416,7 +3501,7 @@ function renderMergeUebersicht() {
   if (p.neuePruefgrundlagen.length) html += `<div class="merge-section"><h3>Neue Prüfgrundlagen (${p.neuePruefgrundlagen.length})</h3>` + checkboxListeHtml("neuePruefgrundlagen", p.neuePruefgrundlagen, (e) => `<strong>${escapeHtml(e.warengruppeCode)} ${escapeHtml(e.produkt)}</strong> — ${escapeHtml(normRefListeText(e.normen))}`) + `</div>`;
   if (p.pruefgrundlagenKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Prüfgrundlagen (${p.pruefgrundlagenKonflikte.length})</h3>` + konfliktListeHtml("pruefgrundlagenKonflikt", p.pruefgrundlagenKonflikte, (k) => escapeHtml(k.lokal.warengruppeCode) + " " + escapeHtml(k.lokal.produkt), (e) => PRUEFGRUNDLAGE_FELDER.map((f) => f + ": " + (["normen", "ffuNormen", "stiwaNormen"].includes(f) ? normRefListeText(e[f]) : (e[f] ?? ""))).join("\n")) + `</div>`;
   if (p.neueNormen.length) html += `<div class="merge-section"><h3>Neue Normen (${p.neueNormen.length})</h3>` + checkboxListeHtml("neueNormen", p.neueNormen, (n) => `<strong>${escapeHtml(n.bezeichnung)}</strong> — ${(n.pruefpunkte || []).length} Prüfpunkt(e)`) + `</div>`;
-  if (p.normenKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Normen (${p.normenKonflikte.length})</h3>` + konfliktListeHtml("normenKonflikt", p.normenKonflikte, (k) => escapeHtml(k.lokal.bezeichnung), (n) => "Titel: " + (n.titel || "") + "\nDatei: " + (n.dateiname || "") + "\nPrüfpunkte: " + (n.pruefpunkte || []).length) + `</div>`;
+  if (p.normenKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Normen (${p.normenKonflikte.length})</h3>` + konfliktListeHtml("normenKonflikt", p.normenKonflikte, (k) => escapeHtml(k.lokal.bezeichnung), (n) => "Typ: " + normTypLabel(n.typ) + "\nTitel: " + (n.titel || "") + "\nDatei: " + (n.dateiname || "") + "\nPrüfpunkte: " + (n.pruefpunkte || []).length) + `</div>`;
 
   html += `<div class="overlay-actions"><button id="merge-anwenden">Zusammenführung übernehmen</button><button class="ghost" id="merge-abbrechen">Abbrechen</button></div>`;
   box.innerHTML = html;

@@ -222,22 +222,25 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   passende (neue oder bestehende) Gruppe.
 
   **Warengruppe wird nur noch per durchsuchbarem Dropdown gewählt**, kein
-  Freitext mehr — Tippen filtert nach Code oder Name. Die Liste (aktuell 64
-  Einträge) ist vorerst aus den bereits vorhandenen Prüfgrundlagen-Startdaten
-  abgeleitet, als Übergangslösung bis die offizielle Warengruppen-Liste
-  geliefert und eine neue Tool-Version damit gebaut wird — bis dahin sind nur
-  bereits genutzte Warengruppen wählbar.
+  Freitext mehr — Klick öffnet die vollständige Liste, Tippen filtert nach
+  Code oder Name (Code wird nicht mehr doppelt angezeigt, da er im Namen
+  bereits enthalten ist). Die Liste (aktuell 64 Einträge) ist vorerst aus den
+  bereits vorhandenen Prüfgrundlagen-Startdaten abgeleitet, als
+  Übergangslösung bis die offizielle Warengruppen-Liste geliefert und eine
+  neue Tool-Version damit gebaut wird — bis dahin sind nur bereits genutzte
+  Warengruppen wählbar.
 
-  **Normen sind jetzt eine durchsuchbare Mehrfachauswahl, die auf echte
-  Norm-Datensätze verweist** (Reiter „Normen", siehe unten) statt auf
-  Freitext — Tippen sucht in vorhandenen Normen, „+ Neue Norm „…" anlegen"
-  legt bei Bedarf sofort eine neue Norm an (auch schon vor dem Speichern der
-  Prüfgrundlage). Je ausgewählter Norm lässt sich zusätzlich **„in Anlehnung
-  an"** ankreuzen, falls sie nicht vollständig anwendbar ist. Diese
-  Normen-Auswahl gibt es jetzt für alle drei Prüfblöcke — **Sicherheit &
-  Norm, FFU/Fitting und NGO/StiWa** —, die vorherigen reinen Freitext-Hinweise
-  bei FFU/StiWa sind entsprechend entfallen. Das frühere, separate
-  „Kennzeichnung über GPSR hinaus"-Feld war inhaltlich dasselbe wie
+  **Normen sind jetzt eine durchsuchbare Dropdown-Mehrfachauswahl, die auf
+  echte Norm-Datensätze verweist** (Reiter „Normen", siehe unten) statt auf
+  Freitext — der Button „+ Norm hinzufügen" öffnet die komplette
+  Normendatenbank zum Durchblättern, Tippen filtert; „+ Neue Norm „…"
+  anlegen" legt bei Bedarf sofort eine neue Norm an (auch schon vor dem
+  Speichern der Prüfgrundlage). Je ausgewählter Norm lässt sich zusätzlich
+  **„in Anlehnung an"** ankreuzen, falls sie nicht vollständig anwendbar ist.
+  Diese Normen-Auswahl gibt es jetzt für alle drei Prüfblöcke — **Sicherheit
+  & Norm, FFU/Fitting und NGO/StiWa** —, die vorherigen reinen
+  Freitext-Hinweise bei FFU/StiWa sind entsprechend entfallen. Das frühere,
+  separate „Kennzeichnung über GPSR hinaus"-Feld war inhaltlich dasselbe wie
   **KEZ-Anforderungen** und wurde deshalb zu einem einzigen Kästchen
   zusammengeführt (Tooltip erklärt die GPSR-Bedeutung).
 
@@ -289,6 +292,18 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   bleibt zusätzlich einsehbar (durchsuchbar per Strg+F wie jeder andere Text
   auf der Seite). Alte **.doc-Dateien** (Format vor Office 2007) werden nicht
   unterstützt — hierfür bitte eine .docx- oder PDF-Version hochladen.
+
+  Jede Norm hat einen **Typ** — „Norm (extern)" für echte Regelwerke
+  (DIN/EN/ISO) oder eine von drei internen Kategorien: **Prüfprogramm
+  (PPM)**, **FFU-Prüfprogramm (PPM_FFU)** oder **StiWa-Programm** — als
+  eigene Sammlung der jeweiligen internen Prüfprogramm-Kürzel, getrennt von
+  den externen Normen. Der Typ wird beim Anlegen automatisch anhand der
+  Bezeichnung geschätzt (z. B. „163_PPM_FFU" → FFU-Prüfprogramm, „StiWa
+  06/2014" → StiWa-Programm, alles andere → Norm) und lässt sich in der
+  Detailansicht per Dropdown korrigieren. Über der Normen-Liste lässt sich
+  per Umschalter („Alle" / „Normen" / „PPM" / „PPM_FFU" / „StiWa") gezielt
+  nach Typ filtern; jeder Eintrag zeigt sein Kürzel als Badge, auch in der
+  Normen-Auswahl bei den Prüfgrundlagen.
 
   Wird eine Norm gelöscht, auf die eine Prüfgrundlage noch verweist,
   erscheint dort „(gelöschte Norm)" statt der Bezeichnung — die Referenz
