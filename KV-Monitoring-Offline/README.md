@@ -5,7 +5,7 @@ und Kostenvoranschlägen (KV) für mechanische Prüfungen. Läuft komplett im
 Browser, ohne Server, ohne Python, ohne Installation, ohne besondere
 Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
 
-## Die sechs Reiter
+## Die sieben Reiter
 
 - **Arbeitsvorrat** – der Arbeitsvorrat aus dem SAP-Export. Startet leer
   (keine Beispieldaten mehr vorbefüllt). Oben lässt sich zwischen zwei
@@ -230,6 +230,16 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   neue Tool-Version damit gebaut wird — bis dahin sind nur bereits genutzte
   Warengruppen wählbar.
 
+  **Bereich ist ebenfalls ein durchsuchbares Dropdown**, kein Freitext mehr.
+  Anders als bei Warengruppe gibt es hier aber **kein "+ Neue anlegen" direkt
+  aus der Prüfgrundlage heraus** — die Liste wird ausschließlich im neuen
+  Reiter **„Verwaltung"** gepflegt (anlegen, umbenennen, löschen), damit sie
+  nicht durch beiläufige Freitext-Varianten wuchert. Ein Bereich umbenennen
+  aktualisiert dort automatisch alle Prüfgrundlagen, die den bisherigen Wert
+  verwenden. Dateien aus einer älteren Tool-Version (Bereich als Freitext)
+  werden migriert: jeder bislang verwendete Wert, der noch nicht in der
+  gepflegten Liste steht, wird beim Laden automatisch ergänzt.
+
   **Normen sind jetzt eine durchsuchbare Dropdown-Mehrfachauswahl, die auf
   echte Norm-Datensätze verweist** (Reiter „Normen", siehe unten) statt auf
   Freitext — der Button „+ Norm hinzufügen" öffnet die Normendatenbank zum
@@ -319,30 +329,31 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
 - **Normen** – eigenständige Verwaltung einzelner Normen, im Listen-/
   Detail-Layout wie bei Prüfaufträgen/KVs, und jetzt direkt mit den
   Prüfgrundlagen verknüpft (siehe oben). Über **„📄 Norm(en)/Prüfprogramm(e)
-  hochladen"** lassen sich eine oder mehrere Dateien (PDF oder .docx) auf
-  einmal hochladen — jede Datei legt eine eigene Norm an (Bezeichnung
-  anfangs aus dem Dateinamen abgeleitet, danach frei editierbar). Wie überall
-  beim Datei-Upload in diesem Tool wird nur der ausgelesene Text gespeichert,
-  nicht die Datei selbst.
+  hochladen"** lassen sich eine oder mehrere **.docx**-Dateien auf einmal
+  hochladen — jede Datei legt eine eigene Norm an (Bezeichnung anfangs aus
+  dem Dateinamen abgeleitet, danach frei editierbar). Wie überall beim
+  Datei-Upload in diesem Tool wird nur der ausgelesene Text gespeichert,
+  nicht die Datei selbst. **PDF-Upload wurde entfernt** — Normen werden
+  entweder manuell angelegt oder per .docx hochgeladen; eine automatische
+  Erkennung einzelner Prüfpunkte findet dabei nicht statt. Jeder Prüfpunkt
+  (Nummer, Titel, Text) ist in der Detailansicht frei anlegbar, bearbeitbar,
+  zusammenführbar und löschbar — über „+ Prüfpunkt hinzufügen" von Hand
+  ergänzen, auch für Normen, die ganz ohne Datei-Upload nur manuell angelegt
+  wurden. Der komplette Rohtext der Datei bleibt zusätzlich einsehbar
+  (durchsuchbar per Strg+F wie jeder andere Text auf der Seite); „.docx
+  erneut hochladen" ersetzt nur den Rohtext, vorhandene Prüfpunkte bleiben
+  unangetastet. Alte **.doc-Dateien** (Format vor Office 2007) werden nicht
+  unterstützt — hierfür bitte eine .docx-Version hochladen.
 
-  Bei **PDFs** wird zusätzlich versucht, die **nummerierten Abschnitte der
-  Norm einzeln als Prüfpunkte zu erkennen** (z. B. „5.3.1 Scher- und
-  Quetschstellen beim Aufstellen, Einstellen und Zusammenklappen" samt
-  zugehörigem Text) — anhand von drei echten DIN/EN-Normen entwickelt und
-  geprüft (EN 581-1, -2, -3). Das ist ein **automatischer Best-Effort-
-  Versuch** anhand der Nummerierung: bei sauber nummeriertem Fließtext
-  funktioniert das zuverlässig, bei Tabellen (z. B. Kraft-Werte-Tabellen)
-  oder ungewöhnlichen Layouts können einzelne Punkte falsch getrennt werden,
-  fehlen oder doppelt auftauchen. Bei **.docx-Uploads** ist diese
-  automatische Erkennung (noch) nicht möglich, dort bleibt die
-  Prüfpunkte-Liste zunächst leer. Deshalb ist jeder erkannte Prüfpunkt
-  (Nummer, Titel, Text) in der Detailansicht frei bearbeitbar,
-  zusammenführbar, löschbar; über „+ Prüfpunkt hinzufügen" lassen sich
-  fehlende auch von Hand ergänzen — auch für Normen, die ganz ohne
-  Datei-Upload nur manuell angelegt wurden. Der komplette Rohtext der Datei
-  bleibt zusätzlich einsehbar (durchsuchbar per Strg+F wie jeder andere Text
-  auf der Seite). Alte **.doc-Dateien** (Format vor Office 2007) werden nicht
-  unterstützt — hierfür bitte eine .docx- oder PDF-Version hochladen.
+  Die Detailansicht zeigt außerdem eine schreibgeschützte
+  **„Verwendet in Prüfgrundlagen"-Übersicht**: für jede Prüfgrundlage, die
+  diese Norm in einem ihrer drei Prüfblöcke referenziert, eine Zeile mit
+  Produkt, Warengruppe, Block (Sicherheit & Norm/FFU/StiWa) und den dort
+  **je Produkt hinterlegten Kosten** — Kosten hängen ja an der jeweiligen
+  Prüfgrundlage, nicht an der Norm selbst (siehe „Kosten je Norm" oben), so
+  ist auf einen Blick sichtbar, wie sich die Kosten für dieselbe Norm über
+  verschiedene Produkte unterscheiden. Klick auf eine Zeile springt direkt
+  zur Detailansicht der jeweiligen Prüfgrundlage.
 
   Jede Norm hat einen **Typ** — „Norm (extern)" für echte Regelwerke
   (DIN/EN/ISO) oder eine von drei internen Kategorien: **Prüfprogramm
@@ -365,6 +376,12 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   erscheint dort „(gelöschte Norm)" statt der Bezeichnung — die Referenz
   bleibt technisch bestehen, sollte aber in der Prüfgrundlage entfernt oder
   ersetzt werden.
+- **Verwaltung** – Pflege von Stammdaten-Listen, aktuell die **Bereiche**
+  (Dropdown-Quelle im Reiter „Prüfgrundlagen", siehe oben). Neue Werte
+  anlegen, bestehende umbenennen (aktualisiert automatisch alle
+  Prüfgrundlagen, die den bisherigen Wert verwenden) oder löschen (mit
+  Warnhinweis, falls der Wert noch verwendet wird); die Anzahl der
+  Verwendungen steht neben jedem Eintrag.
 
 ## Datenquelle der Warengruppen-Empfehlung und SAP-Codes
 
