@@ -272,21 +272,28 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   Aufteilung auf mehrere Normen ist danach manuell in der Detailansicht
   möglich.
 
-  **Bemerkungen hängen jetzt an der jeweiligen Norm/PPM statt pauschal am
-  ganzen Produkt.** Jede referenzierte Norm in den drei Blöcken hat ein
-  eigenes Bemerkungsfeld (z. B. „Gasgeräteverordnung! CE-Zeichen! KE nötig."
-  bei einer bestimmten Norm) — das frühere, einzelne Bemerkungsfeld für die
-  ganze Prüfgrundlage ist entfallen. Projektspezifische Hinweise, die sich
-  nicht auf die Norm im Allgemeinen, sondern auf ein konkretes Projekt
-  beziehen (z. B. „Der Artikel ist in Bezug auf [Schnittleistung] mindestens
-  gleichwertig mit [Vergleichsprodukt]" bei einer StiWa-Prüfung), gehören ins
-  bereits vorhandene freie Notizfeld des jeweiligen Kostenvoranschlags, nicht
-  in dieses produktübergreifende Normen-Feld. Dateien aus einer älteren
-  Tool-Version (eine einzelne Bemerkung pro Prüfgrundlage) werden migriert:
-  der alte Text landet auf der ersten referenzierten Norm (bevorzugt aus
-  Sicherheit & Norm, sonst FFU, sonst StiWa); gibt es in keinem der drei
-  Blöcke überhaupt eine Norm, bleibt der Text vorsorglich erhalten, bis er
-  manuell zugeordnet wird.
+  **Bemerkungen hängen an der Norm/dem PPM selbst statt pauschal am ganzen
+  Produkt.** Die Bemerkung ist ein Feld der Norm in der Normendatenbank
+  (Reiter „Normen", siehe unten) — nicht der Prüfgrundlage und nicht der
+  einzelnen Referenz. Dadurch bleibt sie konsistent, egal in wie vielen
+  Prüfgrundlagen dieselbe Norm verwendet wird: einmal gepflegt (z. B.
+  „Gasgeräteverordnung! CE-Zeichen! KE nötig." bei einer bestimmten Norm),
+  überall sichtbar. Bearbeiten geht an **beiden Stellen** — direkt am
+  Normen-Eintrag in einer Prüfgrundlage (schreibt sofort in die
+  Normendatenbank, ohne dass die Prüfgrundlage gespeichert werden muss) oder
+  im Reiter „Normen" selbst; beide zeigen denselben, gemeinsamen Text.
+  Projektspezifische Hinweise, die sich nicht auf die Norm im Allgemeinen,
+  sondern auf ein konkretes Projekt beziehen (z. B. „Der Artikel ist in Bezug
+  auf [Schnittleistung] mindestens gleichwertig mit [Vergleichsprodukt]" bei
+  einer StiWa-Prüfung), gehören dagegen ins bereits vorhandene freie
+  Notizfeld des jeweiligen Kostenvoranschlags, nicht in dieses
+  normübergreifend geteilte Feld. Dateien aus einer älteren Tool-Version
+  (eine einzelne Bemerkung pro Prüfgrundlage, zwischenzeitlich auch eine
+  Bemerkung je Referenz) werden automatisch auf die Norm migriert: der Text
+  landet auf der ersten referenzierten Norm (bevorzugt aus Sicherheit & Norm,
+  sonst FFU, sonst StiWa); treffen für dieselbe Norm mehrere unterschiedliche
+  Alttexte zusammen, werden sie durch „ | " getrennt zusammengeführt statt
+  einander zu überschreiben.
 
   **Materialien sind aus den Prüfgrundlagen entfernt** — sie hängen vom
   jeweiligen Projekt ab und gehören nicht in diese produktübergreifende
@@ -348,6 +355,11 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   per Umschalter („Alle" / „Normen" / „PPM" / „PPM_FFU" / „StiWa") gezielt
   nach Typ filtern; jeder Eintrag zeigt sein Kürzel als Badge, auch in der
   Normen-Auswahl bei den Prüfgrundlagen.
+
+  Jede Norm hat außerdem ein eigenes **Bemerkungsfeld** — bearbeitbar sowohl
+  hier in der Detailansicht als auch direkt am jeweiligen Normen-Eintrag in
+  jeder Prüfgrundlage, die diese Norm verwendet (siehe oben); beide Stellen
+  zeigen und ändern denselben Text.
 
   Wird eine Norm gelöscht, auf die eine Prüfgrundlage noch verweist,
   erscheint dort „(gelöschte Norm)" statt der Bezeichnung — die Referenz
