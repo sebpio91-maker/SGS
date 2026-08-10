@@ -256,6 +256,21 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   ausgewählte Normen (Chips) bleiben unabhängig vom Typ immer sichtbar —
   die Einschränkung gilt nur für die Such-/Browse-Liste beim Hinzufügen.
 
+  **Die Kosten werden jetzt je Norm hinterlegt statt einmal pauschal pro
+  Block.** Jeder Normen-Chip hat ein eigenes „Kosten €"-Feld; direkt darunter
+  zeigt jeder der drei Blöcke (Sicherheit & Norm, FFU/Fitting, NGO/StiWa)
+  live die **Summe** der eingetragenen Einzelkosten. Ist für keine der
+  ausgewählten Normen ein Betrag hinterlegt, zeigt die Summe „Preis auf
+  Anfrage" (genau wie zuvor beim einzelnen Blockfeld); einzelne unbezifferte
+  Normen neben bezifferten tragen einfach 0 zur Summe bei. Diese Summe ist es
+  auch, die in der Warengruppen-Empfehlung im KV-Reiter (inkl. Set-Bestandteile
+  und Rabattfaktor) sowie im CSV-Export verwendet wird. Dateien aus einer
+  älteren Tool-Version (ein einzelner Kostenbetrag pro Block) werden beim
+  Laden/Zusammenführen automatisch migriert: der alte Gesamtbetrag landet
+  vollständig auf der ersten Norm der jeweiligen Liste, damit die Summe exakt
+  erhalten bleibt — eine feinere Aufteilung auf mehrere Normen ist danach
+  manuell in der Detailansicht möglich.
+
   **Materialien sind aus den Prüfgrundlagen entfernt** — sie hängen vom
   jeweiligen Projekt ab und gehören nicht in diese produktübergreifende
   Referenztabelle. Stattdessen zeigt die Detailansicht jetzt eine
