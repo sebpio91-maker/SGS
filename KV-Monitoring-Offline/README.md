@@ -257,19 +257,36 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   die Einschränkung gilt nur für die Such-/Browse-Liste beim Hinzufügen.
 
   **Die Kosten werden jetzt je Norm hinterlegt statt einmal pauschal pro
-  Block.** Jeder Normen-Chip hat ein eigenes „Kosten €"-Feld; direkt darunter
-  zeigt jeder der drei Blöcke (Sicherheit & Norm, FFU/Fitting, NGO/StiWa)
-  live die **Summe** der eingetragenen Einzelkosten. Ist für keine der
-  ausgewählten Normen ein Betrag hinterlegt, zeigt die Summe „Preis auf
-  Anfrage" (genau wie zuvor beim einzelnen Blockfeld); einzelne unbezifferte
-  Normen neben bezifferten tragen einfach 0 zur Summe bei. Diese Summe ist es
-  auch, die in der Warengruppen-Empfehlung im KV-Reiter (inkl. Set-Bestandteile
-  und Rabattfaktor) sowie im CSV-Export verwendet wird. Dateien aus einer
-  älteren Tool-Version (ein einzelner Kostenbetrag pro Block) werden beim
-  Laden/Zusammenführen automatisch migriert: der alte Gesamtbetrag landet
-  vollständig auf der ersten Norm der jeweiligen Liste, damit die Summe exakt
-  erhalten bleibt — eine feinere Aufteilung auf mehrere Normen ist danach
-  manuell in der Detailansicht möglich.
+  Block**, jeweils in **ganzen Euro-Schritten** (Feld „Kosten €" mit
+  Schrittweite 1). Direkt darunter zeigt jeder der drei Blöcke (Sicherheit &
+  Norm, FFU/Fitting, NGO/StiWa) live die **Summe** der eingetragenen
+  Einzelkosten. Ist für keine der ausgewählten Normen ein Betrag hinterlegt,
+  zeigt die Summe „Preis auf Anfrage" (genau wie zuvor beim einzelnen
+  Blockfeld); einzelne unbezifferte Normen neben bezifferten tragen einfach 0
+  zur Summe bei. Diese Summe ist es auch, die in der Warengruppen-Empfehlung
+  im KV-Reiter (inkl. Set-Bestandteile und Rabattfaktor) sowie im CSV-Export
+  verwendet wird. Dateien aus einer älteren Tool-Version (ein einzelner
+  Kostenbetrag pro Block) werden beim Laden/Zusammenführen automatisch
+  migriert: der alte Gesamtbetrag landet vollständig auf der ersten Norm der
+  jeweiligen Liste, damit die Summe exakt erhalten bleibt — eine feinere
+  Aufteilung auf mehrere Normen ist danach manuell in der Detailansicht
+  möglich.
+
+  **Bemerkungen hängen jetzt an der jeweiligen Norm/PPM statt pauschal am
+  ganzen Produkt.** Jede referenzierte Norm in den drei Blöcken hat ein
+  eigenes Bemerkungsfeld (z. B. „Gasgeräteverordnung! CE-Zeichen! KE nötig."
+  bei einer bestimmten Norm) — das frühere, einzelne Bemerkungsfeld für die
+  ganze Prüfgrundlage ist entfallen. Projektspezifische Hinweise, die sich
+  nicht auf die Norm im Allgemeinen, sondern auf ein konkretes Projekt
+  beziehen (z. B. „Der Artikel ist in Bezug auf [Schnittleistung] mindestens
+  gleichwertig mit [Vergleichsprodukt]" bei einer StiWa-Prüfung), gehören ins
+  bereits vorhandene freie Notizfeld des jeweiligen Kostenvoranschlags, nicht
+  in dieses produktübergreifende Normen-Feld. Dateien aus einer älteren
+  Tool-Version (eine einzelne Bemerkung pro Prüfgrundlage) werden migriert:
+  der alte Text landet auf der ersten referenzierten Norm (bevorzugt aus
+  Sicherheit & Norm, sonst FFU, sonst StiWa); gibt es in keinem der drei
+  Blöcke überhaupt eine Norm, bleibt der Text vorsorglich erhalten, bis er
+  manuell zugeordnet wird.
 
   **Materialien sind aus den Prüfgrundlagen entfernt** — sie hängen vom
   jeweiligen Projekt ab und gehören nicht in diese produktübergreifende

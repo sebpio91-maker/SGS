@@ -160,9 +160,15 @@ tr.klickbar:hover td { background:#faf9f6; }
 .normen-feld { position:relative; margin-bottom:0.7rem; }
 .normen-feld > label { font-size:0.85rem; font-weight:600; display:block; margin-bottom:0.3rem; }
 .normen-ergebnisse:not(:empty) { border:1px solid var(--border); border-radius:6px; max-height:200px; overflow-y:auto; margin-top:0.3rem; }
-.tag-chip .anlehnung-label { font-weight:400; margin-left:0.3rem; font-size:0.75rem; display:inline-flex; align-items:center; gap:0.15rem; white-space:nowrap; }
-.tag-chip .chip-kosten-label { font-weight:400; margin-left:0.3rem; font-size:0.75rem; display:inline-flex; align-items:center; gap:0.2rem; white-space:nowrap; }
-.tag-chip .chip-kosten-label input { width:70px; font-family:inherit; font-size:0.78rem; padding:0.1rem 0.3rem; border:1px solid var(--border); border-radius:4px; }
+.norm-ref-liste { margin-bottom:0.35rem; }
+.norm-ref-item { border:1px solid var(--border); border-radius:6px; padding:0.5rem 0.6rem; margin-bottom:0.4rem; background:#fbfbfa; }
+.norm-ref-kopf { display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap; margin-bottom:0.35rem; }
+.norm-ref-kopf .norm-ref-bezeichnung { flex:1; font-size:0.85rem; font-weight:600; }
+.norm-ref-kopf button { border:none; background:none; color:var(--muted); cursor:pointer; font-size:0.85rem; padding:0.1rem 0.3rem; line-height:1; }
+.norm-ref-zeile { display:flex; align-items:center; gap:0.9rem; flex-wrap:wrap; font-size:0.78rem; font-weight:400; margin-bottom:0.35rem; }
+.norm-ref-zeile label { display:inline-flex; align-items:center; gap:0.25rem; white-space:nowrap; }
+.norm-ref-zeile input[type="number"] { width:80px; font-family:inherit; font-size:0.78rem; padding:0.2rem 0.35rem; border:1px solid var(--border); border-radius:4px; }
+.norm-ref-item textarea[data-rolle="bemerkung"] { width:100%; font-family:inherit; font-size:0.8rem; padding:0.35rem 0.5rem; border:1px solid var(--border); border-radius:6px; resize:vertical; }
 .normen-summe { font-size:0.82rem; font-weight:600; margin:0 0 0.4rem 0; color:var(--accent-dark); }
 
 .pruefpunkt-item { border:1px solid var(--border); border-radius:6px; padding:0.5rem 0.6rem; margin-bottom:0.5rem; }
@@ -581,7 +587,7 @@ function normRefListeAusText(text) {
   const bez = String(text || "").trim();
   if (!bez) return [];
   const id = normFindOrCreate(bez);
-  return id ? [{ normId: id, inAnlehnungAn: false, kosten: null }] : [];
+  return id ? [{ normId: id, inAnlehnungAn: false, kosten: null, bemerkung: "" }] : [];
 }
 
 /* Migriert die frühere blockweite Einzelkosten-Angabe (z. B. "kostenSicherheitNorm" als ein
@@ -590,13 +596,33 @@ function normRefListeAusText(text) {
    nichts verloren geht; eine feinere Aufteilung ist danach manuell in der Detailansicht möglich. */
 function migriereBlockKosten(e, feldName, altesKostenFeld) {
   const refs = e[feldName] || [];
-  refs.forEach((r) => { if (r.kosten === undefined) r.kosten = null; });
+  refs.forEach((r) => {
+    if (r.kosten === undefined) r.kosten = null;
+    if (r.bemerkung === undefined) r.bemerkung = "";
+  });
   if (Object.prototype.hasOwnProperty.call(e, altesKostenFeld)) {
     const alt = e[altesKostenFeld];
     if (refs.length && alt !== null && alt !== undefined && alt !== "" && refs.every((r) => r.kosten === null)) {
       refs[0].kosten = alt;
     }
     delete e[altesKostenFeld];
+  }
+}
+
+/* Migriert die frühere blockübergreifende Einzelbemerkung (ein Freitextfeld für die ganze
+   Prüfgrundlage/das ganze Produkt) auf eine Bemerkung je referenzierter Norm - der alte Text
+   landet dabei auf der ersten Norm, die sich in Sicherheit&Norm, sonst FFU, sonst StiWa findet
+   (in dieser Reihenfolge), damit nichts verloren geht. Gibt es in keinem der drei Blöcke
+   überhaupt eine referenzierte Norm, bleibt der Text vorsorglich im alten Feld erhalten (nicht
+   gelöscht) statt verworfen zu werden - er kann dann bei Bedarf manuell einer neu angelegten
+   Norm zugeordnet werden. */
+function migriereBemerkungenProNorm(e) {
+  if (typeof e.bemerkungen !== "string" || !e.bemerkungen.trim()) { delete e.bemerkungen; return; }
+  const text = e.bemerkungen.trim();
+  const ziel = (e.normen && e.normen[0]) || (e.ffuNormen && e.ffuNormen[0]) || (e.stiwaNormen && e.stiwaNormen[0]);
+  if (ziel && !ziel.bemerkung) {
+    ziel.bemerkung = text;
+    delete e.bemerkungen;
   }
 }
 
@@ -614,7 +640,12 @@ function migriereBlockKosten(e, feldName, altesKostenFeld) {
      noch im Reiter "Normen" hochgeladen.
    - "kostenSicherheitNorm"/"kostenFfu"/"kostenStiwa" (je ein Gesamtbetrag pro Block) -> Kosten
      werden jetzt je referenzierter Norm hinterlegt (Feld "kosten" in jedem {normId, ...}-Eintrag),
-     der Block-Betrag ist die Summe daraus (siehe migriereBlockKosten). */
+     der Block-Betrag ist die Summe daraus (siehe migriereBlockKosten).
+   - "bemerkungen" (ein Freitextfeld für die ganze Prüfgrundlage/das Produkt) -> Bemerkung je
+     referenzierter Norm (Feld "bemerkung" in jedem {normId, ...}-Eintrag), da Bemerkungen sich
+     meist auf eine konkrete Norm/PPM beziehen, nicht auf das Produkt insgesamt (siehe
+     migriereBemerkungenProNorm). Projektspezifische Hinweise (z. B. Vergleichsprodukte bei
+     StiWa-Prüfungen) gehören ins freie Notizfeld des jeweiligen Kostenvoranschlags. */
 function migrierePruefgrundlage(e) {
   if (typeof e.kennzeichnung === "boolean") {
     e.kez = e.kez || e.kennzeichnung;
@@ -633,6 +664,7 @@ function migrierePruefgrundlage(e) {
   migriereBlockKosten(e, "normen", "kostenSicherheitNorm");
   migriereBlockKosten(e, "ffuNormen", "kostenFfu");
   migriereBlockKosten(e, "stiwaNormen", "kostenStiwa");
+  migriereBemerkungenProNorm(e);
 
   delete e.materialienNorm; delete e.materialienFfu; delete e.materialienStiwa; delete e.dokumente;
   return e;
@@ -643,7 +675,7 @@ function seedPruefgrundlagen() {
 function pruefgrundlageEntwurfNeu() {
   return {
     id: neueId(), bereich: "", warengruppeCode: "", warengruppeName: "", produkt: "",
-    anzahlMuster: "", bemerkungen: "", trivial: false, kez: false,
+    anzahlMuster: "", trivial: false, kez: false,
     normen: [], ffuNormen: [], stiwaNormen: []
   };
 }
@@ -2197,7 +2229,14 @@ function renderMechanikEmpfehlungKarte(kv, pa) {
 
     detailHtml = `
       <div class="toolbar-zeile" style="margin:0.4rem 0">${badges.join(" ")}</div>
-      ${gewaehlt.bemerkungen ? `<p class="hinweis"><strong>Bemerkung:</strong> ${escapeHtml(gewaehlt.bemerkungen)}</p>` : ""}
+      ${(() => {
+        const bemerkungen = [
+          ...normRefBemerkungenListe(gewaehlt.normen),
+          ...normRefBemerkungenListe(gewaehlt.ffuNormen),
+          ...normRefBemerkungenListe(gewaehlt.stiwaNormen)
+        ];
+        return bemerkungen.length ? `<p class="hinweis"><strong>Bemerkungen:</strong> ${escapeHtml(bemerkungen.join(" · "))}</p>` : "";
+      })()}
       ${kombiHtml}
       ${extraHtml}`;
   }
@@ -2664,7 +2703,7 @@ document.getElementById("btn-neue-katalog-position").addEventListener("click", (
    werden. Normen/FFU/StiWa sind jetzt Referenzlisten ({normId, inAnlehnungAn}) auf data.normen
    statt Freitext - der generische JSON.stringify-Vergleich in feldweiseGleich() funktioniert dafür
    unverändert. */
-const PRUEFGRUNDLAGE_FELDER = ["bereich", "warengruppeCode", "warengruppeName", "produkt", "normen", "anzahlMuster", "bemerkungen", "trivial", "kez", "ffuNormen", "stiwaNormen"];
+const PRUEFGRUNDLAGE_FELDER = ["bereich", "warengruppeCode", "warengruppeName", "produkt", "normen", "anzahlMuster", "trivial", "kez", "ffuNormen", "stiwaNormen"];
 
 /* ---------- Normen-/Prüfprogramm-Dokumente: Text auslesen, NICHT als Binärdatei speichern ----------
    Wird ausschließlich vom Reiter "Normen" genutzt (verarbeiteNormPdf). PDF: über die bereits
@@ -2740,12 +2779,25 @@ function normRefListeText(refs) {
   return (refs || []).map(normRefBezeichnung).join(", ");
 }
 
+/* Bemerkungen hängen jetzt an der jeweiligen Normreferenz (nicht mehr pauschal an der ganzen
+   Prüfgrundlage) - diese Liefert für die Anzeige/Suche/CSV-Export je Norm mit Bemerkung einen
+   "Bezeichnung: Text"-Eintrag. */
+function normRefBemerkungenListe(refs) {
+  return (refs || [])
+    .filter((r) => r.bemerkung && String(r.bemerkung).trim())
+    .map((r) => `${normRefBezeichnung(r)}: ${String(r.bemerkung).trim()}`);
+}
+function normRefBemerkungenText(refs) {
+  return normRefBemerkungenListe(refs).join(" · ");
+}
+
 function gefilterterPruefgrundlagen() {
   const q = normalisiere(suchbegriffe.pruefgrundlagen);
   if (!q) return data.pruefgrundlagen;
   return data.pruefgrundlagen.filter((e) => normalisiere([
-    e.bereich, e.warengruppeCode, e.warengruppeName, e.produkt, normRefListeText(e.normen), e.bemerkungen,
-    normRefListeText(e.ffuNormen), normRefListeText(e.stiwaNormen)
+    e.bereich, e.warengruppeCode, e.warengruppeName, e.produkt, normRefListeText(e.normen),
+    normRefBemerkungenText(e.normen), normRefListeText(e.ffuNormen), normRefBemerkungenText(e.ffuNormen),
+    normRefListeText(e.stiwaNormen), normRefBemerkungenText(e.stiwaNormen)
   ].join(" ")).includes(q));
 }
 
@@ -2898,7 +2950,7 @@ function initialisiereWarengruppeAuswahl(box, entwurf) {
 function normenFeldHtml(feldName, label) {
   return `<div class="normen-feld" data-normenfeld="${feldName}">
     <label>${escapeHtml(label)}</label>
-    <div class="tag-chips"></div>
+    <div class="norm-ref-liste"></div>
     <p class="normen-summe" data-normen-summe="${feldName}"></p>
     <button type="button" class="ms-btn" data-normen-btn="${feldName}">+ Norm hinzufügen ▾</button>
     <div class="ms-panel breit" data-normen-panel="${feldName}" hidden>
@@ -2925,30 +2977,39 @@ function aktualisiereNormenSumme(container, feldName, refs) {
 }
 
 function renderNormenChips(container, entwurf, feldName) {
-  const chips = container.querySelector(".tag-chips");
+  const liste = container.querySelector(".norm-ref-liste");
   const refs = entwurf[feldName] || [];
-  chips.innerHTML = refs.length
+  liste.innerHTML = refs.length
     ? refs.map((r, i) => {
         const norm = data.normen.find((n) => n.id === r.normId);
         const bez = norm ? norm.bezeichnung : "(gelöschte Norm)";
-        return `<span class="tag-chip">${norm ? normTypBadgeHtml(norm.typ) : ""}${escapeHtml(bez)}
-          <label class="chip-kosten-label">Kosten €<input type="number" step="0.01" data-idx="${i}" data-rolle="kosten" value="${r.kosten === null || r.kosten === undefined ? "" : r.kosten}" placeholder="Anfrage"></label>
-          <label class="anlehnung-label"><input type="checkbox" data-idx="${i}" data-rolle="anlehnung" ${r.inAnlehnungAn ? "checked" : ""}> in Anlehnung an</label>
-          <button type="button" data-idx="${i}" data-rolle="entfernen" title="Entfernen">✕</button>
-        </span>`;
+        return `<div class="norm-ref-item">
+          <div class="norm-ref-kopf">
+            <span class="norm-ref-bezeichnung">${norm ? normTypBadgeHtml(norm.typ) : ""}${escapeHtml(bez)}</span>
+            <button type="button" data-idx="${i}" data-rolle="entfernen" title="Entfernen">✕</button>
+          </div>
+          <div class="norm-ref-zeile">
+            <label>Kosten €<input type="number" step="1" data-idx="${i}" data-rolle="kosten" value="${r.kosten === null || r.kosten === undefined ? "" : r.kosten}" placeholder="Anfrage"></label>
+            <label><input type="checkbox" data-idx="${i}" data-rolle="anlehnung" ${r.inAnlehnungAn ? "checked" : ""}> in Anlehnung an</label>
+          </div>
+          <textarea data-idx="${i}" data-rolle="bemerkung" rows="2" placeholder="Bemerkung zu dieser Norm/PPM (z. B. Anforderungen, Prüfhinweise)…">${escapeHtml(r.bemerkung || "")}</textarea>
+        </div>`;
       }).join("")
     : `<span class="muted" style="font-size:0.78rem">Keine.</span>`;
-  chips.querySelectorAll('[data-rolle="entfernen"]').forEach((btn) => {
+  liste.querySelectorAll('[data-rolle="entfernen"]').forEach((btn) => {
     btn.addEventListener("click", () => { refs.splice(Number(btn.dataset.idx), 1); renderNormenChips(container, entwurf, feldName); });
   });
-  chips.querySelectorAll('[data-rolle="anlehnung"]').forEach((cb) => {
+  liste.querySelectorAll('[data-rolle="anlehnung"]').forEach((cb) => {
     cb.addEventListener("change", () => { refs[Number(cb.dataset.idx)].inAnlehnungAn = cb.checked; });
   });
-  chips.querySelectorAll('[data-rolle="kosten"]').forEach((inp) => {
+  liste.querySelectorAll('[data-rolle="kosten"]').forEach((inp) => {
     inp.addEventListener("input", () => {
       refs[Number(inp.dataset.idx)].kosten = inp.value === "" ? null : Number(inp.value);
       aktualisiereNormenSumme(container, feldName, refs);
     });
+  });
+  liste.querySelectorAll('[data-rolle="bemerkung"]').forEach((ta) => {
+    ta.addEventListener("input", () => { refs[Number(ta.dataset.idx)].bemerkung = ta.value; });
   });
   aktualisiereNormenSumme(container, feldName, refs);
 }
@@ -2966,7 +3027,7 @@ function baueNormenListe(container, entwurf, feldName, q, erlaubteTypen) {
   liste.querySelectorAll("[data-normid]").forEach((btn) => {
     btn.addEventListener("click", () => {
       entwurf[feldName] = entwurf[feldName] || [];
-      entwurf[feldName].push({ normId: btn.dataset.normid, inAnlehnungAn: false, kosten: null });
+      entwurf[feldName].push({ normId: btn.dataset.normid, inAnlehnungAn: false, kosten: null, bemerkung: "" });
       renderNormenChips(container, entwurf, feldName);
       baueNormenListe(container, entwurf, feldName, container.querySelector(".ms-suche").value, erlaubteTypen);
     });
@@ -2978,7 +3039,7 @@ function baueNormenListe(container, entwurf, feldName, q, erlaubteTypen) {
       data.normen.push(neu);
       speichereInLocalStorage();
       entwurf[feldName] = entwurf[feldName] || [];
-      entwurf[feldName].push({ normId: neu.id, inAnlehnungAn: false, kosten: null });
+      entwurf[feldName].push({ normId: neu.id, inAnlehnungAn: false, kosten: null, bemerkung: "" });
       renderNormenChips(container, entwurf, feldName);
       container.querySelector(".ms-suche").value = "";
       baueNormenListe(container, entwurf, feldName, "", erlaubteTypen);
@@ -3027,11 +3088,10 @@ function pruefgrundlageFormularHtml(entwurf) {
       <div></div>
       <label class="checkbox-label">Trivial<input type="checkbox" data-feld="trivial" ${entwurf.trivial ? "checked" : ""}></label>
       <label class="checkbox-label" title="Es gibt in der Norm Kennzeichnungsanforderungen, die über die Anforderungen der GPSR hinausgehen.">KEZ-Anforderungen (Kennzeichnung über GPSR hinaus)<input type="checkbox" data-feld="kez" ${entwurf.kez ? "checked" : ""}></label>
-      <label class="volle-breite">Bemerkungen<textarea data-feld="bemerkungen" rows="2">${escapeHtml(entwurf.bemerkungen)}</textarea></label>
     </div>
     <div class="pruefblock">
       <h3>Sicherheit &amp; Norm</h3>
-      ${normenFeldHtml("normen", "Normen &amp; PPM (Mehrfachauswahl)")}
+      ${normenFeldHtml("normen", "Normen & PPM (Mehrfachauswahl)")}
     </div>
     <div class="pruefblock">
       <h3>FFU/Fitting</h3>
@@ -3451,11 +3511,12 @@ document.getElementById("btn-csv").addEventListener("click", () => {
     data.katalog.forEach((k) => zeilen.push([k.kategorie, k.bezeichnung, k.kuerzel, k.sapCode, k.standardKosten]));
     csvHerunterladen(zeilen, "katalog_export.csv");
   } else if (aktiverTab === "pruefgrundlagen") {
-    const zeilen = [["Bereich", "Warengruppe-Code", "Warengruppe-Name", "Produkt", "Normen", "Kosten Sicherheit&Norm (Summe)", "Anzahl Muster", "Trivial", "KEZ (Kennzeichnung > GPSR)", "FFU-Normen", "Kosten FFU (Summe)", "StiWa-Normen", "Kosten StiWa (Summe)", "Bemerkungen"]];
+    const zeilen = [["Bereich", "Warengruppe-Code", "Warengruppe-Name", "Produkt", "Normen", "Kosten Sicherheit&Norm (Summe)", "Bemerkungen Sicherheit&Norm", "Anzahl Muster", "Trivial", "KEZ (Kennzeichnung > GPSR)", "FFU-Normen", "Kosten FFU (Summe)", "Bemerkungen FFU", "StiWa-Normen", "Kosten StiWa (Summe)", "Bemerkungen StiWa"]];
     data.pruefgrundlagen.forEach((e) => zeilen.push([
-      e.bereich, e.warengruppeCode, e.warengruppeName, e.produkt, normRefListeText(e.normen), normenBlockSumme(e.normen), e.anzahlMuster,
+      e.bereich, e.warengruppeCode, e.warengruppeName, e.produkt, normRefListeText(e.normen), normenBlockSumme(e.normen), normRefBemerkungenText(e.normen), e.anzahlMuster,
       e.trivial ? "Ja" : "Nein", e.kez ? "Ja" : "Nein",
-      normRefListeText(e.ffuNormen), normenBlockSumme(e.ffuNormen), normRefListeText(e.stiwaNormen), normenBlockSumme(e.stiwaNormen), e.bemerkungen
+      normRefListeText(e.ffuNormen), normenBlockSumme(e.ffuNormen), normRefBemerkungenText(e.ffuNormen),
+      normRefListeText(e.stiwaNormen), normenBlockSumme(e.stiwaNormen), normRefBemerkungenText(e.stiwaNormen)
     ]));
     csvHerunterladen(zeilen, "pruefgrundlagen_export.csv");
   } else if (aktiverTab === "normen") {
