@@ -232,10 +232,10 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
 
   **Normen sind jetzt eine durchsuchbare Dropdown-Mehrfachauswahl, die auf
   echte Norm-Datensätze verweist** (Reiter „Normen", siehe unten) statt auf
-  Freitext — der Button „+ Norm hinzufügen" öffnet die komplette
-  Normendatenbank zum Durchblättern, Tippen filtert; „+ Neue Norm „…"
-  anlegen" legt bei Bedarf sofort eine neue Norm an (auch schon vor dem
-  Speichern der Prüfgrundlage). Je ausgewählter Norm lässt sich zusätzlich
+  Freitext — der Button „+ Norm hinzufügen" öffnet die Normendatenbank zum
+  Durchblättern, Tippen filtert; „+ Neue Norm „…" anlegen" legt bei Bedarf
+  sofort eine neue Norm an (auch schon vor dem Speichern der
+  Prüfgrundlage). Je ausgewählter Norm lässt sich zusätzlich
   **„in Anlehnung an"** ankreuzen, falls sie nicht vollständig anwendbar ist.
   Diese Normen-Auswahl gibt es jetzt für alle drei Prüfblöcke — **Sicherheit
   & Norm, FFU/Fitting und NGO/StiWa** —, die vorherigen reinen
@@ -243,6 +243,18 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   separate „Kennzeichnung über GPSR hinaus"-Feld war inhaltlich dasselbe wie
   **KEZ-Anforderungen** und wurde deshalb zu einem einzigen Kästchen
   zusammengeführt (Tooltip erklärt die GPSR-Bedeutung).
+
+  Jedes der drei Dropdowns ist auf den jeweils passenden Normen-**Typ**
+  eingeschränkt, damit man nicht versehentlich eine Norm im falschen Block
+  auswählt: **Sicherheit & Norm** zeigt nur externe Normen und interne
+  Prüfprogramme (Typ „Norm" und „PPM"), **FFU/Fitting** nur
+  FFU-Prüfprogramme (Typ „PPM_FFU") und **NGO/StiWa** nur StiWa-Programme
+  (Typ „StiWa"). Legt man über „+ Neue Norm „…" anlegen" direkt aus einem
+  dieser Blöcke heraus eine neue Norm an, bekommt sie automatisch einen zum
+  jeweiligen Block passenden Typ (z. B. immer „PPM_FFU" im FFU-Block),
+  unabhängig davon, wie die Bezeichnung geschätzt worden wäre. Bereits
+  ausgewählte Normen (Chips) bleiben unabhängig vom Typ immer sichtbar —
+  die Einschränkung gilt nur für die Such-/Browse-Liste beim Hinzufügen.
 
   **Materialien sind aus den Prüfgrundlagen entfernt** — sie hängen vom
   jeweiligen Projekt ab und gehören nicht in diese produktübergreifende

@@ -539,6 +539,11 @@ function normTypAusBezeichnung(bez) {
   if (/^StiWa\b/i.test(b)) return "stiwa";
   return "norm";
 }
+function normTypFuerBlock(bez, erlaubteTypen) {
+  const geraten = normTypAusBezeichnung(bez);
+  if (!erlaubteTypen || !erlaubteTypen.length || erlaubteTypen.includes(geraten)) return geraten;
+  return erlaubteTypen[0];
+}
 function normTypLabel(typ) {
   const eintrag = NORM_TYP_OPTIONEN.find((o) => o.wert === typ);
   return eintrag ? eintrag.label : NORM_TYP_OPTIONEN[0].label;
@@ -2898,11 +2903,11 @@ function renderNormenChips(container, entwurf, feldName) {
   });
 }
 
-function baueNormenListe(container, entwurf, feldName, q) {
+function baueNormenListe(container, entwurf, feldName, q, erlaubteTypen) {
   const liste = container.querySelector(".ms-liste");
   const norm = normalisiere(q);
   const ausgeschlossen = new Set((entwurf[feldName] || []).map((r) => r.normId));
-  const treffer = data.normen.filter((n) => !ausgeschlossen.has(n.id) && (!norm || normalisiere(n.bezeichnung + " " + n.titel).includes(norm))).slice(0, 60);
+  const treffer = data.normen.filter((n) => !ausgeschlossen.has(n.id) && (!erlaubteTypen || erlaubteTypen.includes(n.typ || "norm")) && (!norm || normalisiere(n.bezeichnung + " " + n.titel).includes(norm))).slice(0, 60);
   let html = treffer.map((n) => `<button type="button" class="ss-option" data-normid="${escapeHtml(n.id)}">${normTypBadgeHtml(n.typ)}${escapeHtml(n.bezeichnung)}${n.titel ? ` <span class="muted">– ${escapeHtml(n.titel)}</span>` : ""}</button>`).join("");
   const exaktVorhanden = data.normen.some((n) => normalisiere(n.bezeichnung) === norm);
   if (q.trim() && !exaktVorhanden) html += `<button type="button" class="ss-option ss-neu" data-neu="1">+ Neue Norm „${escapeHtml(q.trim())}" anlegen</button>`;
@@ -2913,25 +2918,25 @@ function baueNormenListe(container, entwurf, feldName, q) {
       entwurf[feldName] = entwurf[feldName] || [];
       entwurf[feldName].push({ normId: btn.dataset.normid, inAnlehnungAn: false });
       renderNormenChips(container, entwurf, feldName);
-      baueNormenListe(container, entwurf, feldName, container.querySelector(".ms-suche").value);
+      baueNormenListe(container, entwurf, feldName, container.querySelector(".ms-suche").value, erlaubteTypen);
     });
   });
   const neuBtn = liste.querySelector("[data-neu]");
   if (neuBtn) {
     neuBtn.addEventListener("click", () => {
-      const neu = { id: neueId(), bezeichnung: q.trim(), titel: "", typ: normTypAusBezeichnung(q.trim()), dateiname: "", hochgeladenAm: "", rohtext: "", pruefpunkte: [] };
+      const neu = { id: neueId(), bezeichnung: q.trim(), titel: "", typ: normTypFuerBlock(q.trim(), erlaubteTypen), dateiname: "", hochgeladenAm: "", rohtext: "", pruefpunkte: [] };
       data.normen.push(neu);
       speichereInLocalStorage();
       entwurf[feldName] = entwurf[feldName] || [];
       entwurf[feldName].push({ normId: neu.id, inAnlehnungAn: false });
       renderNormenChips(container, entwurf, feldName);
       container.querySelector(".ms-suche").value = "";
-      baueNormenListe(container, entwurf, feldName, "");
+      baueNormenListe(container, entwurf, feldName, "", erlaubteTypen);
     });
   }
 }
 
-function initialisiereNormenFeld(box, entwurf, feldName) {
+function initialisiereNormenFeld(box, entwurf, feldName, erlaubteTypen) {
   const container = box.querySelector(`[data-normenfeld="${feldName}"]`);
   if (!container) return;
   renderNormenChips(container, entwurf, feldName);
@@ -2943,10 +2948,10 @@ function initialisiereNormenFeld(box, entwurf, feldName) {
     const warOffen = !panel.hidden;
     document.querySelectorAll(".ms-panel").forEach((p) => (p.hidden = true));
     panel.hidden = warOffen;
-    if (!warOffen) { suche.value = ""; baueNormenListe(container, entwurf, feldName, ""); suche.focus(); }
+    if (!warOffen) { suche.value = ""; baueNormenListe(container, entwurf, feldName, "", erlaubteTypen); suche.focus(); }
   });
   panel.addEventListener("click", (e) => e.stopPropagation());
-  suche.addEventListener("input", () => baueNormenListe(container, entwurf, feldName, suche.value));
+  suche.addEventListener("input", () => baueNormenListe(container, entwurf, feldName, suche.value, erlaubteTypen));
 }
 
 /* Übersicht, in welchen Kostenvoranschlägen diese Prüfgrundlage verwendet wird (als Hauptprodukt
@@ -2976,17 +2981,17 @@ function pruefgrundlageFormularHtml(entwurf) {
     </div>
     <div class="pruefblock">
       <h3>Sicherheit &amp; Norm</h3>
-      ${normenFeldHtml("normen", "Normen (Mehrfachauswahl)")}
+      ${normenFeldHtml("normen", "Normen &amp; PPM (Mehrfachauswahl)")}
       <label style="max-width:240px">Kosten Sicherheit &amp; Norm €<input type="number" step="0.01" data-feld="kostenSicherheitNorm" value="${zahlOderLeer(entwurf.kostenSicherheitNorm)}"></label>
     </div>
     <div class="pruefblock">
       <h3>FFU/Fitting</h3>
-      ${normenFeldHtml("ffuNormen", "Normen (Mehrfachauswahl)")}
+      ${normenFeldHtml("ffuNormen", "PPM_FFU (Mehrfachauswahl)")}
       <label style="max-width:240px">Kosten FFU €<input type="number" step="0.01" data-feld="kostenFfu" value="${zahlOderLeer(entwurf.kostenFfu)}"></label>
     </div>
     <div class="pruefblock">
       <h3>NGO/StiWa</h3>
-      ${normenFeldHtml("stiwaNormen", "Normen (Mehrfachauswahl)")}
+      ${normenFeldHtml("stiwaNormen", "StiWa-Programme (Mehrfachauswahl)")}
       <label style="max-width:240px">Kosten StiWa €<input type="number" step="0.01" data-feld="kostenStiwa" value="${zahlOderLeer(entwurf.kostenStiwa)}"></label>
     </div>
     ${pruefgrundlageVerwendungHtml(entwurf)}`;
@@ -3003,7 +3008,8 @@ function oeffnePruefgrundlageModal(entwurf) {
       ${istNeu ? "" : `<button class="danger" id="pg-loeschen" style="margin-left:auto">Löschen</button>`}
     </div>`;
   initialisiereWarengruppeAuswahl(box, entwurf);
-  ["normen", "ffuNormen", "stiwaNormen"].forEach((f) => initialisiereNormenFeld(box, entwurf, f));
+  const normenFeldErlaubteTypen = { normen: ["norm", "ppm"], ffuNormen: ["ppm_ffu"], stiwaNormen: ["stiwa"] };
+  Object.keys(normenFeldErlaubteTypen).forEach((f) => initialisiereNormenFeld(box, entwurf, f, normenFeldErlaubteTypen[f]));
   box.querySelectorAll('[data-action="pg-kv-oeffnen"]').forEach((btn) => {
     btn.addEventListener("click", () => { aktiveKvId = btn.dataset.id; schliesseOverlay(); wechsleTab("kvs"); });
   });
