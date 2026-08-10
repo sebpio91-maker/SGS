@@ -150,15 +150,31 @@ tr.klickbar:hover td { background:#faf9f6; }
 .dokument-item summary button { margin-left:auto; }
 .dokument-text { white-space:pre-wrap; font-family:inherit; font-size:0.8rem; max-height:320px; overflow-y:auto; background:#faf9f6; border-top:1px solid var(--border); padding:0.6rem 0.8rem; margin:0; }
 
+.ss-feld { position:relative; margin-bottom:0.7rem; }
+.ss-feld > label { display:block; font-size:0.85rem; font-weight:600; margin-bottom:0.25rem; }
+.ss-option { display:block; width:100%; text-align:left; padding:0.3rem 0.5rem; border:none; background:none; cursor:pointer; font-size:0.82rem; border-radius:4px; color:var(--text); font-family:inherit; }
+.ss-option:hover { background:#f0f4f3; }
+.ss-option.ss-neu { color:var(--accent-dark); font-weight:600; border-top:1px solid var(--border); margin-top:0.2rem; padding-top:0.4rem; }
+.ss-leer { padding:0.3rem 0.5rem; font-size:0.78rem; color:var(--muted); }
+.normen-feld { margin-bottom:0.7rem; }
+.normen-feld > label { font-size:0.85rem; font-weight:600; display:block; margin-bottom:0.3rem; }
+.normen-ergebnisse:not(:empty) { border:1px solid var(--border); border-radius:6px; max-height:200px; overflow-y:auto; margin-top:0.3rem; }
+.tag-chip .anlehnung-label { font-weight:400; margin-left:0.3rem; font-size:0.75rem; display:inline-flex; align-items:center; gap:0.15rem; white-space:nowrap; }
+
 .pruefpunkt-item { border:1px solid var(--border); border-radius:6px; padding:0.5rem 0.6rem; margin-bottom:0.5rem; }
 .pruefpunkt-kopf { display:flex; gap:0.4rem; margin-bottom:0.35rem; }
 .pruefpunkt-kopf input[data-feld="titel"] { flex:1; }
 .pruefpunkt-item input, .pruefpunkt-item textarea { font-family:inherit; font-size:0.85rem; padding:0.35rem 0.5rem; border:1px solid var(--border); border-radius:6px; }
 .pruefpunkt-item textarea { width:100%; resize:vertical; }
 
-#overlay { position:fixed; inset:0; background:rgba(0,0,0,0.35); display:none; align-items:flex-start; justify-content:center; overflow-y:auto; padding:2rem 1rem; z-index:20; }
+/* #overlay-box scrollt sich selbst (statt der ganzen Seite/#overlay) und ist auf die Höhe des
+   sichtbaren Fensters begrenzt - sonst "schwebt" die per position:sticky fixierte Aktionsleiste
+   (Speichern/Abbrechen/Löschen) bereits beim Öffnen über noch ungescrolltem Inhalt und verdeckt
+   ihn teilweise, weil ihre "geklebte" Position dann nicht mit dem sichtbaren Fensterrand
+   übereinstimmt. Mit eigenem Scrollcontainer bleiben Sichtfenster und Klebe-Bezugsrahmen identisch. */
+#overlay { position:fixed; inset:0; background:rgba(0,0,0,0.35); display:none; align-items:flex-start; justify-content:center; padding:2rem 1rem; z-index:20; }
 #overlay.sichtbar { display:flex; }
-#overlay-box { background:var(--card); border-radius:10px; max-width:960px; width:100%; padding:1.2rem 1.5rem; margin-bottom:2rem; }
+#overlay-box { background:var(--card); border-radius:10px; max-width:960px; width:100%; max-height:calc(100vh - 4rem); overflow-y:auto; padding:1.2rem 1.5rem; margin-bottom:2rem; }
 #overlay-box h2 { margin-top:0; }
 .merge-section { margin-top:1.2rem; }
 .merge-section h3 { font-size:0.95rem; margin-bottom:0.4rem; }
@@ -300,16 +316,17 @@ input[type=file] { display:none; }
 <section class="seite" id="seite-normen" hidden>
   <div class="toolbar-zeile" style="margin-bottom:0.6rem">
     <button id="btn-neue-norm">+ Neue Norm (manuell)</button>
-    <button id="btn-norm-pdf-upload">📄 Norm-PDF(s) hochladen (Prüfpunkte automatisch auslesen)</button>
-    <input type="file" id="norm-pdf-upload-input" accept="application/pdf" multiple>
+    <button id="btn-norm-pdf-upload">📄 Norm(en)/Prüfprogramm(e) hochladen (PDF oder .docx)</button>
+    <input type="file" id="norm-pdf-upload-input" accept=".pdf,.docx" multiple>
   </div>
-  <p class="hinweis">Beim PDF-Upload wird — genau wie bei den Prüfgrundlagen-Dokumenten — nur der ausgelesene
-    Text gespeichert, nicht die Datei selbst. Zusätzlich wird versucht, die nummerierten Abschnitte der Norm
-    (z. B. „5.3.1 Scher- und Quetschstellen …") automatisch als einzelne Prüfpunkte zu erkennen und
-    aufzulisten. Das ist ein automatischer Best-Effort-Versuch anhand der Nummerierung — bei Tabellen oder
-    ungewöhnlichen Layouts können einzelne Punkte falsch getrennt werden oder fehlen; unten in der
-    Detailansicht lässt sich jeder Prüfpunkt frei bearbeiten, zusammenführen, löschen oder neu anlegen.
-    Mehrere PDFs auf einmal hochladen legt für jede Datei eine eigene Norm an.</p>
+  <p class="hinweis">PDF oder .docx hochladen — es wird nur der ausgelesene Text gespeichert, nicht die
+    Datei selbst. Bei PDFs wird zusätzlich versucht, die nummerierten Abschnitte der Norm (z. B. „5.3.1
+    Scher- und Quetschstellen …") automatisch als einzelne Prüfpunkte zu erkennen und aufzulisten — ein
+    automatischer Best-Effort-Versuch anhand der Nummerierung; bei Tabellen oder ungewöhnlichen Layouts
+    können einzelne Punkte falsch getrennt werden oder fehlen. Bei .docx-Uploads ist diese automatische
+    Erkennung (noch) nicht möglich, dort bleibt die Prüfpunkte-Liste zunächst leer. In beiden Fällen lässt
+    sich jeder Prüfpunkt in der Detailansicht frei bearbeiten, zusammenführen, löschen oder neu anlegen.
+    Mehrere Dateien auf einmal hochladen legt für jede eine eigene Norm an.</p>
   <div class="layout">
     <div class="liste-panel">
       <h2>Normen</h2>
@@ -477,32 +494,84 @@ function seedKatalog() {
 function seedPruefgrundlagenRoh() {
   return [{"bereich": "Baumarkt 2", "warengruppeCode": "370010", "warengruppeName": "370.010 Gasgrills", "produkt": "Gasgrill", "bemerkungen": "Gasgeräteverordnung! CE-Zeichen! KE nötig. Prüfung über Asien", "trivial": false, "norm": "DIN EN 1860-1", "anzahlMuster": "Anfrage", "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "370020", "warengruppeName": "370.020 Kohlegrills", "produkt": "Kohlegrills", "bemerkungen": "Für GS-Projekte EK-Beschlussliste EK5/AK8 beachten!", "trivial": false, "norm": "DIN EN 1860-1", "anzahlMuster": 2, "kez": true, "kostenSicherheitNorm": 1450.0, "kostenSicherheitNormAlt": 1920.0, "kostenTp": 1060.0, "ffuHinweis": "163_PPM_FFU", "kostenFfu": 820.0, "stiwaHinweis": "StiWa 06/2014", "kostenStiwa": 2420.0}, {"bereich": "Baumarkt 2", "warengruppeCode": "370030", "warengruppeName": "370.030 Grillzubehör", "produkt": "Feuerzeug", "bemerkungen": "", "trivial": false, "norm": "ISO 22702", "anzahlMuster": 2, "kez": true, "kostenSicherheitNorm": 900.0, "kostenSicherheitNormAlt": 900.0, "kostenTp": 620.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "370030", "warengruppeName": "370.030 Grillzubehör", "produkt": "Grillbürsten", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 270.0, "kostenSicherheitNormAlt": 480.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "370030", "warengruppeName": "370.030 Grillzubehör", "produkt": "Anzündkamin", "bemerkungen": "", "trivial": false, "norm": "in Anlehnung an DIN EN 1860-1", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 360.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "370030", "warengruppeName": "370.030 Grillzubehör", "produkt": "Grillzubehör / Kaminzubehör", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": 480.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "370030", "warengruppeName": "370.030 Grillzubehör", "produkt": "Campingkocher, Campinglampe", "bemerkungen": "", "trivial": false, "norm": "", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "370030", "warengruppeName": "370.030 Grillzubehör", "produkt": "Grillabdeckung", "bemerkungen": "", "trivial": false, "norm": "102_PPM ", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 320.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "371050", "warengruppeName": "371.050 Gartenwerkzeug handgeführt u. Zubehör", "produkt": "Abflammgerät", "bemerkungen": "", "trivial": false, "norm": "", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "371050", "warengruppeName": "371.050 Gartenwerkzeug handgeführt u. Zubehör", "produkt": "Erntehelfer", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 360.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "371099", "warengruppeName": "371.099 Gartengeräte u. -zubehör (Sonstige)", "produkt": "Gartengerätehaus", "bemerkungen": "Korrosionsbeständigkeit \nMetalle müssen korrosionsgeschützt (Lackierung, Pulverbeschichtung, verzinkt) sein. Aluminium gilt als korrosionsbeständig. \n\nHerstellernachweis für tragende Kunststoffteile Der Kunststoff muss UV- und temperaturbeständig (min. 60°C) sein.  Es wird ausschließlich ein Nachweis (z.B. Datenblatt etc.) vom Kunststoffhersteller akzeptiert.", "trivial": false, "norm": "EK5/AK8 12-04.1:2012 ", "anzahlMuster": 2, "kez": true, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 960.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "371099", "warengruppeName": "371.099 Gartengeräte u. -zubehör (Sonstige)", "produkt": "Gartensack", "bemerkungen": "", "trivial": false, "norm": "111_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 480.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "371099", "warengruppeName": "371.099 Gartengeräte u. -zubehör (Sonstige)", "produkt": "Kniekissen", "bemerkungen": "PSA beachten!", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": 480.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "371099", "warengruppeName": "371.099 Gartengeräte u. -zubehör (Sonstige)", "produkt": "(Gewebe-)Planen", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": 360.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "371099", "warengruppeName": "371.099 Gartengeräte u. -zubehör (Sonstige)", "produkt": "Vlies", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 360.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "371099", "warengruppeName": "371.099 Gartengeräte u. -zubehör (Sonstige)", "produkt": "Rasenkante", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 360.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "371099", "warengruppeName": "371.099 Gartengeräte u. -zubehör (Sonstige)", "produkt": "Gartenzubehör", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": 480.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "371099", "warengruppeName": "371.099 Gartengeräte u. -zubehör (Sonstige)", "produkt": "Tiervertreiber", "bemerkungen": "Tiervertreiber Universal \nSicherheit / Normprüfung - Produktsicherheit\nFür E&E Produkte immer nur Kurzprüfungen im Labor\nAnlehnung an 100_PPM\n- IP44\n- Glühdraht                                                  750€\nSicherheit / Normprüfung - Produktsicherheit\nAkku-Sicherheitskurzcheck\nProdukte mit Akku jeder Größe werden nach 163_PPM_TGS_REV_A_ Akku-Sicherheitskurzcheck Lidl geprüft                                                             950€\n\n\nTiervertreiber Maulwurf\nSicherheit / Normprüfung - Produktsicherheit\nTeilprüfung nach 0100_PPM\n- Kurzschluss\n- Erwärmung\n- Mech. Festigkeit\n- etc.                                                                 750€", "trivial": false, "norm": "Sicherheit / Normprüfung - Produktsicherheit     Teilprüfung Anlehnung an 100_PPM\n- IP44\n- Glühdraht\nAkku-Sicherheitskurzcheck\nProdukte mit Akku jeder Größe werden nach 163_PPM_TGS_REV_A_ Akku-Sicherheitskurzcheck Lidl geprüft", "anzahlMuster": 5, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 1700.0, "kostenTp": null, "ffuHinweis": "FFU laborintern ohne Probanden 30SER (70%/50%/10-30%)\nFFU Prüfung nach internem PPM (nur Falls im PA angegeben)\nLaborintern ohne Prüfung der Gebrauchstauglichkeit mittels Probanden. Es werden Punkte zur Funktionalität, Verarbeitungsqualität, Verständlichkeit der BDA geprüft)", "kostenFfu": 580.0, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "371099", "warengruppeName": "371.099 Gartengeräte u. -zubehör (Sonstige)", "produkt": "Gerätehalter", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 360.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "371099", "warengruppeName": "371.099 Gartengeräte u. -zubehör (Sonstige)", "produkt": "Pflanzenroller", "bemerkungen": "Korrosion (EN ISO 4628-3) wenn Bauteile nicht durch Lackierung, Beschichtung , Werkstoffauswahl geschützt, Note Ri = 1\n\nKünstliche Alterung bei Kunststoffbodenplatte \nISO 4892 500h Kerbschlagbiegeprüfung (20% Reduzierung im Vergl. zur unbehandelten Probe)\n\nim EK gefordert: Typenschild + Herstellererklärung zur Tragfähigkeit der Rollen + der verwendeten Materialien", "trivial": false, "norm": "EK5/AK5 14-04.0-2014 ", "anzahlMuster": 4, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 960.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "371099", "warengruppeName": "371.099 Gartengeräte u. -zubehör (Sonstige)", "produkt": "Komposter", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 360.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "371099", "warengruppeName": "371.099 Gartengeräte u. -zubehör (Sonstige)", "produkt": "Bodenmesser", "bemerkungen": "ggf. EE", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 360.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "371099", "warengruppeName": "371.099 Gartengeräte u. -zubehör (Sonstige)", "produkt": "Kübel / Eimer", "bemerkungen": "für alle Eimer, die auf einer Baustelle verwendet werden können", "trivial": false, "norm": "102_PPM + Belastungsprüfung \n(1,5-fache Nennlast für 60min.)", "anzahlMuster": 3, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 600.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "371099", "warengruppeName": "371.099 Gartengeräte u. -zubehör (Sonstige)", "produkt": "Trolley", "bemerkungen": "UV-Beständigkeit\nTragende Teile aus Kunststoff\nKorrosion\nnach DIN EN ISO 6270-2, 5 Zyklen\nnicht erfordlerlich bei galvanisch- oder pulverbeschichteten Bauteilen", "trivial": false, "norm": "EK5/AK5 06-01.3:2011", "anzahlMuster": 4, "kez": true, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 1200.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "371099", "warengruppeName": "371.099 Gartengeräte u. -zubehör (Sonstige)", "produkt": "Kaminholzregal", "bemerkungen": "", "trivial": false, "norm": "in Anlehnung an DIN EN 14749", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 600.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "372020", "warengruppeName": "372.020 Bewässerungsgeräte u. -systeme", "produkt": "Gartenbrause", "bemerkungen": "", "trivial": false, "norm": "EK5/AK8 13-05.02:2017 (Gartenbewässerungsartikel)", "anzahlMuster": 4, "kez": true, "kostenSicherheitNorm": 720.0, "kostenSicherheitNormAlt": 960.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "372020", "warengruppeName": "372.020 Bewässerungsgeräte u. -systeme", "produkt": "(Schlauch-)Verbinder", "bemerkungen": "", "trivial": false, "norm": "EK5/AK8 13-05.02:2017 (Gartenbewässerungsartikel)", "anzahlMuster": 4, "kez": true, "kostenSicherheitNorm": 720.0, "kostenSicherheitNormAlt": 960.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "372020", "warengruppeName": "372.020 Bewässerungsgeräte u. -systeme", "produkt": "Beregner", "bemerkungen": "CE-Kennzeichnung! KE nötig.", "trivial": false, "norm": "EK5/AK8 13-05.02:2017 (Gartenbewässerungsartikel)", "anzahlMuster": 4, "kez": true, "kostenSicherheitNorm": 1080.0, "kostenSicherheitNormAlt": 960.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "372020", "warengruppeName": "372.020 Bewässerungsgeräte u. -systeme", "produkt": "Bewässerungscomputer", "bemerkungen": "EE", "trivial": false, "norm": "Sicherheit / Normprüfung - Produktsicherheit\nFür E&E Produkte immer nur Kurzprüfungen im Labor\nKosten richten sich Produktart \nEK5/AK8 13-05.02:2017\n- Cl. 4.6 Überdruck\n- Cl. 4.7 Fallprüfung", "anzahlMuster": 6, "kez": true, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 450.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "372030", "warengruppeName": "372.030 Gartenschläuche u. Aufroller", "produkt": "Gartenschlauch", "bemerkungen": "Verkaufsverpackung bereits im PRE-Test prüfen! Warnhinweise müssen vorhanden sein!", "trivial": false, "norm": "EK5/AK8 13-05.02:2017 (Gartenbewässerungsartikel)", "anzahlMuster": 4, "kez": true, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": 960.0, "kostenTp": null, "ffuHinweis": "004_PPM_FFU", "kostenFfu": 600.0, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "372030", "warengruppeName": "372.030 Gartenschläuche u. Aufroller", "produkt": "Schlauchaufroller", "bemerkungen": "", "trivial": false, "norm": "EK5/AK8 13-05.02:2017 (Gartenbewässerungsartikel)", "anzahlMuster": 4, "kez": true, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": 960.0, "kostenTp": null, "ffuHinweis": "038_PPM_FFU", "kostenFfu": 960.0, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "372099", "warengruppeName": "372.099 Gartenbewässerung (Sonstige)", "produkt": "Gießkanne", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 180.0, "kostenSicherheitNormAlt": 360.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "372099", "warengruppeName": "372.099 Gartenbewässerung (Sonstige)", "produkt": "Drucksprüher >3L", "bemerkungen": "CE-Kennzeichnung! KE nötig.\nDie Einstufung der Geräte erfolgt nach Artikel 9 der Druckgeräterichtlinie\n\nPunkt 8 Kunststoffe schriftliche \nUnbedenklichkeitserklärungen ", "trivial": false, "norm": "EK5 / TA6 14-01:2023 (Drucksprühgerät >3L)", "anzahlMuster": 5, "kez": true, "kostenSicherheitNorm": 720.0, "kostenSicherheitNormAlt": 960.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "372099", "warengruppeName": "372.099 Gartenbewässerung (Sonstige)", "produkt": "Regentonne", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 180.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "372099", "warengruppeName": "372.099 Gartenbewässerung (Sonstige)", "produkt": "Drucksprüher <3L", "bemerkungen": "/ :2022 ist noch im Entwurf ", "trivial": false, "norm": "EN ISO 19932-1 & -2:2013 ", "anzahlMuster": 5, "kez": true, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 1260.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "373010", "warengruppeName": "373.010 Pflanzgefäße u. Gewächshäuser", "produkt": "Pflanztöpfe", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": 360.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "373010", "warengruppeName": "373.010 Pflanzgefäße u. Gewächshäuser", "produkt": "Begehbares Gewächshaus", "bemerkungen": "Herstellernachweis für tragende Kunststoffteile\nDer Kunststoff muss UV- und temperaturbeständig (min. 60°C) sein.  \nEs wird ausschließlich ein Nachweis (z.B. Datenblatt etc.) vom Kunststoffhersteller akzeptiert. \n\nKorrosionsbeständigkeit \nMetalle müssen korrosionsgeschützt (Lackierung, Pulverbeschichtung, verzinkt) sein. \nAluminium gilt als korrosionsbeständig. ", "trivial": false, "norm": "EK5/AK8 12-03.1:2012", "anzahlMuster": "", "kez": true, "kostenSicherheitNorm": 1080.0, "kostenSicherheitNormAlt": 960.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "373020", "warengruppeName": "373.020 Zubehör Anzucht u. Bepflanzung", "produkt": "Pflanzenschutz", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 720.0, "kostenSicherheitNormAlt": 360.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "375100", "warengruppeName": "375.100 Gartenhäuser", "produkt": "Gartengerätehaus", "bemerkungen": "Korrosionsbeständigkeit \nMetalle müssen korrosionsgeschützt (Lackierung, Pulverbeschichtung, verzinkt) sein. Aluminium gilt als korrosionsbeständig. \n\nHerstellernachweis für tragende Kunststoffteile Der Kunststoff muss UV- und temperaturbeständig (min. 60°C) sein.  Es wird ausschließlich ein Nachweis (z.B. Datenblatt etc.) vom Kunststoffhersteller akzeptiert.", "trivial": false, "norm": "EK5/AK8 12-04.1:2012 ", "anzahlMuster": 2, "kez": true, "kostenSicherheitNorm": null, "kostenSicherheitNormAlt": 960.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "385020", "warengruppeName": "385.020 Lacke", "produkt": "Folien", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 720.0, "kostenSicherheitNormAlt": 360.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "385040", "warengruppeName": "385.040 Malerwerkzeug", "produkt": "Malerpinsel", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": 480.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "385040", "warengruppeName": "385.040 Malerwerkzeug", "produkt": "Klebeband", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": 480.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "385040", "warengruppeName": "385.040 Malerwerkzeug", "produkt": "Auspresspistole", "bemerkungen": "", "trivial": false, "norm": "EK5/AK2 23-1-2023", "anzahlMuster": 2, "kez": true, "kostenSicherheitNorm": 900.0, "kostenSicherheitNormAlt": 960.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "385040", "warengruppeName": "385.040 Malerwerkzeug", "produkt": "Vlies / Folie", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 480.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "385310", "warengruppeName": "385.310 Türen u. Fenster", "produkt": "Dichtungen", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 360.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "385310", "warengruppeName": "385.310 Türen u. Fenster", "produkt": "Filzgleiter", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 360.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387140", "warengruppeName": "387.140 Spann- u. Klemmwerkzeuge", "produkt": "Rohrschraubzwinge", "bemerkungen": "", "trivial": false, "norm": "in Anlehnung an / according to\nEK5/AK2 18-01", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 960.0, "kostenTp": 480.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387140", "warengruppeName": "387.140 Spann- u. Klemmwerkzeuge", "produkt": "Schraubstock", "bemerkungen": "", "trivial": false, "norm": "PA 80-3-5.2", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 960.0, "kostenTp": 480.0, "ffuHinweis": "515_PPM_FFU_REV_A_Schraubstock", "kostenFfu": 960.0, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387140", "warengruppeName": "387.140 Spann- u. Klemmwerkzeuge", "produkt": "(Schraub-)Zwingen", "bemerkungen": "", "trivial": false, "norm": "DIN 5117", "anzahlMuster": 2, "kez": true, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 1200.0, "kostenTp": 600.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387140", "warengruppeName": "387.140 Spann- u. Klemmwerkzeuge", "produkt": "Einhandzwinge ", "bemerkungen": "", "trivial": false, "norm": "EK5/AK2 18-01:2018 ", "anzahlMuster": 3, "kez": true, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 960.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387150", "warengruppeName": "387.150 Prüf- u. Messwerkzeuge", "produkt": "Einfache Messinstrumente ", "bemerkungen": "Multiwinkel / Lineal / Zollstock / usw.", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 480.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387200", "warengruppeName": "387.200 Werkzeugaufbewahrung", "produkt": "Sortimentsbox", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387200", "warengruppeName": "387.200 Werkzeugaufbewahrung", "produkt": "Magnete", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 480.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387200", "warengruppeName": "387.200 Werkzeugaufbewahrung", "produkt": "Boxen", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387200", "warengruppeName": "387.200 Werkzeugaufbewahrung", "produkt": "Arbeitsbock", "bemerkungen": "", "trivial": false, "norm": "", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387200", "warengruppeName": "387.200 Werkzeugaufbewahrung", "produkt": "Magnetwerkzeugset mit LED-Lampe", "bemerkungen": "EE", "trivial": false, "norm": "Sicherheit- / Normprüfung  / Laborprüfzeit 300 min.\nrisikobasierte Teilprüfung nach 0100_PPM 750€\n- Kurzschluss\n- Erwärmung\n- Mech. Festigkeit\n- Zugägnlichkeit der Knopfzellen\n- etc.\nSicherheit- / Normprüfung / Laborprüfzeit 270 min.\n102_PPM Mechanische Sicherheit 660€", "anzahlMuster": 3, "kez": true, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": 1410.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387300", "warengruppeName": "387.300 Kleinteilesets u. Eisenwaren", "produkt": "Blechschrauben", "bemerkungen": "", "trivial": false, "norm": "DIN 968 & DIN EN ISO 1478 & DIN EN ISO 3506-4", "anzahlMuster": "", "kez": true, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387300", "warengruppeName": "387.300 Kleinteilesets u. Eisenwaren", "produkt": "Spanplattenschrauben", "bemerkungen": "", "trivial": false, "norm": "ÖNORM M 5027 &DIN EN 14592 &DIN EN ISO 9227 & PA565", "anzahlMuster": "", "kez": true, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387300", "warengruppeName": "387.300 Kleinteilesets u. Eisenwaren", "produkt": "Sechskantschrauben", "bemerkungen": "", "trivial": false, "norm": "DIN EN ISO 4014 &DIN 13-20", "anzahlMuster": "", "kez": true, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387300", "warengruppeName": "387.300 Kleinteilesets u. Eisenwaren", "produkt": "Nägel", "bemerkungen": "", "trivial": false, "norm": "DIN EN 10230-1 &DIN EN 14592", "anzahlMuster": "", "kez": true, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387300", "warengruppeName": "387.300 Kleinteilesets u. Eisenwaren", "produkt": "Dübel", "bemerkungen": "", "trivial": false, "norm": "DIN EN 1992-4", "anzahlMuster": "", "kez": true, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387300", "warengruppeName": "387.300 Kleinteilesets u. Eisenwaren", "produkt": "Holzverbinder", "bemerkungen": "", "trivial": false, "norm": "EN 14545", "anzahlMuster": "", "kez": true, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387300", "warengruppeName": "387.300 Kleinteilesets u. Eisenwaren", "produkt": "Kabelbinder", "bemerkungen": "EE", "trivial": false, "norm": "Sicherheit- / Normprüfung\nTeilprüfung nach EN IEC 62275:2019\n- 8 Aufbau\n- 9.2 Installationsprüfung", "anzahlMuster": 3, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 400.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387300", "warengruppeName": "387.300 Kleinteilesets u. Eisenwaren", "produkt": "Schrumpfschlauch-, Kabelstoßverbinder-, Lüsterklemmen-, Lötverbinderset, Kabelschellenset 5 fach sort", "bemerkungen": "EE", "trivial": false, "norm": "Sicherheit / Normprüfung - Produktsicherheit\nTeilprüfung nach DIN EN 60998-2-1\nTeilprüfung nach DIN EN 60684-1", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 750.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387300", "warengruppeName": "387.300 Kleinteilesets u. Eisenwaren", "produkt": "Kleinteileset Niedervolt 7-fach sort.", "bemerkungen": "EE", "trivial": false, "norm": "Sicherheit / Normprüfung - Produktsicherheit Teilprüfung\nSchneidklemmen (CE): EN 60998-2-3\n- Cl.17 - Luft- und Kriechstrecken\n- Cl. 13.3 & 13.4 Hochspannung & Isolationsprüfung\n- Cl.16.3 Kugeldruckpr.\n- Cl. 18 Glühdrahtpr.\nSicherheit / Normprüfung - Produktsicherheit Teilprüfung\nKlettkabelinder: 102_PPM\nSicherheit / Normprüfung - Produktsicherheit Teilprüfung\nVerbindersortiment und Schelle: 102_PPM\nSchrumpfschlauch: 102_PPM\nKrokodilklemmen (24 V): 102_PPM", "anzahlMuster": 3, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 3219.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387300", "warengruppeName": "387.300 Kleinteilesets u. Eisenwaren", "produkt": "Schrumpfschlauch-Sortiment 8fach sort.", "bemerkungen": "EE", "trivial": false, "norm": "Sicherheit- / Normprüfung Teilprüfung in Anlehnung an \nEN IEC 62775:2019 und EN 60998-2-3:2004 und allgemeine Sicherheit", "anzahlMuster": 3, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 950.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387300", "warengruppeName": "387.300 Kleinteilesets u. Eisenwaren", "produkt": "Haken- und Dübelsortiment, Kabelbindersortiment, Nagelsortiment, Dübelsortiment 4fach sort.", "bemerkungen": "EE", "trivial": false, "norm": "Teilprüfung nach 1992-4 (Mech)\nTeilprüfung nach DIN EN 62275 (Kabelbinder)", "anzahlMuster": 6, "kez": true, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 710.0, "kostenTp": null, "ffuHinweis": "110_PPM_FFU", "kostenFfu": 460.0, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387400", "warengruppeName": "387.400 Transport", "produkt": "Rollbrett", "bemerkungen": "", "trivial": false, "norm": "EK5-AK5 14-04.0-2014 PfG Transportroller / Möbelroller", "anzahlMuster": "", "kez": true, "kostenSicherheitNorm": 900.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387400", "warengruppeName": "387.400 Transport", "produkt": "Hebeschlinge", "bemerkungen": "", "trivial": false, "norm": "", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 1450.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387400", "warengruppeName": "387.400 Transport", "produkt": "Sackkarre", "bemerkungen": "", "trivial": false, "norm": "EK5/AK5 06-01.3:2011", "anzahlMuster": "", "kez": true, "kostenSicherheitNorm": 1450.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387699", "warengruppeName": "387.699 Werkstatt -Hartwaren (Sonstige)", "produkt": "Handwerkzeuge", "bemerkungen": "", "trivial": false, "norm": "", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": null, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387699", "warengruppeName": "387.699 Werkstatt -Hartwaren (Sonstige)", "produkt": "Gewindestangen", "bemerkungen": "", "trivial": true, "norm": "DIN 976-1", "anzahlMuster": 2, "kez": true, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 460.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387699", "warengruppeName": "387.699 Werkstatt -Hartwaren (Sonstige)", "produkt": "Seile", "bemerkungen": "", "trivial": true, "norm": "102_PPM + Zugprüfung in Anlehnung an DIN EN ISO 2307", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 520.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387699", "warengruppeName": "387.699 Werkstatt -Hartwaren (Sonstige)", "produkt": "Arbeitsbock", "bemerkungen": "", "trivial": false, "norm": "", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 1810.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387699", "warengruppeName": "387.699 Werkstatt -Hartwaren (Sonstige)", "produkt": "Hammer", "bemerkungen": "", "trivial": false, "norm": "DIN 1193 (Latthammer DIN 7239) (Schlosserhammer DIN 1041), (Maurerhammer DIN 5108), (Gummihammer DIN 5128), (Klauenhammer ???) (Holzstiel bis 2kg DIN 5111, Holzstiel über 2kg DIN 5112) (Holz- u Kunststoffstiele EK5 AK2 PA 80-8.1.1 2017-10)", "anzahlMuster": ", ergebnis ist ", "kez": false, "kostenSicherheitNorm": 720.0, "kostenSicherheitNormAlt": 540.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387699", "warengruppeName": "387.699 Werkstatt -Hartwaren (Sonstige)", "produkt": "Einhand-Bügelsägen", "bemerkungen": "", "trivial": false, "norm": "EK5/AK2 12-05:2012 ", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": null, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "519_PPM_FFU", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387699", "warengruppeName": "387.699 Werkstatt -Hartwaren (Sonstige)", "produkt": "Gartensägen", "bemerkungen": "", "trivial": false, "norm": "EK5/AK2 21-02:2021", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": null, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "519_PPM_FFU", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387699", "warengruppeName": "387.699 Werkstatt -Hartwaren (Sonstige)", "produkt": "Japansäge", "bemerkungen": "", "trivial": false, "norm": "EK5/AK2 21-02:2021 inkl. Beschluss EK5/AK2 17/10-1", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 1300.0, "kostenTp": 620.0, "ffuHinweis": "516_PPM_FFU", "kostenFfu": 650.0, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387699", "warengruppeName": "387.699 Werkstatt -Hartwaren (Sonstige)", "produkt": "Seilwinde / Seilzug", "bemerkungen": "", "trivial": false, "norm": "", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387699", "warengruppeName": "387.699 Werkstatt -Hartwaren (Sonstige)", "produkt": "Spachtel", "bemerkungen": "ggf. Auslobung nach DIN 6439 DIN 6440 & DIN 6441\nDIN 7216", "trivial": false, "norm": "102_PPM \nin Anlehnung an EK5.2 PA 80-4.2.1\n-> Punkt 2\n-> Punkt 3 (ohne 3.6)\n-> Punkt 4.1", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 520.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387699", "warengruppeName": "387.699 Werkstatt -Hartwaren (Sonstige)", "produkt": "Triviale Artikel", "bemerkungen": "", "trivial": false, "norm": "", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387699", "warengruppeName": "387.699 Werkstatt -Hartwaren (Sonstige)", "produkt": "Deckenstütze", "bemerkungen": "", "trivial": false, "norm": "", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387699", "warengruppeName": "387.699 Werkstatt -Hartwaren (Sonstige)", "produkt": "Schäkel", "bemerkungen": "", "trivial": true, "norm": "102_PPM + Belastungsprüfung", "anzahlMuster": 3, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 720.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "389010", "warengruppeName": "389.010 Kamine, Öfen u. Zubehör", "produkt": "Kaminbesteck", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 270.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "389040", "warengruppeName": "389.040 Heizungs- u. Wassertechnik", "produkt": "Entlüftungsschlüssel", "bemerkungen": "", "trivial": false, "norm": "", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Baumarkt 2", "warengruppeCode": "387699", "warengruppeName": "387.699 Werkstatt -Hartwaren (Sonstige)", "produkt": "Handmeißel", "bemerkungen": "", "trivial": false, "norm": "EK5/AK2 23-02:2023", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": null, "kostenSicherheitNormAlt": null, "kostenTp": 580.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Haushalt/Beauty", "warengruppeCode": "325110", "warengruppeName": "325.110 Rasur u. Haarentfernung Herren", "produkt": "Rotationsrasierer", "bemerkungen": "EE", "trivial": false, "norm": "Risikobasierte Normprüfung/Teilprüfung\n- Erwärmung\n- Schlagprüfung\n- Fallprüfung\nSicherheit / Normprüfung - Produktsicherheit\nAkku-Sicherheitskurzcheck\nProdukte mit Akku jeder Größe werden nach 163_PPM_TGS_REV_A_ Akku-Sicherheitskurzcheck Lidl geprüft", "anzahlMuster": 14, "kez": true, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 1700.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Haushalt/Beauty", "warengruppeCode": "325110", "warengruppeName": "325.110 Rasur u. Haarentfernung Herren", "produkt": "Barttrimmer Best", "bemerkungen": "EE", "trivial": false, "norm": "Sicherheit- / Normprüfung\n- Erwärmung\n- Schlagprüfung\n- Fallprüfung\nSicherheit / Normprüfung - Produktsicherheit\nAkku-Sicherheitskurzcheck\nProdukte mit Akku jeder Größe werden nach 163_PPM_TGS_REV_A_ Akku-Sicherheitskurzcheck Lidl geprüft", "anzahlMuster": 14, "kez": true, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 1700.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "StiWa Heft 11/2023\nLaborprüfungen Taunusstein\nProbandenprüfungen Wörgl\nHG12775:Der Artikel ist in Bezug auf [Schnittleistung] mindestens gleichwertig mit [Braun Bartschneider Serie 9\nBT9440] der Marke [Braun].", "kostenStiwa": 9000.0}, {"bereich": "Haushalt/Beauty", "warengruppeCode": "325310", "warengruppeName": "325.310 Kosmetik", "produkt": "Pinsel / Gesichtspflege", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Haushalt/Beauty", "warengruppeCode": "325310", "warengruppeName": "325.310 Kosmetik", "produkt": "Organizer / Aufbewahrung", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Haushalt/Beauty", "warengruppeCode": "325310", "warengruppeName": "325.310 Kosmetik", "produkt": "Spiegel", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 720.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Haushalt/Beauty", "warengruppeCode": "325310", "warengruppeName": "325.310 Kosmetik", "produkt": "Scheren / Rasierer", "bemerkungen": "", "trivial": false, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 720.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Haushalt/Beauty", "warengruppeCode": "325310", "warengruppeName": "325.310 Kosmetik", "produkt": "Porenreiniger", "bemerkungen": "EE", "trivial": false, "norm": "Sicherheit / Normprüfung - Produktsicherheit\nTeilprüfung nach EN 60335-2-23\nSicherheit / Normprüfung - Produktsicherheit\nAkku-Sicherheitskurzcheck\nProdukte mit Akku jeder Größe werden nach 163_PPM_TGS_REV_A_ Akku-Sicherheitskurzcheck Lidl geprüft", "anzahlMuster": 5, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 1700.0, "kostenTp": null, "ffuHinweis": "FFU laborintern ohne Probanden 30SER (70%/50%/10-30%)\nFFU Prüfung nach internem PPM (nur Falls im PA angegeben)\nLaborintern ohne Prüfung der Gebrauchstauglichkeit mittels Probanden. Es werden Punkte zur Funktionalität, Verarbeitungsqualität, Verständlichkeit der BDA geprüft)", "kostenFfu": 450.0, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Haushalt/Beauty", "warengruppeCode": "325310", "warengruppeName": "325.310 Kosmetik", "produkt": "Kosmetikspiegel LED", "bemerkungen": "EE", "trivial": false, "norm": "Sicherheit- / Normprüfung\nEN 60598-2\n-Cl. 4.12 - Prüfung der Dauerhaftigkeit und der Erwärmung\t\n-Cl. 4.15 - Wärmebeständigkeit, Feuerbeständigkeit und Kriechstromfestigkeit", "anzahlMuster": 7, "kez": true, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 750.0, "kostenTp": null, "ffuHinweis": "FFU im Feld mit Probanden (162_PPM_TGS_Kosmetikspiegel mit Beleuchtung) FFU Prüfung nach internem PPM", "kostenFfu": 1350.0, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Haushalt/Beauty", "warengruppeCode": "325310", "warengruppeName": "325.310 Kosmetik", "produkt": "Beheizbare Wimpernbürste", "bemerkungen": "EE", "trivial": false, "norm": "Sicherheit / Normprüfung - Produktsicherheit\nTeilprüfung nach EN 60335-2-23\nSicherheit / Normprüfung - Produktsicherheit\nAkku-Sicherheitskurzcheck\nProdukte mit Akku jeder Größe werden nach 163_PPM_TGS_REV_A_ Akku-Sicherheitskurzcheck Lidl geprüft", "anzahlMuster": 5, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 1700.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Haushalt/Beauty", "warengruppeCode": "325320", "warengruppeName": "325.320 Maniküre u. Pediküre", "produkt": "Maniküre / Pediküre Sets", "bemerkungen": "", "trivial": false, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Haushalt/Beauty", "warengruppeCode": "325320", "warengruppeName": "325.320 Maniküre u. Pediküre", "produkt": "Maniküre-Pediküre-Set", "bemerkungen": "EE", "trivial": false, "norm": "Sicherheit / Normprüfung - Produktsicherheit\nTeilprüfung nach EN 60335-2-8\n- Normalerwärmung\n- Abnormal\n- Droptest\n- HV Test\n- Luft- und Kriechstrecken\n- Glühdraht", "anzahlMuster": 1, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 750.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Haushalt/Beauty", "warengruppeCode": "325320", "warengruppeName": "325.320 Maniküre u. Pediküre", "produkt": "Hornhautentferner", "bemerkungen": "EE", "trivial": false, "norm": "Sicherheit-/Normprüfung\nTeilprüfung nach EN 60335-2-8", "anzahlMuster": 5, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 750.0, "kostenTp": null, "ffuHinweis": "siehe Test Report 6995971_01_A_FFU vom 18.06.24", "kostenFfu": 1350.0, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Haushalt/Beauty", "warengruppeCode": "326110", "warengruppeName": "326.110 Kompressen u. Verbandsmaterial", "produkt": "Autoverbandstasche", "bemerkungen": "", "trivial": false, "norm": "", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": null, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Haushalt/Beauty", "warengruppeCode": "326110", "warengruppeName": "326.110 Kompressen u. Verbandsmaterial", "produkt": "Binden und Bandagen", "bemerkungen": "", "trivial": false, "norm": "", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": null, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Haushalt/Beauty", "warengruppeCode": "326110", "warengruppeName": "326.110 Kompressen u. Verbandsmaterial", "produkt": "Wärme- / Kältekompressen", "bemerkungen": "", "trivial": false, "norm": "", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": null, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Küche", "warengruppeCode": "310110", "warengruppeName": "310.110 Küchenmaschinen u. Foodprozessoren", "produkt": "Schüsseln", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Küche", "warengruppeCode": "311020", "warengruppeName": "311.020 Trinkgefäße u. Gläser", "produkt": "Isolierflasche", "bemerkungen": "", "trivial": false, "norm": "DIN EN 12546-1", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 1690.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Küche", "warengruppeCode": "311020", "warengruppeName": "311.020 Trinkgefäße u. Gläser", "produkt": "Isolierbecher", "bemerkungen": "", "trivial": false, "norm": "DIN EN 12546-1", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Küche", "warengruppeCode": "311020", "warengruppeName": "311.020 Trinkgefäße u. Gläser", "produkt": "Gläser", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": null, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Küche", "warengruppeCode": "311030", "warengruppeName": "311.030 Karaffen u. Kannen", "produkt": "Isolierkanne", "bemerkungen": "", "trivial": false, "norm": "DIN EN 12546-1", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 1690.0, "kostenSicherheitNormAlt": null, "kostenTp": 950.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Küche", "warengruppeCode": "311030", "warengruppeName": "311.030 Karaffen u. Kannen", "produkt": "Karaffe", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": null, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Küche", "warengruppeCode": "311040", "warengruppeName": "311.040 Tafelgeschirr", "produkt": "Geschirr", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": null, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Küche", "warengruppeCode": "311040", "warengruppeName": "311.040 Tafelgeschirr", "produkt": "Keksdose", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": null, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Küche", "warengruppeCode": "311210", "warengruppeName": "311.210 Auflaufformen u. Bräter", "produkt": "Auflaufform / Backform", "bemerkungen": "", "trivial": false, "norm": "DIN EN 13834", "anzahlMuster": 4, "kez": false, "kostenSicherheitNorm": 1690.0, "kostenSicherheitNormAlt": null, "kostenTp": 850.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Küche", "warengruppeCode": "311310", "warengruppeName": "311.310 Backformen u. Backbleche", "produkt": "Backform", "bemerkungen": "", "trivial": false, "norm": "DIN EN 13834", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 1690.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Küche", "warengruppeCode": "311310", "warengruppeName": "311.310 Backformen u. Backbleche", "produkt": "Grillschalen", "bemerkungen": "", "trivial": false, "norm": "in Anlehnung an DIN EN 13834", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": null, "kostenSicherheitNormAlt": null, "kostenTp": 500.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Küche", "warengruppeCode": "311310", "warengruppeName": "311.310 Backformen u. Backbleche", "produkt": "Backblech", "bemerkungen": "", "trivial": false, "norm": "in Anlehnung an DIN EN 13834", "anzahlMuster": 6, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 960.0, "kostenTp": 500.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Küche", "warengruppeCode": "311410", "warengruppeName": "311.410 Vorratsdosen", "produkt": "Frischhaltedosen / Aufbewahrungsdosen", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": null, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Küche", "warengruppeCode": "311420", "warengruppeName": "311.420 Lunchboxen", "produkt": "Lunchboxen", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": null, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Küche", "warengruppeCode": "311440", "warengruppeName": "311.440 Brot- u. Kuchenaufbewahrung", "produkt": "Brotkasten", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Küche", "warengruppeCode": "311440", "warengruppeName": "311.440 Brot- u. Kuchenaufbewahrung", "produkt": "Kuchenbehälter", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 1080.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Küche", "warengruppeCode": "311510", "warengruppeName": "311.510 Tabletts, Servierplatten, Schalen, Schüsseln", "produkt": "Servierplatte", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 1080.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Küche", "warengruppeCode": "311510", "warengruppeName": "311.510 Tabletts, Servierplatten, Schalen, Schüsseln", "produkt": "Champagner- / Sektkühler", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 1080.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Küche", "warengruppeCode": "311510", "warengruppeName": "311.510 Tabletts, Servierplatten, Schalen, Schüsseln", "produkt": "Schalen", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Küche", "warengruppeCode": "311599", "warengruppeName": "311.599 Organisation Küchenhaushaltswaren (Sonstige)", "produkt": "Organizer / Aufbewahrung", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Küche", "warengruppeCode": "311610", "warengruppeName": "311.610 Küchen- u. Servierhelfer", "produkt": "Messerschärfer", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Küche", "warengruppeCode": "311630", "warengruppeName": "311.630 Schneidebretter u. Herdabdeckplatten", "produkt": "Schneidbretter", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Küche", "warengruppeCode": "311640", "warengruppeName": "311.640 Küchenmesser, Küchenscheren u. Zubehör", "produkt": "Messerblock inkl. Messer", "bemerkungen": "ACHTUNG bei StiWa Prüfung muss Teil zur VPA untervergeben werden, außerdem Spüli enthalten!\n\nStiWa beinhaltet Wechseltauchversuch (DIN EN 8442-1 Punkt 6.6). Sehr lange Bearbeitungsdauer! Bitte beachten und auf dem LA vermerken!", "trivial": false, "norm": "in Anlehnung an DIN EN 8442-1", "anzahlMuster": 6, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 960.0, "kostenTp": 500.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "StiWa 12/2014\nUntervergabe zur VPA für alle Prüfungen, die die IDN EN 8442-5 betreffen (Kontakt: Sabine Amme (s.amme@vpa-gmbh.de)\n- Anfangsschärfe\n- Schneidhaltigkeit\n\nSpülmaschineneignung (125 Zyklen) separat beauftragen", "kostenStiwa": 2000.0}, {"bereich": "Küche", "warengruppeCode": "311670", "warengruppeName": "311.670 Kaffee- u. Teezubehör", "produkt": "Teekanne", "bemerkungen": "nicht trivial, wenn Verwendung auf Herd möglich", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 1450.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Küche", "warengruppeCode": "311720", "warengruppeName": "311.720 Wasserfilter u. Zubehör", "produkt": "Wasserfilter-Kartuschen", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Spielwaren", "warengruppeCode": "365199", "warengruppeName": "365.199 Tierbedarf (Sonstige)", "produkt": "Vogelfutter- / Insektenhaus", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Sport & Freizeit - Hartware", "warengruppeCode": "250045", "warengruppeName": "250.045 Taschen (Funktional)", "produkt": "Einkaufstrolley", "bemerkungen": "", "trivial": false, "norm": "064_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 1450.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Sport & Freizeit - Hartware", "warengruppeCode": "350110", "warengruppeName": "350.110 Boote, Boards, Stand up Paddle", "produkt": "Stand Up Paddle (SUP)", "bemerkungen": "Vollprüfung in TSN nicht möglich!", "trivial": false, "norm": "EK2 / AK2.4 22-01:2022", "anzahlMuster": 3, "kez": true, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": 960.0, "ffuHinweis": "Tbd", "kostenFfu": 960.0, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Sport & Freizeit - Hartware", "warengruppeCode": "350210", "warengruppeName": "350.210 Angeln", "produkt": "Angelrollen", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 480.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Sport & Freizeit - Hartware", "warengruppeCode": "350210", "warengruppeName": "350.210 Angeln", "produkt": "Rutentasche", "bemerkungen": "", "trivial": true, "norm": "131_PPM_TGS_REV_A", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 960.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Sport & Freizeit - Hartware", "warengruppeCode": "350210", "warengruppeName": "350.210 Angeln", "produkt": "Zielfisch-Zubehörbox", "bemerkungen": "EE", "trivial": false, "norm": "Sicherheit / Normprüfung - Produktsicherheit\nPrüfung der mech. Sicherheit 102_PPM", "anzahlMuster": 1, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 350.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Sport & Freizeit - Hartware", "warengruppeCode": "350220", "warengruppeName": "350.220 Inliner, Rollschuhe, Skateboards, Roller u. Zubehör", "produkt": "Protektoren", "bemerkungen": "PSA!", "trivial": false, "norm": "", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Sport & Freizeit - Hartware", "warengruppeCode": "350220", "warengruppeName": "350.220 Inliner, Rollschuhe, Skateboards, Roller u. Zubehör", "produkt": "Helme", "bemerkungen": "PSA!", "trivial": false, "norm": "", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Sport & Freizeit - Hartware", "warengruppeCode": "350220", "warengruppeName": "350.220 Inliner, Rollschuhe, Skateboards, Roller u. Zubehör", "produkt": "Inlineskates", "bemerkungen": "", "trivial": false, "norm": "DIN EN 13843", "anzahlMuster": "", "kez": true, "kostenSicherheitNorm": 1810.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Sport & Freizeit - Hartware", "warengruppeCode": "350230", "warengruppeName": "350.230 Racketsport", "produkt": "Schläger", "bemerkungen": "", "trivial": false, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Sport & Freizeit - Hartware", "warengruppeCode": "350230", "warengruppeName": "350.230 Racketsport", "produkt": "Tischtennisplatte", "bemerkungen": "", "trivial": false, "norm": "DIN EN 14468-1", "anzahlMuster": "", "kez": true, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Sport & Freizeit - Hartware", "warengruppeCode": "350230", "warengruppeName": "350.230 Racketsport", "produkt": "Tischtennisplatte Mini", "bemerkungen": "", "trivial": false, "norm": "", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Sport & Freizeit - Hartware", "warengruppeCode": "350230", "warengruppeName": "350.230 Racketsport", "produkt": "Schläger + Bälle", "bemerkungen": "", "trivial": false, "norm": "", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Sport & Freizeit - Hartware", "warengruppeCode": "350310", "warengruppeName": "350.310 Fitnessgroßgeräte", "produkt": "Hantelablage", "bemerkungen": "", "trivial": false, "norm": "", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Sport & Freizeit - Hartware", "warengruppeCode": "350320", "warengruppeName": "350.320 Fitnesskleingeräte", "produkt": "Zug- und Druck-Trainingsgeräte", "bemerkungen": "", "trivial": false, "norm": "DIN EN 32935", "anzahlMuster": 3, "kez": true, "kostenSicherheitNorm": null, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Sport & Freizeit - Hartware", "warengruppeCode": "350320", "warengruppeName": "350.320 Fitnesskleingeräte", "produkt": "(Stationäre) Trainingsgeräte", "bemerkungen": "", "trivial": false, "norm": "DIN EN ISO 20957-1", "anzahlMuster": "", "kez": true, "kostenSicherheitNorm": 1810.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Sport & Freizeit - Hartware", "warengruppeCode": "350320", "warengruppeName": "350.320 Fitnesskleingeräte", "produkt": "Gymnastikball", "bemerkungen": "", "trivial": false, "norm": "EK2-AK2.4 17-01", "anzahlMuster": "", "kez": true, "kostenSicherheitNorm": 1510.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Sport & Freizeit - Hartware", "warengruppeCode": "350320", "warengruppeName": "350.320 Fitnesskleingeräte", "produkt": "Trainingsbänke", "bemerkungen": "", "trivial": false, "norm": "DIN EN ISO 20957-4", "anzahlMuster": "", "kez": true, "kostenSicherheitNorm": 1810.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Sport & Freizeit - Hartware", "warengruppeCode": "350320", "warengruppeName": "350.320 Fitnesskleingeräte", "produkt": "Zubehör", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Sport & Freizeit - Hartware", "warengruppeCode": "350320", "warengruppeName": "350.320 Fitnesskleingeräte", "produkt": "Mobilitätstrainer Good", "bemerkungen": "EE", "trivial": false, "norm": "Sicherheit / Normprüfung - Produktsicherheit\nTeilprüfungprüfung nach 0100_PPM\n- Glühdrahtprüfung 550 °C\n- Scharfe Ecken und Kanten\nTeilprüfung nach EN ISO 20957-5\n- 5.2.1 Übertragungselemente und sich drehende Teile", "anzahlMuster": 5, "kez": true, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 450.0, "kostenTp": null, "ffuHinweis": "FFU Prüfung: Tretwiderstand mit Ergometerprüfstand und Software DasyLab 13.0 (Funktion wurde bereits geprüft) prüfen;Tretwiderstand min. 20W+ max. Benutzergewicht 100kg", "kostenFfu": 900.0, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Sport & Freizeit - Hartware", "warengruppeCode": "350320", "warengruppeName": "350.320 Fitnesskleingeräte", "produkt": "Gewichte / Hanteln", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Sport & Freizeit - Hartware", "warengruppeCode": "350330", "warengruppeName": "350.330 Fitness- u. Yogamatten", "produkt": "Trainingsmatten", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Sport & Freizeit - Hartware", "warengruppeCode": "350350", "warengruppeName": "350.350 Hanteln, Gewichte, Kettlebells", "produkt": "Hanteln / Gewichte / Kettlebells", "bemerkungen": "", "trivial": false, "norm": "DIN EN 20957", "anzahlMuster": 3, "kez": false, "kostenSicherheitNorm": 720.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Sport & Freizeit - Hartware", "warengruppeCode": "365100", "warengruppeName": "365.100 Hunde- u. Katzenbedarf", "produkt": "Tierspielzeug", "bemerkungen": "", "trivial": false, "norm": "102_PPM in Anlehnung an DIN EN 71-1", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 720.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Sport & Freizeit - Hartware", "warengruppeCode": "365100", "warengruppeName": "365.100 Hunde- u. Katzenbedarf", "produkt": "Tiergeschirr", "bemerkungen": "", "trivial": false, "norm": "102_PPM_TGS_REV_B mit Belastung in Anlehnung an HHJ126550_PPM_TGS_V5_Pet Leash", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 900.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Sport & Freizeit - Hartware", "warengruppeCode": "365100", "warengruppeName": "365.100 Hunde- u. Katzenbedarf", "produkt": "Futternäpfe", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Sport & Freizeit - Hartware", "warengruppeCode": "365100", "warengruppeName": "365.100 Hunde- u. Katzenbedarf", "produkt": "Tierhaarschneider Kabel 10 Watt", "bemerkungen": "EE", "trivial": false, "norm": "Sicherheit / Normprüfung - Produktsicherheit\nTeilprüfung der elektrischen Sicherheit nach EN 60335-2-8\nRisikobasierte Teilprüfung\n- Hochspannung\n- Leistungsaufnahme\n- Luft- und Kriechstrecken\n- Erwärmungsprüfung", "anzahlMuster": 6, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "Prüfungen zur Bewertung der Gebrauchseigenschaften analog Test Report SR_6426734_01_A     IAN_417565", "kostenFfu": 450.0, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Sport & Freizeit - Hartware", "warengruppeCode": "380010", "warengruppeName": "380.010 Auto-Innenausstattung", "produkt": "Reise- und Spieltisch", "bemerkungen": "", "trivial": false, "norm": "", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300010", "warengruppeName": "300.010 Regale", "produkt": "(Aufbewahrungs-)Regal", "bemerkungen": "", "trivial": false, "norm": "DIN EN 14749", "anzahlMuster": 2, "kez": true, "kostenSicherheitNorm": 720.0, "kostenSicherheitNormAlt": 1400.0, "kostenTp": 700.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300010", "warengruppeName": "300.010 Regale", "produkt": "kleine Regale", "bemerkungen": "", "trivial": false, "norm": "in Anlehnung an DIN EN 14749", "anzahlMuster": 2, "kez": true, "kostenSicherheitNorm": 720.0, "kostenSicherheitNormAlt": 960.0, "kostenTp": 480.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300010", "warengruppeName": "300.010 Regale", "produkt": "Schwerlastregal", "bemerkungen": "Korrosion \nAlle Metallteile müssen ausreichend gegen  Korrosion geschützt sein. ", "trivial": true, "norm": "EK5/AK3 22-01:2022 Prüfgrundsatz für die Sicherheit von Schwerlastregalen im Wohnbereich (bis 800kg)\n(DIN EN 14749:2016 (DIN EN 16122:2012) und DGUV Regel 108-007 (EK5AK3 22-01 Punkt 5.4.2.2))", "anzahlMuster": 2, "kez": true, "kostenSicherheitNorm": 1810.0, "kostenSicherheitNormAlt": 1800.0, "kostenTp": 900.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300010", "warengruppeName": "300.010 Regale", "produkt": "Kinderregal", "bemerkungen": "TJP", "trivial": false, "norm": "", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 720.0, "kostenSicherheitNormAlt": 800.0, "kostenTp": 400.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300030", "warengruppeName": "300.030 Schränke", "produkt": "Kinderschrank", "bemerkungen": "TJP", "trivial": false, "norm": "", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 900.0, "kostenSicherheitNormAlt": 920.0, "kostenTp": 460.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300040", "warengruppeName": "300.040 Tische", "produkt": "Beistelltisch", "bemerkungen": "", "trivial": false, "norm": "DIN EN 12521:2023 / Anforderungen für filigrane Tische", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 720.0, "kostenSicherheitNormAlt": 960.0, "kostenTp": 480.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300040", "warengruppeName": "300.040 Tische", "produkt": "(Ess-)Tisch", "bemerkungen": "", "trivial": false, "norm": "DIN EN 12521:2023", "anzahlMuster": 1, "kez": false, "kostenSicherheitNorm": 1450.0, "kostenSicherheitNormAlt": 1400.0, "kostenTp": 700.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300040", "warengruppeName": "300.040 Tische", "produkt": "Schreib- und Arbeitstisch", "bemerkungen": "", "trivial": false, "norm": "DIN EN 527-1 / -2", "anzahlMuster": 1, "kez": true, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 1400.0, "kostenTp": 700.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300040", "warengruppeName": "300.040 Tische", "produkt": "Deko-Ständer", "bemerkungen": "", "trivial": false, "norm": "DIN EN 12521:2023 / Anforderungen für filigrane Tische", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": 960.0, "kostenTp": 480.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300099", "warengruppeName": "300.099 Wohnmöbel (Sonstige)", "produkt": "Laptopunterlage", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": 480.0, "kostenTp": 240.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300099", "warengruppeName": "300.099 Wohnmöbel (Sonstige)", "produkt": "Kleiderstange", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 420.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300100", "warengruppeName": "300.100 Wohn-Dekoration", "produkt": "Dekoartikel", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": 480.0, "kostenTp": 240.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300100", "warengruppeName": "300.100 Wohn-Dekoration", "produkt": "Vasen", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": 480.0, "kostenTp": 240.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300100", "warengruppeName": "300.100 Wohn-Dekoration", "produkt": "(Spiegel-)Fliesen", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300130", "warengruppeName": "300.130 Saison u. Party Deko", "produkt": "Dekofiguren HG", "bemerkungen": "HG", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": 480.0, "kostenTp": 240.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300130", "warengruppeName": "300.130 Saison u. Party Deko", "produkt": "Dekofiguren TJP", "bemerkungen": "TJP", "trivial": false, "norm": "", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": null, "kostenTp": 0.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300130", "warengruppeName": "300.130 Saison u. Party Deko", "produkt": "Tischdekoration", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": 480.0, "kostenTp": 240.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300130", "warengruppeName": "300.130 Saison u. Party Deko", "produkt": "Hängedekoration", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": 480.0, "kostenTp": 240.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300130", "warengruppeName": "300.130 Saison u. Party Deko", "produkt": "Kerzenhalter", "bemerkungen": "", "trivial": false, "norm": "DIN EN 17885", "anzahlMuster": 2, "kez": true, "kostenSicherheitNorm": 1080.0, "kostenSicherheitNormAlt": 720.0, "kostenTp": 360.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300130", "warengruppeName": "300.130 Saison u. Party Deko", "produkt": "Sticker HG", "bemerkungen": "HG", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": 360.0, "kostenTp": 180.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300130", "warengruppeName": "300.130 Saison u. Party Deko", "produkt": "Sticker TJP", "bemerkungen": "TJP", "trivial": false, "norm": "", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": null, "kostenSicherheitNormAlt": null, "kostenTp": 0.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300130", "warengruppeName": "300.130 Saison u. Party Deko", "produkt": "Christbaumständer", "bemerkungen": "CE-Kennzeichnung! KE nötig.", "trivial": false, "norm": "EK5/AK7  18-01:2018 Prüfgrundsatz für die Sicherheit von Christbaumständern ", "anzahlMuster": 2, "kez": true, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300130", "warengruppeName": "300.130 Saison u. Party Deko", "produkt": "Geschenkpapier", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 300.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300130", "warengruppeName": "300.130 Saison u. Party Deko", "produkt": "Christbaumkugeln", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 360.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300199", "warengruppeName": "300.199 Wanddekorationen u. Innen Dekoration (Sonstige)", "produkt": "Bilderrahmen", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": 360.0, "kostenTp": 180.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300199", "warengruppeName": "300.199 Wanddekorationen u. Innen Dekoration (Sonstige)", "produkt": "Wandsticker (Spielzeug)", "bemerkungen": "TJP", "trivial": false, "norm": "", "anzahlMuster": "", "kez": false, "kostenSicherheitNorm": null, "kostenSicherheitNormAlt": null, "kostenTp": 0.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300300", "warengruppeName": "300.300 Insektenschutz, Rollos, Plissees", "produkt": "Rollo", "bemerkungen": "Musterzahl beachten! \n+ zusätzlich 12 Sicherheitseinrichtungen! (abs. Minimum 8) \nAblauf in der Norm beachten!! UV-Belichtung notwendig nach DIN EN 16434\n\nMuster Asien Rollo DIN EN 13120 Abschn 8 (inkl. DIN EN 16434)\n2x größter und 2x kleinster Style wird für Prüfung benötigt + 4x Sicherheitsclips\n\"Guarantee letter-General\" ausfüllen senden + in Versandkarton legen + „Dispatch samples Form 寄样单Fion-General“ auf Versandkarton kleben\nKosten 1936€ (Lidl) 25 AT\nMuster Tstn: 1x je Style DIN EN 13120 Abschn 15 \n(13.12.24 SH)", "trivial": false, "norm": "DIN EN 13120 (inkl. DIN EN 16434)", "anzahlMuster": 2, "kez": true, "kostenSicherheitNorm": 1690.0, "kostenSicherheitNormAlt": 3000.0, "kostenTp": 1500.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300300", "warengruppeName": "300.300 Insektenschutz, Rollos, Plissees", "produkt": "Insektenfänger ", "bemerkungen": "", "trivial": true, "norm": "102_PPM ", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 360.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "300300", "warengruppeName": "300.300 Insektenschutz, Rollos, Plissees", "produkt": "Plissee", "bemerkungen": "(ohne Schlaufe) Asien", "trivial": true, "norm": "DIN EN 13120 Pkt 8.2.2 (EN 16433) + 15", "anzahlMuster": "", "kez": true, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": null, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "Wohnen", "warengruppeCode": "374100", "warengruppeName": "374.100 Gartendekoration ohne LED", "produkt": "Gartenfiguren", "bemerkungen": "", "trivial": true, "norm": "102_PPM", "anzahlMuster": 2, "kez": false, "kostenSicherheitNorm": 540.0, "kostenSicherheitNormAlt": 420.0, "kostenTp": 210.0, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}, {"bereich": "", "warengruppeCode": "370040", "warengruppeName": "370.040 Grills u. Feuerstellen", "produkt": "Feuerrohr ", "bemerkungen": "", "trivial": false, "norm": "in Anlehnung an EK5/AK8  17-12.01:2017 ", "anzahlMuster": 3, "kez": true, "kostenSicherheitNorm": 0.0, "kostenSicherheitNormAlt": 960.0, "kostenTp": null, "ffuHinweis": "", "kostenFfu": null, "stiwaHinweis": "", "kostenStiwa": null}];
 }
+
+/* ---------- Warengruppen-Stammdaten (Dropdown-Auswahl in den Prüfgrundlagen) ----------
+   Vorläufige Liste, abgeleitet aus den bereits vorhandenen 185 Prüfgrundlagen-Startdaten (alle
+   dort tatsächlich verwendeten Warengruppen, einmalig). Das ist ein Platzhalter, bis die
+   offizielle Warengruppen-Liste geliefert wird - dann wird eine neue Version des Tools damit
+   gebaut. Bewusst als eigener, fest gesäter Startbestand (wie Prüfgrundlagen/Katalog), nicht live
+   aus data.pruefgrundlagen berechnet, damit auch schon vorhandene Warengruppen ohne (noch)
+   verknüpfte Prüfgrundlage wählbar bleiben. */
+function seedWarengruppen() {
+  const eindeutig = new Map();
+  seedPruefgrundlagenRoh().forEach((r) => {
+    const code = normalisiereWarengruppe(r.warengruppeCode);
+    if (code && !eindeutig.has(code)) eindeutig.set(code, { code, name: r.warengruppeName || code });
+  });
+  return [...eindeutig.values()].sort((a, b) => a.code.localeCompare(b.code));
+}
+
+/* Norm anhand der Bezeichnung suchen oder neu anlegen - Grundlage für die Verknüpfung der
+   Prüfgrundlagen-Normfelder auf echte Norm-Datensätze (Reiter "Normen") statt Freitext. Mutiert
+   data.normen direkt (wie das Anlegen einer Katalogposition auch sofort persistiert wird). */
+function normFindOrCreate(bezeichnungRoh) {
+  const bez = String(bezeichnungRoh || "").trim();
+  if (!bez) return null;
+  const key = normalisiere(bez);
+  let norm = data.normen.find((n) => normalisiere(n.bezeichnung) === key);
+  if (!norm) {
+    norm = { id: neueId(), bezeichnung: bez, titel: "", dateiname: "", hochgeladenAm: "", rohtext: "", pruefpunkte: [] };
+    data.normen.push(norm);
+  }
+  return norm.id;
+}
+function normRefListeAusText(text) {
+  const bez = String(text || "").trim();
+  if (!bez) return [];
+  const id = normFindOrCreate(bez);
+  return id ? [{ normId: id, inAnlehnungAn: false }] : [];
+}
+
 /* Normalisiert eine Prüfgrundlage auf die aktuelle Datenform - wird sowohl auf frisch gesäte
    Startdaten als auch auf aus localStorage/JSON-Datei geladene (ggf. noch aus einer älteren
-   Tool-Version stammende) Einträge angewendet: "norm" (Einzeltext) -> "normen" (Mehrfachauswahl-
-   Liste), fehlende Materialien-Listen je Prüfblock, das "kennzeichnung"-Flag und die Liste
-   hochgeladener Normen-/Prüfprogramm-Dokumente werden ergänzt. */
+   Tool-Version stammende) Einträge angewendet. Setzt voraus, dass data.normen bereits existiert
+   (siehe Aufrufreihenfolge in init()/"Datei laden"/Zusammenführen). Historie:
+   - "norm" (Einzeltext) -> "normen" (Liste) -> "normen" als Liste von {normId, inAnlehnungAn}-
+     Referenzen auf echte Norm-Datensätze statt Freitext (find-or-create per Bezeichnung).
+   - "ffuHinweis"/"stiwaHinweis" (Einzeltext) -> "ffuNormen"/"stiwaNormen", gleiche Referenzform.
+   - "kennzeichnung" (eigenes Flag) wurde inhaltlich als Dopplung von "kez" erkannt und in "kez"
+     zusammengeführt (kez = kez || kennzeichnung).
+   - "materialienNorm"/"materialienFfu"/"materialienStiwa" und "dokumente" entfernt: Materialien
+     sind projektabhängig (gehören nicht in diese generelle Referenztabelle), Dokumente werden nur
+     noch im Reiter "Normen" hochgeladen. */
 function migrierePruefgrundlage(e) {
+  if (typeof e.kennzeichnung === "boolean") {
+    e.kez = e.kez || e.kennzeichnung;
+    delete e.kennzeichnung;
+  }
   if (!Array.isArray(e.normen)) e.normen = e.norm ? [e.norm] : [];
   delete e.norm;
-  if (!Array.isArray(e.materialienNorm)) e.materialienNorm = [];
-  if (!Array.isArray(e.materialienFfu)) e.materialienFfu = [];
-  if (!Array.isArray(e.materialienStiwa)) e.materialienStiwa = [];
-  if (typeof e.kennzeichnung !== "boolean") e.kennzeichnung = false;
-  if (!Array.isArray(e.dokumente)) e.dokumente = [];
+  if (e.normen.length && typeof e.normen[0] === "string") e.normen = e.normen.flatMap(normRefListeAusText);
+
+  if (typeof e.ffuHinweis === "string") { e.ffuNormen = normRefListeAusText(e.ffuHinweis); delete e.ffuHinweis; }
+  if (!Array.isArray(e.ffuNormen)) e.ffuNormen = [];
+
+  if (typeof e.stiwaHinweis === "string") { e.stiwaNormen = normRefListeAusText(e.stiwaHinweis); delete e.stiwaHinweis; }
+  if (!Array.isArray(e.stiwaNormen)) e.stiwaNormen = [];
+
+  delete e.materialienNorm; delete e.materialienFfu; delete e.materialienStiwa; delete e.dokumente;
   return e;
 }
 function seedPruefgrundlagen() {
-  return seedPruefgrundlagenRoh().map((r) => migrierePruefgrundlage({ id: neueId(), ...r }));
+  return seedPruefgrundlagenRoh().map((r) => ({ id: neueId(), ...r }));
 }
 function pruefgrundlageEntwurfNeu() {
   return {
     id: neueId(), bereich: "", warengruppeCode: "", warengruppeName: "", produkt: "",
-    anzahlMuster: "", bemerkungen: "", trivial: false, kez: false, kennzeichnung: false,
-    normen: [], materialienNorm: [], kostenSicherheitNorm: null,
-    ffuHinweis: "", materialienFfu: [], kostenFfu: null,
-    stiwaHinweis: "", materialienStiwa: [], kostenStiwa: null,
-    dokumente: []
+    anzahlMuster: "", bemerkungen: "", trivial: false, kez: false,
+    normen: [], kostenSicherheitNorm: null,
+    ffuNormen: [], kostenFfu: null,
+    stiwaNormen: [], kostenStiwa: null
   };
 }
 
@@ -574,7 +643,8 @@ function init() {
     kvs: (geladen && geladen.kvs) ? geladen.kvs : [],
     katalog: (geladen && geladen.katalog && geladen.katalog.length) ? geladen.katalog : seedKatalog(),
     pruefgrundlagen: (geladen && geladen.pruefgrundlagen && geladen.pruefgrundlagen.length) ? geladen.pruefgrundlagen : seedPruefgrundlagen(),
-    normen: (geladen && geladen.normen) ? geladen.normen : []
+    normen: (geladen && geladen.normen) ? geladen.normen : [],
+    warengruppen: (geladen && geladen.warengruppen && geladen.warengruppen.length) ? geladen.warengruppen : seedWarengruppen()
   };
   data.pruefgrundlagen.forEach(migrierePruefgrundlage);
 
@@ -2002,25 +2072,23 @@ function renderMechanikEmpfehlungKarte(kv, pa) {
     const badges = [];
     if (gewaehlt.anzahlMuster) badges.push(`<span class="badge nein">Anzahl Muster: ${escapeHtml(String(gewaehlt.anzahlMuster))}</span>`);
     if (gewaehlt.trivial) badges.push(`<span class="badge ja">Trivial</span>`);
-    if (gewaehlt.kez) badges.push(`<span class="badge ja">KEZ-Anforderungen</span>`);
-    if (gewaehlt.kennzeichnung) badges.push(`<span class="badge ja" title="Kennzeichnungsanforderungen in der Norm, die über die GPSR-Anforderungen hinausgehen">Kennzeichnung &gt; GPSR</span>`);
+    if (gewaehlt.kez) badges.push(`<span class="badge ja" title="Kennzeichnungsanforderungen in der Norm, die über die GPSR-Anforderungen hinausgehen">KEZ-Anforderungen</span>`);
 
-    const gewaehltNorm = (gewaehlt.normen || []).join(", ");
+    const gewaehltNorm = normRefListeText(gewaehlt.normen);
     const teilprodukte = kv.mechanikSetbestandteile
       .map((sb) => ({ sb, eintrag: data.pruefgrundlagen.find((e) => mechanikEintragId(e) === sb.mechanikId) }))
       .filter((x) => x.eintrag);
 
     const komponenten = [{ produkt: gewaehlt.produkt, norm: gewaehltNorm, kosten: gewaehlt.kostenSicherheitNorm }]
-      .concat(teilprodukte.map((t) => ({ produkt: t.eintrag.produkt, norm: (t.eintrag.normen || []).join(", "), kosten: t.eintrag.kostenSicherheitNorm })));
+      .concat(teilprodukte.map((t) => ({ produkt: t.eintrag.produkt, norm: normRefListeText(t.eintrag.normen), kosten: t.eintrag.kostenSicherheitNorm })));
     const bekannteKosten = komponenten.filter((k) => k.kosten !== null && k.kosten !== undefined);
     const summeRoh = bekannteKosten.reduce((s, k) => s + Number(k.kosten), 0);
     const { faktor, hinweisText } = artikelkategorieMultiplikator(pa);
     const summeRabattiert = Math.round(summeRoh * faktor * 100) / 100;
     const beschreibungSicherheitNorm = "Sicherheit & Norm: " + komponenten.map((k) => k.norm ? `${k.produkt}: ${k.norm}` : k.produkt).join("; ");
-    const materialienNormText = (gewaehlt.materialienNorm || []).join(", ");
 
     const teilprodukteHtml = teilprodukte.length
-      ? `<div class="toolbar-zeile" style="flex-wrap:wrap;gap:0.35rem;margin:0.3rem 0">${teilprodukte.map((t) => `<span class="badge nein">${escapeHtml(t.eintrag.produkt)}${t.eintrag.normen && t.eintrag.normen.length ? " · " + escapeHtml(t.eintrag.normen.join(", ")) : ""} <button type="button" data-action="setbestandteil-entfernen" data-id="${escapeHtml(t.sb.id)}" title="Set-Bestandteil entfernen" style="border:none;background:none;color:inherit;cursor:pointer;font:inherit;padding:0 0 0 0.3rem">✕</button></span>`).join("")}</div>`
+      ? `<div class="toolbar-zeile" style="flex-wrap:wrap;gap:0.35rem;margin:0.3rem 0">${teilprodukte.map((t) => `<span class="badge nein">${escapeHtml(t.eintrag.produkt)}${t.eintrag.normen && t.eintrag.normen.length ? " · " + escapeHtml(normRefListeText(t.eintrag.normen)) : ""} <button type="button" data-action="setbestandteil-entfernen" data-id="${escapeHtml(t.sb.id)}" title="Set-Bestandteil entfernen" style="border:none;background:none;color:inherit;cursor:pointer;font:inherit;padding:0 0 0 0.3rem">✕</button></span>`).join("")}</div>`
       : "";
 
     const schonDrinKombi = kv.positionen.some((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere("Sicherheit & Norm / Sonder- & Funktionsparameter") && normalisiere(p.bezeichnung) === normalisiere(beschreibungSicherheitNorm));
@@ -2032,7 +2100,6 @@ function renderMechanikEmpfehlungKarte(kv, pa) {
         ${schonDrinKombi ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="mechanik-kombi-hinzufuegen" data-bezeichnung="${escapeHtml(beschreibungSicherheitNorm)}" data-kosten="${bekannteKosten.length ? summeRabattiert : 0}">+ hinzufügen</button>`}
       </div>
       <p class="hinweis" style="margin:0">${hinweisText}${teilprodukte.length ? ` · ${komponenten.length} Komponenten (Hauptprodukt + ${teilprodukte.length} Set-Bestandteil${teilprodukte.length === 1 ? "" : "e"})` : ""}</p>
-      ${materialienNormText ? `<p class="hinweis" style="margin:0"><strong>Materialien:</strong> ${escapeHtml(materialienNormText)}</p>` : ""}
       ${teilprodukteHtml}
       <label style="display:flex;flex-direction:column;gap:0.2rem;font-size:0.8rem;font-weight:600;width:100%;max-width:420px">Weiteren Set-Bestandteil hinzufügen (mehrteiliges Produkt, z. B. Messer + Messerblock)
         <input type="text" id="setbestandteil-suche" placeholder="Produkt in der gesamten Mechanik-Referenz suchen…" style="font-family:inherit;font-size:0.85rem;padding:0.35rem 0.5rem;border:1px solid var(--border);border-radius:6px;font-weight:400">
@@ -2041,19 +2108,16 @@ function renderMechanikEmpfehlungKarte(kv, pa) {
     </div>`;
 
     const zeilenExtra = [];
-    if (gewaehlt.ffuHinweis) zeilenExtra.push({ label: "FFU", detail: gewaehlt.ffuHinweis, kosten: gewaehlt.kostenFfu, kategorie: "FFU/Fitting", kuerzel: "FFU", sapCode: "FFU_TS", materialien: (gewaehlt.materialienFfu || []).join(", ") });
-    if (gewaehlt.stiwaHinweis) zeilenExtra.push({ label: "NGO/StiWa", detail: gewaehlt.stiwaHinweis, kosten: gewaehlt.kostenStiwa, kategorie: "NGO", kuerzel: "NGO", sapCode: "FFU_TS", materialien: (gewaehlt.materialienStiwa || []).join(", ") });
+    if ((gewaehlt.ffuNormen || []).length) zeilenExtra.push({ label: "FFU", detail: normRefListeText(gewaehlt.ffuNormen), kosten: gewaehlt.kostenFfu, kategorie: "FFU/Fitting", kuerzel: "FFU", sapCode: "FFU_TS" });
+    if ((gewaehlt.stiwaNormen || []).length) zeilenExtra.push({ label: "NGO/StiWa", detail: normRefListeText(gewaehlt.stiwaNormen), kosten: gewaehlt.kostenStiwa, kategorie: "NGO", kuerzel: "NGO", sapCode: "FFU_TS" });
     const extraHtml = zeilenExtra.map((z) => {
       const bezeichnung = z.detail ? `${z.label}: ${z.detail}` : z.label;
       const schonDrin = kv.positionen.some((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere(z.kategorie) && normalisiere(p.bezeichnung) === normalisiere(bezeichnung));
       const hatKosten = z.kosten !== null && z.kosten !== undefined;
       const kostenText = hatKosten ? `${z.kosten} €` : "Preis auf Anfrage";
-      return `<div class="pruefumfang-position pruefumfang-position-vorschlag" style="align-items:flex-start;flex-direction:column;gap:0.2rem">
-        <div class="toolbar-zeile" style="width:100%">
-          <span>${escapeHtml(bezeichnung)} <span class="muted">(${kostenText})</span> <span class="badge ja">Vorschlag</span></span>
-          ${schonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="mechanik-position-hinzufuegen" data-kategorie="${escapeHtml(z.kategorie)}" data-bezeichnung="${escapeHtml(bezeichnung)}" data-kosten="${hatKosten ? z.kosten : 0}" data-kuerzel="${escapeHtml(z.kuerzel)}" data-sapcode="${escapeHtml(z.sapCode)}">+ hinzufügen</button>`}
-        </div>
-        ${z.materialien ? `<p class="hinweis" style="margin:0"><strong>Materialien:</strong> ${escapeHtml(z.materialien)}</p>` : ""}
+      return `<div class="pruefumfang-position pruefumfang-position-vorschlag">
+        <span>${escapeHtml(bezeichnung)} <span class="muted">(${kostenText})</span> <span class="badge ja">Vorschlag</span></span>
+        ${schonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="mechanik-position-hinzufuegen" data-kategorie="${escapeHtml(z.kategorie)}" data-bezeichnung="${escapeHtml(bezeichnung)}" data-kosten="${hatKosten ? z.kosten : 0}" data-kuerzel="${escapeHtml(z.kuerzel)}" data-sapcode="${escapeHtml(z.sapCode)}">+ hinzufügen</button>`}
       </div>`;
     }).join("");
 
@@ -2083,12 +2147,12 @@ function renderSetbestandteilListe(kv, filterText) {
   const q = normalisiere(filterText);
   if (!q) { container.innerHTML = ""; return; }
   const ausgeschlossen = new Set([kv.mechanikProduktId, ...kv.mechanikSetbestandteile.map((s) => s.mechanikId)]);
-  const gefiltert = data.pruefgrundlagen.filter((e) => !ausgeschlossen.has(mechanikEintragId(e)) && normalisiere(e.produkt + " " + e.warengruppeName + " " + (e.normen || []).join(" ")).includes(q));
+  const gefiltert = data.pruefgrundlagen.filter((e) => !ausgeschlossen.has(mechanikEintragId(e)) && normalisiere(e.produkt + " " + e.warengruppeName + " " + normRefListeText(e.normen)).includes(q));
   const GRENZE = 20;
   const anzeige = gefiltert.slice(0, GRENZE);
   container.innerHTML = (anzeige.length
     ? anzeige.map((e) => `<div class="pruefumfang-position">
-        <span>${escapeHtml(e.produkt)} <span class="muted">(${escapeHtml(e.warengruppeName)}${e.normen && e.normen.length ? " · " + escapeHtml(e.normen.join(", ")) : ""})</span></span>
+        <span>${escapeHtml(e.produkt)} <span class="muted">(${escapeHtml(e.warengruppeName)}${e.normen && e.normen.length ? " · " + escapeHtml(normRefListeText(e.normen)) : ""})</span></span>
         <button type="button" class="ghost small" data-action="setbestandteil-hinzufuegen" data-id="${escapeHtml(mechanikEintragId(e))}">+ Set-Bestandteil</button>
       </div>`).join("")
     : `<p class="muted" style="margin:0.3rem 0">Keine Treffer.</p>`)
@@ -2522,23 +2586,20 @@ document.getElementById("btn-neue-katalog-position").addEventListener("click", (
 
 /* ================= PRÜFGRUNDLAGEN (Warengruppe -> Produkt -> Norm/Kosten) ================= */
 
-/* PRUEFGRUNDLAGE_FELDER bewusst OHNE "dokumente": hochgeladene Normen-/Prüfprogramm-Texte sollen
-   beim Zusammenführen keine Konflikte auslösen und nicht durch "Aus Datei übernehmen" überschrieben
-   werden können - das sind lokal je Rechner hochgeladene, potenziell aufwändig zu beschaffende
-   Dokumente, kein einfacher Metadaten-Abgleich wie die übrigen Felder. */
-const PRUEFGRUNDLAGE_FELDER = ["bereich", "warengruppeCode", "warengruppeName", "produkt", "normen", "anzahlMuster", "bemerkungen", "trivial", "kez", "kennzeichnung", "materialienNorm", "kostenSicherheitNorm", "ffuHinweis", "materialienFfu", "kostenFfu", "stiwaHinweis", "materialienStiwa", "kostenStiwa"];
+/* PRUEFGRUNDLAGE_FELDER: Felder, die beim Zusammenführen (Konflikt-/Neu-Erkennung) verglichen
+   werden. Normen/FFU/StiWa sind jetzt Referenzlisten ({normId, inAnlehnungAn}) auf data.normen
+   statt Freitext - der generische JSON.stringify-Vergleich in feldweiseGleich() funktioniert dafür
+   unverändert. */
+const PRUEFGRUNDLAGE_FELDER = ["bereich", "warengruppeCode", "warengruppeName", "produkt", "normen", "anzahlMuster", "bemerkungen", "trivial", "kez", "kostenSicherheitNorm", "ffuNormen", "kostenFfu", "stiwaNormen", "kostenStiwa"];
 
 /* ---------- Normen-/Prüfprogramm-Dokumente: Text auslesen, NICHT als Binärdatei speichern ----------
-   PDF: über die bereits eingebundene pdf.js-Bibliothek (wie beim Prüfauftrag-PDF-Upload).
-   DOCX: eigener, minimaler ZIP+XML-Reader (keine externe Bibliothek eingebunden) - liest die
-   ZIP-Zentralverzeichnis-Einträge, um "word/document.xml" zu finden, entpackt sie bei Bedarf über
-   die native Browser-API DecompressionStream("deflate-raw") und liest den reinen Text aus den
-   <w:t>-Knoten je Absatz. Alte .doc-Dateien (binäres Format vor Office 2007) werden nicht
-   unterstützt - dafür bräuchte es einen vollständigen Parser, den wir hier bewusst nicht nachbauen. */
-async function extrahierePdfRohtext(datei) {
-  return (await extrahierePdfZeilen(datei)).join("\n");
-}
-
+   Wird ausschließlich vom Reiter "Normen" genutzt (verarbeiteNormPdf). PDF: über die bereits
+   eingebundene pdf.js-Bibliothek (wie beim Prüfauftrag-PDF-Upload). DOCX: eigener, minimaler
+   ZIP+XML-Reader (keine externe Bibliothek eingebunden) - liest die ZIP-Zentralverzeichnis-
+   Einträge, um "word/document.xml" zu finden, entpackt sie bei Bedarf über die native Browser-API
+   DecompressionStream("deflate-raw") und liest den reinen Text aus den <w:t>-Knoten je Absatz.
+   Alte .doc-Dateien (binäres Format vor Office 2007) werden nicht unterstützt - dafür bräuchte es
+   einen vollständigen Parser, den wir hier bewusst nicht nachbauen. */
 async function extrahiereDocxRohtext(datei) {
   if (typeof DecompressionStream === "undefined") {
     throw new Error("Dieser Browser unterstützt das Lesen von .docx-Dateien nicht (zu alt) - bitte als PDF hochladen oder Browser aktualisieren.");
@@ -2594,20 +2655,23 @@ async function extrahiereDocxRohtext(datei) {
   return absaetze.map((p) => [...p.getElementsByTagName("w:t")].map((t) => t.textContent).join("")).filter((z) => z.trim()).join("\n");
 }
 
-async function extrahiereDokumentText(datei) {
-  const name = datei.name.toLowerCase();
-  if (name.endsWith(".pdf")) return { art: "pdf", text: await extrahierePdfRohtext(datei) };
-  if (name.endsWith(".docx")) return { art: "docx", text: await extrahiereDocxRohtext(datei) };
-  if (name.endsWith(".doc")) throw new Error("Das alte .doc-Format wird nicht unterstützt - bitte als .docx oder PDF hochladen.");
-  throw new Error("Nicht unterstütztes Dateiformat - bitte PDF oder .docx hochladen.");
+/* Anzeigetext einer einzelnen Norm-Referenz {normId, inAnlehnungAn} bzw. einer ganzen Liste davon -
+   löst normId gegen data.normen auf (Bezeichnung, ggf. "gelöschte Norm" falls nicht mehr vorhanden). */
+function normRefBezeichnung(ref) {
+  const norm = data.normen.find((n) => n.id === ref.normId);
+  const bez = norm ? norm.bezeichnung : "(gelöschte Norm)";
+  return ref.inAnlehnungAn ? `${bez} (in Anlehnung an)` : bez;
+}
+function normRefListeText(refs) {
+  return (refs || []).map(normRefBezeichnung).join(", ");
 }
 
 function gefilterterPruefgrundlagen() {
   const q = normalisiere(suchbegriffe.pruefgrundlagen);
   if (!q) return data.pruefgrundlagen;
   return data.pruefgrundlagen.filter((e) => normalisiere([
-    e.bereich, e.warengruppeCode, e.warengruppeName, e.produkt, (e.normen || []).join(" "), e.bemerkungen,
-    (e.materialienNorm || []).join(" "), e.ffuHinweis, (e.materialienFfu || []).join(" "), e.stiwaHinweis, (e.materialienStiwa || []).join(" ")
+    e.bereich, e.warengruppeCode, e.warengruppeName, e.produkt, normRefListeText(e.normen), e.bemerkungen,
+    normRefListeText(e.ffuNormen), normRefListeText(e.stiwaNormen)
   ].join(" ")).includes(q));
 }
 
@@ -2616,18 +2680,17 @@ function gefilterterPruefgrundlagen() {
 function pruefgrundlageZeileKompaktHtml(e) {
   const badges = [];
   if (e.trivial) badges.push(`<span class="badge ja" title="Trivial">Triv.</span>`);
-  if (e.kez) badges.push(`<span class="badge ja" title="KEZ-Anforderungen">KEZ</span>`);
-  if (e.kennzeichnung) badges.push(`<span class="badge ja" title="Kennzeichnungsanforderungen in der Norm, die über die GPSR-Anforderungen hinausgehen">Kennz. &gt; GPSR</span>`);
-  const normenText = (e.normen && e.normen.length) ? e.normen.join(", ") : "–";
+  if (e.kez) badges.push(`<span class="badge ja" title="Kennzeichnungsanforderungen in der Norm, die über die GPSR-Anforderungen hinausgehen">KEZ</span>`);
+  const normenText = (e.normen && e.normen.length) ? normRefListeText(e.normen) : "–";
   const kostenText = (e.kostenSicherheitNorm === null || e.kostenSicherheitNorm === undefined || e.kostenSicherheitNorm === "") ? "Anfrage" : `${e.kostenSicherheitNorm} €`;
   return `<tr data-id="${e.id}" class="klickbar">
-    <td><strong>${escapeHtml(e.produkt || "(ohne Produktnamen)")}</strong>${e.dokumente && e.dokumente.length ? ` <span class="muted" title="${e.dokumente.length} Dokument(e) hinterlegt">📄${e.dokumente.length}</span>` : ""}</td>
+    <td><strong>${escapeHtml(e.produkt || "(ohne Produktnamen)")}</strong></td>
     <td title="${escapeHtml(normenText)}">${escapeHtml(normenText)}</td>
     <td>${kostenText}</td>
     <td>${escapeHtml(e.anzahlMuster || "")}</td>
     <td>${badges.join(" ") || "–"}</td>
-    <td>${e.ffuHinweis ? `<span class="badge ja" title="${escapeHtml(e.ffuHinweis)}">FFU</span>` : "–"}</td>
-    <td>${e.stiwaHinweis ? `<span class="badge ja" title="${escapeHtml(e.stiwaHinweis)}">StiWa</span>` : "–"}</td>
+    <td>${(e.ffuNormen || []).length ? `<span class="badge ja" title="${escapeHtml(normRefListeText(e.ffuNormen))}">FFU</span>` : "–"}</td>
+    <td>${(e.stiwaNormen || []).length ? `<span class="badge ja" title="${escapeHtml(normRefListeText(e.stiwaNormen))}">StiWa</span>` : "–"}</td>
     <td class="zeile-aktionen">
       <button class="ghost small" data-action="bearbeiten" title="Bearbeiten">✏️</button>
       <button class="danger small" data-action="loeschen" title="Löschen">🗑</button>
@@ -2662,7 +2725,7 @@ function renderPruefgrundlagenTab() {
       <div class="tabellen-wrapper">
         <table class="tabelle readonly">
           <thead><tr>
-            <th>Produkt</th><th>Normen</th><th>Kosten S&amp;N €</th><th>Muster</th><th>Kennzeichnungen</th><th>FFU</th><th>StiWa</th><th>Aktion</th>
+            <th>Produkt</th><th>Normen</th><th>Kosten S&amp;N €</th><th>Muster</th><th>Kennzeichnung</th><th>FFU</th><th>StiWa</th><th>Aktion</th>
           </tr></thead>
           <tbody>${zeilen.map((e) => pruefgrundlageZeileKompaktHtml(e)).join("")}</tbody>
         </table>
@@ -2693,14 +2756,141 @@ function pruefgrundlageBearbeiten(eintrag) {
   oeffnePruefgrundlageModal(JSON.parse(JSON.stringify(eintrag)));
 }
 
-function tagFeldHtml(feldName, label, platzhalter) {
-  return `<div class="tag-feld" data-tagfeld="${feldName}">
+/* ---------- Warengruppe: durchsuchbare Einfachauswahl (Dropdown-only) ----------
+   Quelle ist data.warengruppen (siehe seedWarengruppen) - Auswahl setzt Code+Name gemeinsam,
+   damit sie nie auseinanderlaufen. Freitext ist hier bewusst nicht mehr möglich. */
+function warengruppeAuswahlHtml(entwurf) {
+  const label = entwurf.warengruppeCode ? `${normalisiereWarengruppe(entwurf.warengruppeCode)} – ${entwurf.warengruppeName || ""}` : "— Warengruppe wählen —";
+  return `<div class="ss-feld" data-ssfeld="warengruppe">
+    <label>Warengruppe (für die Zuordnung im KV relevant)</label>
+    <button type="button" class="ms-btn" id="pg-warengruppe-btn">${escapeHtml(label)}</button>
+    <div class="ms-panel" id="pg-warengruppe-panel" hidden>
+      <input type="text" class="ms-suche" placeholder="Code oder Name suchen…">
+      <div class="ms-liste"></div>
+    </div>
+  </div>`;
+}
+
+function initialisiereWarengruppeAuswahl(box, entwurf) {
+  const feld = box.querySelector('[data-ssfeld="warengruppe"]');
+  if (!feld) return;
+  const btn = feld.querySelector("#pg-warengruppe-btn");
+  const panel = feld.querySelector("#pg-warengruppe-panel");
+  const suche = feld.querySelector(".ms-suche");
+  const liste = feld.querySelector(".ms-liste");
+
+  function baueListe(q) {
+    const norm = normalisiere(q);
+    const optionen = data.warengruppen.filter((w) => !norm || normalisiere(w.code + " " + w.name).includes(norm));
+    liste.innerHTML = optionen.length
+      ? optionen.map((w) => `<button type="button" class="ss-option" data-code="${escapeHtml(w.code)}" data-name="${escapeHtml(w.name)}">${escapeHtml(w.code)} – ${escapeHtml(w.name)}</button>`).join("")
+      : `<div class="ss-leer">Keine Treffer.</div>`;
+    liste.querySelectorAll(".ss-option").forEach((o) => {
+      o.addEventListener("click", () => {
+        entwurf.warengruppeCode = o.dataset.code;
+        entwurf.warengruppeName = o.dataset.name;
+        btn.textContent = `${o.dataset.code} – ${o.dataset.name}`;
+        panel.hidden = true;
+      });
+    });
+  }
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const warOffen = !panel.hidden;
+    document.querySelectorAll(".ms-panel").forEach((p) => (p.hidden = true));
+    panel.hidden = warOffen;
+    if (!warOffen) { suche.value = ""; baueListe(""); suche.focus(); }
+  });
+  panel.addEventListener("click", (e) => e.stopPropagation());
+  suche.addEventListener("input", () => baueListe(suche.value));
+}
+
+/* ---------- Normen: durchsuchbare Mehrfachauswahl mit Neuanlage ----------
+   Referenziert echte Norm-Datensätze (data.normen) statt Freitext - je Auswahl zusätzlich ein
+   "in Anlehnung an"-Haken für Normen, die nicht vollständig anwendbar sind. Wird für alle drei
+   Prüfblöcke verwendet (Sicherheit & Norm, FFU/Fitting, NGO/StiWa). */
+function normenFeldHtml(feldName, label) {
+  return `<div class="normen-feld" data-normenfeld="${feldName}">
     <label>${escapeHtml(label)}</label>
     <div class="tag-chips"></div>
-    <div class="tag-eingabe">
-      <input type="text" placeholder="${escapeHtml(platzhalter)}">
-      <button type="button" class="ghost small">+ Hinzufügen</button>
-    </div>
+    <input type="text" class="normen-suche" placeholder="Norm suchen oder neu anlegen…">
+    <div class="normen-ergebnisse"></div>
+  </div>`;
+}
+
+function renderNormenChips(container, entwurf, feldName) {
+  const chips = container.querySelector(".tag-chips");
+  const refs = entwurf[feldName] || [];
+  chips.innerHTML = refs.length
+    ? refs.map((r, i) => {
+        const norm = data.normen.find((n) => n.id === r.normId);
+        const bez = norm ? norm.bezeichnung : "(gelöschte Norm)";
+        return `<span class="tag-chip">${escapeHtml(bez)}
+          <label class="anlehnung-label"><input type="checkbox" data-idx="${i}" data-rolle="anlehnung" ${r.inAnlehnungAn ? "checked" : ""}> in Anlehnung an</label>
+          <button type="button" data-idx="${i}" data-rolle="entfernen" title="Entfernen">✕</button>
+        </span>`;
+      }).join("")
+    : `<span class="muted" style="font-size:0.78rem">Keine.</span>`;
+  chips.querySelectorAll('[data-rolle="entfernen"]').forEach((btn) => {
+    btn.addEventListener("click", () => { refs.splice(Number(btn.dataset.idx), 1); renderNormenChips(container, entwurf, feldName); });
+  });
+  chips.querySelectorAll('[data-rolle="anlehnung"]').forEach((cb) => {
+    cb.addEventListener("change", () => { refs[Number(cb.dataset.idx)].inAnlehnungAn = cb.checked; });
+  });
+}
+
+function renderNormenErgebnisse(container, entwurf, feldName, q) {
+  const ziel = container.querySelector(".normen-ergebnisse");
+  const norm = normalisiere(q);
+  if (!norm) { ziel.innerHTML = ""; return; }
+  const ausgeschlossen = new Set((entwurf[feldName] || []).map((r) => r.normId));
+  const treffer = data.normen.filter((n) => !ausgeschlossen.has(n.id) && normalisiere(n.bezeichnung + " " + n.titel).includes(norm)).slice(0, 15);
+  let html = treffer.map((n) => `<button type="button" class="ss-option" data-normid="${escapeHtml(n.id)}">${escapeHtml(n.bezeichnung)}${n.titel ? " – " + escapeHtml(n.titel) : ""}</button>`).join("");
+  const exaktVorhanden = data.normen.some((n) => normalisiere(n.bezeichnung) === norm);
+  if (!exaktVorhanden && q.trim()) html += `<button type="button" class="ss-option ss-neu" data-neu="1">+ Neue Norm „${escapeHtml(q.trim())}" anlegen</button>`;
+  ziel.innerHTML = html || `<div class="ss-leer">Keine Treffer.</div>`;
+
+  ziel.querySelectorAll("[data-normid]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      entwurf[feldName] = entwurf[feldName] || [];
+      entwurf[feldName].push({ normId: btn.dataset.normid, inAnlehnungAn: false });
+      renderNormenChips(container, entwurf, feldName);
+      container.querySelector(".normen-suche").value = "";
+      ziel.innerHTML = "";
+    });
+  });
+  const neuBtn = ziel.querySelector("[data-neu]");
+  if (neuBtn) {
+    neuBtn.addEventListener("click", () => {
+      const neu = { id: neueId(), bezeichnung: q.trim(), titel: "", dateiname: "", hochgeladenAm: "", rohtext: "", pruefpunkte: [] };
+      data.normen.push(neu);
+      speichereInLocalStorage();
+      entwurf[feldName] = entwurf[feldName] || [];
+      entwurf[feldName].push({ normId: neu.id, inAnlehnungAn: false });
+      renderNormenChips(container, entwurf, feldName);
+      container.querySelector(".normen-suche").value = "";
+      ziel.innerHTML = "";
+    });
+  }
+}
+
+function initialisiereNormenFeld(box, entwurf, feldName) {
+  const container = box.querySelector(`[data-normenfeld="${feldName}"]`);
+  if (!container) return;
+  renderNormenChips(container, entwurf, feldName);
+  const suche = container.querySelector(".normen-suche");
+  suche.addEventListener("input", () => renderNormenErgebnisse(container, entwurf, feldName, suche.value));
+}
+
+/* Übersicht, in welchen Kostenvoranschlägen diese Prüfgrundlage verwendet wird (als Hauptprodukt
+   oder als Set-Bestandteil) - rein informativ, Klick springt zum jeweiligen KV. */
+function pruefgrundlageVerwendungHtml(entwurf) {
+  const treffer = data.kvs.filter((kv) => kv.mechanikProduktId === entwurf.id || (kv.mechanikSetbestandteile || []).some((sb) => sb.mechanikId === entwurf.id));
+  return `<div class="pruefblock">
+    <h3>Verwendet in Projekten${treffer.length ? " (" + treffer.length + ")" : ""}</h3>
+    ${treffer.length
+      ? `<ul style="margin:0;padding-left:1.1rem">${treffer.map((kv) => `<li style="margin-bottom:0.2rem"><button type="button" class="ghost small" data-action="pg-kv-oeffnen" data-id="${escapeHtml(kv.id)}">${escapeHtml(kv.ian || "(ohne IAN)")} — ${escapeHtml(kv.artikel || "")}</button></li>`).join("")}</ul>`
+      : `<p class="hinweis" style="margin:0">Noch in keinem Kostenvoranschlag verwendet.</p>`}
   </div>`;
 }
 
@@ -2708,117 +2898,31 @@ function pruefgrundlageFormularHtml(entwurf) {
   return `<div class="formular-grid">
       <label>Produkt<input type="text" data-feld="produkt" value="${escapeHtml(entwurf.produkt)}"></label>
       <label>Anzahl Muster<input type="text" data-feld="anzahlMuster" value="${escapeHtml(entwurf.anzahlMuster)}"></label>
-      <label>Warengruppen-Code (für die Zuordnung im KV relevant)<input type="text" data-feld="warengruppeCode" value="${escapeHtml(entwurf.warengruppeCode)}"></label>
-      <label>Warengruppen-Name<input type="text" data-feld="warengruppeName" value="${escapeHtml(entwurf.warengruppeName)}"></label>
+    </div>
+    ${warengruppeAuswahlHtml(entwurf)}
+    <div class="formular-grid">
       <label>Bereich<input type="text" data-feld="bereich" value="${escapeHtml(entwurf.bereich)}"></label>
       <div></div>
       <label class="checkbox-label">Trivial<input type="checkbox" data-feld="trivial" ${entwurf.trivial ? "checked" : ""}></label>
-      <label class="checkbox-label">KEZ-Anforderungen<input type="checkbox" data-feld="kez" ${entwurf.kez ? "checked" : ""}></label>
-      <label class="checkbox-label" title="Es gibt in der Norm Kennzeichnungsanforderungen, die über die Anforderungen der GPSR hinausgehen.">Kennzeichnung über GPSR hinaus<input type="checkbox" data-feld="kennzeichnung" ${entwurf.kennzeichnung ? "checked" : ""}></label>
+      <label class="checkbox-label" title="Es gibt in der Norm Kennzeichnungsanforderungen, die über die Anforderungen der GPSR hinausgehen.">KEZ-Anforderungen (Kennzeichnung über GPSR hinaus)<input type="checkbox" data-feld="kez" ${entwurf.kez ? "checked" : ""}></label>
       <label class="volle-breite">Bemerkungen<textarea data-feld="bemerkungen" rows="2">${escapeHtml(entwurf.bemerkungen)}</textarea></label>
     </div>
     <div class="pruefblock">
       <h3>Sicherheit &amp; Norm</h3>
-      ${tagFeldHtml("normen", "Normen (Mehrfachauswahl)", "z. B. DIN EN 1860-1 — Enter zum Hinzufügen")}
-      ${tagFeldHtml("materialienNorm", "Materialien", "z. B. Edelstahl — Enter zum Hinzufügen")}
+      ${normenFeldHtml("normen", "Normen (Mehrfachauswahl)")}
       <label style="max-width:240px">Kosten Sicherheit &amp; Norm €<input type="number" step="0.01" data-feld="kostenSicherheitNorm" value="${zahlOderLeer(entwurf.kostenSicherheitNorm)}"></label>
     </div>
     <div class="pruefblock">
       <h3>FFU/Fitting</h3>
-      <label>Hinweis<input type="text" data-feld="ffuHinweis" value="${escapeHtml(entwurf.ffuHinweis)}"></label>
-      ${tagFeldHtml("materialienFfu", "Materialien", "z. B. Kunststoff — Enter zum Hinzufügen")}
+      ${normenFeldHtml("ffuNormen", "Normen (Mehrfachauswahl)")}
       <label style="max-width:240px">Kosten FFU €<input type="number" step="0.01" data-feld="kostenFfu" value="${zahlOderLeer(entwurf.kostenFfu)}"></label>
     </div>
     <div class="pruefblock">
       <h3>NGO/StiWa</h3>
-      <label>Hinweis<input type="text" data-feld="stiwaHinweis" value="${escapeHtml(entwurf.stiwaHinweis)}"></label>
-      ${tagFeldHtml("materialienStiwa", "Materialien", "z. B. Holz — Enter zum Hinzufügen")}
+      ${normenFeldHtml("stiwaNormen", "Normen (Mehrfachauswahl)")}
       <label style="max-width:240px">Kosten StiWa €<input type="number" step="0.01" data-feld="kostenStiwa" value="${zahlOderLeer(entwurf.kostenStiwa)}"></label>
     </div>
-    <div class="pruefblock">
-      <h3>Normen-/Prüfprogramm-Dokumente</h3>
-      <p class="hinweis" style="margin:0 0 0.5rem">PDF oder .docx hochladen — der Text wird ausgelesen und durchsuchbar gespeichert (die Originaldatei selbst wird nicht gespeichert).</p>
-      <button type="button" class="ghost small" id="pg-dokument-upload-btn">📄 Dokument(e) hochladen</button>
-      <input type="file" id="pg-dokument-upload" accept=".pdf,.docx,.doc" multiple>
-      <p class="hinweis" id="pg-dokument-status" style="margin:0.3rem 0"></p>
-      <div id="pg-dokumente-liste"></div>
-    </div>`;
-}
-
-function renderTagChips(container, werte) {
-  const chips = container.querySelector(".tag-chips");
-  chips.innerHTML = werte.length
-    ? werte.map((w, i) => `<span class="tag-chip">${escapeHtml(w)}<button type="button" data-idx="${i}" title="Entfernen">✕</button></span>`).join("")
-    : `<span class="muted" style="font-size:0.78rem">Keine.</span>`;
-  chips.querySelectorAll("button[data-idx]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      werte.splice(Number(btn.dataset.idx), 1);
-      renderTagChips(container, werte);
-    });
-  });
-}
-
-function renderDokumenteListe(box, entwurf) {
-  const container = box.querySelector("#pg-dokumente-liste");
-  if (!container) return;
-  const dokumente = entwurf.dokumente || [];
-  container.innerHTML = dokumente.length
-    ? dokumente.map((d) => `<details class="dokument-item" data-id="${escapeHtml(d.id)}">
-        <summary><span class="badge nein">${d.art.toUpperCase()}</span> ${escapeHtml(d.name)} <span class="muted">(${d.text.length.toLocaleString("de-DE")} Zeichen · hochgeladen ${escapeHtml(d.hochgeladenAm)})</span>
-          <button type="button" class="danger small" data-action="dokument-entfernen" data-id="${escapeHtml(d.id)}" title="Entfernen">🗑</button>
-        </summary>
-        <pre class="dokument-text">${escapeHtml(d.text) || "(kein Text erkannt)"}</pre>
-      </details>`).join("")
-    : `<p class="muted" style="font-size:0.82rem">Noch keine Dokumente hochgeladen.</p>`;
-  container.querySelectorAll('[data-action="dokument-entfernen"]').forEach((btn) => {
-    btn.addEventListener("click", (ev) => {
-      ev.preventDefault();
-      entwurf.dokumente = (entwurf.dokumente || []).filter((d) => d.id !== btn.dataset.id);
-      renderDokumenteListe(box, entwurf);
-    });
-  });
-}
-
-function initialisiereDokumentUpload(box, entwurf) {
-  const btn = box.querySelector("#pg-dokument-upload-btn");
-  const input = box.querySelector("#pg-dokument-upload");
-  const status = box.querySelector("#pg-dokument-status");
-  if (!btn || !input) return;
-  btn.addEventListener("click", () => input.click());
-  input.addEventListener("change", async () => {
-    const dateien = [...input.files];
-    entwurf.dokumente = entwurf.dokumente || [];
-    for (const datei of dateien) {
-      status.textContent = `Lese „${datei.name}“…`;
-      try {
-        const { art, text } = await extrahiereDokumentText(datei);
-        entwurf.dokumente.push({ id: neueId(), name: datei.name, art, text, hochgeladenAm: heutigesDatumLokal() });
-        status.textContent = `„${datei.name}“ gelesen (${text.length.toLocaleString("de-DE")} Zeichen).`;
-      } catch (err) {
-        status.textContent = `Fehler bei „${datei.name}“: ${err.message}`;
-      }
-      renderDokumenteListe(box, entwurf);
-    }
-    input.value = "";
-  });
-}
-
-function initialisiereTagFeld(box, entwurf, feldName) {
-  const container = box.querySelector(`[data-tagfeld="${feldName}"]`);
-  if (!container) return;
-  const werte = entwurf[feldName];
-  renderTagChips(container, werte);
-  const input = container.querySelector("input");
-  const hinzufuegen = () => {
-    const wert = input.value.trim();
-    if (!wert) return;
-    werte.push(wert);
-    input.value = "";
-    renderTagChips(container, werte);
-    input.focus();
-  };
-  container.querySelector("button.ghost").addEventListener("click", hinzufuegen);
-  input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); hinzufuegen(); } });
+    ${pruefgrundlageVerwendungHtml(entwurf)}`;
 }
 
 function oeffnePruefgrundlageModal(entwurf) {
@@ -2831,10 +2935,11 @@ function oeffnePruefgrundlageModal(entwurf) {
       <button class="ghost" id="pg-abbrechen">Abbrechen</button>
       ${istNeu ? "" : `<button class="danger" id="pg-loeschen" style="margin-left:auto">Löschen</button>`}
     </div>`;
-  ["normen", "materialienNorm", "materialienFfu", "materialienStiwa"].forEach((f) => initialisiereTagFeld(box, entwurf, f));
-  entwurf.dokumente = entwurf.dokumente || [];
-  renderDokumenteListe(box, entwurf);
-  initialisiereDokumentUpload(box, entwurf);
+  initialisiereWarengruppeAuswahl(box, entwurf);
+  ["normen", "ffuNormen", "stiwaNormen"].forEach((f) => initialisiereNormenFeld(box, entwurf, f));
+  box.querySelectorAll('[data-action="pg-kv-oeffnen"]').forEach((btn) => {
+    btn.addEventListener("click", () => { aktiveKvId = btn.dataset.id; schliesseOverlay(); wechsleTab("kvs"); });
+  });
 
   document.getElementById("pg-speichern").addEventListener("click", () => {
     box.querySelectorAll("[data-feld]").forEach((el) => {
@@ -2927,13 +3032,20 @@ function normEntwurfNeu() {
   return { id: neueId(), bezeichnung: "Neue Norm", titel: "", dateiname: "", hochgeladenAm: "", rohtext: "", pruefpunkte: [] };
 }
 
-/* Liest eine Norm-PDF ein und liefert einen vollständigen Norm-Datensatz (noch nicht in data.normen
+/* Liest eine Norm-Datei ein und liefert einen vollständigen Norm-Datensatz (noch nicht in data.normen
    eingetragen) - Bezeichnung wird zunächst aus dem Dateinamen abgeleitet (ohne Endung), da sich eine
-   saubere Normbezeichnung nicht zuverlässig aus beliebigen PDF-Layouts herausparsen lässt; per Hand in
-   der Detailansicht leicht korrigierbar. */
+   saubere Normbezeichnung nicht zuverlässig aus beliebigen Layouts herausparsen lässt; per Hand in der
+   Detailansicht leicht korrigierbar. Die automatische Prüfpunkt-Erkennung (parsePruefpunkteAusZeilen)
+   nutzt die Tab-als-Spaltentrenner-Eigenheit der PDF-Textextraktion (siehe dort) und funktioniert nur
+   für PDFs; bei .docx-Uploads bleibt die Prüfpunkte-Liste leer und wird von Hand gepflegt. */
 async function verarbeiteNormPdf(datei) {
+  const istDocx = /\.docx$/i.test(datei.name);
+  const bezeichnung = datei.name.replace(/\.(pdf|docx)$/i, "").replace(/[_]+/g, " ").trim() || "Neue Norm";
+  if (istDocx) {
+    const rohtext = await extrahiereDocxRohtext(datei);
+    return { id: neueId(), bezeichnung, titel: "", dateiname: datei.name, hochgeladenAm: heutigesDatumLokal(), rohtext, pruefpunkte: [] };
+  }
   const zeilen = await extrahierePdfZeilen(datei);
-  const bezeichnung = datei.name.replace(/\.pdf$/i, "").replace(/[_]+/g, " ").trim() || "Neue Norm";
   return {
     id: neueId(), bezeichnung, titel: "", dateiname: datei.name, hochgeladenAm: heutigesDatumLokal(),
     rohtext: zeilen.join("\n"), pruefpunkte: parsePruefpunkteAusZeilen(zeilen)
@@ -2986,8 +3098,8 @@ function renderNormDetail() {
       </div>
       <p class="hinweis">${norm.dateiname ? `Hochgeladen aus „${escapeHtml(norm.dateiname)}" am ${escapeHtml(norm.hochgeladenAm)}.` : "Manuell angelegt, ohne PDF-Upload."}</p>
       <div class="toolbar-zeile">
-        <button class="ghost small" id="norm-pdf-erneut-upload">📄 PDF erneut hochladen (ersetzt Rohtext + Prüfpunkte)</button>
-        <input type="file" id="norm-pdf-erneut-upload-input" accept="application/pdf">
+        <button class="ghost small" id="norm-pdf-erneut-upload">📄 Datei erneut hochladen (ersetzt Rohtext + Prüfpunkte)</button>
+        <input type="file" id="norm-pdf-erneut-upload-input" accept=".pdf,.docx">
         <button class="danger small" id="norm-loeschen" style="margin-left:auto">Norm löschen</button>
       </div>
       ${norm.rohtext ? `<details style="margin-top:0.6rem"><summary class="muted" style="cursor:pointer">Rohtext der PDF anzeigen (${norm.rohtext.length.toLocaleString("de-DE")} Zeichen)</summary><textarea readonly rows="10" style="width:100%;margin-top:0.4rem;font-family:monospace;font-size:0.78rem">${escapeHtml(norm.rohtext)}</textarea></details>` : ""}
@@ -3151,7 +3263,8 @@ document.getElementById("datei-laden-input").addEventListener("change", async (e
     data = {
       arbeitsvorrat: geparst.arbeitsvorrat, pruefauftraege: geparst.pruefauftraege || [], kvs: geparst.kvs || [], katalog: geparst.katalog || [],
       pruefgrundlagen: (geparst.pruefgrundlagen && geparst.pruefgrundlagen.length) ? geparst.pruefgrundlagen : seedPruefgrundlagen(),
-      normen: geparst.normen || []
+      normen: geparst.normen || [],
+      warengruppen: (geparst.warengruppen && geparst.warengruppen.length) ? geparst.warengruppen : seedWarengruppen()
     };
     data.pruefgrundlagen.forEach(migrierePruefgrundlage);
     aktivePaId = data.pruefauftraege.length ? data.pruefauftraege[0].id : null;
@@ -3202,11 +3315,11 @@ document.getElementById("btn-csv").addEventListener("click", () => {
     data.katalog.forEach((k) => zeilen.push([k.kategorie, k.bezeichnung, k.kuerzel, k.sapCode, k.standardKosten]));
     csvHerunterladen(zeilen, "katalog_export.csv");
   } else if (aktiverTab === "pruefgrundlagen") {
-    const zeilen = [["Bereich", "Warengruppe-Code", "Warengruppe-Name", "Produkt", "Normen", "Materialien Norm", "Kosten Sicherheit&Norm", "Anzahl Muster", "Trivial", "KEZ", "Kennzeichnung > GPSR", "FFU-Hinweis", "Materialien FFU", "Kosten FFU", "StiWa-Hinweis", "Materialien StiWa", "Kosten StiWa", "Bemerkungen"]];
+    const zeilen = [["Bereich", "Warengruppe-Code", "Warengruppe-Name", "Produkt", "Normen", "Kosten Sicherheit&Norm", "Anzahl Muster", "Trivial", "KEZ (Kennzeichnung > GPSR)", "FFU-Normen", "Kosten FFU", "StiWa-Normen", "Kosten StiWa", "Bemerkungen"]];
     data.pruefgrundlagen.forEach((e) => zeilen.push([
-      e.bereich, e.warengruppeCode, e.warengruppeName, e.produkt, (e.normen || []).join("; "), (e.materialienNorm || []).join("; "), e.kostenSicherheitNorm, e.anzahlMuster,
-      e.trivial ? "Ja" : "Nein", e.kez ? "Ja" : "Nein", e.kennzeichnung ? "Ja" : "Nein",
-      e.ffuHinweis, (e.materialienFfu || []).join("; "), e.kostenFfu, e.stiwaHinweis, (e.materialienStiwa || []).join("; "), e.kostenStiwa, e.bemerkungen
+      e.bereich, e.warengruppeCode, e.warengruppeName, e.produkt, normRefListeText(e.normen), e.kostenSicherheitNorm, e.anzahlMuster,
+      e.trivial ? "Ja" : "Nein", e.kez ? "Ja" : "Nein",
+      normRefListeText(e.ffuNormen), e.kostenFfu, normRefListeText(e.stiwaNormen), e.kostenStiwa, e.bemerkungen
     ]));
     csvHerunterladen(zeilen, "pruefgrundlagen_export.csv");
   } else if (aktiverTab === "normen") {
@@ -3300,8 +3413,8 @@ function renderMergeUebersicht() {
   if (p.kvKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Kostenvoranschläge (${p.kvKonflikte.length})</h3>` + konfliktListeHtml("kvKonflikt", p.kvKonflikte, (k) => escapeHtml(k.lokal.ian), (kv) => "Artikel: " + (kv.artikel || "") + "\nPositionen: " + (kv.positionen || []).length) + `</div>`;
   if (p.neueKatalog.length) html += `<div class="merge-section"><h3>Neue Katalogpositionen (${p.neueKatalog.length})</h3>` + checkboxListeHtml("neueKatalog", p.neueKatalog, (k) => `<strong>${escapeHtml(k.bezeichnung)}</strong> (${k.standardKosten} €)`) + `</div>`;
   if (p.katalogKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Katalogpositionen (${p.katalogKonflikte.length})</h3>` + konfliktListeHtml("katalogKonflikt", p.katalogKonflikte, (k) => escapeHtml(k.lokal.bezeichnung), (k) => "Kategorie: " + (k.kategorie || "") + "\nSAP-Code: " + (k.sapCode || "") + "\nStandardkosten: " + (k.standardKosten ?? "")) + `</div>`;
-  if (p.neuePruefgrundlagen.length) html += `<div class="merge-section"><h3>Neue Prüfgrundlagen (${p.neuePruefgrundlagen.length})</h3>` + checkboxListeHtml("neuePruefgrundlagen", p.neuePruefgrundlagen, (e) => `<strong>${escapeHtml(e.warengruppeCode)} ${escapeHtml(e.produkt)}</strong> — ${escapeHtml((e.normen || []).join(", "))}`) + `</div>`;
-  if (p.pruefgrundlagenKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Prüfgrundlagen (${p.pruefgrundlagenKonflikte.length})</h3>` + konfliktListeHtml("pruefgrundlagenKonflikt", p.pruefgrundlagenKonflikte, (k) => escapeHtml(k.lokal.warengruppeCode) + " " + escapeHtml(k.lokal.produkt), (e) => PRUEFGRUNDLAGE_FELDER.map((f) => f + ": " + (Array.isArray(e[f]) ? e[f].join(", ") : (e[f] ?? ""))).join("\n")) + `</div>`;
+  if (p.neuePruefgrundlagen.length) html += `<div class="merge-section"><h3>Neue Prüfgrundlagen (${p.neuePruefgrundlagen.length})</h3>` + checkboxListeHtml("neuePruefgrundlagen", p.neuePruefgrundlagen, (e) => `<strong>${escapeHtml(e.warengruppeCode)} ${escapeHtml(e.produkt)}</strong> — ${escapeHtml(normRefListeText(e.normen))}`) + `</div>`;
+  if (p.pruefgrundlagenKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Prüfgrundlagen (${p.pruefgrundlagenKonflikte.length})</h3>` + konfliktListeHtml("pruefgrundlagenKonflikt", p.pruefgrundlagenKonflikte, (k) => escapeHtml(k.lokal.warengruppeCode) + " " + escapeHtml(k.lokal.produkt), (e) => PRUEFGRUNDLAGE_FELDER.map((f) => f + ": " + (["normen", "ffuNormen", "stiwaNormen"].includes(f) ? normRefListeText(e[f]) : (e[f] ?? ""))).join("\n")) + `</div>`;
   if (p.neueNormen.length) html += `<div class="merge-section"><h3>Neue Normen (${p.neueNormen.length})</h3>` + checkboxListeHtml("neueNormen", p.neueNormen, (n) => `<strong>${escapeHtml(n.bezeichnung)}</strong> — ${(n.pruefpunkte || []).length} Prüfpunkt(e)`) + `</div>`;
   if (p.normenKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Normen (${p.normenKonflikte.length})</h3>` + konfliktListeHtml("normenKonflikt", p.normenKonflikte, (k) => escapeHtml(k.lokal.bezeichnung), (n) => "Titel: " + (n.titel || "") + "\nDatei: " + (n.dateiname || "") + "\nPrüfpunkte: " + (n.pruefpunkte || []).length) + `</div>`;
 

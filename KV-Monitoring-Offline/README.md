@@ -211,78 +211,89 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   nicht mehr nur fest eingebettet. Zuerst nach **Warengruppe** gruppiert
   (auf-/zuklappbar), darunter nach **Produkt** sortiert. Die Übersichtszeile
   je Produkt zeigt nur das Nötigste (Produkt, Normen, Kosten Sicherheit &
-  Norm, Anzahl Muster, Kennzeichnungs-Badges, ob FFU/StiWa hinterlegt sind) —
-  der Warengruppen-Code selbst wird hier bewusst **nicht** als eigene Spalte
+  Norm, Anzahl Muster, KEZ-Badge, ob FFU/StiWa hinterlegt sind) — der
+  Warengruppen-Code selbst wird hier bewusst **nicht** als eigene Spalte
   angezeigt (steht ja schon im Gruppenkopf), ist aber weiterhin die Basis für
   die Zuordnung. **Auf eine Zeile klicken** (oder ✏️) öffnet die
   Detailansicht zum Bearbeiten; **„+ Neue Prüfgrundlage"** öffnet sie leer.
   Änderungen werden erst mit „Speichern" übernommen — „Abbrechen" verwirft
-  sie wieder vollständig, inklusive aller Normen-/Materialien-Einträge.
-  Sobald der Warengruppen-Code gespeichert wird, wandert der Eintrag
-  automatisch in die passende (neue oder bestehende) Gruppe.
+  sie wieder vollständig, inklusive aller Normen-Referenzen. Sobald die
+  Warengruppe gespeichert wird, wandert der Eintrag automatisch in die
+  passende (neue oder bestehende) Gruppe.
 
-  In der Detailansicht sind **Normen jetzt eine Mehrfachauswahl** (mehrere
-  Normen pro Prüfgrundlage möglich, z. B. wenn mehrere Regelwerke gelten) und
-  jeder der drei Prüfblöcke — **Sicherheit & Norm, FFU/Fitting, NGO/StiWa** —
-  hat sein eigenes **„Materialien"-Feld** (ebenfalls Mehrfachauswahl, z. B.
-  „Edelstahl, Kunststoff"), falls die Prüfanforderung materialabhängig ist.
-  Neu ist außerdem das Feld **„Kennzeichnung über GPSR hinaus"**: ein Haken
-  bedeutet, dass die Norm Kennzeichnungsanforderungen enthält, die über die
-  GPSR-Basisanforderungen hinausgehen — erscheint als Badge in der Übersicht
-  und in der Warengruppen-Empfehlung im KV.
+  **Warengruppe wird nur noch per durchsuchbarem Dropdown gewählt**, kein
+  Freitext mehr — Tippen filtert nach Code oder Name. Die Liste (aktuell 64
+  Einträge) ist vorerst aus den bereits vorhandenen Prüfgrundlagen-Startdaten
+  abgeleitet, als Übergangslösung bis die offizielle Warengruppen-Liste
+  geliefert und eine neue Tool-Version damit gebaut wird — bis dahin sind nur
+  bereits genutzte Warengruppen wählbar.
 
-  Über die Suche oben lässt sich nach Warengruppe, Produkt, Norm, Materialien
-  oder Bemerkung filtern. Änderungen wirken sich sofort auf die
-  Warengruppen-Empfehlung im KV-Reiter aus (inkl. der neuen Materialien- und
-  Kennzeichnung-Anzeige dort) — dort wird immer der aktuelle Stand dieser
-  Tabelle nachgeschlagen.
+  **Normen sind jetzt eine durchsuchbare Mehrfachauswahl, die auf echte
+  Norm-Datensätze verweist** (Reiter „Normen", siehe unten) statt auf
+  Freitext — Tippen sucht in vorhandenen Normen, „+ Neue Norm „…" anlegen"
+  legt bei Bedarf sofort eine neue Norm an (auch schon vor dem Speichern der
+  Prüfgrundlage). Je ausgewählter Norm lässt sich zusätzlich **„in Anlehnung
+  an"** ankreuzen, falls sie nicht vollständig anwendbar ist. Diese
+  Normen-Auswahl gibt es jetzt für alle drei Prüfblöcke — **Sicherheit &
+  Norm, FFU/Fitting und NGO/StiWa** —, die vorherigen reinen Freitext-Hinweise
+  bei FFU/StiWa sind entsprechend entfallen. Das frühere, separate
+  „Kennzeichnung über GPSR hinaus"-Feld war inhaltlich dasselbe wie
+  **KEZ-Anforderungen** und wurde deshalb zu einem einzigen Kästchen
+  zusammengeführt (Tooltip erklärt die GPSR-Bedeutung).
 
-  Ganz unten in der Detailansicht lassen sich außerdem **Normen-/
-  Prüfprogramm-Dokumente hochladen** (PDF oder .docx, mehrere gleichzeitig).
-  Da das Tool komplett offline im Browser läuft und ohne Server auskommt,
-  wird dabei **nicht die Datei selbst gespeichert, sondern nur der daraus
-  ausgelesene Text** — bei PDFs über die ohnehin eingebundene Textextraktion,
-  bei .docx über einen im Tool selbst eingebauten, minimalen ZIP/XML-Reader
-  (keine Interneteinbindung nötig). Jedes hochgeladene Dokument erscheint
-  als aufklappbare Zeile mit dem vollständigen ausgelesenen Text (durchsuchbar
-  per Strg+F wie jeder andere Text auf der Seite) und lässt sich einzeln
-  wieder entfernen. Alte **.doc-Dateien** (Format vor Office 2007) werden
-  nicht unterstützt — hierfür bitte eine .docx- oder PDF-Version hochladen.
-  Die Anzahl hochgeladener Dokumente erscheint als 📄-Hinweis in der
-  Übersichtszeile. Dokumente werden **nicht** ins Zusammenführen (🔀)
-  einbezogen — sie sind lokal je Rechner hochgeladen und sollen dabei weder
-  Konflikte auslösen noch versehentlich überschrieben werden.
+  **Materialien sind aus den Prüfgrundlagen entfernt** — sie hängen vom
+  jeweiligen Projekt ab und gehören nicht in diese produktübergreifende
+  Referenztabelle. Stattdessen zeigt die Detailansicht jetzt eine
+  schreibgeschützte **„Verwendet in Projekten"-Übersicht**: alle
+  Kostenvoranschläge, die diese Prüfgrundlage als Hauptprodukt oder
+  Set-Bestandteil verwenden, mit Klick-Sprung zum jeweiligen KV. **Normen-/
+  Prüfprogramm-Dokumente werden nicht mehr hier, sondern ausschließlich im
+  Reiter „Normen" hochgeladen** (siehe unten).
 
-  Auch bei **⬇ Sichern/⬆ Laden (JSON)**, **🔀
-  Zusammenführen** und **📄 CSV-Export** wie die übrigen Reiter behandelt
-  (Zusammenführen erkennt gleiche Einträge an Warengruppen-Code + Produkt;
-  Dateien aus einer älteren Tool-Version mit dem alten einzeiligen
-  „Norm"-Feld werden beim Laden/Zusammenführen automatisch auf die neue
-  Mehrfachauswahl-Form migriert).
-- **Normen** – eigenständige Verwaltung einzelner Normen (unabhängig von den
-  Prüfgrundlagen), im Listen-/Detail-Layout wie bei Prüfaufträgen/KVs. Über
-  **„📄 Norm-PDF(s) hochladen"** lassen sich eine oder mehrere PDFs auf einmal
-  hochladen — jede Datei legt eine eigene Norm an (Bezeichnung anfangs aus
-  dem Dateinamen abgeleitet, danach frei editierbar). Wie bei den
-  Prüfgrundlagen-Dokumenten wird nur der ausgelesene Text gespeichert, nicht
-  die Datei selbst.
+  Über die Suche oben lässt sich nach Warengruppe, Produkt, Norm oder
+  Bemerkung filtern. Änderungen wirken sich sofort auf die
+  Warengruppen-Empfehlung im KV-Reiter aus. Auch bei **⬇ Sichern/⬆ Laden
+  (JSON)**, **🔀 Zusammenführen** und **📄 CSV-Export** wie die übrigen
+  Reiter behandelt (Zusammenführen erkennt gleiche Einträge an
+  Warengruppen-Code + Produkt). Dateien aus einer älteren Tool-Version
+  (einzeiliges Norm-Feld, separates Kennzeichnung-Feld, Materialien,
+  Freitext-FFU/StiWa-Hinweise) werden beim Laden/Zusammenführen automatisch
+  auf die neue Form migriert — dabei wird für jeden bisherigen Freitext-Wert
+  automatisch eine passende Norm im Reiter „Normen" angelegt (bzw.
+  wiederverwendet, falls schon vorhanden), damit keine Information verloren
+  geht.
+- **Normen** – eigenständige Verwaltung einzelner Normen, im Listen-/
+  Detail-Layout wie bei Prüfaufträgen/KVs, und jetzt direkt mit den
+  Prüfgrundlagen verknüpft (siehe oben). Über **„📄 Norm(en)/Prüfprogramm(e)
+  hochladen"** lassen sich eine oder mehrere Dateien (PDF oder .docx) auf
+  einmal hochladen — jede Datei legt eine eigene Norm an (Bezeichnung
+  anfangs aus dem Dateinamen abgeleitet, danach frei editierbar). Wie überall
+  beim Datei-Upload in diesem Tool wird nur der ausgelesene Text gespeichert,
+  nicht die Datei selbst.
 
-  Zusätzlich wird versucht, die **nummerierten Abschnitte der Norm einzeln
-  als Prüfpunkte zu erkennen** (z. B. „5.3.1 Scher- und Quetschstellen beim
-  Aufstellen, Einstellen und Zusammenklappen" samt zugehörigem Text) — anhand
-  von drei echten DIN/EN-Normen entwickelt und geprüft (EN 581-1, -2, -3).
-  Das ist ein **automatischer Best-Effort-Versuch** anhand der Nummerierung:
-  bei sauber nummeriertem Fließtext funktioniert das zuverlässig, bei
-  Tabellen (z. B. Kraft-Werte-Tabellen) oder ungewöhnlichen Layouts können
-  einzelne Punkte falsch getrennt werden, fehlen oder doppelt auftauchen.
-  Deshalb ist jeder erkannte Prüfpunkt (Nummer, Titel, Text) in der
-  Detailansicht frei bearbeitbar, zusammenführbar, löschbar; über „+
-  Prüfpunkt hinzufügen" lassen sich fehlende auch von Hand ergänzen — auch
-  für Normen, die ganz ohne PDF nur manuell angelegt wurden. Der komplette
-  Rohtext der PDF bleibt zusätzlich einsehbar. Eine Verknüpfung zwischen
-  diesen Normen und der „Normen"-Mehrfachauswahl bei den Prüfgrundlagen
-  besteht noch nicht (dort weiterhin freier Text) — bei Bedarf ließe sich
-  das als nächster Schritt verbinden.
+  Bei **PDFs** wird zusätzlich versucht, die **nummerierten Abschnitte der
+  Norm einzeln als Prüfpunkte zu erkennen** (z. B. „5.3.1 Scher- und
+  Quetschstellen beim Aufstellen, Einstellen und Zusammenklappen" samt
+  zugehörigem Text) — anhand von drei echten DIN/EN-Normen entwickelt und
+  geprüft (EN 581-1, -2, -3). Das ist ein **automatischer Best-Effort-
+  Versuch** anhand der Nummerierung: bei sauber nummeriertem Fließtext
+  funktioniert das zuverlässig, bei Tabellen (z. B. Kraft-Werte-Tabellen)
+  oder ungewöhnlichen Layouts können einzelne Punkte falsch getrennt werden,
+  fehlen oder doppelt auftauchen. Bei **.docx-Uploads** ist diese
+  automatische Erkennung (noch) nicht möglich, dort bleibt die
+  Prüfpunkte-Liste zunächst leer. Deshalb ist jeder erkannte Prüfpunkt
+  (Nummer, Titel, Text) in der Detailansicht frei bearbeitbar,
+  zusammenführbar, löschbar; über „+ Prüfpunkt hinzufügen" lassen sich
+  fehlende auch von Hand ergänzen — auch für Normen, die ganz ohne
+  Datei-Upload nur manuell angelegt wurden. Der komplette Rohtext der Datei
+  bleibt zusätzlich einsehbar (durchsuchbar per Strg+F wie jeder andere Text
+  auf der Seite). Alte **.doc-Dateien** (Format vor Office 2007) werden nicht
+  unterstützt — hierfür bitte eine .docx- oder PDF-Version hochladen.
+
+  Wird eine Norm gelöscht, auf die eine Prüfgrundlage noch verweist,
+  erscheint dort „(gelöschte Norm)" statt der Bezeichnung — die Referenz
+  bleibt technisch bestehen, sollte aber in der Prüfgrundlage entfernt oder
+  ersetzt werden.
 
 ## Datenquelle der Warengruppen-Empfehlung und SAP-Codes
 
@@ -307,10 +318,17 @@ nachgebaut — bewusst vereinfacht auf eine dynamische Liste statt der starren
 5 Zeilen (1 Hauptprodukt + 4 Teilprodukte) im Original. Die dortige
 „Mechanik"-Tabelle selbst (206 Zeilen) hatte keine befüllte Kosten-Spalte und
 diente nur zur Absicherung der Warengruppen-/Produktstruktur — Kostenquelle
-bleibt `Preisliste_Mechanik_v2.xlsm`. Noch nicht übernommen: die
-Neue-↔-Alte-Warengruppe-Zuordnungstabelle vom ADMIN-Blatt (347 Zeilen) sowie
-eine Lockerung der Prüfumfang-Schlüsselwort-Erkennung auf das dort verwendete,
-einfachere Teilstring-Prinzip.
+bleibt `Preisliste_Mechanik_v2.xlsm`. Noch nicht übernommen: eine Lockerung
+der Prüfumfang-Schlüsselwort-Erkennung auf das dort verwendete, einfachere
+Teilstring-Prinzip.
+
+Die Neue-↔-Alte-Warengruppe-Zuordnungstabelle vom ADMIN-Blatt (347 Zeilen)
+wäre die naheliegende Quelle für die vollständige, offizielle
+Warengruppen-Liste im neuen Dropdown bei den Prüfgrundlagen (aktuell nur ein
+64-Einträge-Platzhalter aus den bereits genutzten Warengruppen) — bislang
+aber noch nicht dafür verwendet, da unklar war, welche der beiden Spalten
+(Neu/Alt) als Code+Name-Paar für die Auswahl taugt. Sobald die offizielle
+Liste geliefert wird, wird eine neue Tool-Version damit gebaut.
 
 ## SharePoint-Suche nach IAN
 
