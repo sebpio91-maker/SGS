@@ -65,7 +65,8 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   erkennbare Style-Kennzeichnung wird von einem einzigen Style ausgegangen.
   **LFGB? und Trivial? lassen sich aus der PA-PDF nicht auslesen** (dort
   gibt es dafür kein Feld) und müssen bei der KV-Erstellung manuell gewählt
-  werden. „Mech. erledigt" ist nur ein anklickbarer Haken direkt in der
+  werden — dort jeweils als einfaches **Ja/Nein-Dropdown** statt Freitext.
+  „Mech. erledigt" ist nur ein anklickbarer Haken direkt in der
   Tabelle — reiner Status, ob der KV von mechanischer Seite fertig ist. Die
   Muster-Anzahl-Felder und „KV CU" aus der ursprünglichen Excel wurden
   entfernt, da die Musteranzahl erst bei der KV-Erstellung festgelegt wird
@@ -77,11 +78,18 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   PA-PDFs hochladen"** lassen sich stattdessen mehrere PDFs auf einmal
   auswählen — hier gibt es *keine* Feld-für-Feld-Prüfseite je Datei, jede
   PDF wird automatisch anhand der erkannten IAN mit dem passenden
-  Arbeitsvorrat-Eintrag verknüpft (fehlt ein Treffer, wird trotzdem ein
-  Prüfauftrag angelegt). Am Ende erscheint eine Zusammenfassung mit Status
-  je Datei (verknüpft/aktualisiert/keine IAN erkannt/Fehler); einzelne
-  Prüfaufträge lassen sich danach wie gewohnt in der Liste prüfen und
-  korrigieren. Der Rohtext bleibt zum Nachschlagen erhalten. Der **Stand der PDF** (aus dem Dateinamen, z. B.
+  Arbeitsvorrat-Eintrag verknüpft. **Existiert zu der erkannten IAN noch kein
+  Arbeitsvorrat-Eintrag, wird automatisch ein neuer angelegt** (befüllt mit
+  IAN, Bezeichnung, Lieferant und „Angelegt am" aus der PA-PDF; alles
+  Weitere bleibt leer und ist im Reiter „Arbeitsvorrat" wie gewohnt
+  nachpflegbar, z. B. sobald der SAP-Export nachgeliefert wird) — so
+  „verwaisen" hochgeladene PAs nie ohne zugehörigen Arbeitsvorrat. Das gilt
+  sowohl für den Mehrfach-Upload als auch für den Einzel-Upload mit
+  Prüf-/Korrekturseite. Am Ende erscheint eine Zusammenfassung mit Status
+  je Datei (verknüpft/automatisch neu angelegter Arbeitsvorrat/aktualisiert/
+  keine IAN erkannt/Fehler); einzelne Prüfaufträge lassen sich danach wie
+  gewohnt in der Liste prüfen und korrigieren. Der Rohtext bleibt zum
+  Nachschlagen erhalten. Der **Stand der PDF** (aus dem Dateinamen, z. B.
   „…_Stand_16.07.2026.pdf", ersatzweise aus dem Seitenfuß der PDF) wird
   automatisch erkannt, als Badge oben auf der Detailseite sowie in der
   Prüfauftrag-Liste angezeigt und ist bei Bedarf im Kopf-Formular korrigierbar.
@@ -132,6 +140,33 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   vorhandene Positionen werden dabei übersprungen, ein zweiter Klick legt also
   nichts doppelt an.
 
+  **Warengruppe (neu) ist ein durchsuchbares Dropdown** (dieselbe Liste wie
+  im Reiter „Prüfgrundlagen"/„Verwaltung") und wird **automatisch aus dem
+  verknüpften Prüfauftrag übernommen**, sobald zur IAN ein PA vorliegt (nur
+  wenn im KV noch leer — eine bewusste manuelle Auswahl wird nie ohne
+  Nachfrage überschrieben). Taucht der aus dem PA gelesene Code noch nicht in
+  der Warengruppen-Liste auf, wird er automatisch als neuer Platzhalter-
+  Eintrag ergänzt, damit das Dropdown nie einen unbekannten Wert „stumm"
+  anzeigt. **„↺ Warengruppe/Styleanzahl aus PA übernehmen"** erzwingt bei
+  Bedarf die Neu-Übernahme, auch wenn bereits manuell etwas anderes gewählt
+  wurde. **Styleanzahl** wird nach demselben Prinzip automatisch aus der
+  Anzahl der im PA erkannten „Style_X"-Blöcke übernommen (fällt kein Style
+  auf, wird von einem einzigen ausgegangen).
+
+  **Warengruppe (alt)** bleibt vorerst ein Freitextfeld, wird aber
+  automatisch befüllt, sobald in der Neu-↔-Alt-Zuordnungstabelle (Reiter
+  „Verwaltung", siehe unten) ein passender Eintrag zur gewählten Warengruppe
+  (neu) existiert — auch das nur, wenn das Feld noch leer ist. Die
+  Zuordnungsliste selbst startet leer, bis die offizielle Zuordnung
+  (ADMIN-Blatt) vorliegt; bis dahin bleibt „Warengruppe (alt)" manuell
+  pflegbar.
+
+  Im Abschnitt **(Physikalische-) Produktspezifikationen** wird zusätzlich
+  die aus dem PA ausgelesene **„Qualität"** informativ angezeigt (analog zur
+  bereits vorhandenen Markenreferenz-Anzeige) — praktisch als schneller
+  Blick auf die Materialangaben, ohne extra zum Prüfauftrag wechseln zu
+  müssen.
+
   **Warengruppen-Empfehlung (Mechanik)** – die primäre Vorschlagsquelle,
   wie besprochen **zuerst nach Warengruppe, dann nach Produkt**: sobald
   „Warengruppe (neu)" gesetzt ist, wird in einer echten, vom Team gepflegten
@@ -143,12 +178,18 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   (Bemerkungen, Trivial-/KEZ-Kennzeichnung) sowie – falls vorhanden – FFU
   und NGO/StiWa mit den tatsächlich hinterlegten Kosten, jeweils mit
   „+ hinzufügen" direkt in die Prüfpositionen-Tabelle. Gibt es zur
-  Warengruppe keine Referenzdaten, bleibt nur die manuelle Auswahl unten.
+  Warengruppe keine Referenzdaten, erscheint direkt in der Karte
+  **„+ Neue Prüfgrundlage für Warengruppe … anlegen"** — öffnet denselben
+  Anlage-Dialog wie im Reiter „Prüfgrundlagen", mit der Warengruppe schon
+  vorbelegt; nach dem Speichern zeigt die Karte sofort den neuen Treffer,
+  ohne den Tab wechseln zu müssen. Bis dahin bleibt zusätzlich die manuelle
+  Auswahl unten verfügbar.
 
   Die Position **„Sicherheit & Norm"** wird als eine **kombinierte Position**
   gebildet, nachgebaut aus dem Auswahl_LIDL-Arbeitsblatt (siehe unten):
-  - **Set-Bestandteile**: über „Weiteren Set-Bestandteil hinzufügen" lässt
-    sich die Referenztabelle **warengruppenübergreifend** nach weiteren
+  - **Set-Bestandteile**: über „Weiteren Set-Bestandteil hinzufügen" (bei
+    mehrteiligen Produkten, z. B. Messer + Messerblock) lässt sich die
+    Referenztabelle **warengruppenübergreifend** nach weiteren
     Produkten durchsuchen (z. B. „Messer" zu einem Hauptprodukt
     „Messerblock") — praktisch für mehrteilige Produkte, bei denen jeder
     Bestandteil eine eigene Norm/eigene Kosten hat. Jeder hinzugefügte
@@ -386,19 +427,30 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   erscheint dort „(gelöschte Norm)" statt der Bezeichnung — die Referenz
   bleibt technisch bestehen, sollte aber in der Prüfgrundlage entfernt oder
   ersetzt werden.
-- **Verwaltung** – Pflege von zwei Stammdaten-Listen, beide Dropdown-Quellen
-  im Reiter „Prüfgrundlagen" (siehe oben):
-  - **Bereiche** – neue Werte anlegen, bestehende umbenennen (aktualisiert
-    automatisch alle Prüfgrundlagen, die den bisherigen Wert verwenden) oder
-    löschen (mit Warnhinweis, falls der Wert noch verwendet wird); die
-    Anzahl der Verwendungen steht neben jedem Eintrag.
-  - **Warengruppen** – analog, aber mit zwei Feldern je Eintrag (Code und
-    Name). Ändern von Code oder Name aktualisiert automatisch alle
-    Prüfgrundlagen mit dem bisherigen Code; Löschen warnt ebenfalls bei
-    noch bestehender Verwendung. Ersetzt die bisher rein aus den
-    Prüfgrundlagen-Startdaten abgeleitete, nicht editierbare Liste (siehe
-    unten) — die 64 Startwerte sind hier jetzt frei pflegbar, bis die
-    offizielle Warengruppen-Liste geliefert wird.
+- **Verwaltung** – Pflege von drei Stammdaten-Listen:
+  - **Bereiche** – Dropdown-Quelle im Reiter „Prüfgrundlagen". Neue Werte
+    anlegen, bestehende umbenennen (aktualisiert automatisch alle
+    Prüfgrundlagen, die den bisherigen Wert verwenden) oder löschen (mit
+    Warnhinweis, falls der Wert noch verwendet wird); die Anzahl der
+    Verwendungen steht neben jedem Eintrag.
+  - **Warengruppen** – Dropdown-Quelle sowohl im Reiter „Prüfgrundlagen" als
+    auch bei „Warengruppe (neu)" im Kostenvoranschlag, mit zwei Feldern je
+    Eintrag (Code und Name). Ändern von Code oder Name aktualisiert
+    automatisch alle Prüfgrundlagen und Kostenvoranschläge mit dem
+    bisherigen Code; Löschen warnt ebenfalls bei noch bestehender
+    Verwendung. Ersetzt die bisher rein aus den Prüfgrundlagen-Startdaten
+    abgeleitete, nicht editierbare Liste (siehe unten) — die 64 Startwerte
+    sind hier jetzt frei pflegbar, bis die offizielle Warengruppen-Liste
+    geliefert wird. Wird im PA eine noch unbekannte Warengruppe gelesen und
+    automatisch in einen KV übernommen, landet sie ebenfalls automatisch
+    hier als Platzhalter-Eintrag (Code = Name), statt das Dropdown mit
+    einem unbekannten Wert leer zu lassen.
+  - **Warengruppen-Zuordnung (Neu → Alt)** – ordnet einer neuen Warengruppe
+    (Code) den passenden Alt-Wert zu; sobald hier ein Eintrag existiert,
+    befüllt er automatisch „Warengruppe (alt)" im Kostenvoranschlag (nur
+    wenn dort noch leer). Startet leer — die vollständige, offizielle
+    Zuordnungstabelle (ADMIN-Blatt, 347 Zeilen) lässt sich hier nach und
+    nach eintragen, sobald sie vorliegt (siehe auch unten).
 
 ## Datenquelle der Warengruppen-Empfehlung und SAP-Codes
 
@@ -429,13 +481,19 @@ Teilstring-Prinzip.
 
 Die Neue-↔-Alte-Warengruppe-Zuordnungstabelle vom ADMIN-Blatt (347 Zeilen)
 wäre die naheliegende Quelle für die vollständige, offizielle
-Warengruppen-Liste im Dropdown bei den Prüfgrundlagen (aktuell ein
-64-Einträge-Startbestand aus den bereits genutzten Warengruppen) — bislang
-aber noch nicht dafür verwendet, da unklar war, welche der beiden Spalten
-(Neu/Alt) als Code+Name-Paar für die Auswahl taugt. Anders als früher braucht
-das aber keine neue Tool-Version mehr: die Liste lässt sich jetzt direkt im
-Reiter „Verwaltung" pflegen (siehe oben) — die offizielle Liste könnte dort
-bei Bedarf auch komplett von Hand nachgetragen werden.
+Warengruppen-Liste im Dropdown bei Prüfgrundlagen/Kostenvoranschlag (aktuell
+ein 64-Einträge-Startbestand aus den bereits genutzten Warengruppen) —
+bislang aber noch nicht dafür verwendet, da unklar war, welche der beiden
+Spalten (Neu/Alt) als Code+Name-Paar für die Auswahl taugt. Anders als
+früher braucht das aber keine neue Tool-Version mehr: die Warengruppen-Liste
+selbst lässt sich direkt im Reiter „Verwaltung" pflegen (siehe oben) — die
+offizielle Liste könnte dort bei Bedarf auch komplett von Hand nachgetragen
+werden. Für die reine **Neu→Alt-Zuordnung** (unabhängig von der
+Warengruppen-Liste) gibt es dort inzwischen eine eigene, noch leere Tabelle
+(„Warengruppen-Zuordnung (Neu → Alt)"), die „Warengruppe (alt)" im
+Kostenvoranschlag automatisch befüllt, sobald ein passender Eintrag vorliegt
+— auch hier wartet die vollständige ADMIN-Blatt-Liste noch auf manuelles
+Eintragen.
 
 ## SharePoint-Suche nach IAN
 

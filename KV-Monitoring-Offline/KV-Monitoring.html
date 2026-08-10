@@ -372,14 +372,28 @@ input[type=file] { display:none; }
   </div>
   <div class="card" style="max-width:720px">
     <h2 style="margin-top:0">Warengruppen</h2>
-    <p class="hinweis">Diese Liste speist das Warengruppen-Dropdown im Reiter „Prüfgrundlagen" —
-      hier anlegen, umbenennen oder löschen. Ändern von Code oder Name aktualisiert automatisch
-      alle Prüfgrundlagen mit dem bisherigen Code.</p>
+    <p class="hinweis">Diese Liste speist das Warengruppen-Dropdown in den Reitern
+      „Prüfgrundlagen" und „Kostenvoranschläge" (dort als „Warengruppe (neu)") — hier anlegen,
+      umbenennen oder löschen. Ändern von Code oder Name aktualisiert automatisch alle
+      Prüfgrundlagen und Kostenvoranschläge mit dem bisherigen Code.</p>
     <div id="warengruppen-liste"></div>
     <div class="toolbar-zeile" style="margin-top:0.6rem">
       <input type="text" id="warengruppe-neu-code-input" placeholder="Code (z. B. 250.045)" style="width:160px;font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px">
       <input type="text" id="warengruppe-neu-name-input" placeholder="Name…" style="flex:1;font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px">
       <button type="button" id="warengruppe-hinzufuegen-btn">+ Hinzufügen</button>
+    </div>
+  </div>
+  <div class="card" style="max-width:720px">
+    <h2 style="margin-top:0">Warengruppen-Zuordnung (Neu → Alt)</h2>
+    <p class="hinweis">Ordnet einer neuen Warengruppe (Code) den passenden Alt-Wert zu — sobald
+      hier ein Eintrag existiert, wird „Warengruppe (alt)" im Kostenvoranschlag automatisch daraus
+      befüllt (nur wenn dort noch leer). Noch ohne Startdaten; die vollständige Zuordnungstabelle
+      lässt sich hier nach und nach eintragen.</p>
+    <div id="warengruppen-zuordnung-liste"></div>
+    <div class="toolbar-zeile" style="margin-top:0.6rem">
+      <input type="text" id="wgz-neu-neu-input" placeholder="Warengruppe neu (Code)…" style="width:200px;font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px">
+      <input type="text" id="wgz-neu-alt-input" placeholder="Warengruppe alt…" style="flex:1;font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px">
+      <button type="button" id="wgz-hinzufuegen-btn">+ Hinzufügen</button>
     </div>
   </div>
 </section>
@@ -582,6 +596,59 @@ function migriereBereiche() {
     }
   });
   data.bereiche.sort((a, b) => a.localeCompare(b, "de"));
+}
+
+/* Stellt sicher, dass es zu einem Warengruppen-Code einen Eintrag in data.warengruppen gibt -
+   wird beim automatischen Übernehmen aus dem Prüfauftrag benutzt, da der PA nur den Code liefert
+   und dieser noch nicht zwangsläufig in der (im Reiter "Verwaltung" gepflegten) Liste steht. Legt
+   nötigenfalls einen Platzhalter an (Name = Code), der später in der Verwaltung umbenannt werden
+   kann - so bleibt die Warengruppen-Auswahl im KV immer befüllbar, auch für ganz neue Codes. */
+function warengruppeAdminSicherstellen(code) {
+  const norm = normalisiereWarengruppe(code);
+  if (!norm) return;
+  if (!data.warengruppen.some((w) => normalisiereWarengruppe(w.code) === norm)) {
+    data.warengruppen.push({ code: norm, name: norm });
+    data.warengruppen.sort((a, b) => a.code.localeCompare(b.code));
+  }
+}
+
+/* ---------- Warengruppen-Zuordnung Neu -> Alt (Pflege im Reiter "Verwaltung") ----------
+   Noch ohne Startdaten - die vollständige Zuordnungstabelle (ADMIN-Blatt) liefert der Nutzer
+   später nach; bis dahin bleibt "Warengruppe (alt)" im KV manuell editierbar und wird nur befüllt,
+   sobald für den jeweiligen Neu-Code ein passender Eintrag in dieser Liste existiert. */
+function altWarengruppeFuer(neuCode) {
+  const norm = normalisiereWarengruppe(neuCode);
+  if (!norm) return "";
+  const eintrag = data.warengruppenZuordnung.find((z) => normalisiereWarengruppe(z.neu) === norm);
+  return eintrag ? eintrag.alt : "";
+}
+
+/* Übernimmt Warengruppe (neu) und Styleanzahl aus dem verknüpften Prüfauftrag in den KV - analog
+   zu fuelleAusPa() für den Arbeitsvorrat, nur mit den KV-Feldnamen. LFGB?/Trivialartikel? lassen
+   sich (wie dort) aus keiner bekannten PA-PDF auslesen und bleiben außen vor. Füllt standardmäßig
+   nur leere Felder (ueberschreiben=false) - ein bereits gewählter/übernommener Wert wird nicht
+   stillschweigend ersetzt; das manuelle "↺ … aus PA übernehmen" erzwingt es bei Bedarf. Füllt bei
+   Bedarf auch "Warengruppe (alt)" über die Neu->Alt-Zuordnung (siehe altWarengruppeFuer). */
+function fuelleKvAusPa(kv, pa, ueberschreiben) {
+  if (!pa) return false;
+  let geaendert = false;
+  const neueWarengruppe = normalisiereWarengruppe(pa.warengruppe);
+  if (neueWarengruppe && (ueberschreiben || !kv.warengruppeNeu)) {
+    kv.warengruppeNeu = neueWarengruppe;
+    warengruppeAdminSicherstellen(neueWarengruppe);
+    geaendert = true;
+  }
+  const anzahlStyles = ermittleAnzahlStyles(pa.felder);
+  if (anzahlStyles && (ueberschreiben || !kv.styleanzahl)) {
+    kv.styleanzahl = anzahlStyles;
+    geaendert = true;
+  }
+  if (!kv.warengruppeAlt) {
+    const alt = altWarengruppeFuer(kv.warengruppeNeu);
+    if (alt) { kv.warengruppeAlt = alt; geaendert = true; }
+  }
+  if (geaendert) speichereInLocalStorage();
+  return geaendert;
 }
 
 /* ---------- Norm-Typ: externe Norm vs. interne Prüfprogramme (PPM/PPM_FFU/StiWa) ----------
@@ -846,7 +913,8 @@ function init() {
     pruefgrundlagen: (geladen && geladen.pruefgrundlagen && geladen.pruefgrundlagen.length) ? geladen.pruefgrundlagen : seedPruefgrundlagen(),
     normen: (geladen && geladen.normen) ? geladen.normen : [],
     warengruppen: (geladen && geladen.warengruppen && geladen.warengruppen.length) ? geladen.warengruppen : seedWarengruppen(),
-    bereiche: (geladen && geladen.bereiche && geladen.bereiche.length) ? geladen.bereiche : seedBereiche()
+    bereiche: (geladen && geladen.bereiche && geladen.bereiche.length) ? geladen.bereiche : seedBereiche(),
+    warengruppenZuordnung: (geladen && geladen.warengruppenZuordnung) ? geladen.warengruppenZuordnung : []
   };
   data.normen.forEach(migriereNorm);
   data.pruefgrundlagen.forEach(migrierePruefgrundlage);
@@ -919,6 +987,16 @@ function normalisiereWarengruppe(wert) {
   const ziffern = text.replace(/\D/g, "");
   if (ziffern.length === 6) return ziffern.slice(0, 3) + "." + ziffern.slice(3);
   return text;
+}
+
+/* Vereinheitlicht Alt-Werte wie "ja"/"JA"/"j" bzw. "nein"/"n" auf "Ja"/"Nein" fürs Ja/Nein-Dropdown
+   (LFGB?/Trivialartikel? im KV) - unbekannte/leere Werte liefern "" (Dropdown zeigt dann "–"),
+   ohne die zugrunde liegenden Rohdaten zu verändern. */
+function jaNeinAnzeige(wert) {
+  const w = normalisiere(wert);
+  if (w === "ja" || w === "j" || w === "x") return "Ja";
+  if (w === "nein" || w === "n") return "Nein";
+  return "";
 }
 
 /* Einheitlicher Zugriff auf den (normalisierten) Anzeige-/Vergleichswert eines Feldes. */
@@ -1990,10 +2068,25 @@ function legePaAusFeldernAn(felder, rohtext, erzwingeIan, stand, frageBeiKonflik
   ziel.lieferant = kopf.lieferant; ziel.pruefumfang = kopf.pruefumfang;
   ziel.felder = felder; ziel.rohtext = rohtext; ziel.stand = stand || "";
 
-  const zielArbeitsvorrat = kopf.ian ? data.arbeitsvorrat.find((a) => normalisiere(a.ian) === normalisiere(kopf.ian)) : null;
+  let zielArbeitsvorrat = kopf.ian ? data.arbeitsvorrat.find((a) => normalisiere(a.ian) === normalisiere(kopf.ian)) : null;
+  let arbeitsvorratNeuAngelegt = false;
+  /* Für hochgeladene PAs ohne bestehenden Arbeitsvorrat-Eintrag zu dieser IAN wird jetzt
+     automatisch einer angelegt (statt die PA ohne jede Arbeitsvorrat-Zeile "verwaist" zu lassen) -
+     befüllt mit den aus der PA bekannten Feldern; alles andere bleibt leer und ist im Reiter
+     „Arbeitsvorrat" wie gewohnt nachpflegbar (z. B. sobald der SAP-Export nachgeliefert wird). */
+  if (!zielArbeitsvorrat && kopf.ian) {
+    zielArbeitsvorrat = { id: neueId() };
+    ARBEITSVORRAT_FELDER.forEach((f) => (zielArbeitsvorrat[f] = f === "mechErledigt" ? false : ""));
+    zielArbeitsvorrat.ian = kopf.ian;
+    zielArbeitsvorrat.bezeichnung = kopf.artikelbezeichnung;
+    zielArbeitsvorrat.lieferant = kopf.lieferant;
+    zielArbeitsvorrat.angelegtAm = heutigesDatumLokal();
+    data.arbeitsvorrat.unshift(zielArbeitsvorrat);
+    arbeitsvorratNeuAngelegt = true;
+  }
   if (zielArbeitsvorrat) fuelleAusPa(zielArbeitsvorrat, false);
 
-  return { pa: ziel, ian: kopf.ian, artikelbezeichnung: kopf.artikelbezeichnung, verknuepft: !!zielArbeitsvorrat, aktualisiert };
+  return { pa: ziel, ian: kopf.ian, artikelbezeichnung: kopf.artikelbezeichnung, verknuepft: !!zielArbeitsvorrat && !arbeitsvorratNeuAngelegt, arbeitsvorratNeuAngelegt, aktualisiert };
 }
 
 document.getElementById("btn-pa-upload").addEventListener("click", () => document.getElementById("pa-upload-input").click());
@@ -2066,8 +2159,9 @@ function zeigePaMehrfachUploadZusammenfassung(ergebnisse) {
   const box = document.getElementById("overlay-box");
   const erfolgreich = ergebnisse.filter((r) => !r.fehler);
   const verknuepftAnzahl = erfolgreich.filter((r) => r.verknuepft).length;
+  const neuAngelegtAnzahl = erfolgreich.filter((r) => r.arbeitsvorratNeuAngelegt).length;
   let html = `<h2>${ergebnisse.length} PA-PDF(s) verarbeitet</h2>
-    <p class="hinweis">${erfolgreich.length} von ${ergebnisse.length} erfolgreich eingelesen, davon ${verknuepftAnzahl} automatisch mit einem bestehenden Arbeitsvorrat-Eintrag verknüpft (per IAN). Ohne Treffer im Arbeitsvorrat wird trotzdem ein Prüfauftrag angelegt — jeder lässt sich danach im Reiter „Prüfaufträge" einzeln prüfen/korrigieren.</p>
+    <p class="hinweis">${erfolgreich.length} von ${ergebnisse.length} erfolgreich eingelesen, davon ${verknuepftAnzahl} automatisch mit einem bestehenden Arbeitsvorrat-Eintrag verknüpft (per IAN)${neuAngelegtAnzahl ? ` und für ${neuAngelegtAnzahl} ohne bestehenden Eintrag automatisch ein neuer Arbeitsvorrat-Eintrag angelegt` : ""}. Jeder Prüfauftrag lässt sich danach im Reiter „Prüfaufträge" einzeln prüfen/korrigieren.</p>
     <table class="tabelle"><thead><tr><th>Datei</th><th>IAN</th><th>Artikelbezeichnung</th><th>Status</th></tr></thead><tbody>`;
   ergebnisse.forEach((r) => {
     if (r.fehler) {
@@ -2078,7 +2172,9 @@ function zeigePaMehrfachUploadZusammenfassung(ergebnisse) {
       ? "⚠ keine IAN erkannt"
       : r.verknuepft
         ? (r.aktualisiert ? "🔄 aktualisiert &amp; verknüpft" : "✅ verknüpft")
-        : (r.aktualisiert ? "🔄 aktualisiert" : "✅ angelegt (kein Arbeitsvorrat-Treffer)");
+        : r.arbeitsvorratNeuAngelegt
+          ? (r.aktualisiert ? "🔄 aktualisiert · 🆕 Arbeitsvorrat angelegt" : "🆕 Arbeitsvorrat automatisch angelegt")
+          : (r.aktualisiert ? "🔄 aktualisiert" : "✅ angelegt");
     html += `<tr><td>${escapeHtml(r.dateiname)}</td><td>${escapeHtml(r.ian || "–")}</td><td>${escapeHtml(r.artikelbezeichnung || "")}</td><td>${status}</td></tr>`;
   });
   html += `</tbody></table><div class="overlay-actions"><button id="pa-mehrfach-schliessen">Schließen</button></div>`;
@@ -2126,7 +2222,7 @@ function zeigePaUploadReview(felder, rohtext, erzwingeIan, stand) {
     renderAlles();
     aktivePaId = ergebnis.pa.id;
     renderPaTab();
-    zeigeStatus("PA-Daten übernommen · " + jetzt(), "ok");
+    zeigeStatus("PA-Daten übernommen" + (ergebnis.arbeitsvorratNeuAngelegt ? " · Arbeitsvorrat-Eintrag automatisch angelegt" : "") + " · " + jetzt(), "ok");
   });
   document.getElementById("overlay").classList.add("sichtbar");
 }
@@ -2261,7 +2357,8 @@ function renderMechanikEmpfehlungKarte(kv, pa) {
   if (!treffer.length) {
     return `<div class="card">
       <h2>Warengruppen-Empfehlung (Mechanik)</h2>
-      <p class="hinweis">Für Warengruppe <strong>${escapeHtml(wgFormatiert)}</strong> liegen keine Referenzdaten in der Mechanik-Preisliste vor — Prüfpositionen unten manuell auswählen.</p>
+      <p class="hinweis">Für Warengruppe <strong>${escapeHtml(wgFormatiert)}</strong> liegen keine Referenzdaten in der Mechanik-Preisliste (Reiter „Prüfgrundlagen") vor — Prüfpositionen unten manuell auswählen, oder direkt eine passende Prüfgrundlage anlegen:</p>
+      <button type="button" class="ghost small" data-action="mechanik-neue-pruefgrundlage" data-warengruppe="${escapeHtml(wgFormatiert)}">+ Neue Prüfgrundlage für Warengruppe ${escapeHtml(wgFormatiert)} anlegen</button>
     </div>`;
   }
 
@@ -2307,7 +2404,7 @@ function renderMechanikEmpfehlungKarte(kv, pa) {
       </div>
       <p class="hinweis" style="margin:0">${hinweisText}${teilprodukte.length ? ` · ${komponenten.length} Komponenten (Hauptprodukt + ${teilprodukte.length} Set-Bestandteil${teilprodukte.length === 1 ? "" : "e"})` : ""}</p>
       ${teilprodukteHtml}
-      <label style="display:flex;flex-direction:column;gap:0.2rem;font-size:0.8rem;font-weight:600;width:100%;max-width:420px">Weiteren Set-Bestandteil hinzufügen (mehrteiliges Produkt, z. B. Messer + Messerblock)
+      <label style="display:flex;flex-direction:column;gap:0.2rem;font-size:0.8rem;font-weight:600;width:100%;max-width:420px">Weiteren Set-Bestandteil hinzufügen
         <input type="text" id="setbestandteil-suche" placeholder="Produkt in der gesamten Mechanik-Referenz suchen…" style="font-family:inherit;font-size:0.85rem;padding:0.35rem 0.5rem;border:1px solid var(--border);border-radius:6px;font-weight:400">
       </label>
       <div id="setbestandteil-liste" style="width:100%"></div>
@@ -2382,6 +2479,17 @@ function renderSetbestandteilListe(kv, filterText) {
 
 function initialisiereMechanikEmpfehlungKarte(panel, kv) {
   kv.mechanikSetbestandteile = kv.mechanikSetbestandteile || [];
+  const neuePgBtn = panel.querySelector('[data-action="mechanik-neue-pruefgrundlage"]');
+  if (neuePgBtn) {
+    neuePgBtn.addEventListener("click", () => {
+      const code = neuePgBtn.dataset.warengruppe;
+      const eintrag = data.warengruppen.find((w) => normalisiereWarengruppe(w.code) === normalisiereWarengruppe(code));
+      const entwurf = pruefgrundlageEntwurfNeu();
+      entwurf.warengruppeCode = eintrag ? eintrag.code : code;
+      entwurf.warengruppeName = eintrag ? eintrag.name : code;
+      oeffnePruefgrundlageModal(entwurf);
+    });
+  }
   const sel = panel.querySelector("#mechanik-produkt-auswahl");
   if (sel) {
     sel.addEventListener("change", () => {
@@ -2479,6 +2587,7 @@ function renderKvPruefumfangUebersicht(kv, pa) {
     </div>`;
   }
   const markenreferenz = paFeldWertRoh(pa, "Markenreferenz");
+  const qualitaet = paFeldWertRoh(pa, "Qualität");
   const abschnitte = PA_PRUEFUMFANG_KATEGORIEN.map((kat) => {
     const erkannt = erkennePruefumfangKategorien(pa.pruefumfang).some((k) => k.id === kat.id);
     const badge = erkannt ? `<span class="badge ja">im Prüfumfang</span>` : `<span class="badge nein">nicht erkannt</span>`;
@@ -2494,6 +2603,7 @@ function renderKvPruefumfangUebersicht(kv, pa) {
       return `<div class="pruefumfang-kat">
         <div class="pruefumfang-kat-kopf"><strong>${escapeHtml(kat.anzeigeName)}</strong> ${badge}</div>
         <p class="hinweis">${escapeHtml(kat.beschreibung)}</p>
+        ${qualitaet ? `<p class="hinweis"><strong>Qualität (aus PA):</strong> ${escapeHtml(qualitaet)}</p>` : ""}
         <input type="text" id="produktspezi-suche" placeholder="Parameter, Produkt oder Norm suchen…" style="width:100%;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px;margin-bottom:0.4rem;font-family:inherit">
         <div id="produktspezi-liste"></div>
       </div>`;
@@ -2587,12 +2697,76 @@ function renderKvListe() {
   ul.querySelectorAll("li[data-id]").forEach((li) => li.addEventListener("click", () => { aktiveKvId = li.dataset.id; renderKvTab(); }));
 }
 
+/* ---------- Warengruppe (neu) im KV: durchsuchbare Einfachauswahl (Dropdown-only) ----------
+   Analog zu bereichAuswahlHtml/warengruppeAuswahlHtml bei den Prüfgrundlagen, aber mit eigenen
+   IDs (kv-warengruppe-neu-…) und ohne Code+Name-Paar - der KV speichert nur den Code
+   (kv.warengruppeNeu), wie bisher auch. Quelle ist dieselbe, im Reiter "Verwaltung" gepflegte
+   data.warengruppen-Liste. Auswahl löst sofort ein Neu-Rendern aus (u. a. für die
+   Warengruppen-Empfehlung), da der KV - anders als die Prüfgrundlage - nicht als Entwurf mit
+   eigenem Speichern/Abbrechen bearbeitet wird, sondern jede Änderung sofort übernommen wird. */
+function kvWarengruppeNeuAuswahlHtml(kv) {
+  const eintrag = data.warengruppen.find((w) => normalisiereWarengruppe(w.code) === normalisiereWarengruppe(kv.warengruppeNeu));
+  const label = kv.warengruppeNeu ? (eintrag ? warengruppeAnzeige(eintrag) : kv.warengruppeNeu) : "— Warengruppe wählen —";
+  return `<div class="ss-feld" data-ssfeld="kv-warengruppe-neu">
+    <label>Warengruppe (neu)</label>
+    <button type="button" class="ms-btn" id="kv-warengruppe-neu-btn">${escapeHtml(label)}</button>
+    <div class="ms-panel breit" id="kv-warengruppe-neu-panel" hidden>
+      <input type="text" class="ms-suche" placeholder="Code oder Name suchen…">
+      <div class="ms-liste"></div>
+    </div>
+  </div>`;
+}
+
+function initialisiereKvWarengruppeNeuAuswahl(panel, kv) {
+  const feld = panel.querySelector('[data-ssfeld="kv-warengruppe-neu"]');
+  if (!feld) return;
+  const btn = feld.querySelector("#kv-warengruppe-neu-btn");
+  const dd = feld.querySelector("#kv-warengruppe-neu-panel");
+  const suche = feld.querySelector(".ms-suche");
+  const liste = feld.querySelector(".ms-liste");
+
+  function baueListe(q) {
+    const norm = normalisiere(q);
+    const optionen = data.warengruppen.filter((w) => !norm || normalisiere(w.code + " " + w.name).includes(norm));
+    liste.innerHTML = optionen.length
+      ? optionen.map((w) => `<button type="button" class="ss-option" data-code="${escapeHtml(w.code)}">${escapeHtml(warengruppeAnzeige(w))}</button>`).join("")
+      : `<div class="ss-leer">Keine Treffer. Neue Warengruppen werden im Reiter „Verwaltung" angelegt.</div>`;
+    liste.querySelectorAll(".ss-option").forEach((o) => {
+      o.addEventListener("click", () => {
+        kv.warengruppeNeu = o.dataset.code;
+        if (!kv.warengruppeAlt) {
+          const alt = altWarengruppeFuer(kv.warengruppeNeu);
+          if (alt) kv.warengruppeAlt = alt;
+        }
+        dd.hidden = true;
+        speichereInLocalStorage();
+        renderKvDetail();
+        renderKvListe();
+      });
+    });
+  }
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const warOffen = !dd.hidden;
+    document.querySelectorAll(".ms-panel").forEach((p) => (p.hidden = true));
+    dd.hidden = warOffen;
+    if (!warOffen) { suche.value = ""; baueListe(""); suche.focus(); }
+  });
+  dd.addEventListener("click", (e) => e.stopPropagation());
+  suche.addEventListener("input", () => baueListe(suche.value));
+}
+
 function renderKvDetail() {
   const panel = document.getElementById("detail-panel-kv");
   const kv = data.kvs.find((k) => k.id === aktiveKvId);
   if (!kv) { panel.innerHTML = '<div class="card leerzustand">Kein Kostenvoranschlag ausgewählt. Links auswählen oder neuen anlegen.</div>'; return; }
 
   const verknuepftePa = data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(kv.ian));
+  /* Warengruppe (neu)/Styleanzahl automatisch aus der verlinkten PA übernehmen, sobald sie im KV
+     noch leer sind (überschreibt nie einen bereits vorhandenen/manuell gewählten Wert) - so
+     entfällt bei frisch angelegten oder von Hand mit einer IAN verknüpften KVs das manuelle
+     Abtippen. */
+  fuelleKvAusPa(kv, verknuepftePa, false);
 
   panel.innerHTML = `
     <div class="card">
@@ -2606,16 +2780,27 @@ function renderKvDetail() {
         <label class="volle-breite">Artikel<input type="text" data-feld="artikel" value="${escapeHtml(kv.artikel)}"></label>
         <label>Lieferant<input type="text" data-feld="lieferant" value="${escapeHtml(kv.lieferant)}"></label>
         <label>VK Büro<input type="text" data-feld="vkBuero" value="${escapeHtml(kv.vkBuero)}"></label>
-        <label>Warengruppe (neu)<input type="text" data-feld="warengruppeNeu" value="${escapeHtml(kv.warengruppeNeu)}"></label>
-        <label>Warengruppe (alt)<input type="text" data-feld="warengruppeAlt" value="${escapeHtml(kv.warengruppeAlt)}"></label>
-        <label>LFGB?<input type="text" data-feld="lfgb" value="${escapeHtml(kv.lfgb)}"></label>
-        <label>Trivialartikel?<input type="text" data-feld="trivial" value="${escapeHtml(kv.trivial)}"></label>
+      </div>
+      ${kvWarengruppeNeuAuswahlHtml(kv)}
+      <div class="formular-grid" id="kv-formular-2">
+        <label>Warengruppe (alt)<input type="text" data-feld="warengruppeAlt" value="${escapeHtml(kv.warengruppeAlt)}" placeholder="${altWarengruppeFuer(kv.warengruppeNeu) ? "" : "manuell, bis Zuordnungsliste vorliegt"}"></label>
+        <label>LFGB?<select data-feld="lfgb">
+          <option value="" ${jaNeinAnzeige(kv.lfgb) === "" ? "selected" : ""}>–</option>
+          <option value="Ja" ${jaNeinAnzeige(kv.lfgb) === "Ja" ? "selected" : ""}>Ja</option>
+          <option value="Nein" ${jaNeinAnzeige(kv.lfgb) === "Nein" ? "selected" : ""}>Nein</option>
+        </select></label>
+        <label>Trivialartikel?<select data-feld="trivial">
+          <option value="" ${jaNeinAnzeige(kv.trivial) === "" ? "selected" : ""}>–</option>
+          <option value="Ja" ${jaNeinAnzeige(kv.trivial) === "Ja" ? "selected" : ""}>Ja</option>
+          <option value="Nein" ${jaNeinAnzeige(kv.trivial) === "Nein" ? "selected" : ""}>Nein</option>
+        </select></label>
         <label>Styleanzahl<input type="text" data-feld="styleanzahl" value="${escapeHtml(kv.styleanzahl)}"></label>
         <label class="volle-breite">Notiz<textarea data-feld="notiz" rows="2">${escapeHtml(kv.notiz)}</textarea></label>
       </div>
       <div class="toolbar-zeile" style="margin-top:0.8rem">
         <button class="ghost small" id="kv-duplizieren">⧉ Als Vorlage für neuen KV duplizieren</button>
-        ${verknuepftePa ? `<button class="ghost small" id="kv-zur-pa">→ Verknüpften Prüfauftrag anzeigen</button>` : `<span class="muted">Kein Prüfauftrag mit dieser IAN gefunden.</span>`}
+        ${verknuepftePa ? `<button class="ghost small" id="kv-zur-pa">→ Verknüpften Prüfauftrag anzeigen</button>
+        <button class="ghost small" id="kv-aus-pa-uebernehmen">↺ Warengruppe/Styleanzahl aus PA übernehmen</button>` : `<span class="muted">Kein Prüfauftrag mit dieser IAN gefunden.</span>`}
         <button class="danger small" id="kv-loeschen" style="margin-left:auto">KV löschen</button>
       </div>
     </div>
@@ -2646,8 +2831,15 @@ function renderKvDetail() {
       <p style="margin-top:0.8rem">Gesamtsumme (aktive Positionen): <span class="gesamtsumme" id="kv-gesamtsumme"></span></p>
     </div>`;
 
-  panel.querySelectorAll("#kv-formular [data-feld]").forEach((el) => {
+  panel.querySelectorAll("#kv-formular [data-feld], #kv-formular-2 [data-feld]").forEach((el) => {
     el.addEventListener("input", () => { kv[el.dataset.feld] = el.value; speichereInLocalStorage(); renderKvListe(); if (el.dataset.feld === "ian" || el.dataset.feld === "artikel") panel.querySelector("h2").textContent = "KV " + (kv.ian || "(ohne IAN)"); });
+  });
+  /* Erst beim Verlassen des IAN-Felds (nicht bei jedem Tastendruck, sonst geht der Fokus mitten im
+     Tippen verloren) neu prüfen, ob jetzt eine (andere) PA verlinkt ist, und Warengruppe/
+     Styleanzahl von dort übernehmen (nur wenn im KV noch leer) - danach einmalig neu rendern. */
+  panel.querySelector('#kv-formular [data-feld="ian"]').addEventListener("change", () => {
+    const neuVerknuepft = data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(kv.ian));
+    if (neuVerknuepft && fuelleKvAusPa(kv, neuVerknuepft, false)) renderKvDetail();
   });
   document.getElementById("kv-duplizieren").addEventListener("click", () => {
     const kopie = JSON.parse(JSON.stringify(kv));
@@ -2662,7 +2854,13 @@ function renderKvDetail() {
   });
   if (verknuepftePa) {
     document.getElementById("kv-zur-pa").addEventListener("click", () => { aktivePaId = verknuepftePa.id; wechsleTab("pruefauftraege"); });
+    document.getElementById("kv-aus-pa-uebernehmen").addEventListener("click", () => {
+      fuelleKvAusPa(kv, verknuepftePa, true);
+      renderKvDetail();
+      zeigeStatus("Warengruppe/Styleanzahl aus PA übernommen · " + jetzt(), "ok");
+    });
   }
+  initialisiereKvWarengruppeNeuAuswahl(panel, kv);
   initialisiereVorgaengerKarte(panel, kv);
   initialisierePruefumfangUebersicht(panel, kv, verknuepftePa);
   document.getElementById("kv-loeschen").addEventListener("click", () => {
@@ -3300,7 +3498,11 @@ function oeffnePruefgrundlageModal(entwurf) {
     }
     speichereInLocalStorage();
     schliesseOverlay();
-    renderPruefgrundlagenTab();
+    /* renderAktivenTab() statt fest renderPruefgrundlagenTab(): dieses Modal lässt sich jetzt auch
+       aus der Warengruppen-Empfehlung im KV-Reiter heraus öffnen (siehe
+       initialisiereMechanikEmpfehlungKarte) - der jeweils sichtbare Reiter soll aktualisiert
+       werden, nicht immer zwingend Prüfgrundlagen. */
+    renderAktivenTab();
     zeigeStatus("Prüfgrundlage gespeichert · " + jetzt(), "ok");
   });
   document.getElementById("pg-abbrechen").addEventListener("click", schliesseOverlay);
@@ -3311,7 +3513,7 @@ function oeffnePruefgrundlageModal(entwurf) {
       data.pruefgrundlagen = data.pruefgrundlagen.filter((e) => e.id !== entwurf.id);
       speichereInLocalStorage();
       schliesseOverlay();
-      renderPruefgrundlagenTab();
+      renderAktivenTab();
     });
   }
   document.getElementById("overlay").classList.add("sichtbar");
@@ -3544,6 +3746,7 @@ function renderNormenTab() { renderNormenListe(); renderNormDetail(); }
 function renderVerwaltungTab() {
   renderBereicheVerwaltung();
   renderWarengruppenVerwaltung();
+  renderWarengruppenZuordnungVerwaltung();
 }
 
 function renderBereicheVerwaltung() {
@@ -3684,6 +3887,62 @@ document.getElementById("warengruppe-hinzufuegen-btn").addEventListener("click",
   zeigeStatus(`Warengruppe „${code}" angelegt · ` + jetzt(), "ok");
 });
 
+function renderWarengruppenZuordnungVerwaltung() {
+  const liste = document.getElementById("warengruppen-zuordnung-liste");
+  if (!liste) return;
+  liste.innerHTML = data.warengruppenZuordnung.length
+    ? data.warengruppenZuordnung.map((z, i) => `
+      <div class="verwaltung-zeile" data-idx="${i}">
+        <input type="text" class="code-feld" value="${escapeHtml(z.neu)}" data-feld="neu" data-alt="${escapeHtml(z.neu)}" placeholder="Warengruppe neu">
+        <input type="text" value="${escapeHtml(z.alt)}" data-feld="alt" data-alt="${escapeHtml(z.alt)}" placeholder="Warengruppe alt">
+        <button type="button" class="danger small" data-action="wgz-loeschen">Löschen</button>
+      </div>`).join("")
+    : `<p class="muted">Noch keine Zuordnungen angelegt.</p>`;
+
+  liste.querySelectorAll(".verwaltung-zeile").forEach((zeile) => {
+    const idx = Number(zeile.dataset.idx);
+    zeile.querySelectorAll("input[type=\"text\"]").forEach((inp) => {
+      inp.addEventListener("change", () => {
+        const neu = inp.value.trim();
+        if (neu === inp.dataset.alt) return;
+        data.warengruppenZuordnung[idx][inp.dataset.feld] = neu;
+        speichereInLocalStorage();
+        renderWarengruppenZuordnungVerwaltung();
+        zeigeStatus("Warengruppen-Zuordnung aktualisiert · " + jetzt(), "ok");
+      });
+    });
+  });
+  liste.querySelectorAll('[data-action="wgz-loeschen"]').forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const idx = Number(btn.closest(".verwaltung-zeile").dataset.idx);
+      const z = data.warengruppenZuordnung[idx];
+      if (!confirm(`Zuordnung „${z.neu} → ${z.alt}" wirklich löschen?`)) return;
+      data.warengruppenZuordnung.splice(idx, 1);
+      speichereInLocalStorage();
+      renderWarengruppenZuordnungVerwaltung();
+      zeigeStatus("Zuordnung gelöscht · " + jetzt(), "ok");
+    });
+  });
+}
+
+document.getElementById("wgz-hinzufuegen-btn").addEventListener("click", () => {
+  const neuInp = document.getElementById("wgz-neu-neu-input");
+  const altInp = document.getElementById("wgz-neu-alt-input");
+  const neu = neuInp.value.trim();
+  const alt = altInp.value.trim();
+  if (!neu || !alt) { alert("Bitte Warengruppe neu und Warengruppe alt angeben."); return; }
+  if (data.warengruppenZuordnung.some((z) => normalisiereWarengruppe(z.neu) === normalisiereWarengruppe(neu))) {
+    alert(`Für Warengruppe „${neu}" existiert bereits eine Zuordnung.`);
+    return;
+  }
+  data.warengruppenZuordnung.push({ neu, alt });
+  neuInp.value = "";
+  altInp.value = "";
+  speichereInLocalStorage();
+  renderWarengruppenZuordnungVerwaltung();
+  zeigeStatus(`Zuordnung „${neu} → ${alt}" angelegt · ` + jetzt(), "ok");
+});
+
 document.getElementById("btn-neue-norm").addEventListener("click", () => {
   const norm = normEntwurfNeu();
   data.normen.unshift(norm);
@@ -3773,7 +4032,8 @@ document.getElementById("datei-laden-input").addEventListener("change", async (e
       pruefgrundlagen: (geparst.pruefgrundlagen && geparst.pruefgrundlagen.length) ? geparst.pruefgrundlagen : seedPruefgrundlagen(),
       normen: geparst.normen || [],
       warengruppen: (geparst.warengruppen && geparst.warengruppen.length) ? geparst.warengruppen : seedWarengruppen(),
-      bereiche: (geparst.bereiche && geparst.bereiche.length) ? geparst.bereiche : seedBereiche()
+      bereiche: (geparst.bereiche && geparst.bereiche.length) ? geparst.bereiche : seedBereiche(),
+      warengruppenZuordnung: geparst.warengruppenZuordnung || []
     };
     data.normen.forEach(migriereNorm);
     data.pruefgrundlagen.forEach(migrierePruefgrundlage);
@@ -3843,9 +4103,10 @@ document.getElementById("btn-csv").addEventListener("click", () => {
     });
     csvHerunterladen(zeilen, "normen_export.csv");
   } else if (aktiverTab === "verwaltung") {
-    const zeilen = [["Typ", "Code", "Wert", "Verwendungen (Prüfgrundlagen)"]];
+    const zeilen = [["Typ", "Code", "Wert", "Verwendungen"]];
     data.bereiche.forEach((b) => zeilen.push(["Bereich", "", b, data.pruefgrundlagen.filter((e) => e.bereich === b).length]));
     data.warengruppen.forEach((w) => zeilen.push(["Warengruppe", w.code, w.name, data.pruefgrundlagen.filter((e) => normalisiereWarengruppe(e.warengruppeCode) === normalisiereWarengruppe(w.code)).length]));
+    data.warengruppenZuordnung.forEach((z) => zeilen.push(["Warengruppen-Zuordnung", z.neu, z.alt, ""]));
     csvHerunterladen(zeilen, "verwaltung_export.csv");
   }
 });
