@@ -224,21 +224,20 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   **Warengruppe wird nur noch per durchsuchbarem Dropdown gewählt**, kein
   Freitext mehr — Klick öffnet die vollständige Liste, Tippen filtert nach
   Code oder Name (Code wird nicht mehr doppelt angezeigt, da er im Namen
-  bereits enthalten ist). Die Liste (aktuell 64 Einträge) ist vorerst aus den
-  bereits vorhandenen Prüfgrundlagen-Startdaten abgeleitet, als
-  Übergangslösung bis die offizielle Warengruppen-Liste geliefert und eine
-  neue Tool-Version damit gebaut wird — bis dahin sind nur bereits genutzte
-  Warengruppen wählbar.
+  bereits enthalten ist). Die Liste ist anfangs aus den 64 in den
+  Prüfgrundlagen-Startdaten vorkommenden Warengruppen abgeleitet, aber wie
+  Bereich (siehe unten) über den Reiter **„Verwaltung"** frei pflegbar —
+  neue Warengruppen anlegen, Code/Name bestehender ändern oder welche
+  löschen, bis die offizielle Warengruppen-Liste geliefert wird.
 
-  **Bereich ist ebenfalls ein durchsuchbares Dropdown**, kein Freitext mehr.
-  Anders als bei Warengruppe gibt es hier aber **kein "+ Neue anlegen" direkt
-  aus der Prüfgrundlage heraus** — die Liste wird ausschließlich im neuen
+  **Bereich ist ebenfalls ein durchsuchbares Dropdown**, kein Freitext mehr
+  — genau wie Warengruppe gibt es hier **kein "+ Neue anlegen" direkt aus
+  der Prüfgrundlage heraus**; beide Listen werden ausschließlich im neuen
   Reiter **„Verwaltung"** gepflegt (anlegen, umbenennen, löschen), damit sie
-  nicht durch beiläufige Freitext-Varianten wuchert. Ein Bereich umbenennen
-  aktualisiert dort automatisch alle Prüfgrundlagen, die den bisherigen Wert
-  verwenden. Dateien aus einer älteren Tool-Version (Bereich als Freitext)
-  werden migriert: jeder bislang verwendete Wert, der noch nicht in der
-  gepflegten Liste steht, wird beim Laden automatisch ergänzt.
+  nicht durch beiläufige Freitext-Varianten wuchern. Dateien aus einer
+  älteren Tool-Version (Bereich als Freitext) werden migriert: jeder
+  bislang verwendete Wert, der noch nicht in der gepflegten Liste steht,
+  wird beim Laden automatisch ergänzt.
 
   **Normen sind jetzt eine durchsuchbare Dropdown-Mehrfachauswahl, die auf
   echte Norm-Datensätze verweist** (Reiter „Normen", siehe unten) statt auf
@@ -334,26 +333,37 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   dem Dateinamen abgeleitet, danach frei editierbar). Wie überall beim
   Datei-Upload in diesem Tool wird nur der ausgelesene Text gespeichert,
   nicht die Datei selbst. **PDF-Upload wurde entfernt** — Normen werden
-  entweder manuell angelegt oder per .docx hochgeladen; eine automatische
-  Erkennung einzelner Prüfpunkte findet dabei nicht statt. Jeder Prüfpunkt
-  (Nummer, Titel, Text) ist in der Detailansicht frei anlegbar, bearbeitbar,
-  zusammenführbar und löschbar — über „+ Prüfpunkt hinzufügen" von Hand
-  ergänzen, auch für Normen, die ganz ohne Datei-Upload nur manuell angelegt
-  wurden. Der komplette Rohtext der Datei bleibt zusätzlich einsehbar
-  (durchsuchbar per Strg+F wie jeder andere Text auf der Seite); „.docx
-  erneut hochladen" ersetzt nur den Rohtext, vorhandene Prüfpunkte bleiben
-  unangetastet. Alte **.doc-Dateien** (Format vor Office 2007) werden nicht
-  unterstützt — hierfür bitte eine .docx-Version hochladen.
+  entweder manuell angelegt oder per .docx hochgeladen. Der komplette
+  Rohtext der Datei bleibt einsehbar (durchsuchbar per Strg+F wie jeder
+  andere Text auf der Seite); „.docx erneut hochladen" ersetzt nur den
+  Rohtext, vorhandene Anwendungsbereiche (siehe unten) bleiben unangetastet.
+  Alte **.doc-Dateien** (Format vor Office 2007) werden nicht unterstützt —
+  hierfür bitte eine .docx-Version hochladen.
 
-  Die Detailansicht zeigt außerdem eine schreibgeschützte
+  **Anwendungsbereiche**: manche Normen stellen je nach Verwendungszweck des
+  Produkts unterschiedliche Anforderungen — z. B. hat DIN EN 581-2
+  unterschiedliche Anforderungen für Camping-, Wohn- und Objektbereich. Über
+  „+ Anwendungsbereich hinzufügen" lässt sich pro Norm eine beliebige Anzahl
+  solcher Bereiche anlegen (freier Name, z. B. „Campingbereich", plus
+  Freitext für die dort geltenden Anforderungen) — frei bearbeitbar,
+  zusammenführbar, löschbar, unabhängig von einer festen Klausel-Nummerierung
+  der Norm. Diese Anwendungsbereiche lassen sich dann **direkt bei der
+  jeweiligen Norm-Referenz in den Prüfgrundlagen auswählen**: hat eine
+  referenzierte Norm Anwendungsbereiche definiert, erscheint dort automatisch
+  ein zusätzliches Dropdown („— kein bestimmter Bereich —" oder einer der
+  definierten Bereiche); Normen ohne Anwendungsbereiche zeigen kein Dropdown.
+
+  Die Detailansicht einer Norm zeigt außerdem eine schreibgeschützte
   **„Verwendet in Prüfgrundlagen"-Übersicht**: für jede Prüfgrundlage, die
   diese Norm in einem ihrer drei Prüfblöcke referenziert, eine Zeile mit
-  Produkt, Warengruppe, Block (Sicherheit & Norm/FFU/StiWa) und den dort
-  **je Produkt hinterlegten Kosten** — Kosten hängen ja an der jeweiligen
-  Prüfgrundlage, nicht an der Norm selbst (siehe „Kosten je Norm" oben), so
-  ist auf einen Blick sichtbar, wie sich die Kosten für dieselbe Norm über
-  verschiedene Produkte unterscheiden. Klick auf eine Zeile springt direkt
-  zur Detailansicht der jeweiligen Prüfgrundlage.
+  Produkt, Warengruppe, Block (Sicherheit & Norm/FFU/StiWa), dem dort
+  **ausgewählten Anwendungsbereich** (Spalte erscheint nur, wenn die Norm
+  welche definiert hat) und den dort **je Produkt hinterlegten Kosten** —
+  Kosten hängen ja an der jeweiligen Prüfgrundlage, nicht an der Norm selbst
+  (siehe „Kosten je Norm" oben), so ist auf einen Blick sichtbar, wie sich
+  Anwendungsbereich und Kosten für dieselbe Norm über verschiedene Produkte
+  unterscheiden. Klick auf eine Zeile springt direkt zur Detailansicht der
+  jeweiligen Prüfgrundlage.
 
   Jede Norm hat einen **Typ** — „Norm (extern)" für echte Regelwerke
   (DIN/EN/ISO) oder eine von drei internen Kategorien: **Prüfprogramm
@@ -376,12 +386,19 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   erscheint dort „(gelöschte Norm)" statt der Bezeichnung — die Referenz
   bleibt technisch bestehen, sollte aber in der Prüfgrundlage entfernt oder
   ersetzt werden.
-- **Verwaltung** – Pflege von Stammdaten-Listen, aktuell die **Bereiche**
-  (Dropdown-Quelle im Reiter „Prüfgrundlagen", siehe oben). Neue Werte
-  anlegen, bestehende umbenennen (aktualisiert automatisch alle
-  Prüfgrundlagen, die den bisherigen Wert verwenden) oder löschen (mit
-  Warnhinweis, falls der Wert noch verwendet wird); die Anzahl der
-  Verwendungen steht neben jedem Eintrag.
+- **Verwaltung** – Pflege von zwei Stammdaten-Listen, beide Dropdown-Quellen
+  im Reiter „Prüfgrundlagen" (siehe oben):
+  - **Bereiche** – neue Werte anlegen, bestehende umbenennen (aktualisiert
+    automatisch alle Prüfgrundlagen, die den bisherigen Wert verwenden) oder
+    löschen (mit Warnhinweis, falls der Wert noch verwendet wird); die
+    Anzahl der Verwendungen steht neben jedem Eintrag.
+  - **Warengruppen** – analog, aber mit zwei Feldern je Eintrag (Code und
+    Name). Ändern von Code oder Name aktualisiert automatisch alle
+    Prüfgrundlagen mit dem bisherigen Code; Löschen warnt ebenfalls bei
+    noch bestehender Verwendung. Ersetzt die bisher rein aus den
+    Prüfgrundlagen-Startdaten abgeleitete, nicht editierbare Liste (siehe
+    unten) — die 64 Startwerte sind hier jetzt frei pflegbar, bis die
+    offizielle Warengruppen-Liste geliefert wird.
 
 ## Datenquelle der Warengruppen-Empfehlung und SAP-Codes
 
@@ -412,11 +429,13 @@ Teilstring-Prinzip.
 
 Die Neue-↔-Alte-Warengruppe-Zuordnungstabelle vom ADMIN-Blatt (347 Zeilen)
 wäre die naheliegende Quelle für die vollständige, offizielle
-Warengruppen-Liste im neuen Dropdown bei den Prüfgrundlagen (aktuell nur ein
-64-Einträge-Platzhalter aus den bereits genutzten Warengruppen) — bislang
+Warengruppen-Liste im Dropdown bei den Prüfgrundlagen (aktuell ein
+64-Einträge-Startbestand aus den bereits genutzten Warengruppen) — bislang
 aber noch nicht dafür verwendet, da unklar war, welche der beiden Spalten
-(Neu/Alt) als Code+Name-Paar für die Auswahl taugt. Sobald die offizielle
-Liste geliefert wird, wird eine neue Tool-Version damit gebaut.
+(Neu/Alt) als Code+Name-Paar für die Auswahl taugt. Anders als früher braucht
+das aber keine neue Tool-Version mehr: die Liste lässt sich jetzt direkt im
+Reiter „Verwaltung" pflegen (siehe oben) — die offizielle Liste könnte dort
+bei Bedarf auch komplett von Hand nachgetragen werden.
 
 ## SharePoint-Suche nach IAN
 

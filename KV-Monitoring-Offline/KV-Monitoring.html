@@ -170,17 +170,19 @@ tr.klickbar:hover td { background:#faf9f6; }
 .norm-ref-zeile { display:flex; align-items:center; gap:0.9rem; flex-wrap:wrap; font-size:0.78rem; font-weight:400; margin-bottom:0.35rem; }
 .norm-ref-zeile label { display:inline-flex; align-items:center; gap:0.25rem; white-space:nowrap; }
 .norm-ref-zeile input[type="number"] { width:80px; font-family:inherit; font-size:0.78rem; padding:0.2rem 0.35rem; border:1px solid var(--border); border-radius:4px; }
+.norm-ref-zeile select { font-family:inherit; font-size:0.78rem; padding:0.2rem 0.35rem; border:1px solid var(--border); border-radius:4px; max-width:220px; }
 .norm-ref-item textarea[data-rolle="bemerkung"] { width:100%; font-family:inherit; font-size:0.8rem; padding:0.35rem 0.5rem; border:1px solid var(--border); border-radius:6px; resize:vertical; }
 .normen-summe { font-size:0.82rem; font-weight:600; margin:0 0 0.4rem 0; color:var(--accent-dark); }
 .verwaltung-zeile { display:flex; align-items:center; gap:0.5rem; padding:0.3rem 0; border-bottom:1px solid var(--border); }
 .verwaltung-zeile:last-child { border-bottom:none; }
 .verwaltung-zeile input[type="text"] { flex:1; font-family:inherit; font-size:0.88rem; padding:0.35rem 0.5rem; border:1px solid var(--border); border-radius:6px; }
+.verwaltung-zeile input.code-feld { flex:0 0 140px; }
 
-.pruefpunkt-item { border:1px solid var(--border); border-radius:6px; padding:0.5rem 0.6rem; margin-bottom:0.5rem; }
-.pruefpunkt-kopf { display:flex; gap:0.4rem; margin-bottom:0.35rem; }
-.pruefpunkt-kopf input[data-feld="titel"] { flex:1; }
-.pruefpunkt-item input, .pruefpunkt-item textarea { font-family:inherit; font-size:0.85rem; padding:0.35rem 0.5rem; border:1px solid var(--border); border-radius:6px; }
-.pruefpunkt-item textarea { width:100%; resize:vertical; }
+.anwendungsbereich-item { border:1px solid var(--border); border-radius:6px; padding:0.5rem 0.6rem; margin-bottom:0.5rem; }
+.anwendungsbereich-kopf { display:flex; gap:0.4rem; margin-bottom:0.35rem; }
+.anwendungsbereich-kopf input[data-feld="name"] { flex:1; font-weight:600; }
+.anwendungsbereich-item input, .anwendungsbereich-item textarea { font-family:inherit; font-size:0.85rem; padding:0.35rem 0.5rem; border:1px solid var(--border); border-radius:6px; }
+.anwendungsbereich-item textarea { width:100%; resize:vertical; }
 
 /* #overlay-box scrollt sich selbst (statt der ganzen Seite/#overlay) und ist auf die Höhe des
    sichtbaren Fensters begrenzt - sonst "schwebt" die per position:sticky fixierte Aktionsleiste
@@ -366,6 +368,18 @@ input[type=file] { display:none; }
     <div class="toolbar-zeile" style="margin-top:0.6rem">
       <input type="text" id="bereich-neu-input" placeholder="Neuer Bereich…" style="flex:1;font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px">
       <button type="button" id="bereich-hinzufuegen-btn">+ Hinzufügen</button>
+    </div>
+  </div>
+  <div class="card" style="max-width:720px">
+    <h2 style="margin-top:0">Warengruppen</h2>
+    <p class="hinweis">Diese Liste speist das Warengruppen-Dropdown im Reiter „Prüfgrundlagen" —
+      hier anlegen, umbenennen oder löschen. Ändern von Code oder Name aktualisiert automatisch
+      alle Prüfgrundlagen mit dem bisherigen Code.</p>
+    <div id="warengruppen-liste"></div>
+    <div class="toolbar-zeile" style="margin-top:0.6rem">
+      <input type="text" id="warengruppe-neu-code-input" placeholder="Code (z. B. 250.045)" style="width:160px;font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px">
+      <input type="text" id="warengruppe-neu-name-input" placeholder="Name…" style="flex:1;font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px">
+      <button type="button" id="warengruppe-hinzufuegen-btn">+ Hinzufügen</button>
     </div>
   </div>
 </section>
@@ -606,9 +620,23 @@ function normTypBadgeHtml(typ) {
   const klasse = (!typ || typ === "norm") ? "nein" : "ja";
   return `<span class="badge ${klasse}" style="margin-right:0.3rem">${escapeHtml(normTypKuerzel(typ))}</span>`;
 }
+/* "Prüfpunkte" (nummerierte Klausel-Struktur, ursprünglich per PDF-Upload automatisch erkannt)
+   wurden durch "Anwendungsbereiche" ersetzt (Name + Freitext, z. B. "Campingbereich" bei DIN EN
+   581-2) - besser geeignet, weil Normen ihre Anforderungen oft nach Verwendungszweck statt nach
+   Klausel-Nummer aufteilen. Alte Prüfpunkte werden verlustfrei übernommen: Titel (falls vorhanden,
+   sonst die Nummer) wird zum Namen, Nummer + Text werden zum Freitext. */
 function migriereNorm(n) {
   if (!n.typ) n.typ = normTypAusBezeichnung(n.bezeichnung);
   if (n.bemerkung === undefined) n.bemerkung = "";
+  if (!Array.isArray(n.anwendungsbereiche)) n.anwendungsbereiche = [];
+  if (Array.isArray(n.pruefpunkte) && n.pruefpunkte.length) {
+    n.anwendungsbereiche = n.anwendungsbereiche.concat(n.pruefpunkte.map((p) => ({
+      id: p.id || neueId(),
+      name: p.titel || p.nummer || "",
+      text: [p.nummer, p.text].filter(Boolean).join(" ").trim()
+    })));
+  }
+  delete n.pruefpunkte;
   return n;
 }
 
@@ -621,7 +649,7 @@ function normFindOrCreate(bezeichnungRoh) {
   const key = normalisiere(bez);
   let norm = data.normen.find((n) => normalisiere(n.bezeichnung) === key);
   if (!norm) {
-    norm = { id: neueId(), bezeichnung: bez, titel: "", typ: normTypAusBezeichnung(bez), dateiname: "", hochgeladenAm: "", rohtext: "", pruefpunkte: [], bemerkung: "" };
+    norm = { id: neueId(), bezeichnung: bez, titel: "", typ: normTypAusBezeichnung(bez), dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "" };
     data.normen.push(norm);
   }
   return norm.id;
@@ -630,7 +658,7 @@ function normRefListeAusText(text) {
   const bez = String(text || "").trim();
   if (!bez) return [];
   const id = normFindOrCreate(bez);
-  return id ? [{ normId: id, inAnlehnungAn: false, kosten: null }] : [];
+  return id ? [{ normId: id, inAnlehnungAn: false, kosten: null, anwendungsbereichId: null }] : [];
 }
 
 /* Migriert die frühere blockweite Einzelkosten-Angabe (z. B. "kostenSicherheitNorm" als ein
@@ -639,7 +667,10 @@ function normRefListeAusText(text) {
    nichts verloren geht; eine feinere Aufteilung ist danach manuell in der Detailansicht möglich. */
 function migriereBlockKosten(e, feldName, altesKostenFeld) {
   const refs = e[feldName] || [];
-  refs.forEach((r) => { if (r.kosten === undefined) r.kosten = null; });
+  refs.forEach((r) => {
+    if (r.kosten === undefined) r.kosten = null;
+    if (r.anwendungsbereichId === undefined) r.anwendungsbereichId = null;
+  });
   if (Object.prototype.hasOwnProperty.call(e, altesKostenFeld)) {
     const alt = e[altesKostenFeld];
     if (refs.length && alt !== null && alt !== undefined && alt !== "" && refs.every((r) => r.kosten === null)) {
@@ -3115,6 +3146,12 @@ function renderNormenChips(container, entwurf, feldName) {
             <label>Kosten €<input type="number" step="1" data-idx="${i}" data-rolle="kosten" value="${r.kosten === null || r.kosten === undefined ? "" : r.kosten}" placeholder="Anfrage"></label>
             <label><input type="checkbox" data-idx="${i}" data-rolle="anlehnung" ${r.inAnlehnungAn ? "checked" : ""}> in Anlehnung an</label>
           </div>
+          ${norm && (norm.anwendungsbereiche || []).length ? `<div class="norm-ref-zeile">
+            <label>Anwendungsbereich<select data-idx="${i}" data-rolle="anwendungsbereich">
+              <option value="">— kein bestimmter Bereich —</option>
+              ${norm.anwendungsbereiche.map((b) => `<option value="${escapeHtml(b.id)}" ${r.anwendungsbereichId === b.id ? "selected" : ""}>${escapeHtml(b.name || "(ohne Namen)")}</option>`).join("")}
+            </select></label>
+          </div>` : ""}
           <textarea data-normid="${escapeHtml(r.normId)}" data-rolle="bemerkung" rows="2" placeholder="Bemerkung zu dieser Norm/PPM (z. B. Anforderungen, Prüfhinweise)… - wird in der Normendatenbank gespeichert" ${norm ? "" : "disabled"}>${escapeHtml(norm ? norm.bemerkung || "" : "")}</textarea>
         </div>`;
       }).join("")
@@ -3130,6 +3167,9 @@ function renderNormenChips(container, entwurf, feldName) {
       refs[Number(inp.dataset.idx)].kosten = inp.value === "" ? null : Number(inp.value);
       aktualisiereNormenSumme(container, feldName, refs);
     });
+  });
+  liste.querySelectorAll('[data-rolle="anwendungsbereich"]').forEach((sel) => {
+    sel.addEventListener("change", () => { refs[Number(sel.dataset.idx)].anwendungsbereichId = sel.value || null; });
   });
   liste.querySelectorAll('[data-rolle="bemerkung"]').forEach((ta) => {
     ta.addEventListener("input", () => {
@@ -3155,7 +3195,7 @@ function baueNormenListe(container, entwurf, feldName, q, erlaubteTypen) {
   liste.querySelectorAll("[data-normid]").forEach((btn) => {
     btn.addEventListener("click", () => {
       entwurf[feldName] = entwurf[feldName] || [];
-      entwurf[feldName].push({ normId: btn.dataset.normid, inAnlehnungAn: false, kosten: null });
+      entwurf[feldName].push({ normId: btn.dataset.normid, inAnlehnungAn: false, kosten: null, anwendungsbereichId: null });
       renderNormenChips(container, entwurf, feldName);
       baueNormenListe(container, entwurf, feldName, container.querySelector(".ms-suche").value, erlaubteTypen);
     });
@@ -3163,11 +3203,11 @@ function baueNormenListe(container, entwurf, feldName, q, erlaubteTypen) {
   const neuBtn = liste.querySelector("[data-neu]");
   if (neuBtn) {
     neuBtn.addEventListener("click", () => {
-      const neu = { id: neueId(), bezeichnung: q.trim(), titel: "", typ: normTypFuerBlock(q.trim(), erlaubteTypen), dateiname: "", hochgeladenAm: "", rohtext: "", pruefpunkte: [], bemerkung: "" };
+      const neu = { id: neueId(), bezeichnung: q.trim(), titel: "", typ: normTypFuerBlock(q.trim(), erlaubteTypen), dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "" };
       data.normen.push(neu);
       speichereInLocalStorage();
       entwurf[feldName] = entwurf[feldName] || [];
-      entwurf[feldName].push({ normId: neu.id, inAnlehnungAn: false, kosten: null });
+      entwurf[feldName].push({ normId: neu.id, inAnlehnungAn: false, kosten: null, anwendungsbereichId: null });
       renderNormenChips(container, entwurf, feldName);
       container.querySelector(".ms-suche").value = "";
       baueNormenListe(container, entwurf, feldName, "", erlaubteTypen);
@@ -3284,7 +3324,7 @@ document.getElementById("btn-neue-pruefgrundlage").addEventListener("click", () 
    hochgeladen (nur Rohtext-Extraktion, siehe extrahiereDocxRohtext). Prüfpunkte werden in beiden
    Fällen ausschließlich von Hand gepflegt (keine automatische Erkennung mehr). */
 function normEntwurfNeu() {
-  return { id: neueId(), bezeichnung: "Neue Norm", titel: "", typ: "norm", dateiname: "", hochgeladenAm: "", rohtext: "", pruefpunkte: [], bemerkung: "" };
+  return { id: neueId(), bezeichnung: "Neue Norm", titel: "", typ: "norm", dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "" };
 }
 
 /* Liest eine Norm-.docx-Datei ein und liefert einen vollständigen Norm-Datensatz (noch nicht in
@@ -3295,7 +3335,7 @@ async function verarbeiteNormDatei(datei) {
   const bezeichnung = datei.name.replace(/\.docx$/i, "").replace(/[_]+/g, " ").trim() || "Neue Norm";
   const typ = normTypAusBezeichnung(bezeichnung);
   const rohtext = await extrahiereDocxRohtext(datei);
-  return { id: neueId(), bezeichnung, titel: "", typ, dateiname: datei.name, hochgeladenAm: heutigesDatumLokal(), rohtext, pruefpunkte: [], bemerkung: "" };
+  return { id: neueId(), bezeichnung, titel: "", typ, dateiname: datei.name, hochgeladenAm: heutigesDatumLokal(), rohtext, anwendungsbereiche: [], bemerkung: "" };
 }
 
 let normenTypFilter = "";
@@ -3305,7 +3345,7 @@ function gefiltereNormen() {
   return data.normen.filter((n) => {
     if (normenTypFilter && (n.typ || "norm") !== normenTypFilter) return false;
     if (!q) return true;
-    return normalisiere([n.bezeichnung, n.titel, n.dateiname, n.bemerkung, ...(n.pruefpunkte || []).map((p) => p.nummer + " " + p.titel)].join(" ")).includes(q);
+    return normalisiere([n.bezeichnung, n.titel, n.dateiname, n.bemerkung, ...(n.anwendungsbereiche || []).map((b) => b.name + " " + b.text)].join(" ")).includes(q);
   });
 }
 
@@ -3316,7 +3356,7 @@ function renderNormenListe() {
   ul.innerHTML = liste.map((n) => `
     <li class="${n.id === aktiveNormId ? "aktiv" : ""}" data-id="${n.id}">
       <strong>${normTypBadgeHtml(n.typ)}${escapeHtml(n.bezeichnung || "(ohne Bezeichnung)")}</strong>
-      <div class="muted">${(n.pruefpunkte || []).length} Prüfpunkt${(n.pruefpunkte || []).length === 1 ? "" : "e"}${n.dateiname ? " · " + escapeHtml(n.dateiname) : ""}</div>
+      <div class="muted">${(n.anwendungsbereiche || []).length} Anwendungsbereich${(n.anwendungsbereiche || []).length === 1 ? "" : "e"}${n.dateiname ? " · " + escapeHtml(n.dateiname) : ""}</div>
     </li>`).join("");
   ul.querySelectorAll("li[data-id]").forEach((li) => li.addEventListener("click", () => { aktiveNormId = li.dataset.id; renderNormenTab(); }));
 }
@@ -3329,14 +3369,18 @@ document.getElementById("normen-typ-toggle").querySelectorAll("button[data-typ]"
   });
 });
 
-function pruefpunktZeileHtml(p) {
-  return `<div class="pruefpunkt-item" data-id="${escapeHtml(p.id)}">
-    <div class="pruefpunkt-kopf">
-      <input type="text" data-feld="nummer" value="${escapeHtml(p.nummer)}" placeholder="Nummer" style="width:6rem;font-weight:600">
-      <input type="text" data-feld="titel" value="${escapeHtml(p.titel)}" placeholder="Titel">
-      <button type="button" class="danger small" data-action="pruefpunkt-loeschen" title="Prüfpunkt löschen">🗑</button>
+/* Anwendungsbereiche einer Norm: manche Normen (z. B. DIN EN 581-2) stellen je nach
+   Verwendungszweck des Produkts unterschiedliche Anforderungen - etwa Camping-, Wohn- und
+   Objektbereich. Statt einer starren, nummerierten Klausel-Struktur (frühere "Prüfpunkte") ist
+   das hier bewusst nur ein Name (z. B. "Campingbereich") plus Freitext für die dort geltenden
+   Anforderungen - frei benennbar, nicht an eine bestimmte Norm-Gliederung gebunden. */
+function anwendungsbereichZeileHtml(b) {
+  return `<div class="anwendungsbereich-item" data-id="${escapeHtml(b.id)}">
+    <div class="anwendungsbereich-kopf">
+      <input type="text" data-feld="name" value="${escapeHtml(b.name)}" placeholder="z. B. Campingbereich, Wohnbereich, Objektbereich…">
+      <button type="button" class="danger small" data-action="anwendungsbereich-loeschen" title="Anwendungsbereich löschen">🗑</button>
     </div>
-    <textarea data-feld="text" rows="3" placeholder="Text des Prüfpunkts…">${escapeHtml(p.text)}</textarea>
+    <textarea data-feld="text" rows="3" placeholder="Anforderungen für diesen Bereich…">${escapeHtml(b.text)}</textarea>
   </div>`;
 }
 
@@ -3352,7 +3396,11 @@ function normVerwendungInPruefgrundlagen(norm) {
     bloecke.forEach(([feld, label]) => {
       (e[feld] || []).forEach((r) => {
         if (r.normId === norm.id) {
-          treffer.push({ pgId: e.id, produkt: e.produkt, warengruppeName: e.warengruppeName, block: label, kosten: r.kosten, inAnlehnungAn: r.inAnlehnungAn });
+          const bereich = (norm.anwendungsbereiche || []).find((b) => b.id === r.anwendungsbereichId);
+          treffer.push({
+            pgId: e.id, produkt: e.produkt, warengruppeName: e.warengruppeName, block: label,
+            kosten: r.kosten, inAnlehnungAn: r.inAnlehnungAn, anwendungsbereichName: bereich ? bereich.name : ""
+          });
         }
       });
     });
@@ -3362,14 +3410,16 @@ function normVerwendungInPruefgrundlagen(norm) {
 
 function normVerwendungHtml(norm) {
   const treffer = normVerwendungInPruefgrundlagen(norm);
+  const zeigeAnwendungsbereich = (norm.anwendungsbereiche || []).length > 0;
   return `<div class="card">
     <h2 style="margin:0 0 0.6rem 0">Verwendet in Prüfgrundlagen${treffer.length ? " (" + treffer.length + ")" : ""}</h2>
     ${treffer.length
-      ? `<table class="tabelle readonly"><thead><tr><th>Produkt</th><th>Warengruppe</th><th>Block</th><th>Kosten</th></tr></thead><tbody>
+      ? `<table class="tabelle readonly"><thead><tr><th>Produkt</th><th>Warengruppe</th><th>Block</th>${zeigeAnwendungsbereich ? "<th>Anwendungsbereich</th>" : ""}<th>Kosten</th></tr></thead><tbody>
           ${treffer.map((t) => `<tr class="klickbar" data-action="norm-pg-oeffnen" data-id="${escapeHtml(t.pgId)}">
             <td>${escapeHtml(t.produkt || "(ohne Produktnamen)")}</td>
             <td>${escapeHtml(t.warengruppeName || "")}</td>
             <td>${escapeHtml(t.block)}${t.inAnlehnungAn ? ` <span class="muted">(in Anlehnung an)</span>` : ""}</td>
+            ${zeigeAnwendungsbereich ? `<td>${t.anwendungsbereichName ? escapeHtml(t.anwendungsbereichName) : "–"}</td>` : ""}
             <td>${t.kosten === null || t.kosten === undefined ? "Anfrage" : Number(t.kosten).toFixed(2) + " €"}</td>
           </tr>`).join("")}
         </tbody></table>`
@@ -3386,7 +3436,7 @@ function renderNormDetail() {
     <div class="card">
       <div class="toolbar-zeile">
         <h2 style="margin:0">${escapeHtml(norm.bezeichnung || "(ohne Bezeichnung)")}</h2>
-        <span class="zaehler">${(norm.pruefpunkte || []).length} Prüfpunkt${(norm.pruefpunkte || []).length === 1 ? "" : "e"}</span>
+        <span class="zaehler">${(norm.anwendungsbereiche || []).length} Anwendungsbereich${(norm.anwendungsbereiche || []).length === 1 ? "" : "e"}</span>
       </div>
       <div class="formular-grid">
         <label>Bezeichnung<input type="text" data-feld="bezeichnung" value="${escapeHtml(norm.bezeichnung)}"></label>
@@ -3404,13 +3454,17 @@ function renderNormDetail() {
     </div>
     <div class="card">
       <div class="toolbar-zeile">
-        <h2 style="margin:0">Prüfpunkte</h2>
+        <h2 style="margin:0">Anwendungsbereiche</h2>
         <div class="spacer"></div>
-        <button class="ghost small" id="pruefpunkt-hinzufuegen">+ Prüfpunkt hinzufügen</button>
+        <button class="ghost small" id="anwendungsbereich-hinzufuegen">+ Anwendungsbereich hinzufügen</button>
       </div>
-      <div id="pruefpunkte-liste">${(norm.pruefpunkte || []).length
-        ? norm.pruefpunkte.map((p) => pruefpunktZeileHtml(p)).join("")
-        : '<p class="muted">Noch keine Prüfpunkte - über „+ Prüfpunkt hinzufügen" oben von Hand ergänzen.</p>'}</div>
+      <p class="hinweis" style="margin-top:0">Manche Normen stellen je nach Verwendungszweck unterschiedliche Anforderungen (z. B. DIN EN
+        581-2: Camping-, Wohn- und Objektbereich) - hier lassen sich diese Bereiche benennen und ihre jeweiligen
+        Anforderungen festhalten. Bei den Prüfgrundlagen kann dann je Norm-Referenz einer dieser Bereiche
+        ausgewählt werden.</p>
+      <div id="anwendungsbereiche-liste">${(norm.anwendungsbereiche || []).length
+        ? norm.anwendungsbereiche.map((b) => anwendungsbereichZeileHtml(b)).join("")
+        : '<p class="muted">Noch keine Anwendungsbereiche - über „+ Anwendungsbereich hinzufügen" oben ergänzen.</p>'}</div>
     </div>
     ${normVerwendungHtml(norm)}`;
 
@@ -3445,7 +3499,7 @@ function renderNormDetail() {
     const datei = e.target.files[0];
     e.target.value = "";
     if (!datei) return;
-    if (!confirm("Rohtext dieser Norm durch den Inhalt der neuen .docx-Datei ersetzen? Vorhandene Prüfpunkte bleiben davon unberührt.")) return;
+    if (!confirm("Rohtext dieser Norm durch den Inhalt der neuen .docx-Datei ersetzen? Vorhandene Anwendungsbereiche bleiben davon unberührt.")) return;
     zeigeStatus(`„${datei.name}" wird gelesen…`, "");
     try {
       const neu = await verarbeiteNormDatei(datei);
@@ -3460,21 +3514,21 @@ function renderNormDetail() {
     }
   });
 
-  document.getElementById("pruefpunkt-hinzufuegen").addEventListener("click", () => {
-    norm.pruefpunkte = norm.pruefpunkte || [];
-    norm.pruefpunkte.push({ id: neueId(), nummer: "", titel: "", text: "" });
+  document.getElementById("anwendungsbereich-hinzufuegen").addEventListener("click", () => {
+    norm.anwendungsbereiche = norm.anwendungsbereiche || [];
+    norm.anwendungsbereiche.push({ id: neueId(), name: "", text: "" });
     speichereInLocalStorage();
     renderNormDetail();
   });
 
-  panel.querySelectorAll(".pruefpunkt-item").forEach((div) => {
-    const punkt = (norm.pruefpunkte || []).find((p) => p.id === div.dataset.id);
-    if (!punkt) return;
+  panel.querySelectorAll(".anwendungsbereich-item").forEach((div) => {
+    const bereich = (norm.anwendungsbereiche || []).find((b) => b.id === div.dataset.id);
+    if (!bereich) return;
     div.querySelectorAll("[data-feld]").forEach((el) => {
-      el.addEventListener("input", () => { punkt[el.dataset.feld] = el.value; speichereInLocalStorage(); });
+      el.addEventListener("input", () => { bereich[el.dataset.feld] = el.value; speichereInLocalStorage(); });
     });
-    div.querySelector('[data-action="pruefpunkt-loeschen"]').addEventListener("click", () => {
-      norm.pruefpunkte = norm.pruefpunkte.filter((p) => p.id !== punkt.id);
+    div.querySelector('[data-action="anwendungsbereich-loeschen"]').addEventListener("click", () => {
+      norm.anwendungsbereiche = norm.anwendungsbereiche.filter((b) => b.id !== bereich.id);
       speichereInLocalStorage();
       renderNormDetail();
     });
@@ -3483,11 +3537,16 @@ function renderNormDetail() {
 
 function renderNormenTab() { renderNormenListe(); renderNormDetail(); }
 
-/* ---------- Reiter "Verwaltung": Pflege der Bereich-Stammdaten ----------
-   Umbenennen aktualisiert alle Prüfgrundlagen, die den bisherigen Wert nutzen, damit die
+/* ---------- Reiter "Verwaltung": Pflege der Bereich- und Warengruppen-Stammdaten ----------
+   Umbenennen aktualisiert jeweils alle Prüfgrundlagen, die den bisherigen Wert nutzen, damit die
    Referenz nicht stillschweigend veraltet (Bereich hat - anders als Warengruppe - keinen
    separaten stabilen Code, nur den Anzeigetext selbst). */
 function renderVerwaltungTab() {
+  renderBereicheVerwaltung();
+  renderWarengruppenVerwaltung();
+}
+
+function renderBereicheVerwaltung() {
   const liste = document.getElementById("bereiche-liste");
   if (!liste) return;
   liste.innerHTML = data.bereiche.length
@@ -3549,6 +3608,82 @@ document.getElementById("bereich-hinzufuegen-btn").addEventListener("click", () 
   zeigeStatus(`Bereich „${wert}" angelegt · ` + jetzt(), "ok");
 });
 
+function renderWarengruppenVerwaltung() {
+  const liste = document.getElementById("warengruppen-liste");
+  if (!liste) return;
+  const sortiert = [...data.warengruppen].sort((a, b) => a.code.localeCompare(b.code));
+  liste.innerHTML = sortiert.length
+    ? sortiert.map((w, i) => `
+      <div class="verwaltung-zeile" data-code-alt="${escapeHtml(w.code)}">
+        <input type="text" class="code-feld" value="${escapeHtml(w.code)}" data-feld="code" data-alt="${escapeHtml(w.code)}">
+        <input type="text" value="${escapeHtml(w.name)}" data-feld="name" data-alt="${escapeHtml(w.name)}">
+        <span class="muted" style="font-size:0.78rem;white-space:nowrap">${data.pruefgrundlagen.filter((e) => normalisiereWarengruppe(e.warengruppeCode) === normalisiereWarengruppe(w.code)).length}×</span>
+        <button type="button" class="danger small" data-action="warengruppe-loeschen">Löschen</button>
+      </div>`).join("")
+    : `<p class="muted">Noch keine Warengruppen angelegt.</p>`;
+
+  liste.querySelectorAll(".verwaltung-zeile").forEach((zeile) => {
+    const alterCode = zeile.dataset.codeAlt;
+    zeile.querySelectorAll("input[type=\"text\"]").forEach((inp) => {
+      inp.addEventListener("change", () => {
+        const eintrag = data.warengruppen.find((w) => normalisiereWarengruppe(w.code) === normalisiereWarengruppe(alterCode));
+        if (!eintrag) return;
+        const neu = inp.value.trim();
+        if (!neu) { inp.value = inp.dataset.alt; return; }
+        if (neu === inp.dataset.alt) return;
+        if (inp.dataset.feld === "code" && data.warengruppen.some((w) => w !== eintrag && normalisiereWarengruppe(w.code) === normalisiereWarengruppe(neu))) {
+          alert(`Warengruppen-Code „${neu}" existiert bereits.`);
+          inp.value = inp.dataset.alt;
+          return;
+        }
+        const alterCodeFuerKaskade = eintrag.code;
+        eintrag[inp.dataset.feld] = neu;
+        data.pruefgrundlagen.forEach((e) => {
+          if (normalisiereWarengruppe(e.warengruppeCode) === normalisiereWarengruppe(alterCodeFuerKaskade)) {
+            e.warengruppeCode = eintrag.code;
+            e.warengruppeName = eintrag.name;
+          }
+        });
+        speichereInLocalStorage();
+        renderVerwaltungTab();
+        zeigeStatus(`Warengruppe „${alterCodeFuerKaskade}" aktualisiert · ` + jetzt(), "ok");
+      });
+    });
+  });
+  liste.querySelectorAll('[data-action="warengruppe-loeschen"]').forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const alterCode = btn.closest(".verwaltung-zeile").dataset.codeAlt;
+      const eintrag = data.warengruppen.find((w) => normalisiereWarengruppe(w.code) === normalisiereWarengruppe(alterCode));
+      if (!eintrag) return;
+      const anzahl = data.pruefgrundlagen.filter((e) => normalisiereWarengruppe(e.warengruppeCode) === normalisiereWarengruppe(eintrag.code)).length;
+      const hinweis = anzahl ? ` (aktuell von ${anzahl} Prüfgrundlage${anzahl === 1 ? "" : "n"} verwendet)` : "";
+      if (!confirm(`Warengruppe „${eintrag.code} ${eintrag.name}" wirklich löschen${hinweis}?`)) return;
+      data.warengruppen = data.warengruppen.filter((w) => w !== eintrag);
+      speichereInLocalStorage();
+      renderVerwaltungTab();
+      zeigeStatus(`Warengruppe „${eintrag.code}" gelöscht · ` + jetzt(), "ok");
+    });
+  });
+}
+
+document.getElementById("warengruppe-hinzufuegen-btn").addEventListener("click", () => {
+  const codeInp = document.getElementById("warengruppe-neu-code-input");
+  const nameInp = document.getElementById("warengruppe-neu-name-input");
+  const code = codeInp.value.trim();
+  const name = nameInp.value.trim();
+  if (!code || !name) { alert("Bitte Code und Name angeben."); return; }
+  if (data.warengruppen.some((w) => normalisiereWarengruppe(w.code) === normalisiereWarengruppe(code))) {
+    alert(`Warengruppen-Code „${code}" existiert bereits.`);
+    return;
+  }
+  data.warengruppen.push({ code, name });
+  codeInp.value = "";
+  nameInp.value = "";
+  speichereInLocalStorage();
+  renderVerwaltungTab();
+  zeigeStatus(`Warengruppe „${code}" angelegt · ` + jetzt(), "ok");
+});
+
 document.getElementById("btn-neue-norm").addEventListener("click", () => {
   const norm = normEntwurfNeu();
   data.normen.unshift(norm);
@@ -3585,7 +3720,7 @@ function zeigeNormMehrfachUploadZusammenfassung(ergebnisse) {
   const box = document.getElementById("overlay-box");
   const erfolgreich = ergebnisse.filter((r) => !r.fehler);
   let html = `<h2>${ergebnisse.length} Datei(en) verarbeitet</h2>
-    <p class="hinweis">${erfolgreich.length} von ${ergebnisse.length} erfolgreich eingelesen, jede als eigene Norm angelegt. Prüfpunkte sind dabei zunächst leer und werden in der Detailansicht von Hand ergänzt.</p>
+    <p class="hinweis">${erfolgreich.length} von ${ergebnisse.length} erfolgreich eingelesen, jede als eigene Norm angelegt. Anwendungsbereiche sind dabei zunächst leer und werden in der Detailansicht von Hand ergänzt.</p>
     <table class="tabelle"><thead><tr><th>Datei</th><th>Bezeichnung</th><th>Status</th></tr></thead><tbody>`;
   ergebnisse.forEach((r) => {
     if (r.fehler) {
@@ -3703,14 +3838,15 @@ document.getElementById("btn-csv").addEventListener("click", () => {
     const zeilen = [["Norm", "Titel", "Typ", "Bemerkung", "Prüfpunkt-Nummer", "Prüfpunkt-Titel", "Prüfpunkt-Text"]];
     data.normen.forEach((n) => {
       const typLabel = normTypLabel(n.typ);
-      if (!(n.pruefpunkte || []).length) { zeilen.push([n.bezeichnung, n.titel, typLabel, n.bemerkung, "", "", ""]); return; }
-      n.pruefpunkte.forEach((p) => zeilen.push([n.bezeichnung, n.titel, typLabel, n.bemerkung, p.nummer, p.titel, p.text]));
+      if (!(n.anwendungsbereiche || []).length) { zeilen.push([n.bezeichnung, n.titel, typLabel, n.bemerkung, "", ""]); return; }
+      n.anwendungsbereiche.forEach((b) => zeilen.push([n.bezeichnung, n.titel, typLabel, n.bemerkung, b.name, b.text]));
     });
     csvHerunterladen(zeilen, "normen_export.csv");
   } else if (aktiverTab === "verwaltung") {
-    const zeilen = [["Bereich", "Verwendungen (Prüfgrundlagen)"]];
-    data.bereiche.forEach((b) => zeilen.push([b, data.pruefgrundlagen.filter((e) => e.bereich === b).length]));
-    csvHerunterladen(zeilen, "bereiche_export.csv");
+    const zeilen = [["Typ", "Code", "Wert", "Verwendungen (Prüfgrundlagen)"]];
+    data.bereiche.forEach((b) => zeilen.push(["Bereich", "", b, data.pruefgrundlagen.filter((e) => e.bereich === b).length]));
+    data.warengruppen.forEach((w) => zeilen.push(["Warengruppe", w.code, w.name, data.pruefgrundlagen.filter((e) => normalisiereWarengruppe(e.warengruppeCode) === normalisiereWarengruppe(w.code)).length]));
+    csvHerunterladen(zeilen, "verwaltung_export.csv");
   }
 });
 
@@ -3721,7 +3857,7 @@ function schluesselPa(p) { return normalisiere(p.ian); }
 function schluesselKatalog(k) { return normalisiere(k.kuerzel) + "|" + normalisiere(k.bezeichnung); }
 function schluesselPruefgrundlage(e) { return normalisiereWarengruppe(e.warengruppeCode) + "|" + normalisiere(e.produkt); }
 function schluesselNorm(n) { return normalisiere(n.bezeichnung); }
-const NORM_FELDER = ["bezeichnung", "titel", "typ", "dateiname", "rohtext", "pruefpunkte", "bemerkung"];
+const NORM_FELDER = ["bezeichnung", "titel", "typ", "dateiname", "rohtext", "anwendungsbereiche", "bemerkung"];
 
 /* JSON.stringify-Vergleich statt strikter Gleichheit, damit auch Feld-Werte, die Arrays sind
    (z. B. Normen/Materialien-Mehrfachauswahl), inhaltlich statt nach Objektreferenz verglichen
@@ -3798,8 +3934,8 @@ function renderMergeUebersicht() {
   if (p.katalogKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Katalogpositionen (${p.katalogKonflikte.length})</h3>` + konfliktListeHtml("katalogKonflikt", p.katalogKonflikte, (k) => escapeHtml(k.lokal.bezeichnung), (k) => "Kategorie: " + (k.kategorie || "") + "\nSAP-Code: " + (k.sapCode || "") + "\nStandardkosten: " + (k.standardKosten ?? "")) + `</div>`;
   if (p.neuePruefgrundlagen.length) html += `<div class="merge-section"><h3>Neue Prüfgrundlagen (${p.neuePruefgrundlagen.length})</h3>` + checkboxListeHtml("neuePruefgrundlagen", p.neuePruefgrundlagen, (e) => `<strong>${escapeHtml(e.warengruppeCode)} ${escapeHtml(e.produkt)}</strong> — ${escapeHtml(normRefListeText(e.normen))}`) + `</div>`;
   if (p.pruefgrundlagenKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Prüfgrundlagen (${p.pruefgrundlagenKonflikte.length})</h3>` + konfliktListeHtml("pruefgrundlagenKonflikt", p.pruefgrundlagenKonflikte, (k) => escapeHtml(k.lokal.warengruppeCode) + " " + escapeHtml(k.lokal.produkt), (e) => PRUEFGRUNDLAGE_FELDER.map((f) => f + ": " + (["normen", "ffuNormen", "stiwaNormen"].includes(f) ? normRefListeText(e[f]) : (e[f] ?? ""))).join("\n")) + `</div>`;
-  if (p.neueNormen.length) html += `<div class="merge-section"><h3>Neue Normen (${p.neueNormen.length})</h3>` + checkboxListeHtml("neueNormen", p.neueNormen, (n) => `<strong>${escapeHtml(n.bezeichnung)}</strong> — ${(n.pruefpunkte || []).length} Prüfpunkt(e)`) + `</div>`;
-  if (p.normenKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Normen (${p.normenKonflikte.length})</h3>` + konfliktListeHtml("normenKonflikt", p.normenKonflikte, (k) => escapeHtml(k.lokal.bezeichnung), (n) => "Typ: " + normTypLabel(n.typ) + "\nTitel: " + (n.titel || "") + "\nDatei: " + (n.dateiname || "") + "\nBemerkung: " + (n.bemerkung || "") + "\nPrüfpunkte: " + (n.pruefpunkte || []).length) + `</div>`;
+  if (p.neueNormen.length) html += `<div class="merge-section"><h3>Neue Normen (${p.neueNormen.length})</h3>` + checkboxListeHtml("neueNormen", p.neueNormen, (n) => `<strong>${escapeHtml(n.bezeichnung)}</strong> — ${(n.anwendungsbereiche || []).length} Anwendungsbereich(e)`) + `</div>`;
+  if (p.normenKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Normen (${p.normenKonflikte.length})</h3>` + konfliktListeHtml("normenKonflikt", p.normenKonflikte, (k) => escapeHtml(k.lokal.bezeichnung), (n) => "Typ: " + normTypLabel(n.typ) + "\nTitel: " + (n.titel || "") + "\nDatei: " + (n.dateiname || "") + "\nBemerkung: " + (n.bemerkung || "") + "\nAnwendungsbereiche: " + (n.anwendungsbereiche || []).length) + `</div>`;
 
   html += `<div class="overlay-actions"><button id="merge-anwenden">Zusammenführung übernehmen</button><button class="ghost" id="merge-abbrechen">Abbrechen</button></div>`;
   box.innerHTML = html;
