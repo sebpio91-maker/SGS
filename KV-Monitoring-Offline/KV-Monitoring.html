@@ -2281,6 +2281,37 @@ function erkennePruefumfangKategorien(pruefumfangText) {
   return PA_PRUEFUMFANG_KATEGORIEN.filter((k) => k.erkennungRegex.test(text));
 }
 
+/* Der Abschnitt "Sicherheit & Norm / Sonder- & Funktionsparameter" wird in der Prüfumfang-
+   Auswahl in diese vier Unterpunkte unterteilt - jeder mit eigener Checkbox und eigenem
+   Katalog-Bezug (bezeichnungRegex matcht genau eine Position aus data.katalog). Es gibt dafür
+   kein eigenes Erkennungssignal je Unterpunkt in der PA-PDF (nur die gesamte Phrase "Sicherheit
+   & Norm" ist im Prüfumfang-Text auffindbar) - alle vier starten deshalb mit demselben
+   Erkennungsstatus wie der Abschnitt insgesamt, lassen sich aber unabhängig voneinander
+   umschalten. Akkusicherheitskurzcheck (batterieabhängig) und Mustereinlagerung (nur manuell)
+   bleiben bewusst außen vor - sie gehören zu keinem der vier Unterpunkte. */
+const SICHERHEIT_NORM_UNTERPUNKTE = [
+  { id: "sicherheitNormpruefung", anzeigeName: "Sicherheit-/Normprüfung", bezeichnungRegex: /^sicherheit-\/normprüfung/i },
+  { id: "kennzeichnungVerpackungProdukt", anzeigeName: "Kennzeichnung (Verpackung & Produkt)", bezeichnungRegex: /^kennzeichnung ger/i },
+  { id: "kennzeichnungBedienungsanleitung", anzeigeName: "Kennzeichnung (Bedienungsanleitung)", bezeichnungRegex: /^bedienungsanleitung/i },
+  { id: "optischerAbgleich", anzeigeName: "Optischer Abgleich", bezeichnungRegex: /^optischer abgleich/i }
+];
+
+/* Migriert eine ältere KV-Datenstruktur (ein einzelnes kv.pruefumfangAuswahl.sicherheitNorm) auf
+   die vier neuen Unterpunkte - der bisherige Wert (inkl. "manuell gesetzt"-Status) wird auf alle
+   vier übertragen, damit vorhandene KVs beim Laden nicht plötzlich alle Sicherheit & Norm-
+   Positionen verlieren. */
+function migriereKvPruefumfangAuswahl(kv) {
+  if (kv.pruefumfangAuswahl.sicherheitNorm === undefined) return;
+  const wert = kv.pruefumfangAuswahl.sicherheitNorm;
+  const warManuell = !!(kv.pruefumfangManuell && kv.pruefumfangManuell.sicherheitNorm);
+  SICHERHEIT_NORM_UNTERPUNKTE.forEach((u) => {
+    if (kv.pruefumfangAuswahl[u.id] === undefined) kv.pruefumfangAuswahl[u.id] = wert;
+    if (warManuell) kv.pruefumfangManuell[u.id] = true;
+  });
+  delete kv.pruefumfangAuswahl.sicherheitNorm;
+  delete kv.pruefumfangManuell.sicherheitNorm;
+}
+
 /* Welche Prüfumfang-Abschnitte für diesen KV angehakt sind - solange der Nutzer einen Abschnitt
    noch nicht manuell umgeschaltet hat (kv.pruefumfangManuell), folgt die Auswahl live der
    Erkennung aus dem Prüfumfang des verknüpften PA (reagiert also automatisch, wenn ein PA erst
@@ -2290,9 +2321,17 @@ function erkennePruefumfangKategorien(pruefumfangText) {
 function pruefumfangAuswahlAktualisieren(kv, pa) {
   kv.pruefumfangAuswahl = kv.pruefumfangAuswahl || {};
   kv.pruefumfangManuell = kv.pruefumfangManuell || {};
+  migriereKvPruefumfangAuswahl(kv);
   PA_PRUEFUMFANG_KATEGORIEN.forEach((kat) => {
+    if (kat.id === "sicherheitNorm") return;
     if (!kv.pruefumfangManuell[kat.id]) {
       kv.pruefumfangAuswahl[kat.id] = pa ? erkennePruefumfangKategorien(pa.pruefumfang).some((k) => k.id === kat.id) : false;
+    }
+  });
+  const sicherheitErkannt = pa ? erkennePruefumfangKategorien(pa.pruefumfang).some((k) => k.id === "sicherheitNorm") : false;
+  SICHERHEIT_NORM_UNTERPUNKTE.forEach((u) => {
+    if (!kv.pruefumfangManuell[u.id]) {
+      kv.pruefumfangAuswahl[u.id] = sicherheitErkannt;
     }
   });
 }
@@ -2310,22 +2349,26 @@ function paHatBatterie(pa) {
   return !!ersteZeile && ersteZeile !== "keine" && ersteZeile !== "nein" && ersteZeile !== "-" && ersteZeile !== "n/a";
 }
 
-/* Katalog-Positionen, die für eine Kategorie automatisch vorgeschlagen werden - nur wenn die
-   Kategorie im Prüfumfang des verknüpften Prüfauftrags erkannt wurde. Produktspezifikationen
+/* Katalog-Positionen, die für eine Kategorie automatisch vorgeschlagen werden. Produktspezifikationen
    bekommen bewusst noch keine Automatik (siehe Kategorie-Beschreibung); beim
-   Akkusicherheitskurzcheck entscheidet paHatBatterie(). */
-function ermittleVorschlagsPositionen(kategorie, pa) {
+   Akkusicherheitskurzcheck entscheidet paHatBatterie(). Bei "sicherheitNorm" entscheidet NICHT die
+   Erkennung des gesamten Abschnitts im Prüfumfang-Text, sondern je Position der zugehörige
+   SICHERHEIT_NORM_UNTERPUNKTE-Unterpunkt-Checkbox (feinere Steuerung als bei den übrigen
+   Kategorien, die weiterhin als Ganzes über die Prüfumfang-Erkennung gehen). */
+function ermittleVorschlagsPositionen(kategorie, pa, kv) {
   if (!kategorie.katalogKategorie) return [];
-  if (!erkennePruefumfangKategorien(pa ? pa.pruefumfang : "").some((k) => k.id === kategorie.id)) return [];
   if (kategorie.id === "produktspezifikationen") return [];
   const positionen = data.katalog.filter((k) => normalisiere(k.kategorie) === normalisiere(kategorie.katalogKategorie));
   if (kategorie.id === "sicherheitNorm") {
-    /* Mustereinlagerung ist für diesen Teil nicht relevant und wird deshalb nicht automatisch
-       vorgeschlagen (bleibt aber als Position in der Kategorie manuell hinzufügbar). */
-    let gefiltert = positionen.filter((k) => !/mustereinlagerung/i.test(k.bezeichnung));
-    if (!paHatBatterie(pa)) gefiltert = gefiltert.filter((k) => !/akkusicherheitskurzcheck/i.test(k.bezeichnung));
-    return gefiltert;
+    const auswahl = kv ? kv.pruefumfangAuswahl : {};
+    return positionen.filter((k) => {
+      if (/mustereinlagerung/i.test(k.bezeichnung)) return false;
+      if (/akkusicherheitskurzcheck/i.test(k.bezeichnung)) return paHatBatterie(pa);
+      const unterpunkt = SICHERHEIT_NORM_UNTERPUNKTE.find((u) => u.bezeichnungRegex.test(k.bezeichnung));
+      return unterpunkt ? !!auswahl[unterpunkt.id] : true;
+    });
   }
+  if (!erkennePruefumfangKategorien(pa ? pa.pruefumfang : "").some((k) => k.id === kategorie.id)) return [];
   return positionen;
 }
 
@@ -2593,11 +2636,35 @@ function renderProduktspeziListe(kv, filterText) {
 /* Die neue Prüfumfang-Checkliste steht über den Detail-Karten: pro Abschnitt eine Checkbox,
    initial aus dem erkannten Prüfumfang vorbelegt (siehe pruefumfangAuswahlAktualisieren), danach
    frei umschaltbar. Erst für angehakte Abschnitte erscheinen unten die einzelnen Positionen. */
+/* Zeigt die Artikelkategorie aus dem verknüpften Prüfauftrag - dieselbe, die auch den
+   Rabattfaktor der Sicherheit & Norm-Position bestimmt (siehe artikelkategorieMultiplikator) -
+   direkt und gut sichtbar oberhalb des Prüfumfangs, statt nur beiläufig im Rabattfaktor-Hinweis
+   erwähnt zu werden. */
+function renderKvArtikelkategorieKarte(pa) {
+  if (!pa) return "";
+  return `<div class="card">
+    <h2 style="margin:0 0 0.3rem">Artikelkategorie</h2>
+    ${pa.artikelkategorie ? `<p style="margin:0;font-weight:600">${escapeHtml(pa.artikelkategorie)}</p>` : `<p class="hinweis" style="margin:0">Keine Artikelkategorie im Prüfauftrag hinterlegt.</p>`}
+  </div>`;
+}
+
 function renderKvPruefumfangCheckliste(kv, pa) {
   const zeilen = PA_PRUEFUMFANG_KATEGORIEN.map((kat) => {
     const erkannt = pa ? erkennePruefumfangKategorien(pa.pruefumfang).some((k) => k.id === kat.id) : false;
-    const checked = !!kv.pruefumfangAuswahl[kat.id];
     const badge = pa ? (erkannt ? `<span class="badge ja">im Prüfumfang erkannt</span>` : `<span class="badge nein">nicht erkannt</span>`) : "";
+
+    if (kat.id === "sicherheitNorm") {
+      const unterpunkteHtml = SICHERHEIT_NORM_UNTERPUNKTE.map((u) => {
+        const checked = !!kv.pruefumfangAuswahl[u.id];
+        return `<label style="display:flex;align-items:center;gap:0.5rem;font-weight:400;padding:0.1rem 0 0.1rem 1.4rem">
+          <input type="checkbox" data-pruefumfang-kat="${u.id}" ${checked ? "checked" : ""}>
+          ${escapeHtml(u.anzeigeName)}
+        </label>`;
+      }).join("");
+      return `<div style="font-weight:600;padding:0.15rem 0">${escapeHtml(kat.anzeigeName)} ${badge}</div>${unterpunkteHtml}`;
+    }
+
+    const checked = !!kv.pruefumfangAuswahl[kat.id];
     return `<label style="display:flex;align-items:center;gap:0.5rem;font-weight:600;padding:0.15rem 0">
       <input type="checkbox" data-pruefumfang-kat="${kat.id}" ${checked ? "checked" : ""}>
       ${escapeHtml(kat.anzeigeName)} ${badge}
@@ -2605,16 +2672,24 @@ function renderKvPruefumfangCheckliste(kv, pa) {
   }).join("");
   return `<div class="card">
     <h2>Prüfumfang</h2>
-    <p class="hinweis">Abschnitte auswählen, die für diesen Kostenvoranschlag relevant sind${pa ? " — Vorauswahl automatisch aus dem Prüfumfang des verknüpften Prüfauftrags erkannt, hier aber frei änderbar" : " (kein verknüpfter Prüfauftrag, daher keine automatische Vorauswahl möglich)"}. Erst für angehakte Abschnitte erscheinen unten die einzelnen Prüfpositionen zur Auswahl.</p>
+    <p class="hinweis">Abschnitte auswählen, die für diesen Kostenvoranschlag relevant sind${pa ? " — Vorauswahl automatisch aus dem Prüfumfang des verknüpften Prüfauftrags erkannt, hier aber frei änderbar" : " (kein verknüpfter Prüfauftrag, daher keine automatische Vorauswahl möglich)"}. Erst für angehakte Abschnitte erscheinen unten die einzelnen Prüfpositionen zur Auswahl. „Sicherheit & Norm / Sonder- & Funktionsparameter" ist zusätzlich in vier Unterpunkte gegliedert, die sich unabhängig voneinander auswählen lassen.</p>
     <div class="pruefumfang-checkliste">${zeilen}</div>
   </div>`;
+}
+
+/* "sicherheitNorm" hat keine eigene Checkbox mehr (siehe SICHERHEIT_NORM_UNTERPUNKTE) - die
+   Detail-Karte dafür erscheint, sobald mindestens einer der vier Unterpunkte angehakt ist. Alle
+   übrigen Kategorien behalten ihre einzelne Checkbox wie bisher. */
+function kategorieIstAusgewaehlt(kv, kat) {
+  if (kat.id === "sicherheitNorm") return SICHERHEIT_NORM_UNTERPUNKTE.some((u) => kv.pruefumfangAuswahl[u.id]);
+  return !!kv.pruefumfangAuswahl[kat.id];
 }
 
 function renderKvPruefumfangUebersicht(kv, pa) {
   pruefumfangAuswahlAktualisieren(kv, pa);
   const markenreferenz = pa ? paFeldWertRoh(pa, "Markenreferenz") : "";
   const qualitaetBloeckeHtml = pa ? renderPaBlockFeldHtml(pa, "Qualität") : "";
-  const ausgewaehlteKategorien = PA_PRUEFUMFANG_KATEGORIEN.filter((kat) => kv.pruefumfangAuswahl[kat.id]);
+  const ausgewaehlteKategorien = PA_PRUEFUMFANG_KATEGORIEN.filter((kat) => kategorieIstAusgewaehlt(kv, kat));
 
   const abschnitte = ausgewaehlteKategorien.map((kat) => {
     const erkannt = pa ? erkennePruefumfangKategorien(pa.pruefumfang).some((k) => k.id === kat.id) : false;
@@ -2631,7 +2706,7 @@ function renderKvPruefumfangUebersicht(kv, pa) {
     }
 
     const positionen = data.katalog.filter((k) => normalisiere(k.kategorie) === normalisiere(kat.katalogKategorie));
-    const vorschlaege = new Set(ermittleVorschlagsPositionen(kat, pa).map((k) => k.id));
+    const vorschlaege = new Set(ermittleVorschlagsPositionen(kat, pa, kv).map((k) => k.id));
     const positionenHtml = positionen.map((k) => {
       const istVorschlag = vorschlaege.has(k.id);
       const schonDrin = kvHatPosition(kv, k);
@@ -2658,6 +2733,7 @@ function renderKvPruefumfangUebersicht(kv, pa) {
   }).join("");
 
   return `${renderMechanikEmpfehlungKarte(kv, pa)}
+  ${renderKvArtikelkategorieKarte(pa)}
   ${pa ? renderPaPruefumfangKarte(pa) : ""}
   ${renderKvPruefumfangCheckliste(kv, pa)}
   ${ausgewaehlteKategorien.length ? `<div class="card">
@@ -2691,7 +2767,7 @@ function initialisierePruefumfangUebersicht(panel, kv, pa) {
       const kat = PA_PRUEFUMFANG_KATEGORIEN.find((k) => k.id === btn.dataset.kat);
       if (!kat) return;
       let hinzugefuegt = 0;
-      ermittleVorschlagsPositionen(kat, pa).forEach((eintrag) => { if (fuegeKatalogPositionHinzu(kv, eintrag)) hinzugefuegt++; });
+      ermittleVorschlagsPositionen(kat, pa, kv).forEach((eintrag) => { if (fuegeKatalogPositionHinzu(kv, eintrag)) hinzugefuegt++; });
       speichereInLocalStorage();
       renderKvDetail();
       zeigeStatus(hinzugefuegt ? `${hinzugefuegt} Position(en) übernommen · ${jetzt()}` : "Alle Vorschläge waren bereits im KV", "ok");

@@ -209,6 +209,13 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   FFU- und NGO/StiWa-Kosten sind vom Rabattfaktor **nicht** betroffen (im
   Original eigenständige Positionen ohne Set-Bestandteile/Rabatt).
 
+  **Artikelkategorie** – direkt oberhalb des Prüfumfangs zeigt eine eigene
+  Karte die Artikelkategorie aus dem verknüpften Prüfauftrag (dieselbe, die
+  auch den Rabattfaktor der Sicherheit & Norm-Position bestimmt, siehe
+  unten) — auf einen Blick sichtbar statt nur beiläufig im
+  Rabattfaktor-Hinweis erwähnt. Ohne hinterlegte Artikelkategorie im
+  Prüfauftrag erscheint stattdessen ein entsprechender Hinweis.
+
   **Prüfumfang** – der rohe Prüfumfang-Text aus dem verknüpften Prüfauftrag
   wird jetzt auch im KV angezeigt, in derselben Darstellung wie auf der
   Prüfauftrags-Detailseite (ALT-Zeile hervorgehoben, Institut/Datum-Klammer
@@ -228,25 +235,41 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   - **NGO**
   - **Referenzprüfung**
 
-  **Erst für angehakte Abschnitte erscheinen darunter die einzelnen
-  Prüfpositionen** zur Auswahl (Karte „Prüfumfang-Details") — ist kein
-  Abschnitt angehakt, bleibt nur die Checkliste sichtbar. Ohne verknüpften
+  **„Sicherheit & Norm / Sonder- & Funktionsparameter" ist zusätzlich in
+  vier eigene Unterpunkte gegliedert**, jeder mit eigener Checkbox statt
+  einer einzigen für den ganzen Abschnitt:
+  - **Sicherheit-/Normprüfung**
+  - **Kennzeichnung (Verpackung & Produkt)**
+  - **Kennzeichnung (Bedienungsanleitung)**
+  - **Optischer Abgleich**
+
+  Alle vier starten mit demselben Erkennungsstatus wie der Abschnitt
+  insgesamt (es gibt in der PA-PDF kein Signal, das die vier einzeln
+  unterscheidet), lassen sich danach aber unabhängig voneinander an- und
+  abhaken — z. B. wenn im Einzelfall nur der optische Abgleich, nicht aber
+  die Kennzeichnungsprüfung benötigt wird. Jeder Unterpunkt steuert direkt,
+  ob die zugehörige Katalog-Position in der Detail-Karte unten als
+  „Vorschlag" markiert ist. Dateien aus einer älteren Tool-Version (ein
+  einzelnes Häkchen für den ganzen Abschnitt) werden beim Laden automatisch
+  auf die vier Unterpunkte übertragen, damit kein bereits gepflegter KV
+  plötzlich alle Sicherheit & Norm-Positionen verliert.
+
+  **Erst für angehakte Abschnitte/Unterpunkte erscheinen darunter die
+  einzelnen Prüfpositionen** zur Auswahl (Karte „Prüfumfang-Details") — ist
+  nichts angehakt, bleibt nur die Checkliste sichtbar. Ohne verknüpften
   Prüfauftrag startet die Checkliste komplett unangehakt, lässt sich aber
   jederzeit manuell aktivieren (z. B. um Positionen schon vor dem
   PA-Upload grob vorzubereiten). Innerhalb der Detail-Karten:
-  - **Sicherheit & Norm / Sonder- & Funktionsparameter**: fallen darunter
-    laut Beschreibung Sicherheits-/Normprüfung (mechanische Sicherheit),
-    Kennzeichnungsprüfung für Verpackung und Produkt, Kennzeichnungsprüfung
-    der Bedienungsanleitung (E&E) sowie optischer Abgleich — die
-    allgemeinen Katalog-Positionen dazu werden automatisch als „Vorschlag"
-    markiert, ergänzend zur produktspezifischen Empfehlung oben. Der
-    **Akkusicherheitskurzcheck** wird dabei nur vorgeschlagen, wenn das aus
-    dem Prüfauftrag ausgelesene Feld „Batterietyp" auf eine tatsächlich
-    vorhandene Batterie/einen Akku hindeutet (nicht „keine"/„nein"/leer).
-    **Mustereinlagerung (18 Monate)** ist für diesen Abschnitt nicht
-    relevant und wird deshalb nicht mehr automatisch vorgeschlagen — bleibt
-    aber als Position weiterhin manuell hinzufügbar, falls im Einzelfall
-    doch gebraucht.
+  - **Sicherheit & Norm / Sonder- & Funktionsparameter**: die allgemeinen
+    Katalog-Positionen zu den vier Unterpunkten oben werden automatisch als
+    „Vorschlag" markiert, ergänzend zur produktspezifischen Empfehlung
+    oben. Der **Akkusicherheitskurzcheck** wird davon unabhängig nur
+    vorgeschlagen, wenn das aus dem Prüfauftrag ausgelesene Feld
+    „Batterietyp" auf eine tatsächlich vorhandene Batterie/einen Akku
+    hindeutet (nicht „keine"/„nein"/leer). **Mustereinlagerung (18
+    Monate)** ist für diesen Abschnitt nicht relevant und wird deshalb nie
+    automatisch vorgeschlagen — bleibt aber als Position weiterhin manuell
+    hinzufügbar, falls im Einzelfall doch gebraucht.
   - **(Physikalische-) Produktspezifikationen**: durchsuchbare Liste aus dem
     echten, 62 Einträge umfassenden Parameterkatalog (Parameter, Material/
     Kontext, Laufzeit, Norm, SAP-Code, Preis) — Suchfeld oben, „+ hinzufügen"
