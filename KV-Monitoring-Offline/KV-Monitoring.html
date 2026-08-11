@@ -1034,7 +1034,7 @@ const ARBEITSVORRAT_SELECT_FELDER = ["sachbearbeiter", "lfgb", "trivial", "mechE
 /* mechErledigt startet auf "nein" (= Ansicht "Arbeitsvorrat"), da das der tägliche Arbeitsmodus
    ist - alles, wo die Mechanik noch offen ist. "Gesamtliste" (alle jemals hochgeladenen Aufträge,
    unabhängig vom Mech.-Status) ist über den Ansicht-Umschalter erreichbar. */
-let arbeitsvorratFilter = { ian: "", vkBuero: [], lieferant: [], warengruppe: [], sachbearbeiter: "", lfgb: "", trivial: "", mechErledigt: "nein" };
+let arbeitsvorratFilter = { ian: "", bezeichnung: "", vkBuero: [], lieferant: [], warengruppe: [], sachbearbeiter: "", lfgb: "", trivial: "", mechErledigt: "nein" };
 
 /* Synchronisiert den Arbeitsvorrat/Gesamtliste-Umschalter (aktive Schaltfläche + Kartentitel)
    mit dem aktuellen mechErledigt-Filter - unabhängig davon, ob der über den Umschalter selbst
@@ -1066,6 +1066,8 @@ function gefiltertArbeitsvorrat() {
   });
   const ianFilter = normalisiere(arbeitsvorratFilter.ian);
   if (ianFilter) liste = liste.filter((r) => normalisiere(r.ian).includes(ianFilter));
+  const bezeichnungFilter = normalisiere(arbeitsvorratFilter.bezeichnung);
+  if (bezeichnungFilter) liste = liste.filter((r) => normalisiere(r.bezeichnung).includes(bezeichnungFilter));
   const q = normalisiere(suchbegriffe.arbeitsvorrat);
   if (q) liste = liste.filter((r) => ARBEITSVORRAT_FELDER.some((f) => normalisiere(r[f]).includes(q)));
   return liste;
@@ -1177,7 +1179,7 @@ function initialisiereMehrfachauswahl(feld) {
 
 function renderArbeitsvorratFilterZeile() {
   const tr = document.getElementById("arbeitsvorrat-filter-zeile");
-  const spaltenReihenfolge = ["ian:text", "vkBuero:multi", "", "lieferant:multi", "", "sachbearbeiter:select", "warengruppe:multi", "", "lfgb:select", "trivial:select", "mechErledigt:select", "", "", "", ""];
+  const spaltenReihenfolge = ["ian:text", "vkBuero:multi", "bezeichnung:text", "lieferant:multi", "", "sachbearbeiter:select", "warengruppe:multi", "", "lfgb:select", "trivial:select", "mechErledigt:select", "", "", "", ""];
   tr.innerHTML = spaltenReihenfolge.map((eintragTyp) => {
     if (!eintragTyp) return "<th></th>";
     const [feld, typ] = eintragTyp.split(":");
@@ -1224,6 +1226,7 @@ document.getElementById("btn-arbeitsvorrat-filter-zuruecksetzen").addEventListen
      "normaler" Filter, und soll beim Zurücksetzen der übrigen Filter erhalten bleiben. */
   ARBEITSVORRAT_SELECT_FELDER.forEach((f) => { if (f !== "mechErledigt") arbeitsvorratFilter[f] = ""; });
   arbeitsvorratFilter.ian = "";
+  arbeitsvorratFilter.bezeichnung = "";
   suchbegriffe.arbeitsvorrat = "";
   if (aktiverTab === "arbeitsvorrat") document.getElementById("suche").value = "";
   renderArbeitsvorratTab();
@@ -2516,6 +2519,25 @@ function artikelkategorieMultiplikator(pa) {
    gesamten Mechanik-Referenz (nicht auf diese Warengruppe beschränkt, z.B. "Messer" zu "Messerblock")
    dazugesucht werden; ihre Sicherheit&Norm-Kosten werden zusammen mit dem Hauptprodukt aufsummiert
    und mit dem Artikelkategorie-Rabattfaktor zu EINER kombinierten Position verrechnet. */
+/* Ermöglicht das direkte Anpassen der Kosten einer Prüfgrundlage-Norm-Referenz (Hauptprodukt/
+   Set-Bestandteil bei Sicherheit & Norm, FFU, NGO/StiWa) direkt in der Warengruppen-Empfehlung des
+   KVs - ohne dafür extra in den Reiter "Prüfgrundlagen" wechseln zu müssen. Die Änderung wird
+   direkt an der Prüfgrundlage (data.pruefgrundlagen) gespeichert, wirkt sich also auch auf künftige
+   KVs mit derselben Warengruppe/demselben Produkt aus. Nur bei genau einer referenzierten Norm im
+   jeweiligen Block gibt es dafür ein direktes Eingabefeld - bei keiner oder mehreren Normen (in den
+   echten Daten aktuell nicht vorkommend) verweist stattdessen ein Link auf die vollständige
+   Bearbeitung in der Prüfgrundlage selbst. */
+function mechanikKostenBearbeitenHtml(pgId, feld, refs) {
+  if (refs && refs.length === 1) {
+    const kosten = refs[0].kosten;
+    return `<label style="display:inline-flex;align-items:center;gap:0.35rem;font-size:0.78rem;font-weight:400;color:var(--muted)">Kosten (Prüfgrundlage) €
+      <input type="number" step="1" style="width:80px;font-family:inherit;font-size:0.82rem;padding:0.2rem 0.35rem;border:1px solid var(--border);border-radius:5px"
+        data-action="mechanik-kosten-bearbeiten" data-pg-id="${escapeHtml(pgId)}" data-feld="${feld}" data-idx="0"
+        value="${kosten === null || kosten === undefined ? "" : kosten}" placeholder="Anfrage"></label>`;
+  }
+  return `<button type="button" class="ghost small" data-action="mechanik-kosten-in-pg-bearbeiten" data-pg-id="${escapeHtml(pgId)}">→ Kosten in der Prüfgrundlage bearbeiten</button>`;
+}
+
 function renderMechanikEmpfehlungKarte(kv, pa) {
   kv.mechanikSetbestandteile = kv.mechanikSetbestandteile || [];
   const warengruppe = kv.warengruppeNeu || kv.warengruppeAlt;
@@ -2563,8 +2585,8 @@ function renderMechanikEmpfehlungKarte(kv, pa) {
        identisch zum bisherigen Gesamtergebnis (Faktor × Summe = Summe der Faktor × Einzelkosten). */
     const { faktor, hinweisText } = artikelkategorieMultiplikator(pa);
     const styleNamen = ermittleStyleNamen(pa);
-    const komponenten = [{ id: "haupt", produkt: gewaehlt.produkt, norm: gewaehltNorm, kosten: normenBlockSumme(gewaehlt.normen), sapCode: normRefSapCode(gewaehlt.normen), entfernbar: false }]
-      .concat(teilprodukte.map((t) => ({ id: t.sb.id, produkt: t.eintrag.produkt, norm: normRefListeText(t.eintrag.normen), kosten: normenBlockSumme(t.eintrag.normen), sapCode: normRefSapCode(t.eintrag.normen), entfernbar: true })));
+    const komponenten = [{ id: "haupt", produkt: gewaehlt.produkt, norm: gewaehltNorm, kosten: normenBlockSumme(gewaehlt.normen), sapCode: normRefSapCode(gewaehlt.normen), entfernbar: false, pgId: mechanikEintragId(gewaehlt), refs: gewaehlt.normen }]
+      .concat(teilprodukte.map((t) => ({ id: t.sb.id, produkt: t.eintrag.produkt, norm: normRefListeText(t.eintrag.normen), kosten: normenBlockSumme(t.eintrag.normen), sapCode: normRefSapCode(t.eintrag.normen), entfernbar: true, pgId: mechanikEintragId(t.eintrag), refs: t.eintrag.normen })));
 
     const komponentenHtml = komponenten.map((k) => {
       const hatKosten = k.kosten !== null && k.kosten !== undefined;
@@ -2579,6 +2601,7 @@ function renderMechanikEmpfehlungKarte(kv, pa) {
         : "";
       return `<div class="pruefumfang-position pruefumfang-position-vorschlag mechanik-komponente" style="align-items:flex-start;flex-direction:column;gap:0.3rem">
         <span>${escapeHtml(bezeichnungBasis)} <span class="muted">(${kostenText})</span> <span class="badge ja">Vorschlag</span></span>
+        ${mechanikKostenBearbeitenHtml(k.pgId, "normen", k.refs)}
         <div class="toolbar-zeile" style="width:100%">
           ${styleAuswahlHtml}
           <button type="button" class="ghost small" data-action="mechanik-komponente-hinzufuegen" data-bezeichnung-basis="${escapeHtml(bezeichnungBasis)}" data-kosten="${hatKosten ? kostenRabattiert : 0}" data-sapcode="${escapeHtml(k.sapCode || "")}">+ hinzufügen</button>
@@ -2597,16 +2620,19 @@ function renderMechanikEmpfehlungKarte(kv, pa) {
     </div>`;
 
     const zeilenExtra = [];
-    if ((gewaehlt.ffuNormen || []).length) zeilenExtra.push({ label: "FFU", detail: normRefListeText(gewaehlt.ffuNormen), kosten: normenBlockSumme(gewaehlt.ffuNormen), kategorie: "FFU/Fitting", kuerzel: "FFU", sapCode: normRefSapCode(gewaehlt.ffuNormen) || fixPositionSapCodeAktuell(FFU_FITTING_FIXPOSITION) });
-    if ((gewaehlt.stiwaNormen || []).length) zeilenExtra.push({ label: "NGO/StiWa", detail: normRefListeText(gewaehlt.stiwaNormen), kosten: normenBlockSumme(gewaehlt.stiwaNormen), kategorie: "NGO", kuerzel: "NGO", sapCode: normRefSapCode(gewaehlt.stiwaNormen) || fixPositionSapCodeAktuell(NGO_FIXPOSITION) });
+    if ((gewaehlt.ffuNormen || []).length) zeilenExtra.push({ label: "FFU", detail: normRefListeText(gewaehlt.ffuNormen), kosten: normenBlockSumme(gewaehlt.ffuNormen), kategorie: "FFU/Fitting", kuerzel: "FFU", sapCode: normRefSapCode(gewaehlt.ffuNormen) || fixPositionSapCodeAktuell(FFU_FITTING_FIXPOSITION), feld: "ffuNormen", refs: gewaehlt.ffuNormen });
+    if ((gewaehlt.stiwaNormen || []).length) zeilenExtra.push({ label: "NGO/StiWa", detail: normRefListeText(gewaehlt.stiwaNormen), kosten: normenBlockSumme(gewaehlt.stiwaNormen), kategorie: "NGO", kuerzel: "NGO", sapCode: normRefSapCode(gewaehlt.stiwaNormen) || fixPositionSapCodeAktuell(NGO_FIXPOSITION), feld: "stiwaNormen", refs: gewaehlt.stiwaNormen });
     const extraHtml = zeilenExtra.map((z) => {
       const bezeichnung = z.detail ? `${z.label}: ${z.detail}` : z.label;
       const schonDrin = kv.positionen.some((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere(z.kategorie) && normalisiere(p.bezeichnung) === normalisiere(bezeichnung));
       const hatKosten = z.kosten !== null && z.kosten !== undefined;
       const kostenText = hatKosten ? `${z.kosten} €` : "Preis auf Anfrage";
-      return `<div class="pruefumfang-position pruefumfang-position-vorschlag">
+      return `<div class="pruefumfang-position pruefumfang-position-vorschlag" style="align-items:flex-start;flex-direction:column;gap:0.3rem">
         <span>${escapeHtml(bezeichnung)} <span class="muted">(${kostenText})</span> <span class="badge ja">Vorschlag</span></span>
-        ${schonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="mechanik-position-hinzufuegen" data-kategorie="${escapeHtml(z.kategorie)}" data-bezeichnung="${escapeHtml(bezeichnung)}" data-kosten="${hatKosten ? z.kosten : 0}" data-kuerzel="${escapeHtml(z.kuerzel)}" data-sapcode="${escapeHtml(z.sapCode)}">+ hinzufügen</button>`}
+        ${mechanikKostenBearbeitenHtml(mechanikEintragId(gewaehlt), z.feld, z.refs)}
+        <div class="toolbar-zeile" style="width:100%">
+          ${schonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="mechanik-position-hinzufuegen" data-kategorie="${escapeHtml(z.kategorie)}" data-bezeichnung="${escapeHtml(bezeichnung)}" data-kosten="${hatKosten ? z.kosten : 0}" data-kuerzel="${escapeHtml(z.kuerzel)}" data-sapcode="${escapeHtml(z.sapCode)}">+ hinzufügen</button>`}
+        </div>
       </div>`;
     }).join("");
 
@@ -2685,6 +2711,30 @@ function initialisiereMechanikEmpfehlungKarte(panel, kv) {
       renderKvDetail();
     });
   }
+  /* "change" statt "input", damit beim Tippen der Fokus nicht durch ein volles renderKvDetail()
+     verloren geht (derselbe Grund wie bei den LFGB/Trivial-Selects) - die Anpassung greift also
+     beim Verlassen des Felds bzw. Enter. Schreibt direkt in die Prüfgrundlage (data.pruefgrundlagen),
+     wirkt sich also auch auf künftige KVs mit demselben Produkt aus. */
+  panel.querySelectorAll('[data-action="mechanik-kosten-bearbeiten"]').forEach((input) => {
+    input.addEventListener("change", () => {
+      const eintrag = data.pruefgrundlagen.find((e) => e.id === input.dataset.pgId);
+      const refs = eintrag ? eintrag[input.dataset.feld] : null;
+      const ref = refs ? refs[Number(input.dataset.idx)] : null;
+      if (!ref) return;
+      ref.kosten = input.value === "" ? null : Number(input.value);
+      speichereInLocalStorage();
+      renderKvDetail();
+      zeigeStatus("Kosten in der Prüfgrundlage aktualisiert · " + jetzt(), "ok");
+    });
+  });
+  panel.querySelectorAll('[data-action="mechanik-kosten-in-pg-bearbeiten"]').forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const eintrag = data.pruefgrundlagen.find((e) => e.id === btn.dataset.pgId);
+      if (!eintrag) return;
+      wechsleTab("pruefgrundlagen");
+      pruefgrundlageBearbeiten(eintrag);
+    });
+  });
   panel.querySelectorAll('[data-action="mechanik-position-hinzufuegen"]').forEach((btn) => {
     btn.addEventListener("click", () => {
       kv.positionen.push({

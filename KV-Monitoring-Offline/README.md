@@ -34,8 +34,8 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   **Stand der PA-PDF** (Datum aus dem Dateinamen bzw. ersatzweise aus dem
   Seitenfuß der PDF), bei „KV" mit der **aktuellen Gesamtsumme** — ein Klick
   springt direkt zum jeweiligen Datensatz; fehlt einer, steht dort nur ein
-  „–". Unter der Kopfzeile der Tabelle gibt es **Filter**: IAN als
-  Freitextfeld (Teiltreffer); **VK Büro, Lieferant und Warengruppe als
+  „–". Unter der Kopfzeile der Tabelle gibt es **Filter**: IAN und
+  **Bezeichnung** als Freitextfeld (Teiltreffer); **VK Büro, Lieferant und Warengruppe als
   durchsuchbare Mehrfachauswahl** — anklicken öffnet ein Panel mit Suchfeld
   und Checkbox-Liste, mehrere Werte gleichzeitig ankreuzbar (inkl.
   „Alle"/„Keine" für die gerade sichtbare/gefilterte Liste); Sachbearbeiter,
@@ -271,6 +271,18 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   FFU- und NGO/StiWa-Kosten sind vom Rabattfaktor **nicht** betroffen (im
   Original eigenständige Positionen ohne Set-Bestandteile/Rabatt) und waren
   schon zuvor jeweils eigene Blöcke.
+
+  **Kosten direkt anpassen**: unter jedem Block (Hauptprodukt, Set-Bestandteil,
+  FFU, NGO/StiWa) gibt es ein Feld **„Kosten (Prüfgrundlage) €"**, mit dem
+  sich der hinterlegte Preis direkt hier ändern lässt, ohne extra in den
+  Reiter „Prüfgrundlagen" wechseln zu müssen — die Änderung wird **direkt an
+  der Prüfgrundlage gespeichert** und wirkt sich damit auch auf künftige KVs
+  mit derselben Warengruppe/demselben Produkt aus (der angezeigte
+  Vorschlagspreis daneben bleibt der bereits rabattierte Wert, das Eingabefeld
+  zeigt den unrabattierten Rohwert aus der Prüfgrundlage). Referenziert ein
+  Block mehrere Normen (in den mitgelieferten Daten aktuell nicht der Fall),
+  erscheint dort stattdessen ein Link **„→ Kosten in der Prüfgrundlage
+  bearbeiten"**, der direkt zur vollständigen Bearbeitung wechselt.
 
   **Artikelkategorie** – direkt oberhalb des Prüfumfangs zeigt eine eigene
   Karte die Artikelkategorie aus dem verknüpften Prüfauftrag (dieselbe, die
