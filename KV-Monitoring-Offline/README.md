@@ -144,11 +144,24 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   über die Liste suchen zu müssen. Beide Buttons erscheinen nur, wenn zur
   IAN tatsächlich ein Gegenstück existiert.
 
-  **Reihenfolge der Karten**: direkt unter den Kopfdaten folgen die beiden
-  Prüfumfang-Karten (roher Prüfumfang-Text + Checkliste, siehe unten) samt
-  Prüfumfang-Details, danach Artikelkategorie, dann die
-  Warengruppen-Empfehlung (Mechanik) und erst danach die Vorgänger-Artikel-
-  Karte sowie die Prüfpositionen-Tabelle.
+  **Pflichtangaben** (LFGB?, Trivialartikel?) stehen in einer eigenen,
+  bewusst hervorgehobenen Karte direkt unter den Kopfdaten — getrennt von
+  den übrigen Stammdaten, damit diese beiden Mussfelder nicht in der Menge
+  der restlichen Formularfelder untergehen.
+
+  **Ausgewählte Prüfpositionen**: direkt darunter zeigt eine schreibgeschützte
+  Übersicht auf einen Blick, welche Prüfpositionen für diesen KV bereits
+  aktiv sind (inkl. Gesamtsumme und Anzahl deaktivierter Positionen) — vorher
+  war das nur ganz unten in der vollständigen, editierbaren
+  Prüfpositionen-Tabelle sichtbar und geriet beim Durcharbeiten von
+  Prüfumfang/Warengruppen-Empfehlung leicht aus dem Blick. Bearbeiten bleibt
+  weiterhin Aufgabe der Tabelle ganz unten; die Übersicht aktualisiert sich
+  automatisch bei jeder Änderung dort.
+
+  **Reihenfolge der übrigen Karten**: Artikelkategorie, dann die beiden
+  Prüfumfang-Karten (roher Prüfumfang-Text + Checkliste, siehe unten), dann
+  die Warengruppen-Empfehlung (Mechanik), dann Prüfumfang-Details, erst
+  danach die Vorgänger-Artikel-Karte sowie die Prüfpositionen-Tabelle.
 
   Sofern der verknüpfte Prüfauftrag eine „IAN-Vorgänger"
   enthält, erscheint dieselbe Vorgänger-Artikel-Karte wie bei den Prüfaufträgen,

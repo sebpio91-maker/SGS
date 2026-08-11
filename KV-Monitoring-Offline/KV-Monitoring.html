@@ -2846,15 +2846,15 @@ function renderKvPruefumfangUebersicht(kv, pa) {
     </div>`;
   }).join("");
 
-  return `${pa ? renderPaPruefumfangKarte(pa) : ""}
+  return `${renderKvArtikelkategorieKarte(pa)}
+  ${pa ? renderPaPruefumfangKarte(pa) : ""}
   ${renderKvPruefumfangCheckliste(kv, pa)}
+  ${renderMechanikEmpfehlungKarte(kv, pa)}
   ${ausgewaehlteKategorien.length ? `<div class="card">
     <h2>Prüfumfang-Details</h2>
     <p class="hinweis">Für die oben angehakten Abschnitte: „Vorschlag" markiert Positionen, die dafür typischerweise anfallen — Klick auf „+ hinzufügen" bzw. „Alle Vorschläge übernehmen" trägt sie unten in die Prüfpositionen-Tabelle ein; danach dort wie gewohnt Kosten/Anzahl anpassen oder entfernen.</p>
     ${abschnitte}
-  </div>` : ""}
-  ${renderKvArtikelkategorieKarte(pa)}
-  ${renderMechanikEmpfehlungKarte(kv, pa)}`;
+  </div>` : ""}`;
 }
 
 function initialisierePruefumfangUebersicht(panel, kv, pa) {
@@ -2986,6 +2986,40 @@ function kvUeberschrift(kv, pa) {
   return "KV " + (kv.ian || "(ohne IAN)");
 }
 
+/* Kompakte Übersicht der bereits aktiven Prüfpositionen, direkt unter den Kopfdaten - vorher war
+   der aktuelle Auswahlstand nur ganz unten in der vollständigen (editierbaren) Prüfpositionen-
+   Tabelle sichtbar, was beim Durcharbeiten von Prüfumfang/Warengruppen-Empfehlung weiter oben
+   leicht aus dem Blick geriet. Rein informativ (nicht editierbar) - Bearbeiten bleibt Aufgabe der
+   Tabelle unten. Der Inhalt steht in einem eigenen Container (siehe
+   aktualisiereKvAusgewaehltePositionenKarte), damit er sich auch dann auffrischen lässt, wenn die
+   Positionen-Tabelle unten aus Fokus-Gründen nur teilweise statt komplett neu gerendert wird. */
+function kvAusgewaehltePositionenInhaltHtml(kv) {
+  if (!kv.positionen.length) {
+    return `<p class="hinweis" style="margin:0">Noch keine Prüfpositionen ausgewählt — weiter unten in den Abschnitten bzw. in der Warengruppen-Empfehlung passende Positionen hinzufügen.</p>`;
+  }
+  const aktive = kv.positionen.filter((p) => p.aktiv);
+  const inaktiveAnzahl = kv.positionen.length - aktive.length;
+  const gesamtsumme = aktive.reduce((s, p) => s + (Number(p.kosten) || 0) * (Number(p.anzahl) || 0), 0);
+  const zeilenHtml = aktive.map((p) => `<div class="pruefumfang-position">
+      <span>${escapeHtml(p.bezeichnung)} <span class="muted">(${escapeHtml(p.kategorie)})</span></span>
+      <span class="muted">${(Number(p.kosten) || 0) * (Number(p.anzahl) || 0)} €</span>
+    </div>`).join("");
+  return `${zeilenHtml || `<p class="muted" style="margin:0">Alle bisher hinzugefügten Positionen sind deaktiviert.</p>`}
+    <p style="margin-top:0.6rem">Gesamtsumme (aktive Positionen): <strong>${gesamtsumme} €</strong>${inaktiveAnzahl ? ` <span class="muted">· ${inaktiveAnzahl} deaktivierte Position${inaktiveAnzahl === 1 ? "" : "en"}</span>` : ""}</p>`;
+}
+
+function renderKvAusgewaehltePositionenKarte(kv) {
+  return `<div class="card">
+    <h2 style="margin:0 0 0.3rem">Ausgewählte Prüfpositionen</h2>
+    <div id="kv-ausgewaehlte-positionen-inhalt">${kvAusgewaehltePositionenInhaltHtml(kv)}</div>
+  </div>`;
+}
+
+function aktualisiereKvAusgewaehltePositionenKarte(kv) {
+  const container = document.getElementById("kv-ausgewaehlte-positionen-inhalt");
+  if (container) container.innerHTML = kvAusgewaehltePositionenInhaltHtml(kv);
+}
+
 function renderKvDetail() {
   const panel = document.getElementById("detail-panel-kv");
   const kv = data.kvs.find((k) => k.id === aktiveKvId);
@@ -3015,16 +3049,6 @@ function renderKvDetail() {
       ${kvWarengruppeNeuAuswahlHtml(kv)}
       <div class="formular-grid" id="kv-formular-2">
         <label>Warengruppe (alt)<input type="text" data-feld="warengruppeAlt" value="${escapeHtml(kv.warengruppeAlt)}" placeholder="${altWarengruppeFuer(kv.warengruppeNeu) ? "" : "manuell, bis Zuordnungsliste vorliegt"}"></label>
-        <label>LFGB?<select data-feld="lfgb">
-          <option value="" ${jaNeinAnzeige(kv.lfgb) === "" ? "selected" : ""}>–</option>
-          <option value="Ja" ${jaNeinAnzeige(kv.lfgb) === "Ja" ? "selected" : ""}>Ja</option>
-          <option value="Nein" ${jaNeinAnzeige(kv.lfgb) === "Nein" ? "selected" : ""}>Nein</option>
-        </select></label>
-        <label>Trivialartikel?<select data-feld="trivial">
-          <option value="" ${jaNeinAnzeige(kv.trivial) === "" ? "selected" : ""}>–</option>
-          <option value="Ja" ${jaNeinAnzeige(kv.trivial) === "Ja" ? "selected" : ""}>Ja</option>
-          <option value="Nein" ${jaNeinAnzeige(kv.trivial) === "Nein" ? "selected" : ""}>Nein</option>
-        </select></label>
         <label>Styleanzahl<input type="text" data-feld="styleanzahl" value="${escapeHtml(kv.styleanzahl)}"></label>
         <label class="volle-breite">Notiz<textarea data-feld="notiz" rows="2">${escapeHtml(kv.notiz)}</textarea></label>
       </div>
@@ -3035,6 +3059,22 @@ function renderKvDetail() {
         <button class="danger small" id="kv-loeschen" style="margin-left:auto">KV löschen</button>
       </div>
     </div>
+    <div class="card" style="border-left:4px solid var(--accent)">
+      <h2 style="margin:0 0 0.6rem;font-size:1rem">Pflichtangaben</h2>
+      <div class="formular-grid" id="kv-formular-pflicht">
+        <label style="font-size:0.95rem;font-weight:700">LFGB?<select data-feld="lfgb" style="font-size:0.95rem;padding:0.5rem 0.6rem">
+          <option value="" ${jaNeinAnzeige(kv.lfgb) === "" ? "selected" : ""}>–</option>
+          <option value="Ja" ${jaNeinAnzeige(kv.lfgb) === "Ja" ? "selected" : ""}>Ja</option>
+          <option value="Nein" ${jaNeinAnzeige(kv.lfgb) === "Nein" ? "selected" : ""}>Nein</option>
+        </select></label>
+        <label style="font-size:0.95rem;font-weight:700">Trivialartikel?<select data-feld="trivial" style="font-size:0.95rem;padding:0.5rem 0.6rem">
+          <option value="" ${jaNeinAnzeige(kv.trivial) === "" ? "selected" : ""}>–</option>
+          <option value="Ja" ${jaNeinAnzeige(kv.trivial) === "Ja" ? "selected" : ""}>Ja</option>
+          <option value="Nein" ${jaNeinAnzeige(kv.trivial) === "Nein" ? "selected" : ""}>Nein</option>
+        </select></label>
+      </div>
+    </div>
+    ${renderKvAusgewaehltePositionenKarte(kv)}
     ${renderKvPruefumfangUebersicht(kv, verknuepftePa)}
     ${renderVorgaengerKarte(vorgaengerIanAus(verknuepftePa), verknuepftePa, kv)}
 
@@ -3062,7 +3102,7 @@ function renderKvDetail() {
       <p style="margin-top:0.8rem">Gesamtsumme (aktive Positionen): <span class="gesamtsumme" id="kv-gesamtsumme"></span></p>
     </div>`;
 
-  panel.querySelectorAll("#kv-formular [data-feld], #kv-formular-2 [data-feld]").forEach((el) => {
+  panel.querySelectorAll("#kv-formular [data-feld], #kv-formular-2 [data-feld], #kv-formular-pflicht [data-feld]").forEach((el) => {
     el.addEventListener("input", () => {
       kv[el.dataset.feld] = el.value;
       speichereInLocalStorage();
@@ -3160,6 +3200,7 @@ function renderKvPositionenTabelle(kv) {
         speichereInLocalStorage();
         tr.querySelector(".pos-summe").textContent = ((Number(pos.kosten) || 0) * (Number(pos.anzahl) || 0)).toFixed(2);
         document.getElementById("kv-gesamtsumme").textContent = kvGesamtsumme(kv).toFixed(2) + " €";
+        aktualisiereKvAusgewaehltePositionenKarte(kv);
         renderKvListe();
       });
     });
@@ -3177,6 +3218,7 @@ function renderKvPositionenTabelle(kv) {
     });
   });
   document.getElementById("kv-gesamtsumme").textContent = kvGesamtsumme(kv).toFixed(2) + " €";
+  aktualisiereKvAusgewaehltePositionenKarte(kv);
 }
 
 function renderKvTab() { renderKvListe(); renderKvDetail(); }
