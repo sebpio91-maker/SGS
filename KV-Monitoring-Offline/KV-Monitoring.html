@@ -2238,39 +2238,29 @@ function zeigePaUploadReview(felder, rohtext, erzwingeIan, stand) {
    vs. "Sicherheit & Norm / Sonderprüfung"; "Chemie/LFGB" vs. "Chemie / LFGB"). */
 const PA_PRUEFUMFANG_KATEGORIEN = [
   {
-    id: "chemie", anzeigeName: "Chemie / LFGB", katalogKategorie: null, mechanischRelevant: false,
-    erkennungRegex: /chemie/i,
-    beschreibung: "Chemieprüfungen — aktuell nicht relevant für diesen mechanischen KV."
-  },
-  {
-    id: "sicherheitNorm", anzeigeName: "Sicherheit & Norm / Sonder- & Funktionsparameter",
-    katalogKategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", mechanischRelevant: true,
+    id: "sicherheitNorm", anzeigeName: "Sicherheit-/Normprüfung (mechanische Sicherheit)",
+    katalogKategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter",
     erkennungRegex: /sicherheit\s*&\s*norm/i,
-    beschreibung: "Mechanische Sicherheit, Kennzeichnung von Produkt und Verpackung, Bedienungsanleitung; bei Produkten mit Batterie/Akku zusätzlich Akkusicherheitskurzcheck und optischer Abgleich."
-  },
-  {
-    id: "selbstauskunft", anzeigeName: "Selbstauskunft", katalogKategorie: null, mechanischRelevant: false,
-    erkennungRegex: /selbstauskunft/i,
-    beschreibung: "Vom Lieferanten einzureichendes Dokument — zunächst nicht relevant für diesen KV."
+    beschreibung: "Mechanische Sicherheit, Kennzeichnung von Produkt und Verpackung sowie Bedienungsanleitung (E&E), optischer Abgleich; bei Produkten mit Batterie/Akku zusätzlich Akkusicherheitskurzcheck."
   },
   {
     id: "produktspezifikationen", anzeigeName: "(Physikalische-) Produktspezifikationen",
-    katalogKategorie: "(physikalische-) Produktspezifikation", mechanischRelevant: true,
+    katalogKategorie: "(physikalische-) Produktspezifikation",
     erkennungRegex: /produktspezifikation/i,
     beschreibung: "Abhängig von bestimmten Auslobungen im KV. Automatische Vorschläge folgen, sobald die dafür vorgesehene Zuordnungsdatei vorliegt — bis dahin Positionen manuell auswählen."
   },
   {
-    id: "ffuFitting", anzeigeName: "FFU/Fitting", katalogKategorie: "FFU/Fitting", mechanischRelevant: true,
+    id: "ffuFitting", anzeigeName: "FFU/Fitting", katalogKategorie: "FFU/Fitting",
     erkennungRegex: /ffu/i,
     beschreibung: "Gebrauchstauglichkeitsprüfung."
   },
   {
-    id: "ngo", anzeigeName: "NGO", katalogKategorie: "NGO", mechanischRelevant: true,
+    id: "ngo", anzeigeName: "NGO", katalogKategorie: "NGO",
     erkennungRegex: /\bngo\b/i,
     beschreibung: "Prüfung des Produkts nach StiWa-Vorgaben."
   },
   {
-    id: "referenzpruefung", anzeigeName: "Referenzprüfung", katalogKategorie: "Referenzprüfung", mechanischRelevant: true,
+    id: "referenzpruefung", anzeigeName: "Referenzprüfung", katalogKategorie: "Referenzprüfung",
     erkennungRegex: /referenzpr[uü]fung/i,
     beschreibung: "Gebrauchstauglichkeit im Vergleich zu den Ergebnissen des Referenzprodukts (siehe Markenreferenz)."
   }
@@ -2279,6 +2269,22 @@ const PA_PRUEFUMFANG_KATEGORIEN = [
 function erkennePruefumfangKategorien(pruefumfangText) {
   const text = pruefumfangText || "";
   return PA_PRUEFUMFANG_KATEGORIEN.filter((k) => k.erkennungRegex.test(text));
+}
+
+/* Welche Prüfumfang-Abschnitte für diesen KV angehakt sind - solange der Nutzer einen Abschnitt
+   noch nicht manuell umgeschaltet hat (kv.pruefumfangManuell), folgt die Auswahl live der
+   Erkennung aus dem Prüfumfang des verknüpften PA (reagiert also automatisch, wenn ein PA erst
+   nachträglich verknüpft oder gewechselt wird). Sobald der Nutzer eine Checkbox anfasst, "friert"
+   diese auf seine Wahl ein und wird nicht mehr automatisch überschrieben. Ohne PA starten alle
+   noch nicht manuell gesetzten Abschnitte unangehakt, lassen sich aber trotzdem aktivieren. */
+function pruefumfangAuswahlAktualisieren(kv, pa) {
+  kv.pruefumfangAuswahl = kv.pruefumfangAuswahl || {};
+  kv.pruefumfangManuell = kv.pruefumfangManuell || {};
+  PA_PRUEFUMFANG_KATEGORIEN.forEach((kat) => {
+    if (!kv.pruefumfangManuell[kat.id]) {
+      kv.pruefumfangAuswahl[kat.id] = pa ? erkennePruefumfangKategorien(pa.pruefumfang).some((k) => k.id === kat.id) : false;
+    }
+  });
 }
 
 /* Akkusicherheitskurzcheck nur vorschlagen, wenn der Prüfauftrag im Feld "Batterietyp" auf eine
@@ -2299,12 +2305,16 @@ function paHatBatterie(pa) {
    bekommen bewusst noch keine Automatik (siehe Kategorie-Beschreibung); beim
    Akkusicherheitskurzcheck entscheidet paHatBatterie(). */
 function ermittleVorschlagsPositionen(kategorie, pa) {
-  if (!kategorie.mechanischRelevant || !kategorie.katalogKategorie) return [];
+  if (!kategorie.katalogKategorie) return [];
   if (!erkennePruefumfangKategorien(pa ? pa.pruefumfang : "").some((k) => k.id === kategorie.id)) return [];
   if (kategorie.id === "produktspezifikationen") return [];
   const positionen = data.katalog.filter((k) => normalisiere(k.kategorie) === normalisiere(kategorie.katalogKategorie));
-  if (kategorie.id === "sicherheitNorm" && !paHatBatterie(pa)) {
-    return positionen.filter((k) => !/akkusicherheitskurzcheck/i.test(k.bezeichnung));
+  if (kategorie.id === "sicherheitNorm") {
+    /* Mustereinlagerung ist für diesen Teil nicht relevant und wird deshalb nicht automatisch
+       vorgeschlagen (bleibt aber als Position in der Kategorie manuell hinzufügbar). */
+    let gefiltert = positionen.filter((k) => !/mustereinlagerung/i.test(k.bezeichnung));
+    if (!paHatBatterie(pa)) gefiltert = gefiltert.filter((k) => !/akkusicherheitskurzcheck/i.test(k.bezeichnung));
+    return gefiltert;
   }
   return positionen;
 }
@@ -2570,34 +2580,35 @@ function renderProduktspeziListe(kv, filterText) {
   });
 }
 
-function renderKvPruefumfangUebersicht(kv, pa) {
-  /* Die Warengruppen-Empfehlung hängt nur an kv.warengruppeNeu/-Alt, nicht am verknüpften PA -
-     sie soll daher auch ohne (noch) vorhandenen Prüfauftrag erscheinen. */
-  if (!pa) {
-    return `${renderMechanikEmpfehlungKarte(kv, pa)}
-    <div class="card">
-      <h2>Prüfumfang-Übersicht</h2>
-      <p class="hinweis">Kein verknüpfter Prüfauftrag gefunden — sobald einer mit dieser IAN vorliegt, werden die enthaltenen Prüfumfang-Kategorien hier automatisch erkannt.</p>
-      <div class="pruefumfang-kat">
-        <div class="pruefumfang-kat-kopf"><strong>${escapeHtml(PA_PRUEFUMFANG_KATEGORIEN.find((k) => k.id === "produktspezifikationen").anzeigeName)}</strong></div>
-        <p class="hinweis">${escapeHtml(PA_PRUEFUMFANG_KATEGORIEN.find((k) => k.id === "produktspezifikationen").beschreibung)}</p>
-        <input type="text" id="produktspezi-suche" placeholder="Parameter, Produkt oder Norm suchen…" style="width:100%;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px;margin-bottom:0.4rem;font-family:inherit">
-        <div id="produktspezi-liste"></div>
-      </div>
-    </div>`;
-  }
-  const markenreferenz = paFeldWertRoh(pa, "Markenreferenz");
-  const qualitaet = paFeldWertRoh(pa, "Qualität");
-  const abschnitte = PA_PRUEFUMFANG_KATEGORIEN.map((kat) => {
-    const erkannt = erkennePruefumfangKategorien(pa.pruefumfang).some((k) => k.id === kat.id);
-    const badge = erkannt ? `<span class="badge ja">im Prüfumfang</span>` : `<span class="badge nein">nicht erkannt</span>`;
+/* Die neue Prüfumfang-Checkliste steht über den Detail-Karten: pro Abschnitt eine Checkbox,
+   initial aus dem erkannten Prüfumfang vorbelegt (siehe pruefumfangAuswahlAktualisieren), danach
+   frei umschaltbar. Erst für angehakte Abschnitte erscheinen unten die einzelnen Positionen. */
+function renderKvPruefumfangCheckliste(kv, pa) {
+  const zeilen = PA_PRUEFUMFANG_KATEGORIEN.map((kat) => {
+    const erkannt = pa ? erkennePruefumfangKategorien(pa.pruefumfang).some((k) => k.id === kat.id) : false;
+    const checked = !!kv.pruefumfangAuswahl[kat.id];
+    const badge = pa ? (erkannt ? `<span class="badge ja">im Prüfumfang erkannt</span>` : `<span class="badge nein">nicht erkannt</span>`) : "";
+    return `<label style="display:flex;align-items:center;gap:0.5rem;font-weight:600;padding:0.15rem 0">
+      <input type="checkbox" data-pruefumfang-kat="${kat.id}" ${checked ? "checked" : ""}>
+      ${escapeHtml(kat.anzeigeName)} ${badge}
+    </label>`;
+  }).join("");
+  return `<div class="card">
+    <h2>Prüfumfang</h2>
+    <p class="hinweis">Abschnitte auswählen, die für diesen Kostenvoranschlag relevant sind${pa ? " — Vorauswahl automatisch aus dem Prüfumfang des verknüpften Prüfauftrags erkannt, hier aber frei änderbar" : " (kein verknüpfter Prüfauftrag, daher keine automatische Vorauswahl möglich)"}. Erst für angehakte Abschnitte erscheinen unten die einzelnen Prüfpositionen zur Auswahl.</p>
+    <div class="pruefumfang-checkliste">${zeilen}</div>
+  </div>`;
+}
 
-    if (!kat.mechanischRelevant) {
-      return `<div class="pruefumfang-kat">
-        <div class="pruefumfang-kat-kopf"><strong>${escapeHtml(kat.anzeigeName)}</strong> ${badge} <span class="muted">— nicht Teil dieses mechanischen KVs</span></div>
-        <p class="hinweis">${escapeHtml(kat.beschreibung)}</p>
-      </div>`;
-    }
+function renderKvPruefumfangUebersicht(kv, pa) {
+  pruefumfangAuswahlAktualisieren(kv, pa);
+  const markenreferenz = pa ? paFeldWertRoh(pa, "Markenreferenz") : "";
+  const qualitaet = pa ? paFeldWertRoh(pa, "Qualität") : "";
+  const ausgewaehlteKategorien = PA_PRUEFUMFANG_KATEGORIEN.filter((kat) => kv.pruefumfangAuswahl[kat.id]);
+
+  const abschnitte = ausgewaehlteKategorien.map((kat) => {
+    const erkannt = pa ? erkennePruefumfangKategorien(pa.pruefumfang).some((k) => k.id === kat.id) : false;
+    const badge = pa ? (erkannt ? `<span class="badge ja">im Prüfumfang</span>` : `<span class="badge nein">nicht erkannt</span>`) : "";
 
     if (kat.id === "produktspezifikationen") {
       return `<div class="pruefumfang-kat">
@@ -2637,15 +2648,24 @@ function renderKvPruefumfangUebersicht(kv, pa) {
   }).join("");
 
   return `${renderMechanikEmpfehlungKarte(kv, pa)}
-  <div class="card">
-    <h2>Prüfumfang-Übersicht</h2>
-    <p class="hinweis">Automatisch aus dem Prüfumfang des verknüpften Prüfauftrags erkannt. „Vorschlag" markiert Positionen, die dafür typischerweise anfallen — Klick auf „+ hinzufügen" bzw. „Alle Vorschläge übernehmen" trägt sie unten in die Prüfpositionen-Tabelle ein; danach dort wie gewohnt Kosten/Anzahl anpassen oder entfernen.</p>
+  ${renderKvPruefumfangCheckliste(kv, pa)}
+  ${ausgewaehlteKategorien.length ? `<div class="card">
+    <h2>Prüfumfang-Details</h2>
+    <p class="hinweis">Für die oben angehakten Abschnitte: „Vorschlag" markiert Positionen, die dafür typischerweise anfallen — Klick auf „+ hinzufügen" bzw. „Alle Vorschläge übernehmen" trägt sie unten in die Prüfpositionen-Tabelle ein; danach dort wie gewohnt Kosten/Anzahl anpassen oder entfernen.</p>
     ${abschnitte}
-  </div>`;
+  </div>` : ""}`;
 }
 
 function initialisierePruefumfangUebersicht(panel, kv, pa) {
   initialisiereMechanikEmpfehlungKarte(panel, kv);
+  panel.querySelectorAll('[data-pruefumfang-kat]').forEach((cb) => {
+    cb.addEventListener("change", () => {
+      kv.pruefumfangManuell[cb.dataset.pruefumfangKat] = true;
+      kv.pruefumfangAuswahl[cb.dataset.pruefumfangKat] = cb.checked;
+      speichereInLocalStorage();
+      renderKvDetail();
+    });
+  });
   panel.querySelectorAll('[data-action="kat-position-hinzufuegen"]').forEach((btn) => {
     btn.addEventListener("click", () => {
       const eintrag = data.katalog.find((k) => k.id === btn.dataset.katalogId);

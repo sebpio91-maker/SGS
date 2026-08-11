@@ -209,18 +209,37 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   FFU- und NGO/StiWa-Kosten sind vom Rabattfaktor **nicht** betroffen (im
   Original eigenständige Positionen ohne Set-Bestandteile/Rabatt).
 
-  **Prüfumfang-Übersicht** – ergänzend dazu, automatisch aus dem Prüfumfang
-  des verknüpften Prüfauftrags erkannt („im Prüfumfang" bzw. „nicht
-  erkannt"):
-  - **Chemie / LFGB** und **Selbstauskunft** erscheinen nur informativ —
-    beide sind bewusst nicht Teil dieses mechanischen KVs.
-  - **Sicherheit & Norm / Sonder- & Funktionsparameter**: die allgemeinen
-    Katalog-Positionen (Kennzeichnung, BDA, optischer Abgleich,
-    Mustereinlagerung) werden automatisch als „Vorschlag" markiert – ergänzend
-    zur produktspezifischen Empfehlung oben. Der **Akkusicherheitskurzcheck**
-    wird dabei nur vorgeschlagen, wenn das aus dem Prüfauftrag ausgelesene
-    Feld „Batterietyp" auf eine tatsächlich vorhandene Batterie/einen Akku
-    hindeutet (nicht „keine"/„nein"/leer).
+  **Prüfumfang** – eine Checkliste der fünf mechanisch relevanten
+  Prüfumfang-Abschnitte, direkt unter der Warengruppen-Empfehlung. Jede
+  Checkbox ist so lange automatisch aus dem Prüfumfang des verknüpften
+  Prüfauftrags vorbelegt (Badge „im Prüfumfang erkannt"/„nicht erkannt"),
+  bis sie einmal manuell angeklickt wird — danach bleibt genau diese
+  manuelle Wahl dauerhaft für den KV gespeichert, auch über einen
+  Prüfauftrags-Wechsel hinweg. Chemie/LFGB und Selbstauskunft tauchen hier
+  gar nicht erst auf, da beide nicht Teil dieses mechanischen KVs sind. Die
+  fünf Abschnitte:
+  - **Sicherheit-/Normprüfung (mechanische Sicherheit)**
+  - **(Physikalische-) Produktspezifikationen**
+  - **FFU/Fitting**
+  - **NGO**
+  - **Referenzprüfung**
+
+  **Erst für angehakte Abschnitte erscheinen darunter die einzelnen
+  Prüfpositionen** zur Auswahl (Karte „Prüfumfang-Details") — ist kein
+  Abschnitt angehakt, bleibt nur die Checkliste sichtbar. Ohne verknüpften
+  Prüfauftrag startet die Checkliste komplett unangehakt, lässt sich aber
+  jederzeit manuell aktivieren (z. B. um Positionen schon vor dem
+  PA-Upload grob vorzubereiten). Innerhalb der Detail-Karten:
+  - **Sicherheit-/Normprüfung**: die allgemeinen Katalog-Positionen
+    Kennzeichnung, Bedienungsanleitung (E&E) und optischer Abgleich werden
+    automatisch als „Vorschlag" markiert – ergänzend zur produktspezifischen
+    Empfehlung oben. Der **Akkusicherheitskurzcheck** wird dabei nur
+    vorgeschlagen, wenn das aus dem Prüfauftrag ausgelesene Feld
+    „Batterietyp" auf eine tatsächlich vorhandene Batterie/einen Akku
+    hindeutet (nicht „keine"/„nein"/leer). **Mustereinlagerung (18 Monate)**
+    ist für diesen Abschnitt nicht relevant und wird deshalb nicht mehr
+    automatisch vorgeschlagen — bleibt aber als Position weiterhin manuell
+    hinzufügbar, falls im Einzelfall doch gebraucht.
   - **(Physikalische-) Produktspezifikationen**: durchsuchbare Liste aus dem
     echten, 62 Einträge umfassenden Parameterkatalog (Parameter, Material/
     Kontext, Laufzeit, Norm, SAP-Code, Preis) — Suchfeld oben, „+ hinzufügen"
@@ -232,7 +251,7 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   - **Referenzprüfung**: zeigt zusätzlich die „Markenreferenz" aus dem
     Prüfauftrag an (das Referenzprodukt, gegen das verglichen wird).
 
-  Bei jeder relevanten Kategorie lässt sich per **„+ hinzufügen"** eine
+  Bei jeder Detail-Karte lässt sich per **„+ hinzufügen"** eine
   einzelne Position oder per **„Alle Vorschläge übernehmen"** alle markierten
   Positionen auf einmal in die Prüfpositionen-Tabelle unten eintragen — dort
   dann wie gewohnt Kosten/Anzahl anpassen, deaktivieren oder entfernen.
