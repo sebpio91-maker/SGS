@@ -76,6 +76,8 @@ nav.tabs button.aktiv { background:var(--card); color:var(--accent-dark); font-w
 .pruefumfang-position { display:flex; align-items:center; justify-content:space-between; gap:0.5rem; padding:0.3rem 0; border-top:1px solid var(--border); font-size:0.85rem; }
 .pruefumfang-position:first-of-type { border-top:none; margin-top:0.3rem; }
 .pruefumfang-position-vorschlag { background:#f2f8f1; margin:0 -0.4rem; padding:0.3rem 0.4rem; border-radius:4px; border-top:none; }
+.mechanik-komponente { border:1px solid var(--border); border-radius:6px; margin:0.4rem 0 !important; padding:0.5rem 0.6rem !important; }
+.mechanik-komponente:first-of-type { margin-top:0.4rem !important; }
 .segment-toggle { display:inline-flex; flex-wrap:wrap; border:1px solid var(--border); border-radius:6px; margin-bottom:0.8rem; }
 .segment-toggle button { padding:0.45rem 0.9rem; border:none; border-radius:0; background:#fff; color:var(--muted); font-weight:600; }
 .segment-toggle button:hover { background:#f0f4f3; }
@@ -1983,6 +1985,22 @@ function ermittleAnzahlStyles(felder) {
   return String(max > 0 ? max : 1);
 }
 
+/* Die tatsächlichen Style-NAMEN (statt nur der Anzahl) des verknüpften Prüfauftrags - Basis für
+   die Style-Zuordnung bei Mechanik-Prüfpositionen (siehe renderMechanikEmpfehlungKarte). Nimmt das
+   PA_BLOCKFELDER-Feld mit den meisten benannten Blöcken, analog zu ermittleAnzahlStyles. Ohne
+   erkennbare Style-Kennzeichnung (einstiliger Artikel) liefert sie ein leeres Array. */
+function ermittleStyleNamen(pa) {
+  if (!pa || !pa.felder || !pa.felder.length) return [];
+  let beste = [];
+  PA_BLOCKFELDER.forEach((feldname) => {
+    (pa.felder || []).filter((f) => normalisiere(f.schluessel) === normalisiere(feldname)).forEach((e) => {
+      const namen = trenneNachStyle(e.wert).map((b) => b.style).filter(Boolean);
+      if (namen.length > beste.length) beste = namen;
+    });
+  });
+  return beste;
+}
+
 function extrahierePaFelderAusZeilen(zeilen) {
   const eintraege = [];
   let aktuell = null;
@@ -2418,6 +2436,10 @@ function ermittleVorschlagsPositionen(kategorie, pa, kv) {
     const kennzeichnungCode = kennzeichnungGerPpmCode(kv);
     return positionen.filter((k) => {
       if (/mustereinlagerung/i.test(k.bezeichnung)) return false;
+      /* Der generische Katalog-Fixpreis für Sicherheit-/Normprüfung ist durch die konkreten
+         Norm-/Kosten-Daten aus der Warengruppen-Empfehlung (Mechanik) oben ersetzt worden - dort
+         wird die tatsächlich zutreffende Position hinzugefügt, nicht mehr hier. */
+      if (/^sicherheit-\/normprüfung teilprüfung/i.test(k.bezeichnung)) return false;
       if (/akkusicherheitskurzcheck/i.test(k.bezeichnung)) return paHatBatterie(pa);
       if (/^kennzeichnung ger/i.test(k.bezeichnung)) {
         return !!auswahl.kennzeichnungVerpackungProdukt && k.bezeichnung.includes(kennzeichnungCode);
@@ -2513,28 +2535,41 @@ function renderMechanikEmpfehlungKarte(kv, pa) {
       .map((sb) => ({ sb, eintrag: data.pruefgrundlagen.find((e) => mechanikEintragId(e) === sb.mechanikId) }))
       .filter((x) => x.eintrag);
 
-    const komponenten = [{ produkt: gewaehlt.produkt, norm: gewaehltNorm, kosten: normenBlockSumme(gewaehlt.normen) }]
-      .concat(teilprodukte.map((t) => ({ produkt: t.eintrag.produkt, norm: normRefListeText(t.eintrag.normen), kosten: normenBlockSumme(t.eintrag.normen) })));
-    const bekannteKosten = komponenten.filter((k) => k.kosten !== null && k.kosten !== undefined);
-    const summeRoh = bekannteKosten.reduce((s, k) => s + Number(k.kosten), 0);
+    /* Hauptprodukt + jedes Set-Bestandteil sind jeweils eine eigene, klar abgetrennte Komponente
+       mit eigenem "+ hinzufügen" statt (wie zuvor) zu einer einzigen Summenposition
+       zusammengefasst - so lässt sich jede Komponente einzeln in die Prüfpositionen übernehmen
+       und bei mehrstiligen Artikeln optional gezielt einem einzelnen Style zuordnen. Der
+       Rabattfaktor wird je Komponente einzeln angewendet statt auf die Summe - mathematisch
+       identisch zum bisherigen Gesamtergebnis (Faktor × Summe = Summe der Faktor × Einzelkosten). */
     const { faktor, hinweisText } = artikelkategorieMultiplikator(pa);
-    const summeRabattiert = Math.round(summeRoh * faktor * 100) / 100;
-    const beschreibungSicherheitNorm = "Sicherheit & Norm: " + komponenten.map((k) => k.norm ? `${k.produkt}: ${k.norm}` : k.produkt).join("; ");
+    const styleNamen = ermittleStyleNamen(pa);
+    const komponenten = [{ id: "haupt", produkt: gewaehlt.produkt, norm: gewaehltNorm, kosten: normenBlockSumme(gewaehlt.normen), entfernbar: false }]
+      .concat(teilprodukte.map((t) => ({ id: t.sb.id, produkt: t.eintrag.produkt, norm: normRefListeText(t.eintrag.normen), kosten: normenBlockSumme(t.eintrag.normen), entfernbar: true })));
 
-    const teilprodukteHtml = teilprodukte.length
-      ? `<div class="toolbar-zeile" style="flex-wrap:wrap;gap:0.35rem;margin:0.3rem 0">${teilprodukte.map((t) => `<span class="badge nein">${escapeHtml(t.eintrag.produkt)}${t.eintrag.normen && t.eintrag.normen.length ? " · " + escapeHtml(normRefListeText(t.eintrag.normen)) : ""} <button type="button" data-action="setbestandteil-entfernen" data-id="${escapeHtml(t.sb.id)}" title="Set-Bestandteil entfernen" style="border:none;background:none;color:inherit;cursor:pointer;font:inherit;padding:0 0 0 0.3rem">✕</button></span>`).join("")}</div>`
-      : "";
+    const komponentenHtml = komponenten.map((k) => {
+      const hatKosten = k.kosten !== null && k.kosten !== undefined;
+      const kostenRabattiert = hatKosten ? Math.round(Number(k.kosten) * faktor * 100) / 100 : null;
+      const bezeichnungBasis = k.norm ? `${k.produkt}: ${k.norm}` : k.produkt;
+      const kostenText = hatKosten ? `${kostenRabattiert} €` : "Preis auf Anfrage";
+      const styleAuswahlHtml = styleNamen.length > 1
+        ? `<select class="mechanik-komponente-stil" style="font-family:inherit;font-size:0.82rem;padding:0.3rem 0.4rem;border:1px solid var(--border);border-radius:6px">
+            <option value="">Alle Styles</option>
+            ${styleNamen.map((s) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("")}
+          </select>`
+        : "";
+      return `<div class="pruefumfang-position pruefumfang-position-vorschlag mechanik-komponente" style="align-items:flex-start;flex-direction:column;gap:0.3rem">
+        <span>${escapeHtml(bezeichnungBasis)} <span class="muted">(${kostenText})</span> <span class="badge ja">Vorschlag</span></span>
+        <div class="toolbar-zeile" style="width:100%">
+          ${styleAuswahlHtml}
+          <button type="button" class="ghost small" data-action="mechanik-komponente-hinzufuegen" data-bezeichnung-basis="${escapeHtml(bezeichnungBasis)}" data-kosten="${hatKosten ? kostenRabattiert : 0}">+ hinzufügen</button>
+          <div class="spacer"></div>
+          ${k.entfernbar ? `<button type="button" class="ghost small" data-action="setbestandteil-entfernen" data-id="${escapeHtml(k.id)}" title="Set-Bestandteil entfernen">✕ entfernen</button>` : ""}
+        </div>
+      </div>`;
+    }).join("");
 
-    const schonDrinKombi = kv.positionen.some((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere("Sicherheit & Norm / Sonder- & Funktionsparameter") && normalisiere(p.bezeichnung) === normalisiere(beschreibungSicherheitNorm));
-    const kostenTextKombi = bekannteKosten.length ? `${summeRabattiert} €` : "Preis auf Anfrage";
-
-    const kombiHtml = `<div class="pruefumfang-position pruefumfang-position-vorschlag" style="align-items:flex-start;flex-direction:column;gap:0.3rem">
-      <div class="toolbar-zeile" style="width:100%">
-        <span>${escapeHtml(beschreibungSicherheitNorm)} <span class="muted">(${kostenTextKombi})</span> <span class="badge ja">Vorschlag</span></span>
-        ${schonDrinKombi ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="mechanik-kombi-hinzufuegen" data-bezeichnung="${escapeHtml(beschreibungSicherheitNorm)}" data-kosten="${bekannteKosten.length ? summeRabattiert : 0}">+ hinzufügen</button>`}
-      </div>
+    const weiterenSetbestandteilHtml = `<div class="pruefumfang-position" style="align-items:flex-start;flex-direction:column;gap:0.3rem">
       <p class="hinweis" style="margin:0">${hinweisText}${teilprodukte.length ? ` · ${komponenten.length} Komponenten (Hauptprodukt + ${teilprodukte.length} Set-Bestandteil${teilprodukte.length === 1 ? "" : "e"})` : ""}</p>
-      ${teilprodukteHtml}
       <label style="display:flex;flex-direction:column;gap:0.2rem;font-size:0.8rem;font-weight:600;width:100%;max-width:420px">Weiteren Set-Bestandteil hinzufügen
         <input type="text" id="setbestandteil-suche" placeholder="Produkt in der gesamten Mechanik-Referenz suchen…" style="font-family:inherit;font-size:0.85rem;padding:0.35rem 0.5rem;border:1px solid var(--border);border-radius:6px;font-weight:400">
       </label>
@@ -2565,7 +2600,8 @@ function renderMechanikEmpfehlungKarte(kv, pa) {
         ];
         return bemerkungen.length ? `<p class="hinweis"><strong>Bemerkungen:</strong> ${escapeHtml(bemerkungen.join(" · "))}</p>` : "";
       })()}
-      ${kombiHtml}
+      ${komponentenHtml}
+      ${weiterenSetbestandteilHtml}
       ${extraHtml}`;
   }
 
@@ -2639,17 +2675,24 @@ function initialisiereMechanikEmpfehlungKarte(panel, kv) {
       renderKvDetail();
     });
   });
-  const kombiBtn = panel.querySelector('[data-action="mechanik-kombi-hinzufuegen"]');
-  if (kombiBtn) {
-    kombiBtn.addEventListener("click", () => {
+  panel.querySelectorAll('[data-action="mechanik-komponente-hinzufuegen"]').forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const feld = btn.closest(".mechanik-komponente");
+      const stilSelect = feld ? feld.querySelector(".mechanik-komponente-stil") : null;
+      const stil = stilSelect ? stilSelect.value : "";
+      const bezeichnung = btn.dataset.bezeichnungBasis + (stil ? ` (${stil})` : "");
+      const kategorie = "Sicherheit & Norm / Sonder- & Funktionsparameter";
+      const schonDrin = kv.positionen.some((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere(kategorie) && normalisiere(p.bezeichnung) === normalisiere(bezeichnung));
+      if (schonDrin) { zeigeStatus("Bereits im KV vorhanden (mit dieser Style-Zuordnung) · " + jetzt(), ""); return; }
       kv.positionen.push({
-        id: neueId(), kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: kombiBtn.dataset.bezeichnung,
-        kuerzel: "MS", sapCode: "MECH_SICHERHEIT_TS", kosten: Number(kombiBtn.dataset.kosten) || 0, anzahl: 1, aktiv: true
+        id: neueId(), kategorie, bezeichnung,
+        kuerzel: "MS", sapCode: "MECH_SICHERHEIT_TS", kosten: Number(btn.dataset.kosten) || 0, anzahl: 1, aktiv: true
       });
       speichereInLocalStorage();
       renderKvDetail();
+      zeigeStatus("Position hinzugefügt · " + jetzt(), "ok");
     });
-  }
+  });
   panel.querySelectorAll('[data-action="setbestandteil-entfernen"]').forEach((btn) => {
     btn.addEventListener("click", () => {
       kv.mechanikSetbestandteile = kv.mechanikSetbestandteile.filter((s) => s.id !== btn.dataset.id);
@@ -2776,7 +2819,7 @@ function renderKvPruefumfangUebersicht(kv, pa) {
     /* Mustereinlagerung wird im Prüfumfang nicht mehr angezeigt (weder als Vorschlag noch manuell
        hinzufügbar) - bleibt aber im Prüfpositionen-Katalog erhalten und ist dort weiterhin klassisch
        über das Katalog-Dropdown im KV auswählbar, falls im Einzelfall doch gebraucht. */
-    const positionen = data.katalog.filter((k) => normalisiere(k.kategorie) === normalisiere(kat.katalogKategorie) && !/mustereinlagerung/i.test(k.bezeichnung));
+    const positionen = data.katalog.filter((k) => normalisiere(k.kategorie) === normalisiere(kat.katalogKategorie) && !/mustereinlagerung/i.test(k.bezeichnung) && !/^sicherheit-\/normprüfung teilprüfung/i.test(k.bezeichnung));
     const vorschlaege = new Set(ermittleVorschlagsPositionen(kat, pa, kv).map((k) => k.id));
     const positionenHtml = positionen.map((k) => {
       const istVorschlag = vorschlaege.has(k.id);
@@ -2803,15 +2846,15 @@ function renderKvPruefumfangUebersicht(kv, pa) {
     </div>`;
   }).join("");
 
-  return `${renderMechanikEmpfehlungKarte(kv, pa)}
-  ${renderKvArtikelkategorieKarte(pa)}
-  ${pa ? renderPaPruefumfangKarte(pa) : ""}
+  return `${pa ? renderPaPruefumfangKarte(pa) : ""}
   ${renderKvPruefumfangCheckliste(kv, pa)}
   ${ausgewaehlteKategorien.length ? `<div class="card">
     <h2>Prüfumfang-Details</h2>
     <p class="hinweis">Für die oben angehakten Abschnitte: „Vorschlag" markiert Positionen, die dafür typischerweise anfallen — Klick auf „+ hinzufügen" bzw. „Alle Vorschläge übernehmen" trägt sie unten in die Prüfpositionen-Tabelle ein; danach dort wie gewohnt Kosten/Anzahl anpassen oder entfernen.</p>
     ${abschnitte}
-  </div>` : ""}`;
+  </div>` : ""}
+  ${renderKvArtikelkategorieKarte(pa)}
+  ${renderMechanikEmpfehlungKarte(kv, pa)}`;
 }
 
 function initialisierePruefumfangUebersicht(panel, kv, pa) {
@@ -2992,8 +3035,8 @@ function renderKvDetail() {
         <button class="danger small" id="kv-loeschen" style="margin-left:auto">KV löschen</button>
       </div>
     </div>
-    ${renderVorgaengerKarte(vorgaengerIanAus(verknuepftePa), verknuepftePa, kv)}
     ${renderKvPruefumfangUebersicht(kv, verknuepftePa)}
+    ${renderVorgaengerKarte(vorgaengerIanAus(verknuepftePa), verknuepftePa, kv)}
 
     <div class="card">
       <div class="toolbar-zeile">

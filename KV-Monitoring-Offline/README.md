@@ -142,9 +142,16 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   Prüfauftrags-Detailseite wieder zurück — praktisch, um bei Bedarf schnell
   genauere Informationen auf der jeweils anderen Seite nachzuschlagen, ohne
   über die Liste suchen zu müssen. Beide Buttons erscheinen nur, wenn zur
-  IAN tatsächlich ein Gegenstück existiert. Auch
-  hier erscheint — sofern der verknüpfte Prüfauftrag eine „IAN-Vorgänger"
-  enthält — dieselbe Vorgänger-Artikel-Karte wie bei den Prüfaufträgen,
+  IAN tatsächlich ein Gegenstück existiert.
+
+  **Reihenfolge der Karten**: direkt unter den Kopfdaten folgen die beiden
+  Prüfumfang-Karten (roher Prüfumfang-Text + Checkliste, siehe unten) samt
+  Prüfumfang-Details, danach Artikelkategorie, dann die
+  Warengruppen-Empfehlung (Mechanik) und erst danach die Vorgänger-Artikel-
+  Karte sowie die Prüfpositionen-Tabelle.
+
+  Sofern der verknüpfte Prüfauftrag eine „IAN-Vorgänger"
+  enthält, erscheint dieselbe Vorgänger-Artikel-Karte wie bei den Prüfaufträgen,
   ergänzt um **„↺ Prüfpositionen aus Vorgänger-KV übernehmen"**: kopiert alle
   aktiven Positionen des Vorgänger-KVs (mit dessen tatsächlichen Kosten/
   Anzahl, nicht den Katalog-Standardwerten) in den aktuellen KV; bereits
@@ -196,29 +203,48 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   ohne den Tab wechseln zu müssen. Bis dahin bleibt zusätzlich die manuelle
   Auswahl unten verfügbar.
 
-  Die Position **„Sicherheit & Norm"** wird als eine **kombinierte Position**
-  gebildet, nachgebaut aus dem Auswahl_LIDL-Arbeitsblatt (siehe unten):
+  Die Position **„Sicherheit & Norm"** ist mechanikseitig aus dem
+  Auswahl_LIDL-Arbeitsblatt nachgebaut, wird aber **nicht mehr zu einer
+  einzigen Summenposition zusammengefasst** — Hauptprodukt und jedes
+  Set-Bestandteil erscheinen als **eigener, klar abgegrenzter Block** (eigene
+  Umrandung) mit eigenem „+ hinzufügen":
   - **Set-Bestandteile**: über „Weiteren Set-Bestandteil hinzufügen" (bei
     mehrteiligen Produkten, z. B. Messer + Messerblock) lässt sich die
     Referenztabelle **warengruppenübergreifend** nach weiteren
     Produkten durchsuchen (z. B. „Messer" zu einem Hauptprodukt
     „Messerblock") — praktisch für mehrteilige Produkte, bei denen jeder
-    Bestandteil eine eigene Norm/eigene Kosten hat. Jeder hinzugefügte
-    Bestandteil erscheint als entfernbarer Chip; Norm-Text und Kosten aller
-    Bestandteile (Hauptprodukt + Set-Bestandteile) werden zu einer einzigen
-    Position zusammengefasst.
-  - **Artikelkategorie-Rabattfaktor**: die Summe der Sicherheit & Norm-Kosten
-    wird automatisch mit einem Faktor je nach Artikelkategorie des
-    verknüpften Prüfauftrags multipliziert — **Grün → 0,3, Gelb → 0,5,
-    sonst/unbekannt → 0,7**. Der verwendete Faktor und die erkannte
-    Artikelkategorie werden direkt unter der Position angezeigt. Hinweis:
-    das Original vergleicht die Artikelkategorie exakt (nur „Grün"); da
-    reale Prüfaufträge auch Werte wie „Grün*" liefern, wird hier bewusst
+    Bestandteil eine eigene Norm/eigene Kosten hat. Jedes hinzugefügte
+    Set-Bestandteil bekommt einen eigenen Block mit eigenem Norm-Text,
+    eigenen (bereits rabattierten) Kosten und eigenem „✕ entfernen" —
+    Hauptprodukt und Set-Bestandteile lassen sich dadurch unabhängig
+    voneinander in die Prüfpositionen-Tabelle übernehmen, statt zwingend
+    gemeinsam als eine Zeile.
+  - **Style-Zuordnung**: hat der verknüpfte Prüfauftrag mehrere benannte
+    Styles (Style_A, Style_B, …, erkannt aus denselben Style-Blöcken wie bei
+    Maße/Gewicht/Qualität), zeigt jeder Block zusätzlich ein Dropdown „Alle
+    Styles" / einzelner Style-Name. Damit lässt sich eine Prüfung entweder
+    für alle Styles gemeinsam eintragen (Standard) oder gezielt nur für
+    einen einzelnen Style — beide Varianten lassen sich auch nebeneinander
+    anlegen, da der gewählte Style direkt in die Positionsbezeichnung
+    aufgenommen wird (z. B. „… (Style_A)") und damit automatisch eine
+    eigenständige, nicht doppelt anlegbare Position ergibt. Bei einstiligen
+    Artikeln erscheint kein Style-Dropdown.
+  - **Artikelkategorie-Rabattfaktor**: die Kosten jedes einzelnen Blocks
+    (Hauptprodukt wie auch jedes Set-Bestandteil) werden automatisch mit
+    einem Faktor je nach Artikelkategorie des verknüpften Prüfauftrags
+    multipliziert — **Grün → 0,3, Gelb → 0,5, sonst/unbekannt → 0,7** —, in
+    Summe rechnerisch identisch zum früheren „Summe zuerst, dann Faktor"
+    (der Faktor ist auf jeden Block gleich, Multiplikation ist
+    distributiv). Der verwendete Faktor und die erkannte Artikelkategorie
+    werden direkt unter den Blöcken angezeigt. Hinweis: das Original
+    vergleicht die Artikelkategorie exakt (nur „Grün"); da reale
+    Prüfaufträge auch Werte wie „Grün*" liefern, wird hier bewusst
     normalisiert verglichen (ohne Sonderzeichen, Groß-/Kleinschreibung
     egal), damit der Rabatt auch bei solchen Varianten korrekt greift.
 
   FFU- und NGO/StiWa-Kosten sind vom Rabattfaktor **nicht** betroffen (im
-  Original eigenständige Positionen ohne Set-Bestandteile/Rabatt).
+  Original eigenständige Positionen ohne Set-Bestandteile/Rabatt) und waren
+  schon zuvor jeweils eigene Blöcke.
 
   **Artikelkategorie** – direkt oberhalb des Prüfumfangs zeigt eine eigene
   Karte die Artikelkategorie aus dem verknüpften Prüfauftrag (dieselbe, die
@@ -289,17 +315,22 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   jederzeit manuell aktivieren (z. B. um Positionen schon vor dem
   PA-Upload grob vorzubereiten). Innerhalb der Detail-Karten:
   - **Sicherheit & Norm / Sonder- & Funktionsparameter**: die allgemeinen
-    Katalog-Positionen zu den vier Unterpunkten oben werden automatisch als
-    „Vorschlag" markiert, ergänzend zur produktspezifischen Empfehlung
-    oben. Der **Akkusicherheitskurzcheck** wird davon unabhängig nur
-    vorgeschlagen, wenn das aus dem Prüfauftrag ausgelesene Feld
-    „Batterietyp" auf eine tatsächlich vorhandene Batterie/einen Akku
-    hindeutet (nicht „keine"/„nein"/leer). **Mustereinlagerung (18
-    Monate)** wird im Prüfumfang nicht mehr angezeigt (weder als Vorschlag
-    noch manuell hinzufügbar) — bleibt aber im Reiter
-    „Prüfpositionen-Katalog" erhalten und ist dort weiterhin klassisch über
-    das Katalog-Dropdown im KV auswählbar, falls im Einzelfall doch
-    gebraucht.
+    Katalog-Positionen zu den drei Unterpunkten Kennzeichnung
+    (Verpackung & Produkt), Kennzeichnung (Bedienungsanleitung) und
+    Optischer Abgleich werden hier automatisch als „Vorschlag" markiert. Für
+    **Sicherheit-/Normprüfung** steht hier bewusst **keine** Katalog-Position
+    mehr — der bisherige feste Katalog-Preis war fachlich nicht korrekt;
+    stattdessen liefert die weiter unten stehende Warengruppen-Empfehlung
+    (Mechanik) für diesen Unterpunkt die tatsächlich zutreffende Norm samt
+    Kosten als eigenen Block. Der **Akkusicherheitskurzcheck** wird
+    unabhängig von den vier Unterpunkten nur vorgeschlagen, wenn das aus dem
+    Prüfauftrag ausgelesene Feld „Batterietyp" auf eine tatsächlich
+    vorhandene Batterie/einen Akku hindeutet (nicht „keine"/„nein"/leer).
+    **Mustereinlagerung (18 Monate)** wird im Prüfumfang nicht mehr
+    angezeigt (weder als Vorschlag noch manuell hinzufügbar) — bleibt aber
+    im Reiter „Prüfpositionen-Katalog" erhalten und ist dort weiterhin
+    klassisch über das Katalog-Dropdown im KV auswählbar, falls im
+    Einzelfall doch gebraucht.
   - **(Physikalische-) Produktspezifikationen**: durchsuchbare Liste aus dem
     echten, 62 Einträge umfassenden Parameterkatalog (Parameter, Material/
     Kontext, Laufzeit, Norm, SAP-Code, Preis) — Suchfeld oben, „+ hinzufügen"
