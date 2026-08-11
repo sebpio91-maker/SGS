@@ -209,16 +209,20 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   FFU- und NGO/StiWa-Kosten sind vom Rabattfaktor **nicht** betroffen (im
   Original eigenständige Positionen ohne Set-Bestandteile/Rabatt).
 
-  **Prüfumfang** – eine Checkliste der fünf mechanisch relevanten
-  Prüfumfang-Abschnitte, direkt unter der Warengruppen-Empfehlung. Jede
-  Checkbox ist so lange automatisch aus dem Prüfumfang des verknüpften
-  Prüfauftrags vorbelegt (Badge „im Prüfumfang erkannt"/„nicht erkannt"),
-  bis sie einmal manuell angeklickt wird — danach bleibt genau diese
-  manuelle Wahl dauerhaft für den KV gespeichert, auch über einen
-  Prüfauftrags-Wechsel hinweg. Chemie/LFGB und Selbstauskunft tauchen hier
-  gar nicht erst auf, da beide nicht Teil dieses mechanischen KVs sind. Die
-  fünf Abschnitte:
-  - **Sicherheit-/Normprüfung (mechanische Sicherheit)**
+  **Prüfumfang** – der rohe Prüfumfang-Text aus dem verknüpften Prüfauftrag
+  wird jetzt auch im KV angezeigt, in derselben Darstellung wie auf der
+  Prüfauftrags-Detailseite (ALT-Zeile hervorgehoben, Institut/Datum-Klammer
+  entfernt) — kein Wechsel zum Prüfauftrag mehr nötig, um nachzusehen, was
+  dort genau drinsteht. Direkt darunter folgt die Checkliste der fünf
+  mechanisch relevanten Prüfumfang-Abschnitte. Jede Checkbox ist so lange
+  automatisch aus dem Prüfumfang des verknüpften Prüfauftrags vorbelegt
+  (Badge „im Prüfumfang erkannt"/„nicht erkannt"), bis sie einmal manuell
+  angeklickt wird — danach bleibt genau diese manuelle Wahl dauerhaft für
+  den KV gespeichert, auch über einen Prüfauftrags-Wechsel hinweg.
+  Chemie/LFGB und Selbstauskunft tauchen hier gar nicht erst auf, da beide
+  nicht Teil dieses mechanischen KVs sind. Die fünf Abschnitte sind
+  bewusst **genauso benannt, wie sie im Prüfauftrag stehen**:
+  - **Sicherheit & Norm / Sonder- & Funktionsparameter**
   - **(Physikalische-) Produktspezifikationen**
   - **FFU/Fitting**
   - **NGO**
@@ -230,21 +234,28 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   Prüfauftrag startet die Checkliste komplett unangehakt, lässt sich aber
   jederzeit manuell aktivieren (z. B. um Positionen schon vor dem
   PA-Upload grob vorzubereiten). Innerhalb der Detail-Karten:
-  - **Sicherheit-/Normprüfung**: die allgemeinen Katalog-Positionen
-    Kennzeichnung, Bedienungsanleitung (E&E) und optischer Abgleich werden
-    automatisch als „Vorschlag" markiert – ergänzend zur produktspezifischen
-    Empfehlung oben. Der **Akkusicherheitskurzcheck** wird dabei nur
-    vorgeschlagen, wenn das aus dem Prüfauftrag ausgelesene Feld
-    „Batterietyp" auf eine tatsächlich vorhandene Batterie/einen Akku
-    hindeutet (nicht „keine"/„nein"/leer). **Mustereinlagerung (18 Monate)**
-    ist für diesen Abschnitt nicht relevant und wird deshalb nicht mehr
-    automatisch vorgeschlagen — bleibt aber als Position weiterhin manuell
-    hinzufügbar, falls im Einzelfall doch gebraucht.
+  - **Sicherheit & Norm / Sonder- & Funktionsparameter**: fallen darunter
+    laut Beschreibung Sicherheits-/Normprüfung (mechanische Sicherheit),
+    Kennzeichnungsprüfung für Verpackung und Produkt, Kennzeichnungsprüfung
+    der Bedienungsanleitung (E&E) sowie optischer Abgleich — die
+    allgemeinen Katalog-Positionen dazu werden automatisch als „Vorschlag"
+    markiert, ergänzend zur produktspezifischen Empfehlung oben. Der
+    **Akkusicherheitskurzcheck** wird dabei nur vorgeschlagen, wenn das aus
+    dem Prüfauftrag ausgelesene Feld „Batterietyp" auf eine tatsächlich
+    vorhandene Batterie/einen Akku hindeutet (nicht „keine"/„nein"/leer).
+    **Mustereinlagerung (18 Monate)** ist für diesen Abschnitt nicht
+    relevant und wird deshalb nicht mehr automatisch vorgeschlagen — bleibt
+    aber als Position weiterhin manuell hinzufügbar, falls im Einzelfall
+    doch gebraucht.
   - **(Physikalische-) Produktspezifikationen**: durchsuchbare Liste aus dem
     echten, 62 Einträge umfassenden Parameterkatalog (Parameter, Material/
     Kontext, Laufzeit, Norm, SAP-Code, Preis) — Suchfeld oben, „+ hinzufügen"
     trägt die gewählte Zeile mit ihrem tatsächlichen Preis und SAP-Code ein.
     Eine automatische Zuordnung nach Auslobungen ist noch nicht hinterlegt.
+    Die **Qualität** aus dem Prüfauftrag wird hier direkt darüber angezeigt
+    — genauso als eigene Style-Blöcke aufgeteilt wie auf der
+    Prüfauftrags-Detailseite (siehe unten), statt als ein zusammenhängender
+    Text.
   - **FFU/Fitting** und **NGO**: die allgemeinen Katalog-Positionen werden
     vorgeschlagen, sobald im Prüfumfang erkannt — produktspezifische Kosten
     dafür liefert, wenn vorhanden, die Warengruppen-Empfehlung oben.

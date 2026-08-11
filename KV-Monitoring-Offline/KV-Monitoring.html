@@ -1729,18 +1729,28 @@ function renderPaPruefumfangKarte(pa) {
   return `<div class="card"><h2>Prüfumfang</h2>${zeilenHtml}</div>`;
 }
 
+/* Ein PA_BLOCKFELDER-Feld (Maße, Gewicht, Qualität, Material, Markenreferenz, Garantie) als
+   Style-Blöcke gerendert - gemeinsam genutzt von der Prüfauftrag-Detailseite (alle Blockfelder)
+   und der Produktspezifikationen-Karte im KV (nur Qualität), damit dieselbe übersichtliche
+   Blockdarstellung an beiden Stellen identisch aussieht. Liefert nur die Block-Divs, ohne
+   umgebende Feld-Überschrift. */
+function renderPaBlockFeldHtml(pa, feldname) {
+  const eintraege = (pa.felder || []).filter((f) => normalisiere(f.schluessel) === normalisiere(feldname));
+  if (!eintraege.length) return "";
+  return eintraege.map((e) => {
+    const bloecke = trenneNachStyle(e.wert);
+    return bloecke.map((b) => `
+      <div class="stil-block">
+        ${b.style ? `<div class="stil-name">${escapeHtml(b.style)}</div>` : ""}
+        <div class="stil-inhalt">${b.inhalt ? escapeHtml(b.inhalt) : '<span class="muted">–</span>'}</div>
+      </div>`).join("");
+  }).join("");
+}
+
 function renderPaBlockKarte(pa) {
   const abschnitte = PA_BLOCKFELDER.map((feldname) => {
-    const eintraege = (pa.felder || []).filter((f) => normalisiere(f.schluessel) === normalisiere(feldname));
-    if (!eintraege.length) return "";
-    const bloeckeHtml = eintraege.map((e) => {
-      const bloecke = trenneNachStyle(e.wert);
-      return bloecke.map((b) => `
-        <div class="stil-block">
-          ${b.style ? `<div class="stil-name">${escapeHtml(b.style)}</div>` : ""}
-          <div class="stil-inhalt">${b.inhalt ? escapeHtml(b.inhalt) : '<span class="muted">–</span>'}</div>
-        </div>`).join("");
-    }).join("");
+    const bloeckeHtml = renderPaBlockFeldHtml(pa, feldname);
+    if (!bloeckeHtml) return "";
     return `<div class="pa-block-feld"><h3>${escapeHtml(feldname)}</h3>${bloeckeHtml}</div>`;
   }).filter(Boolean).join("");
   if (!abschnitte) return "";
@@ -2238,10 +2248,10 @@ function zeigePaUploadReview(felder, rohtext, erzwingeIan, stand) {
    vs. "Sicherheit & Norm / Sonderprüfung"; "Chemie/LFGB" vs. "Chemie / LFGB"). */
 const PA_PRUEFUMFANG_KATEGORIEN = [
   {
-    id: "sicherheitNorm", anzeigeName: "Sicherheit-/Normprüfung (mechanische Sicherheit)",
+    id: "sicherheitNorm", anzeigeName: "Sicherheit & Norm / Sonder- & Funktionsparameter",
     katalogKategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter",
     erkennungRegex: /sicherheit\s*&\s*norm/i,
-    beschreibung: "Mechanische Sicherheit, Kennzeichnung von Produkt und Verpackung sowie Bedienungsanleitung (E&E), optischer Abgleich; bei Produkten mit Batterie/Akku zusätzlich Akkusicherheitskurzcheck."
+    beschreibung: "Darunter fallen: Sicherheits-/Normprüfung (mechanische Sicherheit), Kennzeichnungsprüfung für Verpackung und Produkt, Kennzeichnungsprüfung der Bedienungsanleitung (E&E) sowie optischer Abgleich; bei Produkten mit Batterie/Akku zusätzlich Akkusicherheitskurzcheck."
   },
   {
     id: "produktspezifikationen", anzeigeName: "(Physikalische-) Produktspezifikationen",
@@ -2603,7 +2613,7 @@ function renderKvPruefumfangCheckliste(kv, pa) {
 function renderKvPruefumfangUebersicht(kv, pa) {
   pruefumfangAuswahlAktualisieren(kv, pa);
   const markenreferenz = pa ? paFeldWertRoh(pa, "Markenreferenz") : "";
-  const qualitaet = pa ? paFeldWertRoh(pa, "Qualität") : "";
+  const qualitaetBloeckeHtml = pa ? renderPaBlockFeldHtml(pa, "Qualität") : "";
   const ausgewaehlteKategorien = PA_PRUEFUMFANG_KATEGORIEN.filter((kat) => kv.pruefumfangAuswahl[kat.id]);
 
   const abschnitte = ausgewaehlteKategorien.map((kat) => {
@@ -2614,7 +2624,7 @@ function renderKvPruefumfangUebersicht(kv, pa) {
       return `<div class="pruefumfang-kat">
         <div class="pruefumfang-kat-kopf"><strong>${escapeHtml(kat.anzeigeName)}</strong> ${badge}</div>
         <p class="hinweis">${escapeHtml(kat.beschreibung)}</p>
-        ${qualitaet ? `<p class="hinweis"><strong>Qualität (aus PA):</strong> ${escapeHtml(qualitaet)}</p>` : ""}
+        ${qualitaetBloeckeHtml ? `<div class="pa-block-feld"><h3>Qualität (aus PA)</h3>${qualitaetBloeckeHtml}</div>` : ""}
         <input type="text" id="produktspezi-suche" placeholder="Parameter, Produkt oder Norm suchen…" style="width:100%;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px;margin-bottom:0.4rem;font-family:inherit">
         <div id="produktspezi-liste"></div>
       </div>`;
@@ -2648,6 +2658,7 @@ function renderKvPruefumfangUebersicht(kv, pa) {
   }).join("");
 
   return `${renderMechanikEmpfehlungKarte(kv, pa)}
+  ${pa ? renderPaPruefumfangKarte(pa) : ""}
   ${renderKvPruefumfangCheckliste(kv, pa)}
   ${ausgewaehlteKategorien.length ? `<div class="card">
     <h2>Prüfumfang-Details</h2>
