@@ -5,7 +5,7 @@ und Kostenvoranschlägen (KV) für mechanische Prüfungen. Läuft komplett im
 Browser, ohne Server, ohne Python, ohne Installation, ohne besondere
 Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
 
-## Die sieben Reiter
+## Die sechs Reiter
 
 - **Arbeitsvorrat** – der Arbeitsvorrat aus dem SAP-Export. Startet leer
   (keine Beispieldaten mehr vorbefüllt). Oben lässt sich zwischen zwei
@@ -176,7 +176,7 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   enthält, erscheint dieselbe Vorgänger-Artikel-Karte wie bei den Prüfaufträgen,
   ergänzt um **„↺ Prüfpositionen aus Vorgänger-KV übernehmen"**: kopiert alle
   aktiven Positionen des Vorgänger-KVs (mit dessen tatsächlichen Kosten/
-  Anzahl, nicht den Katalog-Standardwerten) in den aktuellen KV; bereits
+  Anzahl, nicht den ursprünglichen Standardwerten) in den aktuellen KV; bereits
   vorhandene Positionen werden dabei übersprungen, ein zweiter Klick legt also
   nichts doppelt an.
 
@@ -310,7 +310,7 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     Warengruppen-Empfehlung weiter unten.
   - **Kennzeichnung (Verpackung & Produkt)** – **immer Pflicht**, unabhängig
     von Prüfumfang, Artikelkategorie oder Trivial, und deshalb immer
-    vorbelegt. Es gibt dafür vier Katalog-Varianten mit demselben Zweck,
+    vorbelegt. Es gibt dafür vier feste Positionen mit demselben Zweck,
     aber unterschiedlichem PPM-Code — automatisch als Vorschlag markiert
     wird genau die zum KV passende: **1001_PPM** (Standard/VK Büro 0070),
     **1002_PPM** (VK Büro 0049), **1003_PPM** (VK Büro 0072), **1005_PPM**
@@ -318,21 +318,21 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     drei Varianten bleiben in der Detail-Karte sichtbar und bei Bedarf
     manuell hinzufügbar.
   - **Kennzeichnung (Bedienungsanleitung)** – folgt weiterhin der
-    Prüfumfang-Text-Erkennung wie bisher. Entspricht immer dem
-    Katalog-Eintrag „Bedienungsanleitung E&E (1000_PPM)".
+    Prüfumfang-Text-Erkennung wie bisher. Entspricht immer der festen
+    Position „Bedienungsanleitung E&E (1000_PPM)".
   - **Optischer Abgleich** – folgt ebenfalls weiterhin der
-    Prüfumfang-Text-Erkennung. Entspricht immer dem Katalog-Eintrag
+    Prüfumfang-Text-Erkennung. Entspricht immer der festen Position
     „Optischer Abgleich (112_PPM)".
 
   Alle vier lassen sich unabhängig voneinander manuell an- und abhaken,
   unabhängig von ihrer jeweiligen Vorbelegungs-Regel — z. B. wenn im
   Einzelfall nur der optische Abgleich, nicht aber die Kennzeichnungsprüfung
-  benötigt wird. Jeder Unterpunkt steuert direkt, ob die zugehörige
-  Katalog-Position in der Detail-Karte unten als „Vorschlag" markiert ist.
-  Dateien aus einer älteren Tool-Version (ein einzelnes Häkchen für den
-  ganzen Abschnitt bzw. nur die eine „1001_PPM"-Kennzeichnungs-Position)
-  werden beim Laden automatisch migriert/ergänzt, damit kein bereits
-  gepflegter KV plötzlich Positionen verliert.
+  benötigt wird. Jeder Unterpunkt steuert direkt, ob die zugehörige feste
+  Position in der Detail-Karte unten als „Vorschlag" markiert ist. Dateien
+  aus einer älteren Tool-Version (ein einzelnes Häkchen für den ganzen
+  Abschnitt bzw. nur die eine „1001_PPM"-Kennzeichnungs-Position) werden
+  beim Laden automatisch migriert/ergänzt, damit kein bereits gepflegter KV
+  plötzlich Positionen verliert.
 
   **Erst für angehakte Abschnitte/Unterpunkte erscheinen darunter die
   einzelnen Prüfpositionen** zur Auswahl (Karte „Prüfumfang-Details") — ist
@@ -343,35 +343,38 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   eigenen, klar umrandeten Zeile statt nur durch eine dünne Trennlinie
   abgesetzt zu sein — Vorschläge zusätzlich grün hinterlegt. Innerhalb der
   Detail-Karten:
-  - **Sicherheit & Norm / Sonder- & Funktionsparameter**: die allgemeinen
-    Katalog-Positionen zu den drei Unterpunkten Kennzeichnung
-    (Verpackung & Produkt), Kennzeichnung (Bedienungsanleitung) und
-    Optischer Abgleich werden hier automatisch als „Vorschlag" markiert. Für
-    **Sicherheit-/Normprüfung** steht hier bewusst **keine** Katalog-Position
-    mehr — der bisherige feste Katalog-Preis war fachlich nicht korrekt;
-    stattdessen liefert die weiter unten stehende Warengruppen-Empfehlung
-    (Mechanik) für diesen Unterpunkt die tatsächlich zutreffende Norm samt
-    Kosten als eigenen Block. Der **Akkusicherheitskurzcheck** wird
-    unabhängig von den vier Unterpunkten nur vorgeschlagen, wenn das aus dem
-    Prüfauftrag ausgelesene Feld „Batterietyp" auf eine tatsächlich
-    vorhandene Batterie/einen Akku hindeutet (nicht „keine"/„nein"/leer).
-    **Mustereinlagerung (18 Monate)** wird im Prüfumfang nicht mehr
-    angezeigt (weder als Vorschlag noch manuell hinzufügbar) — bleibt aber
-    im Reiter „Prüfpositionen-Katalog" erhalten und ist dort weiterhin
-    klassisch über das Katalog-Dropdown im KV auswählbar, falls im
-    Einzelfall doch gebraucht.
-  - **(Physikalische-) Produktspezifikationen**: durchsuchbare Liste aus dem
-    echten, 62 Einträge umfassenden Parameterkatalog (Parameter, Material/
-    Kontext, Laufzeit, Norm, SAP-Code, Preis) — Suchfeld oben, „+ hinzufügen"
-    trägt die gewählte Zeile mit ihrem tatsächlichen Preis und SAP-Code ein.
-    Eine automatische Zuordnung nach Auslobungen ist noch nicht hinterlegt.
-    Die **Qualität** aus dem Prüfauftrag wird hier direkt darüber angezeigt
-    — genauso als eigene Style-Blöcke aufgeteilt wie auf der
+  - **Sicherheit & Norm / Sonder- & Funktionsparameter**: die festen
+    Positionen zu den drei Unterpunkten Kennzeichnung (Verpackung & Produkt),
+    Kennzeichnung (Bedienungsanleitung) und Optischer Abgleich werden hier
+    automatisch als „Vorschlag" markiert. Für **Sicherheit-/Normprüfung**
+    steht hier bewusst **keine** feste Position mehr — ein fester Preis war
+    fachlich nicht korrekt; stattdessen liefert die weiter unten stehende
+    Warengruppen-Empfehlung (Mechanik) für diesen Unterpunkt die tatsächlich
+    zutreffende Norm samt Kosten und SAP-Code als eigenen Block. Der
+    **Akkusicherheitskurzcheck** wird unabhängig von den vier Unterpunkten
+    nur vorgeschlagen, wenn das aus dem Prüfauftrag ausgelesene Feld
+    „Batterietyp" auf eine tatsächlich vorhandene Batterie/einen Akku
+    hindeutet (nicht „keine"/„nein"/leer). **Mustereinlagerung** wird im
+    Prüfumfang nicht mehr angezeigt (weder als Vorschlag noch manuell
+    hinzufügbar).
+  - **(Physikalische-) Produktspezifikationen**: die feste Position
+    „Projektkosten (nicht einsteuern)" steht immer oben in der Kategorie zur
+    Verfügung; darunter eine durchsuchbare Liste aus dem echten, 62 Einträge
+    umfassenden Parameterkatalog (Parameter, Material/Kontext, Laufzeit,
+    Norm, SAP-Code, Preis) — Suchfeld oben, „+ hinzufügen" trägt die
+    gewählte Zeile mit ihrem tatsächlichen Preis und SAP-Code ein. Eine
+    automatische Zuordnung nach Auslobungen ist noch nicht hinterlegt. Bei
+    Mehrfachauswahl (mehrere aktive Positionen zu einer Kategorie) erscheint
+    jede als eigener Block untereinander statt in einer zusammengefügten
+    Zeile. Die **Qualität** aus dem Prüfauftrag wird hier direkt darüber
+    angezeigt — genauso als eigene Style-Blöcke aufgeteilt wie auf der
     Prüfauftrags-Detailseite (siehe unten), statt als ein zusammenhängender
     Text.
-  - **FFU/Fitting** und **NGO**: die allgemeinen Katalog-Positionen werden
-    vorgeschlagen, sobald im Prüfumfang erkannt — produktspezifische Kosten
-    dafür liefert, wenn vorhanden, die Warengruppen-Empfehlung oben.
+  - **FFU/Fitting** und **NGO**: die festen Positionen werden vorgeschlagen,
+    sobald im Prüfumfang erkannt — produktspezifische Kosten und SAP-Codes
+    dafür liefert, wenn vorhanden, die Warengruppen-Empfehlung oben (aus der
+    jeweils referenzierten Norm, siehe „Datenquelle der Warengruppen-
+    Empfehlung und SAP-Codes" unten).
   - **Referenzprüfung**: zeigt zusätzlich die „Markenreferenz" aus dem
     Prüfauftrag an (das Referenzprodukt, gegen das verglichen wird).
 
@@ -379,17 +382,12 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   einzelne Position oder per **„Alle Vorschläge übernehmen"** alle markierten
   Positionen auf einmal in die Prüfpositionen-Tabelle unten eintragen — dort
   dann wie gewohnt Kosten/Anzahl anpassen, deaktivieren oder entfernen.
-  Positionen lassen sich außerdem klassisch aus dem Katalog-Dropdown
-  übernehmen (Kosten/SAP-Code werden vorausgefüllt) oder frei anlegen.
+  Positionen lassen sich außerdem frei anlegen („+ Freie Position").
   **„⧉ Als Vorlage für neuen KV duplizieren"** kopiert einen bestehenden KV
   (z. B. eines Wiederholartikels) komplett als Ausgangspunkt für einen
   neuen. Über die Suche oben lassen sich bestehende KVs nach
   IAN/Artikel/Warengruppe/Lieferant durchsuchen, um einen passenden zum
   Duplizieren zu finden.
-- **Prüfpositionen-Katalog** – die wiederverwendbaren mechanischen
-  Prüfpositionen mit Standardkosten und SAP-Code, vorbefüllt aus der
-  bestehenden KV-Vorlage. Hier pflegen, wenn sich Preise ändern oder neue
-  Prüfarten dazukommen.
 - **Prüfgrundlagen** – die Datenquelle der Warengruppen-Empfehlung im KV
   (siehe oben) ist **direkt in der Oberfläche bearbeitbar und neu anlegbar**,
   nicht mehr nur fest eingebettet. Zuerst nach **Warengruppe** gruppiert
@@ -524,6 +522,13 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   Alte **.doc-Dateien** (Format vor Office 2007) werden nicht unterstützt —
   hierfür bitte eine .docx-Version hochladen.
 
+  Jede Norm hat außerdem ein eigenes, frei editierbares **SAP-Code**-Feld
+  (SAP-Material). Wird diese Norm in einer Prüfgrundlage referenziert, fließt
+  ihr SAP-Code automatisch in die daraus im KV erzeugte mechanische
+  Prüfposition ein (Hauptprodukt/Set-Bestandteile bei Sicherheit & Norm sowie
+  FFU/NGO) — referenziert ein Block mehrere Normen, zählt der SAP-Code der
+  ersten Norm mit hinterlegtem Wert.
+
   **Anwendungsbereiche**: manche Normen stellen je nach Verwendungszweck des
   Produkts unterschiedliche Anforderungen — z. B. hat DIN EN 581-2
   unterschiedliche Anforderungen für Camping-, Wohn- und Objektbereich. Über
@@ -604,11 +609,26 @@ stammen ursprünglich aus `Preisliste_Mechanik_v2.xlsm` (Blätter „Mechanik" u
 Öffnen des Tools. Die Prüfgrundlagen sind seitdem über den gleichnamigen
 Reiter bearbeit- und erweiterbar (siehe oben); der Produktspezifikationen-
 Katalog ist weiterhin nur durchsuchbar, nicht editierbar — bei Bedarf bitte
-Bescheid geben, dann wird das analog nachgerüstet. Dabei wurden auch die
-SAP-Codes im Prüfpositionen-Katalog gegen die reale SAP-Bestellzeilen-Liste
+Bescheid geben, dann wird das analog nachgerüstet.
+
+Den früheren eigenständigen Reiter „Prüfpositionen-Katalog" gibt es nicht
+mehr. Positionen, die an einer Norm/Prüfgrundlage hängen (Hauptprodukt und
+Set-Bestandteile bei Sicherheit & Norm, FFU, NGO/StiWa), holen ihren
+**SAP-Code jetzt direkt von der referenzierten Norm** — im Reiter „Normen"
+gibt es dafür ein eigenes, editierbares **SAP-Code-Feld** je Norm/PPM (analog
+zu Bezeichnung, Typ und Bemerkung); referenziert eine Prüfgrundlage mehrere
+Normen in einem Block, zählt der SAP-Code der ersten Norm mit hinterlegtem
+Wert. Die wenigen Positionen ohne Normen-Bezug (die vier Kennzeichnung-
+Varianten, Bedienungsanleitung, Optischer Abgleich, Akkusicherheitskurzcheck,
+die generischen FFU/NGO/Referenzprüfung-Einträge sowie „Projektkosten") sind
+jetzt fest im Code hinterlegt statt in einer eigenen Verwaltungsoberfläche
+pflegbar; die SAP-Codes wurden dabei gegen die reale SAP-Bestellzeilen-Liste
 (Blatt „SAP") korrigiert — u. a. „MECH_SICHERHEIT_TS" statt der zuvor
 angenommenen „MECH_S_NORM_TS", und „FFU_TS" als gemeinsamer Code für
-Optischer Abgleich/FFU/Referenzprüfung/NGO.
+Optischer Abgleich/FFU/Referenzprüfung/NGO (jeweils als Fallback, solange die
+zugehörige Norm noch keinen eigenen SAP-Code hat). Das freie Dropdown „Position
+aus Katalog wählen" im KV ist entsprechend entfallen — für Einzelfälle bleibt
+„+ Freie Position".
 
 Die **Set-Bestandteile- und Rabattfaktor-Logik** der Sicherheit & Norm-Position
 ist aus `Preisliste_Hilfe_claude.xlsm` (Blatt „Auswahl_LIDL", dort die
@@ -650,10 +670,11 @@ Unterlagen zu dieser IAN zu finden. Ohne IAN erscheint kein Symbol.
 ## Toolbar (oben, bereichsübergreifend)
 
 - **⬇ Sichern (JSON)** / **⬆ Datei laden (JSON)** – kompletter Stand
-  (Arbeitsvorrat + PA + KV + Katalog) als Datei sichern bzw. laden.
+  (Arbeitsvorrat + PA + KV + Prüfgrundlagen + Normen) als Datei sichern bzw.
+  laden.
 - **🔀 Zusammenführen (JSON)** – Arbeitsstände mehrerer Personen/Rechner
   zusammenführen, mit Konfliktanzeige ("Aktuell behalten" / "Aus Datei
-  übernehmen") für alle vier Bereiche.
+  übernehmen") für alle Bereiche.
 - **📄 CSV-Export** – exportiert die Tabelle des gerade offenen Reiters als
   `.csv`, direkt in Excel öffenbar.
 

@@ -75,6 +75,7 @@ nav.tabs button.aktiv { background:var(--card); color:var(--accent-dark); font-w
 .pruefumfang-kat-kopf { display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; }
 .pruefumfang-position { display:flex; align-items:center; justify-content:space-between; gap:0.5rem; padding:0.5rem 0.6rem; border:1px solid var(--border); border-radius:6px; font-size:0.85rem; margin-top:0.4rem; }
 .pruefumfang-position-vorschlag { background:#f2f8f1; border-color:#cfe3cb; }
+.pruefumfang-eintrag-positionen { display:flex; flex-direction:column; align-items:flex-start; gap:0.2rem; width:100%; margin:0.15rem 0 0.1rem 1.4rem; }
 .mechanik-komponente { border:1px solid var(--border); border-radius:6px; margin:0.4rem 0 !important; padding:0.5rem 0.6rem !important; }
 .mechanik-komponente:first-of-type { margin-top:0.4rem !important; }
 .segment-toggle { display:inline-flex; flex-wrap:wrap; border:1px solid var(--border); border-radius:6px; margin-bottom:0.8rem; }
@@ -224,7 +225,6 @@ input[type=file] { display:none; }
   <button data-tab="arbeitsvorrat" class="aktiv">Arbeitsvorrat</button>
   <button data-tab="pruefauftraege">Prüfaufträge (PA)</button>
   <button data-tab="kvs">Kostenvoranschläge (KV)</button>
-  <button data-tab="katalog">Prüfpositionen-Katalog</button>
   <button data-tab="pruefgrundlagen">Prüfgrundlagen</button>
   <button data-tab="normen">Normen</button>
   <button data-tab="verwaltung">Verwaltung</button>
@@ -291,26 +291,6 @@ input[type=file] { display:none; }
       <ul id="kv-liste"></ul>
     </div>
     <div id="detail-panel-kv"></div>
-  </div>
-</section>
-
-<section class="seite" id="seite-katalog" hidden>
-  <div class="card">
-    <div class="toolbar-zeile">
-      <h2 style="margin:0">Prüfpositionen-Katalog (mechanische Prüfungen)</h2>
-      <span class="zaehler" id="katalog-zaehler"></span>
-      <div class="spacer"></div>
-      <button id="btn-neue-katalog-position">+ Neue Position</button>
-    </div>
-    <p class="hinweis">Wiederverwendbare Prüfpositionen mit Standardkosten und SAP-Code. Wird beim Anlegen von KV-Positionen zum Vorausfüllen genutzt.</p>
-    <div class="tabellen-wrapper">
-      <table class="tabelle" id="katalog-tabelle">
-        <thead>
-          <tr><th style="width:22%">Kategorie</th><th style="width:34%">Bezeichnung</th><th style="width:8%">Kürzel</th><th style="width:16%">SAP-Code</th><th style="width:10%">Standardkosten €</th><th style="width:4%">Aktion</th></tr>
-        </thead>
-        <tbody id="katalog-body"></tbody>
-      </table>
-    </div>
   </div>
 </section>
 
@@ -527,29 +507,37 @@ function seedArbeitsvorrat() {
   return seedArbeitsvorratRoh().map((r) => ({ id: neueId(), ...r }));
 }
 
-/* ---------- Startdaten: Prüfpositionen-Katalog (aus der KV-Vorlage, Blatt "Inspection Booking" / "SAP_MECH") ----------
-   SAP-Codes gegen die reale SAP-Bestellzeilen-Liste (Preisliste_Mechanik_v2.xlsm, Blatt "SAP") geprüft und korrigiert:
-   Sicherheit-/Normprüfung, Kennzeichnung, Bedienungsanleitung, Optischer Abgleich, FFU/Fitting, Referenzprüfung und
-   NGO nutzen jeweils eigene bzw. den gemeinsamen "FFU_TS"-Materialcode - nicht die zuvor angenommenen erfundenen
-   Codes. Die frühere flache Produktspezifikations-Liste wurde durch den deutlich umfangreicheren, echten
-   Parameter-Katalog (PRODUKTSPEZI_KATALOG) ersetzt - "Projektkosten" bleibt als einzige feste Zusatzposition. */
-function seedKatalog() {
-  const roh = [
-    { kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Sicherheit-/Normprüfung Teilprüfung EK5/AK5 06-01.3:2011", kuerzel: "MS", sapCode: "MECH_SICHERHEIT_TS", standardKosten: 720 },
-    { kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Akkusicherheitskurzcheck (163_PPM)", kuerzel: "MS", sapCode: "163_PPM_TS", standardKosten: 950 },
-    { kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Kennzeichnung GER, Verpackung & Produkt (1001_PPM)", kuerzel: "MS", sapCode: "KENNZEICHNNG_SF_TS", standardKosten: 360 },
-    { kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Kennzeichnung GER, Verpackung & Produkt (1002_PPM)", kuerzel: "MS", sapCode: "KENNZEICHNNG_SF_TS", standardKosten: 360 },
-    { kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Kennzeichnung GER, Verpackung & Produkt (1003_PPM)", kuerzel: "MS", sapCode: "KENNZEICHNNG_SF_TS", standardKosten: 360 },
-    { kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Kennzeichnung GER, Verpackung & Produkt (1005_PPM)", kuerzel: "MS", sapCode: "KENNZEICHNNG_SF_TS", standardKosten: 360 },
-    { kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Bedienungsanleitung E&E (1000_PPM)", kuerzel: "MS", sapCode: "BEDIENUNGANL_SF_TS", standardKosten: 360 },
-    { kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Optischer Abgleich (112_PPM)", kuerzel: "MS", sapCode: "FFU_TS", standardKosten: 180 },
-    { kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Mustereinlagerung (18 Monate)", kuerzel: "MS", sapCode: "", standardKosten: 3 },
-    { kategorie: "(physikalische-) Produktspezifikation", bezeichnung: "Projektkosten (nicht einsteuern)", kuerzel: "PS", sapCode: "", standardKosten: 330 },
-    { kategorie: "FFU/Fitting", bezeichnung: "FFU/Fitting", kuerzel: "FFU", sapCode: "FFU_TS", standardKosten: 0 },
-    { kategorie: "Referenzprüfung", bezeichnung: "Referenzprüfung", kuerzel: "REF", sapCode: "FFU_TS", standardKosten: 0 },
-    { kategorie: "NGO", bezeichnung: "NGO", kuerzel: "NGO", sapCode: "FFU_TS", standardKosten: 0 }
-  ];
-  return roh.map((r) => ({ id: neueId(), ...r }));
+/* ---------- Feste Positionen: Sicherheit & Norm / FFU / NGO / Referenzprüfung / Produktspezifikation-Pauschale ----------
+   Ersetzt den früheren, eigenständig pflegbaren Prüfpositionen-Katalog (Reiter "Katalog") für die
+   wenigen Positionen, die nicht über eine Prüfgrundlage/Norm bestimmt werden. SAP-Codes/Kosten
+   gegen die reale SAP-Bestellzeilen-Liste (Preisliste_Mechanik_v2.xlsm, Blatt "SAP") geprüft. Für
+   Positionen, die tatsächlich an einer Norm hängen (Hauptprodukt/Set-Bestandteile, FFU, NGO/StiWa),
+   kommt der SAP-Code stattdessen aus der jeweils referenzierten Norm (Reiter "Normen", Feld
+   SAP-Code) - siehe normRefSapCode() und renderMechanikEmpfehlungKarte(). Die frühere flache
+   Produktspezifikations-Liste wurde durch den deutlich umfangreicheren, echten Parameter-Katalog
+   (PRODUKTSPEZI_KATALOG) ersetzt - "Projektkosten" bleibt als einzige feste Zusatzposition. */
+const SICHERHEIT_NORM_FIXPOSITIONEN = [
+  { id: "fix-akku", kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Akkusicherheitskurzcheck (163_PPM)", kuerzel: "MS", sapCode: "163_PPM_TS", standardKosten: 950 },
+  { id: "fix-kennz-1001", kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Kennzeichnung GER, Verpackung & Produkt (1001_PPM)", kuerzel: "MS", sapCode: "KENNZEICHNNG_SF_TS", standardKosten: 360 },
+  { id: "fix-kennz-1002", kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Kennzeichnung GER, Verpackung & Produkt (1002_PPM)", kuerzel: "MS", sapCode: "KENNZEICHNNG_SF_TS", standardKosten: 360 },
+  { id: "fix-kennz-1003", kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Kennzeichnung GER, Verpackung & Produkt (1003_PPM)", kuerzel: "MS", sapCode: "KENNZEICHNNG_SF_TS", standardKosten: 360 },
+  { id: "fix-kennz-1005", kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Kennzeichnung GER, Verpackung & Produkt (1005_PPM)", kuerzel: "MS", sapCode: "KENNZEICHNNG_SF_TS", standardKosten: 360 },
+  { id: "fix-bda", kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Bedienungsanleitung E&E (1000_PPM)", kuerzel: "MS", sapCode: "BEDIENUNGANL_SF_TS", standardKosten: 360 },
+  { id: "fix-optisch", kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Optischer Abgleich (112_PPM)", kuerzel: "MS", sapCode: "FFU_TS", standardKosten: 180 }
+];
+const FFU_FITTING_FIXPOSITION = { id: "fix-ffu", kategorie: "FFU/Fitting", bezeichnung: "FFU/Fitting", kuerzel: "FFU", sapCode: "FFU_TS", standardKosten: 0 };
+const NGO_FIXPOSITION = { id: "fix-ngo", kategorie: "NGO", bezeichnung: "NGO", kuerzel: "NGO", sapCode: "FFU_TS", standardKosten: 0 };
+const REFERENZPRUEFUNG_FIXPOSITION = { id: "fix-referenz", kategorie: "Referenzprüfung", bezeichnung: "Referenzprüfung", kuerzel: "REF", sapCode: "FFU_TS", standardKosten: 0 };
+const PRODUKTSPEZI_PROJEKTKOSTEN_FIXPOSITION = { id: "fix-projektkosten", kategorie: "(physikalische-) Produktspezifikation", bezeichnung: "Projektkosten (nicht einsteuern)", kuerzel: "PS", sapCode: "", standardKosten: 330 };
+const ALLE_FIXPOSITIONEN = [...SICHERHEIT_NORM_FIXPOSITIONEN, FFU_FITTING_FIXPOSITION, NGO_FIXPOSITION, REFERENZPRUEFUNG_FIXPOSITION, PRODUKTSPEZI_PROJEKTKOSTEN_FIXPOSITION];
+
+function fixPositionenFuerKategorie(katalogKategorie) {
+  if (katalogKategorie === "Sicherheit & Norm / Sonder- & Funktionsparameter") return SICHERHEIT_NORM_FIXPOSITIONEN;
+  if (katalogKategorie === "FFU/Fitting") return [FFU_FITTING_FIXPOSITION];
+  if (katalogKategorie === "NGO") return [NGO_FIXPOSITION];
+  if (katalogKategorie === "Referenzprüfung") return [REFERENZPRUEFUNG_FIXPOSITION];
+  if (katalogKategorie === "(physikalische-) Produktspezifikation") return [PRODUKTSPEZI_PROJEKTKOSTEN_FIXPOSITION];
+  return [];
 }
 
 /* ---------- Prüfgrundlagen (Startdaten aus Preisliste_Mechanik_v2.xlsm, Blatt "Mechanik") ----------
@@ -600,20 +588,6 @@ function migriereBereiche() {
     }
   });
   data.bereiche.sort((a, b) => a.localeCompare(b, "de"));
-}
-
-/* Ergänzt data.katalog um die drei weiteren "Kennzeichnung GER, Verpackung & Produkt"-Varianten
-   (1002_PPM/1003_PPM/1005_PPM je nach VK Büro/LFGB, siehe kennzeichnungGerPpmCode) bei bereits
-   vorhandenen Dateien/Katalogen, die nur die ursprüngliche 1001_PPM-Position kennen - sonst würde
-   die passende Position für andere VK Büros/LFGB=Ja schlicht fehlen. */
-function migriereKatalogKennzeichnungVarianten() {
-  const KENNZEICHNUNG_KATEGORIE = "Sicherheit & Norm / Sonder- & Funktionsparameter";
-  ["1002_PPM", "1003_PPM", "1005_PPM"].forEach((code) => {
-    const vorhanden = data.katalog.some((k) => normalisiere(k.kategorie) === normalisiere(KENNZEICHNUNG_KATEGORIE) && /^kennzeichnung ger/i.test(k.bezeichnung) && k.bezeichnung.includes(code));
-    if (!vorhanden) {
-      data.katalog.push({ id: neueId(), kategorie: KENNZEICHNUNG_KATEGORIE, bezeichnung: `Kennzeichnung GER, Verpackung & Produkt (${code})`, kuerzel: "MS", sapCode: "KENNZEICHNNG_SF_TS", standardKosten: 360 });
-    }
-  });
 }
 
 /* Stellt sicher, dass es zu einem Warengruppen-Code einen Eintrag in data.warengruppen gibt -
@@ -713,6 +687,7 @@ function normTypBadgeHtml(typ) {
 function migriereNorm(n) {
   if (!n.typ) n.typ = normTypAusBezeichnung(n.bezeichnung);
   if (n.bemerkung === undefined) n.bemerkung = "";
+  if (n.sapCode === undefined) n.sapCode = "";
   if (!Array.isArray(n.anwendungsbereiche)) n.anwendungsbereiche = [];
   if (Array.isArray(n.pruefpunkte) && n.pruefpunkte.length) {
     n.anwendungsbereiche = n.anwendungsbereiche.concat(n.pruefpunkte.map((p) => ({
@@ -734,7 +709,7 @@ function normFindOrCreate(bezeichnungRoh) {
   const key = normalisiere(bez);
   let norm = data.normen.find((n) => normalisiere(n.bezeichnung) === key);
   if (!norm) {
-    norm = { id: neueId(), bezeichnung: bez, titel: "", typ: normTypAusBezeichnung(bez), dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "" };
+    norm = { id: neueId(), bezeichnung: bez, titel: "", typ: normTypAusBezeichnung(bez), dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "", sapCode: "" };
     data.normen.push(norm);
   }
   return norm.id;
@@ -895,7 +870,7 @@ let aktiverTab = "arbeitsvorrat";
 let aktivePaId = null;
 let aktiveKvId = null;
 let aktiveNormId = null;
-let suchbegriffe = { arbeitsvorrat: "", pruefauftraege: "", kvs: "", katalog: "", pruefgrundlagen: "", normen: "" };
+let suchbegriffe = { arbeitsvorrat: "", pruefauftraege: "", kvs: "", pruefgrundlagen: "", normen: "" };
 
 function ladeAusLocalStorage() {
   try {
@@ -927,7 +902,6 @@ function init() {
     arbeitsvorrat: (geladen && geladen.arbeitsvorrat && geladen.arbeitsvorrat.length) ? geladen.arbeitsvorrat : seedArbeitsvorrat(),
     pruefauftraege: (geladen && geladen.pruefauftraege) ? geladen.pruefauftraege : [],
     kvs: (geladen && geladen.kvs) ? geladen.kvs : [],
-    katalog: (geladen && geladen.katalog && geladen.katalog.length) ? geladen.katalog : seedKatalog(),
     pruefgrundlagen: (geladen && geladen.pruefgrundlagen && geladen.pruefgrundlagen.length) ? geladen.pruefgrundlagen : seedPruefgrundlagen(),
     normen: (geladen && geladen.normen) ? geladen.normen : [],
     warengruppen: (geladen && geladen.warengruppen && geladen.warengruppen.length) ? geladen.warengruppen : seedWarengruppen(),
@@ -937,7 +911,6 @@ function init() {
   data.normen.forEach(migriereNorm);
   data.pruefgrundlagen.forEach(migrierePruefgrundlage);
   migriereBereiche();
-  migriereKatalogKennzeichnungVarianten();
 
   document.querySelectorAll("nav.tabs button[data-tab]").forEach((btn) => {
     btn.addEventListener("click", () => wechsleTab(btn.dataset.tab));
@@ -953,9 +926,9 @@ function init() {
 function wechsleTab(tab) {
   aktiverTab = tab;
   document.querySelectorAll("nav.tabs button[data-tab]").forEach((btn) => btn.classList.toggle("aktiv", btn.dataset.tab === tab));
-  ["arbeitsvorrat", "pruefauftraege", "kvs", "katalog", "pruefgrundlagen", "normen", "verwaltung"].forEach((t) => { document.getElementById("seite-" + t).hidden = t !== tab; });
+  ["arbeitsvorrat", "pruefauftraege", "kvs", "pruefgrundlagen", "normen", "verwaltung"].forEach((t) => { document.getElementById("seite-" + t).hidden = t !== tab; });
   document.getElementById("suche").value = suchbegriffe[tab] || "";
-  const labels = { arbeitsvorrat: "Arbeitsvorrat", pruefauftraege: "Prüfaufträge", kvs: "Kostenvoranschläge", katalog: "Katalog", pruefgrundlagen: "Prüfgrundlagen", normen: "Normen", verwaltung: "Verwaltung" };
+  const labels = { arbeitsvorrat: "Arbeitsvorrat", pruefauftraege: "Prüfaufträge", kvs: "Kostenvoranschläge", pruefgrundlagen: "Prüfgrundlagen", normen: "Normen", verwaltung: "Verwaltung" };
   document.getElementById("btn-csv").textContent = "📄 CSV-Export (" + labels[tab] + ")";
   renderAktivenTab();
 }
@@ -963,7 +936,6 @@ function renderAktivenTab() {
   if (aktiverTab === "arbeitsvorrat") renderArbeitsvorratTab();
   else if (aktiverTab === "pruefauftraege") renderPaTab();
   else if (aktiverTab === "kvs") renderKvTab();
-  else if (aktiverTab === "katalog") renderKatalogTab();
   else if (aktiverTab === "pruefgrundlagen") renderPruefgrundlagenTab();
   else if (aktiverTab === "normen") renderNormenTab();
   else if (aktiverTab === "verwaltung") renderVerwaltungTab();
@@ -972,7 +944,6 @@ function renderAlles() {
   renderArbeitsvorratTab();
   renderPaTab();
   renderKvTab();
-  renderKatalogTab();
   renderPruefgrundlagenTab();
   renderNormenTab();
   renderVerwaltungTab();
@@ -2280,8 +2251,9 @@ function zeigePaUploadReview(felder, rohtext, erzwingeIan, stand) {
 /* ---------- Prüfumfang-Kategorien für die KV-Erstellung ---------- */
 
 /* Die im Prüfauftrag genannten Prüfumfang-Kategorien, wie besprochen. katalogKategorie
-   verknüpft die Kategorie mit dem gleichnamigen Feld im Prüfpositionen-Katalog (data.katalog),
-   damit passende Positionen automatisch vorgeschlagen werden können. erkennungRegex sucht die
+   verknüpft die Kategorie mit der gleichnamigen Kategorie in den festen Positionen (siehe
+   fixPositionenFuerKategorie), damit passende Positionen automatisch vorgeschlagen werden können.
+   erkennungRegex sucht die
    Kategorie im (bereinigten) Prüfumfang-Text des Prüfauftrags - bewusst als einzelnes
    Schlüsselwort/-muster statt exakter Phrase, da dieselbe Kategorie in echten PA-PDFs
    unterschiedlich formuliert vorkommt (z. B. "Sicherheit & Norm / Sonder- & Funktionsparameter"
@@ -2323,7 +2295,7 @@ function erkennePruefumfangKategorien(pruefumfangText) {
 
 /* Der Abschnitt "Sicherheit & Norm / Sonder- & Funktionsparameter" wird in der Prüfumfang-
    Auswahl in diese vier Unterpunkte unterteilt - jeder mit eigener Checkbox und eigenem
-   Katalog-Bezug (bezeichnungRegex matcht genau eine Position aus data.katalog). Es gibt dafür
+   Katalog-Bezug (bezeichnungRegex matcht genau eine feste Position aus SICHERHEIT_NORM_FIXPOSITIONEN). Es gibt dafür
    kein eigenes Erkennungssignal je Unterpunkt in der PA-PDF (nur die gesamte Phrase "Sicherheit
    & Norm" ist im Prüfumfang-Text auffindbar) - alle vier starten deshalb mit demselben
    Erkennungsstatus wie der Abschnitt insgesamt, lassen sich aber unabhängig voneinander
@@ -2432,16 +2404,11 @@ function paHatBatterie(pa) {
 function ermittleVorschlagsPositionen(kategorie, pa, kv) {
   if (!kategorie.katalogKategorie) return [];
   if (kategorie.id === "produktspezifikationen") return [];
-  const positionen = data.katalog.filter((k) => normalisiere(k.kategorie) === normalisiere(kategorie.katalogKategorie));
+  const positionen = fixPositionenFuerKategorie(kategorie.katalogKategorie);
   if (kategorie.id === "sicherheitNorm") {
     const auswahl = kv ? kv.pruefumfangAuswahl : {};
     const kennzeichnungCode = kennzeichnungGerPpmCode(kv);
     return positionen.filter((k) => {
-      if (/mustereinlagerung/i.test(k.bezeichnung)) return false;
-      /* Der generische Katalog-Fixpreis für Sicherheit-/Normprüfung ist durch die konkreten
-         Norm-/Kosten-Daten aus der Warengruppen-Empfehlung (Mechanik) oben ersetzt worden - dort
-         wird die tatsächlich zutreffende Position hinzugefügt, nicht mehr hier. */
-      if (/^sicherheit-\/normprüfung teilprüfung/i.test(k.bezeichnung)) return false;
       if (/akkusicherheitskurzcheck/i.test(k.bezeichnung)) return paHatBatterie(pa);
       if (/^kennzeichnung ger/i.test(k.bezeichnung)) {
         return !!auswahl.kennzeichnungVerpackungProdukt && k.bezeichnung.includes(kennzeichnungCode);
@@ -2552,8 +2519,8 @@ function renderMechanikEmpfehlungKarte(kv, pa) {
        identisch zum bisherigen Gesamtergebnis (Faktor × Summe = Summe der Faktor × Einzelkosten). */
     const { faktor, hinweisText } = artikelkategorieMultiplikator(pa);
     const styleNamen = ermittleStyleNamen(pa);
-    const komponenten = [{ id: "haupt", produkt: gewaehlt.produkt, norm: gewaehltNorm, kosten: normenBlockSumme(gewaehlt.normen), entfernbar: false }]
-      .concat(teilprodukte.map((t) => ({ id: t.sb.id, produkt: t.eintrag.produkt, norm: normRefListeText(t.eintrag.normen), kosten: normenBlockSumme(t.eintrag.normen), entfernbar: true })));
+    const komponenten = [{ id: "haupt", produkt: gewaehlt.produkt, norm: gewaehltNorm, kosten: normenBlockSumme(gewaehlt.normen), sapCode: normRefSapCode(gewaehlt.normen), entfernbar: false }]
+      .concat(teilprodukte.map((t) => ({ id: t.sb.id, produkt: t.eintrag.produkt, norm: normRefListeText(t.eintrag.normen), kosten: normenBlockSumme(t.eintrag.normen), sapCode: normRefSapCode(t.eintrag.normen), entfernbar: true })));
 
     const komponentenHtml = komponenten.map((k) => {
       const hatKosten = k.kosten !== null && k.kosten !== undefined;
@@ -2570,7 +2537,7 @@ function renderMechanikEmpfehlungKarte(kv, pa) {
         <span>${escapeHtml(bezeichnungBasis)} <span class="muted">(${kostenText})</span> <span class="badge ja">Vorschlag</span></span>
         <div class="toolbar-zeile" style="width:100%">
           ${styleAuswahlHtml}
-          <button type="button" class="ghost small" data-action="mechanik-komponente-hinzufuegen" data-bezeichnung-basis="${escapeHtml(bezeichnungBasis)}" data-kosten="${hatKosten ? kostenRabattiert : 0}">+ hinzufügen</button>
+          <button type="button" class="ghost small" data-action="mechanik-komponente-hinzufuegen" data-bezeichnung-basis="${escapeHtml(bezeichnungBasis)}" data-kosten="${hatKosten ? kostenRabattiert : 0}" data-sapcode="${escapeHtml(k.sapCode || "")}">+ hinzufügen</button>
           <div class="spacer"></div>
           ${k.entfernbar ? `<button type="button" class="ghost small" data-action="setbestandteil-entfernen" data-id="${escapeHtml(k.id)}" title="Set-Bestandteil entfernen">✕ entfernen</button>` : ""}
         </div>
@@ -2586,8 +2553,8 @@ function renderMechanikEmpfehlungKarte(kv, pa) {
     </div>`;
 
     const zeilenExtra = [];
-    if ((gewaehlt.ffuNormen || []).length) zeilenExtra.push({ label: "FFU", detail: normRefListeText(gewaehlt.ffuNormen), kosten: normenBlockSumme(gewaehlt.ffuNormen), kategorie: "FFU/Fitting", kuerzel: "FFU", sapCode: "FFU_TS" });
-    if ((gewaehlt.stiwaNormen || []).length) zeilenExtra.push({ label: "NGO/StiWa", detail: normRefListeText(gewaehlt.stiwaNormen), kosten: normenBlockSumme(gewaehlt.stiwaNormen), kategorie: "NGO", kuerzel: "NGO", sapCode: "FFU_TS" });
+    if ((gewaehlt.ffuNormen || []).length) zeilenExtra.push({ label: "FFU", detail: normRefListeText(gewaehlt.ffuNormen), kosten: normenBlockSumme(gewaehlt.ffuNormen), kategorie: "FFU/Fitting", kuerzel: "FFU", sapCode: normRefSapCode(gewaehlt.ffuNormen) || "FFU_TS" });
+    if ((gewaehlt.stiwaNormen || []).length) zeilenExtra.push({ label: "NGO/StiWa", detail: normRefListeText(gewaehlt.stiwaNormen), kosten: normenBlockSumme(gewaehlt.stiwaNormen), kategorie: "NGO", kuerzel: "NGO", sapCode: normRefSapCode(gewaehlt.stiwaNormen) || "FFU_TS" });
     const extraHtml = zeilenExtra.map((z) => {
       const bezeichnung = z.detail ? `${z.label}: ${z.detail}` : z.label;
       const schonDrin = kv.positionen.some((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere(z.kategorie) && normalisiere(p.bezeichnung) === normalisiere(bezeichnung));
@@ -2695,7 +2662,7 @@ function initialisiereMechanikEmpfehlungKarte(panel, kv) {
       if (schonDrin) { zeigeStatus("Bereits im KV vorhanden (mit dieser Style-Zuordnung) · " + jetzt(), ""); return; }
       kv.positionen.push({
         id: neueId(), kategorie, bezeichnung,
-        kuerzel: "MS", sapCode: "MECH_SICHERHEIT_TS", kosten: Number(btn.dataset.kosten) || 0, anzahl: 1, aktiv: true
+        kuerzel: "MS", sapCode: btn.dataset.sapcode || "MECH_SICHERHEIT_TS", kosten: Number(btn.dataset.kosten) || 0, anzahl: 1, aktiv: true
       });
       speichereInLocalStorage();
       renderKvDetail();
@@ -2774,9 +2741,18 @@ function renderKvArtikelkategorieKarte(pa) {
    Position sofort sichtbar ist. */
 function pruefumfangEintragPositionenHtml(positionen) {
   if (!positionen.length) return "";
-  const summe = positionen.reduce((s, p) => s + (Number(p.kosten) || 0) * (Number(p.anzahl) || 0), 0);
-  const text = positionen.map((p) => p.bezeichnung).join("; ");
-  return `<span class="badge ja" style="font-weight:400">✓ ${escapeHtml(text)} (${summe} €)</span>`;
+  if (positionen.length === 1) {
+    const p = positionen[0];
+    const kosten = (Number(p.kosten) || 0) * (Number(p.anzahl) || 0);
+    return `<span class="badge ja" style="font-weight:400">✓ ${escapeHtml(p.bezeichnung)} (${kosten} €)</span>`;
+  }
+  /* Bei mehreren aktiven Positionen zu ein und demselben Eintrag (z. B. mehrfach ausgewählte
+     Produktspezifikationen) jede als eigenen Block untereinander statt als eine einzige, mit
+     "; " zusammengefügte Zeile - dadurch bleibt jede Position einzeln lesbar. */
+  return `<div class="pruefumfang-eintrag-positionen">${positionen.map((p) => {
+    const kosten = (Number(p.kosten) || 0) * (Number(p.anzahl) || 0);
+    return `<span class="badge ja">✓ ${escapeHtml(p.bezeichnung)} (${kosten} €)</span>`;
+  }).join("")}</div>`;
 }
 
 const SICHERHEIT_NORM_KATEGORIE_NAME = "Sicherheit & Norm / Sonder- & Funktionsparameter";
@@ -2890,19 +2866,23 @@ function renderKvPruefumfangUebersicht(kv, pa) {
     const badge = pa ? (erkannt ? `<span class="badge ja">im Prüfumfang</span>` : `<span class="badge nein">nicht erkannt</span>`) : "";
 
     if (kat.id === "produktspezifikationen") {
+      const projektkosten = PRODUKTSPEZI_PROJEKTKOSTEN_FIXPOSITION;
+      const projektkostenSchonDrin = kvHatPosition(kv, projektkosten);
+      const projektkostenHtml = `<div class="pruefumfang-position">
+        <span>${escapeHtml(projektkosten.bezeichnung)} <span class="muted">(${projektkosten.standardKosten} €)</span></span>
+        ${projektkostenSchonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="kat-position-hinzufuegen" data-katalog-id="${projektkosten.id}">+ hinzufügen</button>`}
+      </div>`;
       return `<div class="pruefumfang-kat">
         <div class="pruefumfang-kat-kopf"><strong>${escapeHtml(kat.anzeigeName)}</strong> ${badge}</div>
         <p class="hinweis">${escapeHtml(kat.beschreibung)}</p>
         ${qualitaetBloeckeHtml ? `<div class="pa-block-feld"><h3>Qualität (aus PA)</h3>${qualitaetBloeckeHtml}</div>` : ""}
+        ${projektkostenHtml}
         <input type="text" id="produktspezi-suche" placeholder="Parameter, Produkt oder Norm suchen…" style="width:100%;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px;margin-bottom:0.4rem;font-family:inherit">
         <div id="produktspezi-liste"></div>
       </div>`;
     }
 
-    /* Mustereinlagerung wird im Prüfumfang nicht mehr angezeigt (weder als Vorschlag noch manuell
-       hinzufügbar) - bleibt aber im Prüfpositionen-Katalog erhalten und ist dort weiterhin klassisch
-       über das Katalog-Dropdown im KV auswählbar, falls im Einzelfall doch gebraucht. */
-    const positionen = data.katalog.filter((k) => normalisiere(k.kategorie) === normalisiere(kat.katalogKategorie) && !/mustereinlagerung/i.test(k.bezeichnung) && !/^sicherheit-\/normprüfung teilprüfung/i.test(k.bezeichnung));
+    const positionen = fixPositionenFuerKategorie(kat.katalogKategorie);
     const vorschlaege = new Set(ermittleVorschlagsPositionen(kat, pa, kv).map((k) => k.id));
     const positionenHtml = positionen.map((k) => {
       const istVorschlag = vorschlaege.has(k.id);
@@ -2911,7 +2891,7 @@ function renderKvPruefumfangUebersicht(kv, pa) {
         <span>${escapeHtml(k.bezeichnung)} <span class="muted">(${k.standardKosten} €)</span>${istVorschlag ? ` <span class="badge ja">Vorschlag</span>` : ""}</span>
         ${schonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="kat-position-hinzufuegen" data-katalog-id="${k.id}">+ hinzufügen</button>`}
       </div>`;
-    }).join("") || `<p class="muted" style="margin:0.3rem 0">Keine Katalog-Positionen in dieser Kategorie hinterlegt.</p>`;
+    }).join("") || `<p class="muted" style="margin:0.3rem 0">Keine Positionen in dieser Kategorie hinterlegt.</p>`;
 
     const alleVorschlaegeButton = vorschlaege.size
       ? `<button type="button" class="ghost small" data-action="kat-vorschlaege-uebernehmen" data-kat="${kat.id}">Alle Vorschläge übernehmen</button>`
@@ -2945,7 +2925,7 @@ function initialisierePruefumfangUebersicht(panel, kv, pa) {
   bindePruefumfangCheckboxen(panel, kv);
   panel.querySelectorAll('[data-action="kat-position-hinzufuegen"]').forEach((btn) => {
     btn.addEventListener("click", () => {
-      const eintrag = data.katalog.find((k) => k.id === btn.dataset.katalogId);
+      const eintrag = ALLE_FIXPOSITIONEN.find((k) => k.id === btn.dataset.katalogId);
       if (!eintrag) return;
       fuegeKatalogPositionHinzu(kv, eintrag);
       speichereInLocalStorage();
@@ -3123,11 +3103,6 @@ function renderKvDetail() {
       <div class="toolbar-zeile">
         <h2 style="margin:0">Mechanische Prüfpositionen</h2>
         <div class="spacer"></div>
-        <select id="kv-katalog-auswahl" style="max-width:320px">
-          <option value="">— Position aus Katalog wählen —</option>
-          ${data.katalog.map((k) => `<option value="${k.id}">${escapeHtml(k.kategorie)} · ${escapeHtml(k.bezeichnung)} (${k.standardKosten} €)</option>`).join("")}
-        </select>
-        <button class="ghost small" id="kv-aus-katalog-hinzufuegen">+ Hinzufügen</button>
         <button class="ghost small" id="kv-freie-position">+ Freie Position</button>
       </div>
       <div class="tabellen-wrapper">
@@ -3199,14 +3174,6 @@ function renderKvDetail() {
     speichereInLocalStorage();
     renderKvTab();
   });
-  document.getElementById("kv-aus-katalog-hinzufuegen").addEventListener("click", () => {
-    const sel = document.getElementById("kv-katalog-auswahl");
-    const eintrag = data.katalog.find((k) => k.id === sel.value);
-    if (!eintrag) return;
-    kv.positionen.push({ id: neueId(), kategorie: eintrag.kategorie, bezeichnung: eintrag.bezeichnung, kuerzel: eintrag.kuerzel, sapCode: eintrag.sapCode, kosten: eintrag.standardKosten, anzahl: 1, aktiv: true });
-    speichereInLocalStorage();
-    renderKvPositionenTabelle(kv);
-  });
   document.getElementById("kv-freie-position").addEventListener("click", () => {
     kv.positionen.push({ id: neueId(), kategorie: "", bezeichnung: "", kuerzel: "", sapCode: "", kosten: 0, anzahl: 1, aktiv: true });
     speichereInLocalStorage();
@@ -3219,7 +3186,7 @@ function renderKvDetail() {
 function renderKvPositionenTabelle(kv) {
   const tbody = document.getElementById("kv-positionen-body");
   if (!kv.positionen.length) {
-    tbody.innerHTML = '<tr><td colspan="9" class="leerzustand">Noch keine Positionen. Über den Katalog oder als freie Position hinzufügen.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="leerzustand">Noch keine Positionen. Über die Prüfumfang-Vorschläge oben oder als freie Position hinzufügen.</td></tr>';
   } else {
     tbody.innerHTML = kv.positionen.map((p, idx) => `
       <tr data-id="${p.id}">
@@ -3277,53 +3244,6 @@ document.getElementById("btn-neuer-kv").addEventListener("click", () => {
   aktiveKvId = kv.id;
   speichereInLocalStorage();
   renderKvTab();
-});
-
-/* ================= PRÜFPOSITIONEN-KATALOG ================= */
-
-function gefilterterKatalog() {
-  const q = normalisiere(suchbegriffe.katalog);
-  if (!q) return data.katalog;
-  return data.katalog.filter((k) => ["kategorie", "bezeichnung", "kuerzel", "sapCode"].some((f) => normalisiere(k[f]).includes(q)));
-}
-
-function renderKatalogTab() {
-  const tbody = document.getElementById("katalog-body");
-  const liste = gefilterterKatalog();
-  document.getElementById("katalog-zaehler").textContent = `${liste.length} von ${data.katalog.length} Positionen`;
-  if (!liste.length) { tbody.innerHTML = '<tr><td colspan="6" class="leerzustand">Keine Positionen gefunden.</td></tr>'; return; }
-
-  tbody.innerHTML = liste.map((k) => `
-    <tr data-id="${k.id}">
-      <td><input type="text" data-feld="kategorie" value="${escapeHtml(k.kategorie)}"></td>
-      <td><input type="text" data-feld="bezeichnung" value="${escapeHtml(k.bezeichnung)}"></td>
-      <td><input type="text" data-feld="kuerzel" value="${escapeHtml(k.kuerzel)}"></td>
-      <td><input type="text" data-feld="sapCode" value="${escapeHtml(k.sapCode)}"></td>
-      <td><input type="number" data-feld="standardKosten" value="${zahlOderLeer(k.standardKosten)}"></td>
-      <td><button class="danger small" data-action="loeschen">🗑</button></td>
-    </tr>`).join("");
-
-  tbody.querySelectorAll("tr").forEach((tr) => {
-    const eintrag = data.katalog.find((k) => k.id === tr.dataset.id);
-    tr.querySelectorAll("[data-feld]").forEach((el) => {
-      el.addEventListener("input", () => {
-        eintrag[el.dataset.feld] = el.type === "number" ? (el.value === "" ? 0 : Number(el.value)) : el.value;
-        speichereInLocalStorage();
-      });
-    });
-    tr.querySelector('[data-action="loeschen"]').addEventListener("click", () => {
-      if (!confirm(`Katalogposition "${eintrag.bezeichnung}" wirklich löschen?`)) return;
-      data.katalog = data.katalog.filter((k) => k.id !== eintrag.id);
-      speichereInLocalStorage();
-      renderKatalogTab();
-    });
-  });
-}
-
-document.getElementById("btn-neue-katalog-position").addEventListener("click", () => {
-  data.katalog.unshift({ id: neueId(), kategorie: "", bezeichnung: "", kuerzel: "", sapCode: "", standardKosten: 0 });
-  speichereInLocalStorage();
-  renderKatalogTab();
 });
 
 /* ================= PRÜFGRUNDLAGEN (Warengruppe -> Produkt -> Norm/Kosten) ================= */
@@ -3418,6 +3338,18 @@ function normRefBemerkungenListe(refs) {
 }
 function normRefBemerkungenText(refs) {
   return normRefBemerkungenListe(refs).join(" · ");
+}
+
+/* SAP-Code (SAP-Material) für einen Block referenzierter Normen (z. B. die Sicherheit&Norm-Normen
+   einer Prüfgrundlage) - der SAP-Code steht an der Norm selbst (Reiter "Normen"), damit er sich
+   nicht je Prüfgrundlage wiederholt pflegen lässt. Bei mehreren referenzierten Normen zählt der
+   erste hinterlegte SAP-Code der Liste, analog zu normenBlockSumme (erste Norm mit Wert). */
+function normRefSapCode(refs) {
+  for (const r of (refs || [])) {
+    const norm = data.normen.find((n) => n.id === r.normId);
+    if (norm && norm.sapCode && String(norm.sapCode).trim()) return String(norm.sapCode).trim();
+  }
+  return "";
 }
 
 function gefilterterPruefgrundlagen() {
@@ -3732,7 +3664,7 @@ function baueNormenListe(container, entwurf, feldName, q, erlaubteTypen) {
   const neuBtn = liste.querySelector("[data-neu]");
   if (neuBtn) {
     neuBtn.addEventListener("click", () => {
-      const neu = { id: neueId(), bezeichnung: q.trim(), titel: "", typ: normTypFuerBlock(q.trim(), erlaubteTypen), dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "" };
+      const neu = { id: neueId(), bezeichnung: q.trim(), titel: "", typ: normTypFuerBlock(q.trim(), erlaubteTypen), dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "", sapCode: "" };
       data.normen.push(neu);
       speichereInLocalStorage();
       entwurf[feldName] = entwurf[feldName] || [];
@@ -3857,7 +3789,7 @@ document.getElementById("btn-neue-pruefgrundlage").addEventListener("click", () 
    hochgeladen (nur Rohtext-Extraktion, siehe extrahiereDocxRohtext). Prüfpunkte werden in beiden
    Fällen ausschließlich von Hand gepflegt (keine automatische Erkennung mehr). */
 function normEntwurfNeu() {
-  return { id: neueId(), bezeichnung: "Neue Norm", titel: "", typ: "norm", dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "" };
+  return { id: neueId(), bezeichnung: "Neue Norm", titel: "", typ: "norm", dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "", sapCode: "" };
 }
 
 /* Liest eine Norm-.docx-Datei ein und liefert einen vollständigen Norm-Datensatz (noch nicht in
@@ -3975,6 +3907,7 @@ function renderNormDetail() {
         <label>Bezeichnung<input type="text" data-feld="bezeichnung" value="${escapeHtml(norm.bezeichnung)}"></label>
         <label>Titel<input type="text" data-feld="titel" value="${escapeHtml(norm.titel)}"></label>
         <label>Typ<select data-feld="typ">${NORM_TYP_OPTIONEN.map((o) => `<option value="${o.wert}" ${(norm.typ || "norm") === o.wert ? "selected" : ""}>${escapeHtml(o.label)}</option>`).join("")}</select></label>
+        <label>SAP-Code (SAP-Material)<input type="text" data-feld="sapCode" value="${escapeHtml(norm.sapCode || "")}" placeholder="z. B. KENNZEICHNNG_SF_TS"></label>
         <label class="volle-breite">Bemerkung<textarea data-feld="bemerkung" rows="2" placeholder="z. B. Anforderungen, Prüfhinweise… - wird überall angezeigt, wo diese Norm/PPM referenziert wird">${escapeHtml(norm.bemerkung || "")}</textarea></label>
       </div>
       <p class="hinweis">${norm.dateiname ? `Hochgeladen aus „${escapeHtml(norm.dateiname)}" am ${escapeHtml(norm.hochgeladenAm)}.` : "Manuell angelegt, ohne Datei-Upload."}</p>
@@ -4357,9 +4290,9 @@ document.getElementById("datei-laden-input").addEventListener("change", async (e
     const text = await ladeDatei(e.target);
     const geparst = JSON.parse(text);
     if (!geparst || !Array.isArray(geparst.arbeitsvorrat)) throw new Error("Ungültiges Format");
-    if (!confirm(`Datei laden (${geparst.arbeitsvorrat.length} Arbeitsvorrat, ${(geparst.pruefauftraege || []).length} PA, ${(geparst.kvs || []).length} KV, ${(geparst.katalog || []).length} Katalogpositionen, ${(geparst.pruefgrundlagen || []).length} Prüfgrundlagen, ${(geparst.normen || []).length} Normen)? Der aktuelle Stand wird ersetzt (vorher ggf. sichern!).`)) return;
+    if (!confirm(`Datei laden (${geparst.arbeitsvorrat.length} Arbeitsvorrat, ${(geparst.pruefauftraege || []).length} PA, ${(geparst.kvs || []).length} KV, ${(geparst.pruefgrundlagen || []).length} Prüfgrundlagen, ${(geparst.normen || []).length} Normen)? Der aktuelle Stand wird ersetzt (vorher ggf. sichern!).`)) return;
     data = {
-      arbeitsvorrat: geparst.arbeitsvorrat, pruefauftraege: geparst.pruefauftraege || [], kvs: geparst.kvs || [], katalog: geparst.katalog || [],
+      arbeitsvorrat: geparst.arbeitsvorrat, pruefauftraege: geparst.pruefauftraege || [], kvs: geparst.kvs || [],
       pruefgrundlagen: (geparst.pruefgrundlagen && geparst.pruefgrundlagen.length) ? geparst.pruefgrundlagen : seedPruefgrundlagen(),
       normen: geparst.normen || [],
       warengruppen: (geparst.warengruppen && geparst.warengruppen.length) ? geparst.warengruppen : seedWarengruppen(),
@@ -4369,7 +4302,6 @@ document.getElementById("datei-laden-input").addEventListener("change", async (e
     data.normen.forEach(migriereNorm);
     data.pruefgrundlagen.forEach(migrierePruefgrundlage);
     migriereBereiche();
-    migriereKatalogKennzeichnungVarianten();
     aktivePaId = data.pruefauftraege.length ? data.pruefauftraege[0].id : null;
     aktiveKvId = data.kvs.length ? data.kvs[0].id : null;
     aktiveNormId = data.normen.length ? data.normen[0].id : null;
@@ -4413,10 +4345,6 @@ document.getElementById("btn-csv").addEventListener("click", () => {
     const zeilen = [["IAN", "Artikel", "Lieferant", "SAP-Nummer", "Kategorie", "Bezeichnung", "Kürzel", "SAP-Code", "Kosten", "Anzahl", "Summe", "Aktiv"]];
     data.kvs.forEach((k) => k.positionen.forEach((p) => zeilen.push([k.ian, k.artikel, k.lieferant, k.sapNummer, p.kategorie, p.bezeichnung, p.kuerzel, p.sapCode, p.kosten, p.anzahl, (Number(p.kosten) || 0) * (Number(p.anzahl) || 0), p.aktiv ? "Ja" : "Nein"])));
     csvHerunterladen(zeilen, "kv_export.csv");
-  } else if (aktiverTab === "katalog") {
-    const zeilen = [["Kategorie", "Bezeichnung", "Kürzel", "SAP-Code", "Standardkosten"]];
-    data.katalog.forEach((k) => zeilen.push([k.kategorie, k.bezeichnung, k.kuerzel, k.sapCode, k.standardKosten]));
-    csvHerunterladen(zeilen, "katalog_export.csv");
   } else if (aktiverTab === "pruefgrundlagen") {
     const zeilen = [["Bereich", "Warengruppe-Code", "Warengruppe-Name", "Produkt", "Normen", "Kosten Sicherheit&Norm (Summe)", "Bemerkungen Sicherheit&Norm", "Anzahl Muster", "Trivial", "KEZ (Kennzeichnung > GPSR)", "FFU-Normen", "Kosten FFU (Summe)", "Bemerkungen FFU", "StiWa-Normen", "Kosten StiWa (Summe)", "Bemerkungen StiWa"]];
     data.pruefgrundlagen.forEach((e) => zeilen.push([
@@ -4427,11 +4355,11 @@ document.getElementById("btn-csv").addEventListener("click", () => {
     ]));
     csvHerunterladen(zeilen, "pruefgrundlagen_export.csv");
   } else if (aktiverTab === "normen") {
-    const zeilen = [["Norm", "Titel", "Typ", "Bemerkung", "Prüfpunkt-Nummer", "Prüfpunkt-Titel", "Prüfpunkt-Text"]];
+    const zeilen = [["Norm", "Titel", "Typ", "SAP-Code", "Bemerkung", "Prüfpunkt-Nummer", "Prüfpunkt-Titel", "Prüfpunkt-Text"]];
     data.normen.forEach((n) => {
       const typLabel = normTypLabel(n.typ);
-      if (!(n.anwendungsbereiche || []).length) { zeilen.push([n.bezeichnung, n.titel, typLabel, n.bemerkung, "", ""]); return; }
-      n.anwendungsbereiche.forEach((b) => zeilen.push([n.bezeichnung, n.titel, typLabel, n.bemerkung, b.name, b.text]));
+      if (!(n.anwendungsbereiche || []).length) { zeilen.push([n.bezeichnung, n.titel, typLabel, n.sapCode || "", n.bemerkung, "", ""]); return; }
+      n.anwendungsbereiche.forEach((b) => zeilen.push([n.bezeichnung, n.titel, typLabel, n.sapCode || "", n.bemerkung, b.name, b.text]));
     });
     csvHerunterladen(zeilen, "normen_export.csv");
   } else if (aktiverTab === "verwaltung") {
@@ -4447,10 +4375,9 @@ document.getElementById("btn-csv").addEventListener("click", () => {
 
 function schluesselArbeitsvorrat(r) { return normalisiere(r.ian); }
 function schluesselPa(p) { return normalisiere(p.ian); }
-function schluesselKatalog(k) { return normalisiere(k.kuerzel) + "|" + normalisiere(k.bezeichnung); }
 function schluesselPruefgrundlage(e) { return normalisiereWarengruppe(e.warengruppeCode) + "|" + normalisiere(e.produkt); }
 function schluesselNorm(n) { return normalisiere(n.bezeichnung); }
-const NORM_FELDER = ["bezeichnung", "titel", "typ", "dateiname", "rohtext", "anwendungsbereiche", "bemerkung"];
+const NORM_FELDER = ["bezeichnung", "titel", "typ", "dateiname", "rohtext", "anwendungsbereiche", "bemerkung", "sapCode"];
 
 /* JSON.stringify-Vergleich statt strikter Gleichheit, damit auch Feld-Werte, die Arrays sind
    (z. B. Normen/Materialien-Mehrfachauswahl), inhaltlich statt nach Objektreferenz verglichen
@@ -4476,14 +4403,12 @@ function berechneMergePlan(importData) {
   const avPlan = planFlacheListe(data.arbeitsvorrat, importData.arbeitsvorrat || [], schluesselArbeitsvorrat, ARBEITSVORRAT_FELDER);
   const paPlan = planFlacheListe(data.pruefauftraege, importData.pruefauftraege || [], schluesselPa, ["artikelbezeichnung", "warengruppe"]);
   const kvPlan = planFlacheListe(data.kvs, importData.kvs || [], (k) => k.id, ["ian", "artikel", "lieferant", "sapNummer", "warengruppeNeu", "warengruppeAlt", "notiz"]);
-  const katalogPlan = planFlacheListe(data.katalog, importData.katalog || [], schluesselKatalog, ["kategorie", "bezeichnung", "sapCode", "standardKosten"]);
   const pruefgrundlagenPlan = planFlacheListe(data.pruefgrundlagen, importData.pruefgrundlagen || [], schluesselPruefgrundlage, PRUEFGRUNDLAGE_FELDER);
   const normenPlan = planFlacheListe(data.normen, importData.normen || [], schluesselNorm, NORM_FELDER);
   return {
     neueAv: avPlan.neue, avKonflikte: avPlan.konflikte,
     neuePa: paPlan.neue, paKonflikte: paPlan.konflikte,
     neueKv: kvPlan.neue, kvKonflikte: kvPlan.konflikte,
-    neueKatalog: katalogPlan.neue, katalogKonflikte: katalogPlan.konflikte,
     neuePruefgrundlagen: pruefgrundlagenPlan.neue, pruefgrundlagenKonflikte: pruefgrundlagenPlan.konflikte,
     neueNormen: normenPlan.neue, normenKonflikte: normenPlan.konflikte
   };
@@ -4507,7 +4432,7 @@ function konfliktListeHtml(typ, liste, titelFn, textFn) {
 function renderMergeUebersicht() {
   const box = document.getElementById("overlay-box");
   const p = mergePlan;
-  const anzahl = p.neueAv.length + p.avKonflikte.length + p.neuePa.length + p.paKonflikte.length + p.neueKv.length + p.kvKonflikte.length + p.neueKatalog.length + p.katalogKonflikte.length + p.neuePruefgrundlagen.length + p.pruefgrundlagenKonflikte.length + p.neueNormen.length + p.normenKonflikte.length;
+  const anzahl = p.neueAv.length + p.avKonflikte.length + p.neuePa.length + p.paKonflikte.length + p.neueKv.length + p.kvKonflikte.length + p.neuePruefgrundlagen.length + p.pruefgrundlagenKonflikte.length + p.neueNormen.length + p.normenKonflikte.length;
 
   let html = `<h2>Zusammenführen: Änderungen prüfen</h2>`;
   if (anzahl === 0) {
@@ -4523,12 +4448,10 @@ function renderMergeUebersicht() {
   if (p.paKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Prüfaufträge (${p.paKonflikte.length})</h3>` + konfliktListeHtml("paKonflikt", p.paKonflikte, (k) => escapeHtml(k.lokal.ian), (pa) => "Artikelbezeichnung: " + (pa.artikelbezeichnung || "") + "\nWarengruppe: " + (pa.warengruppe || "") + "\nFelder: " + (pa.felder || []).length) + `</div>`;
   if (p.neueKv.length) html += `<div class="merge-section"><h3>Neue Kostenvoranschläge (${p.neueKv.length})</h3>` + checkboxListeHtml("neueKv", p.neueKv, (k) => `<strong>${escapeHtml(k.ian)}</strong> — ${escapeHtml(k.artikel)}`) + `</div>`;
   if (p.kvKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Kostenvoranschläge (${p.kvKonflikte.length})</h3>` + konfliktListeHtml("kvKonflikt", p.kvKonflikte, (k) => escapeHtml(k.lokal.ian), (kv) => "Artikel: " + (kv.artikel || "") + "\nPositionen: " + (kv.positionen || []).length) + `</div>`;
-  if (p.neueKatalog.length) html += `<div class="merge-section"><h3>Neue Katalogpositionen (${p.neueKatalog.length})</h3>` + checkboxListeHtml("neueKatalog", p.neueKatalog, (k) => `<strong>${escapeHtml(k.bezeichnung)}</strong> (${k.standardKosten} €)`) + `</div>`;
-  if (p.katalogKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Katalogpositionen (${p.katalogKonflikte.length})</h3>` + konfliktListeHtml("katalogKonflikt", p.katalogKonflikte, (k) => escapeHtml(k.lokal.bezeichnung), (k) => "Kategorie: " + (k.kategorie || "") + "\nSAP-Code: " + (k.sapCode || "") + "\nStandardkosten: " + (k.standardKosten ?? "")) + `</div>`;
   if (p.neuePruefgrundlagen.length) html += `<div class="merge-section"><h3>Neue Prüfgrundlagen (${p.neuePruefgrundlagen.length})</h3>` + checkboxListeHtml("neuePruefgrundlagen", p.neuePruefgrundlagen, (e) => `<strong>${escapeHtml(e.warengruppeCode)} ${escapeHtml(e.produkt)}</strong> — ${escapeHtml(normRefListeText(e.normen))}`) + `</div>`;
   if (p.pruefgrundlagenKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Prüfgrundlagen (${p.pruefgrundlagenKonflikte.length})</h3>` + konfliktListeHtml("pruefgrundlagenKonflikt", p.pruefgrundlagenKonflikte, (k) => escapeHtml(k.lokal.warengruppeCode) + " " + escapeHtml(k.lokal.produkt), (e) => PRUEFGRUNDLAGE_FELDER.map((f) => f + ": " + (["normen", "ffuNormen", "stiwaNormen"].includes(f) ? normRefListeText(e[f]) : (e[f] ?? ""))).join("\n")) + `</div>`;
   if (p.neueNormen.length) html += `<div class="merge-section"><h3>Neue Normen (${p.neueNormen.length})</h3>` + checkboxListeHtml("neueNormen", p.neueNormen, (n) => `<strong>${escapeHtml(n.bezeichnung)}</strong> — ${(n.anwendungsbereiche || []).length} Anwendungsbereich(e)`) + `</div>`;
-  if (p.normenKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Normen (${p.normenKonflikte.length})</h3>` + konfliktListeHtml("normenKonflikt", p.normenKonflikte, (k) => escapeHtml(k.lokal.bezeichnung), (n) => "Typ: " + normTypLabel(n.typ) + "\nTitel: " + (n.titel || "") + "\nDatei: " + (n.dateiname || "") + "\nBemerkung: " + (n.bemerkung || "") + "\nAnwendungsbereiche: " + (n.anwendungsbereiche || []).length) + `</div>`;
+  if (p.normenKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Normen (${p.normenKonflikte.length})</h3>` + konfliktListeHtml("normenKonflikt", p.normenKonflikte, (k) => escapeHtml(k.lokal.bezeichnung), (n) => "Typ: " + normTypLabel(n.typ) + "\nTitel: " + (n.titel || "") + "\nDatei: " + (n.dateiname || "") + "\nSAP-Code: " + (n.sapCode || "") + "\nBemerkung: " + (n.bemerkung || "") + "\nAnwendungsbereiche: " + (n.anwendungsbereiche || []).length) + `</div>`;
 
   html += `<div class="overlay-actions"><button id="merge-anwenden">Zusammenführung übernehmen</button><button class="ghost" id="merge-abbrechen">Abbrechen</button></div>`;
   box.innerHTML = html;
@@ -4549,8 +4472,6 @@ function wendeMergeAn() {
   p.neueKv.forEach((kv, i) => { const cb = box.querySelector(`[data-typ="neueKv"][data-idx="${i}"]`); if (cb && cb.checked) data.kvs.push(kv); });
   p.kvKonflikte.forEach((k, i) => { const g = box.querySelector(`[name="kvKonflikt-${i}"]:checked`); if (g && g.value === "importiert") { ["artikel", "lieferant", "sapNummer", "warengruppeNeu", "warengruppeAlt", "notiz", "positionen"].forEach((f) => (k.lokal[f] = k.importiert[f])); } });
 
-  p.neueKatalog.forEach((kat, i) => { const cb = box.querySelector(`[data-typ="neueKatalog"][data-idx="${i}"]`); if (cb && cb.checked) data.katalog.push(kat); });
-  p.katalogKonflikte.forEach((k, i) => { const g = box.querySelector(`[name="katalogKonflikt-${i}"]:checked`); if (g && g.value === "importiert") { k.lokal.kategorie = k.importiert.kategorie; k.lokal.sapCode = k.importiert.sapCode; k.lokal.standardKosten = k.importiert.standardKosten; } });
 
   p.neuePruefgrundlagen.forEach((e, i) => { const cb = box.querySelector(`[data-typ="neuePruefgrundlagen"][data-idx="${i}"]`); if (cb && cb.checked) data.pruefgrundlagen.push(e); });
   p.pruefgrundlagenKonflikte.forEach((k, i) => { const g = box.querySelector(`[name="pruefgrundlagenKonflikt-${i}"]:checked`); if (g && g.value === "importiert") PRUEFGRUNDLAGE_FELDER.forEach((f) => (k.lokal[f] = k.importiert[f])); });
