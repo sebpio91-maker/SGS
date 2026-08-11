@@ -178,23 +178,34 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   direkt neben der Checkbox, entsprechend der Vorbelegungsregel (siehe
   unten).
 
-  **Reihenfolge der übrigen Karten**: Artikelkategorie, dann die beiden
-  Prüfumfang-Karten (roher Prüfumfang-Text + Checkliste, siehe unten), dann
-  die Warengruppen-Empfehlung (Mechanik), dann Prüfumfang-Details, erst
-  danach die Vorgänger-Artikel-Karte sowie die Prüfpositionen-Tabelle.
+  **Reihenfolge der übrigen Karten**: die Vorgänger-Artikel-Karte steht
+  **direkt nach den Pflichtangaben und noch vor der Artikelkategorie** — so
+  fällt sofort auf, wenn zur IAN ein Vorgänger existiert, bevor man sich in
+  die weitere Prüfumfang-Auswahl vertieft. Danach folgen Artikelkategorie,
+  die beiden Prüfumfang-Karten (roher Prüfumfang-Text + Checkliste, siehe
+  unten), die Warengruppen-Empfehlung (Mechanik), Prüfumfang-Details und
+  zuletzt die Prüfpositionen-Tabelle.
 
   Sofern der verknüpfte Prüfauftrag eine „IAN-Vorgänger"
   enthält, erscheint dieselbe Vorgänger-Artikel-Karte wie bei den Prüfaufträgen
-  (inkl. Ahnentafel, siehe oben), ergänzt um zwei zusätzliche Punkte:
+  (inkl. Ahnentafel, siehe oben), ergänzt um drei zusätzliche Punkte:
   **„↺ Prüfpositionen aus Vorgänger-KV übernehmen"**: kopiert alle
   aktiven Positionen des Vorgänger-KVs (mit dessen tatsächlichen Kosten/
   Anzahl, nicht den ursprünglichen Standardwerten) in den aktuellen KV; bereits
   vorhandene Positionen werden dabei übersprungen, ein zweiter Klick legt also
-  nichts doppelt an. Und, sofern zum jüngsten Vorgänger ein KV im System
-  vorliegt: **„Beim jüngsten Vorgänger geprüft"** — eine schreibgeschützte
-  Liste aller dort aktiven Prüfpositionen (Kategorie, Bezeichnung, Kosten ×
-  Anzahl), direkt zum Nachlesen, was beim letzten Projekt tatsächlich geprüft
-  wurde, ohne extra zu dessen KV wechseln zu müssen.
+  nichts doppelt an. **„↺ Gesamten Vorgänger-KV übernehmen"** geht einen
+  Schritt weiter (mit Sicherheitsabfrage, da überschreibend statt nur
+  ergänzend): übernimmt Artikel, Lieferant, SAP-Nummer, VK Büro,
+  Warengruppen (neu/alt), LFGB?/Trivialartikel?, Styleanzahl, Notiz,
+  Prüfumfang-Auswahl sowie sämtliche Prüfpositionen 1:1 vom Vorgänger-KV —
+  praktisch bei sehr ähnlichen Wiederholartikeln, wenn im Zweifel der
+  komplette Vorgänger als Ausgangspunkt taugt; die IAN des aktuellen KVs
+  selbst bleibt dabei unangetastet. Und, sofern zum jüngsten Vorgänger ein
+  KV im System vorliegt: **„Beim jüngsten Vorgänger geprüft"** — eine
+  schreibgeschützte Liste aller dort aktiven Prüfpositionen (Kategorie,
+  Bezeichnung, Kosten × Anzahl), direkt zum Nachlesen, was beim letzten
+  Projekt tatsächlich geprüft wurde, ohne extra zu dessen KV wechseln zu
+  müssen.
 
   **Warengruppe (neu) ist ein durchsuchbares Dropdown** (dieselbe Liste wie
   im Reiter „Prüfgrundlagen"/„Verwaltung") und wird **automatisch aus dem

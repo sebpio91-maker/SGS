@@ -1564,6 +1564,7 @@ function renderVorgaengerKarte(vorgaengerIan, aktuellePa, aktuelleKv) {
           ${vorgaengerPa ? `<button class="ghost small" data-action="vorgaenger-pa-anzeigen" data-id="${vorgaengerPa.id}">→ Prüfauftrag des Vorgängers${vorgaengerPa.artikelbezeichnung ? ` (${escapeHtml(vorgaengerPa.artikelbezeichnung)})` : ""}</button>` : `<span class="muted">Kein Prüfauftrag zum Vorgänger im System.</span>`}
           ${vorgaengerKv ? `<button class="ghost small" data-action="vorgaenger-kv-anzeigen" data-id="${vorgaengerKv.id}">→ KV des Vorgängers (${kvGesamtsumme(vorgaengerKv).toFixed(2)} €)</button>` : `<span class="muted">Kein KV zum Vorgänger im System.</span>`}
           ${aktuelleKv && vorgaengerKv && vorgaengerKv.positionen.length ? `<button class="ghost small" data-action="vorgaenger-positionen-uebernehmen">↺ Prüfpositionen aus Vorgänger-KV übernehmen</button>` : ""}
+          ${aktuelleKv && vorgaengerKv ? `<button class="ghost small" data-action="vorgaenger-kv-komplett-uebernehmen">↺ Gesamten Vorgänger-KV übernehmen (überschreibt aktuelle Werte)</button>` : ""}
         </div>
         ${aktuellePa && vorgaengerPa ? renderVorgaengerVergleichHtml(aktuellePa, vorgaengerPa) : ""}
         ${aktuelleKv && vorgaengerKv ? `<div class="pa-block-feld" style="margin-top:0.6rem"><h3>Beim jüngsten Vorgänger (IAN ${escapeHtml(vorgaengerIan)}) geprüft</h3>${pruefpositionenUebersichtHtml(vorgaengerKv)}</div>` : ""}`
@@ -1601,6 +1602,38 @@ function initialisiereVorgaengerKarte(panel, aktuelleKv) {
       speichereInLocalStorage();
       renderKvDetail();
       zeigeStatus(uebernommen ? `${uebernommen} Position(en) aus Vorgänger-KV übernommen · ${jetzt()}` : "Alle Positionen des Vorgänger-KVs waren bereits vorhanden", "ok");
+    });
+  }
+  /* Übernimmt den GESAMTEN Vorgänger-KV (alle Stammdaten + Prüfumfang-Auswahl + Prüfpositionen)
+     als Ausgangspunkt für den aktuellen KV - anders als "↺ Prüfpositionen übernehmen" (nur
+     Ergänzung, keine Überschreibung) hier ein voller Überschreib-Vorgang, daher mit Sicherheits-
+     abfrage. IAN, id und erstelltAm des aktuellen KVs bleiben unangetastet - alles andere kommt
+     1:1 vom Vorgänger (Positionen als unabhängige Kopien mit neuen IDs, kein geteilter Zustand). */
+  const komplettBtn = panel.querySelector('[data-action="vorgaenger-kv-komplett-uebernehmen"]');
+  if (komplettBtn && aktuelleKv) {
+    komplettBtn.addEventListener("click", () => {
+      const vorgaengerIan = vorgaengerIanAus(data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(aktuelleKv.ian)));
+      const vorgaengerKv = data.kvs.find((k) => normalisiere(k.ian) === normalisiere(vorgaengerIan));
+      if (!vorgaengerKv) return;
+      if (!confirm(`Wirklich den gesamten Vorgänger-KV (IAN ${vorgaengerKv.ian}) übernehmen? Artikel, Lieferant, SAP-Nummer, VK Büro, Warengruppen, LFGB?/Trivialartikel?, Styleanzahl, Notiz, Prüfumfang-Auswahl und alle Prüfpositionen werden dabei überschrieben — die IAN des aktuellen KVs selbst bleibt erhalten. Diese Aktion kann nicht rückgängig gemacht werden.`)) return;
+      aktuelleKv.artikel = vorgaengerKv.artikel;
+      aktuelleKv.lieferant = vorgaengerKv.lieferant;
+      aktuelleKv.sapNummer = vorgaengerKv.sapNummer;
+      aktuelleKv.vkBuero = vorgaengerKv.vkBuero;
+      aktuelleKv.warengruppeNeu = vorgaengerKv.warengruppeNeu;
+      aktuelleKv.warengruppeAlt = vorgaengerKv.warengruppeAlt;
+      aktuelleKv.lfgb = vorgaengerKv.lfgb;
+      aktuelleKv.trivial = vorgaengerKv.trivial;
+      aktuelleKv.styleanzahl = vorgaengerKv.styleanzahl;
+      aktuelleKv.notiz = vorgaengerKv.notiz;
+      aktuelleKv.mechanikProduktId = vorgaengerKv.mechanikProduktId;
+      aktuelleKv.mechanikSetbestandteile = JSON.parse(JSON.stringify(vorgaengerKv.mechanikSetbestandteile || []));
+      aktuelleKv.pruefumfangAuswahl = JSON.parse(JSON.stringify(vorgaengerKv.pruefumfangAuswahl || {}));
+      aktuelleKv.pruefumfangManuell = JSON.parse(JSON.stringify(vorgaengerKv.pruefumfangManuell || {}));
+      aktuelleKv.positionen = vorgaengerKv.positionen.map((p) => ({ id: neueId(), kategorie: p.kategorie, bezeichnung: p.bezeichnung, kuerzel: p.kuerzel, sapCode: p.sapCode, kosten: p.kosten, anzahl: p.anzahl, aktiv: p.aktiv }));
+      speichereInLocalStorage();
+      renderKvDetail();
+      zeigeStatus(`Gesamter Vorgänger-KV (IAN ${vorgaengerKv.ian}) übernommen · ${jetzt()}`, "ok");
     });
   }
 }
@@ -3266,8 +3299,8 @@ function renderKvDetail() {
         </select></label>
       </div>
     </div>
-    ${renderKvPruefumfangUebersicht(kv, verknuepftePa)}
     ${renderVorgaengerKarte(vorgaengerIanAus(verknuepftePa), verknuepftePa, kv)}
+    ${renderKvPruefumfangUebersicht(kv, verknuepftePa)}
 
     <div class="card">
       <div class="toolbar-zeile">
