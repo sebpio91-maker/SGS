@@ -377,6 +377,14 @@ input[type=file] { display:none; }
       <button type="button" id="wgz-hinzufuegen-btn">+ Hinzufügen</button>
     </div>
   </div>
+  <div class="card" style="max-width:720px;border-color:#d98a8a">
+    <h2 style="margin-top:0">Gefahrenzone</h2>
+    <p class="hinweis">Löscht <strong>Arbeitsvorrat, Prüfaufträge und Kostenvoranschläge</strong>
+      unwiderruflich — z. B. um nach dem Testen mit echten Daten neu zu starten.
+      <strong>Prüfgrundlagen und Normen bleiben erhalten</strong> (ebenso Bereiche/Warengruppen-
+      Stammdaten in der Verwaltung). Vorher ggf. über „⬇ Sichern (JSON)" oben sichern.</p>
+    <button type="button" class="danger" id="btn-testdaten-loeschen">Arbeitsvorrat, Prüfaufträge &amp; Kostenvoranschläge löschen</button>
+  </div>
 </section>
 
 <div id="overlay">
@@ -4299,6 +4307,26 @@ document.getElementById("wgz-hinzufuegen-btn").addEventListener("click", () => {
   speichereInLocalStorage();
   renderWarengruppenZuordnungVerwaltung();
   zeigeStatus(`Zuordnung „${neu} → ${alt}" angelegt · ` + jetzt(), "ok");
+});
+
+/* Löscht Arbeitsvorrat/Prüfaufträge/Kostenvoranschläge/Warengruppen-Zuordnung, lässt Prüfgrundlagen
+   und Normen (sowie die Bereiche/Warengruppen-Stammdaten) unangetastet - für den Übergang von
+   Testdaten zu echten ("scharfen") Daten, ohne die mühsam gepflegte Referenzdatenbank zu verlieren. */
+document.getElementById("btn-testdaten-loeschen").addEventListener("click", () => {
+  const anzahl = data.arbeitsvorrat.length + data.pruefauftraege.length + data.kvs.length;
+  if (!confirm(`Wirklich ${data.arbeitsvorrat.length} Arbeitsvorrat-Einträge, ${data.pruefauftraege.length} Prüfaufträge und ${data.kvs.length} Kostenvoranschläge unwiderruflich löschen? Prüfgrundlagen und Normen bleiben erhalten. Vorher ggf. über „⬇ Sichern (JSON)" oben sichern.`)) return;
+  if (anzahl && !confirm("Zur Sicherheit nochmal bestätigen: Diese Aktion kann NICHT rückgängig gemacht werden. Fortfahren?")) return;
+  data.arbeitsvorrat = [];
+  data.pruefauftraege = [];
+  data.kvs = [];
+  data.warengruppenZuordnung = [];
+  aktivePaId = null;
+  aktiveKvId = null;
+  arbeitsvorratFilter = { ian: "", bezeichnung: "", vkBuero: [], lieferant: [], warengruppe: [], sachbearbeiter: "", lfgb: "", trivial: "", mechErledigt: "nein" };
+  suchbegriffe = { arbeitsvorrat: "", pruefauftraege: "", kvs: "", pruefgrundlagen: "", normen: "" };
+  speichereInLocalStorage();
+  wechsleTab("arbeitsvorrat");
+  zeigeStatus("Arbeitsvorrat, Prüfaufträge und Kostenvoranschläge gelöscht · " + jetzt(), "ok");
 });
 
 document.getElementById("btn-neue-norm").addEventListener("click", () => {

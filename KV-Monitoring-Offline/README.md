@@ -615,6 +615,15 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     wenn dort noch leer). Startet leer — die vollständige, offizielle
     Zuordnungstabelle (ADMIN-Blatt, 347 Zeilen) lässt sich hier nach und
     nach eintragen, sobald sie vorliegt (siehe auch unten).
+  - **Gefahrenzone** – löscht **Arbeitsvorrat, Prüfaufträge, Kostenvoranschläge
+    und Warengruppen-Zuordnung** unwiderruflich (zwei Sicherheitsabfragen),
+    z. B. um nach dem Testen sauber mit echten Daten neu zu starten.
+    **Prüfgrundlagen und Normen sowie die Bereiche-/Warengruppen-Stammdaten
+    bleiben dabei erhalten** — die mühsam gepflegte Referenzdatenbank geht
+    also nicht verloren. Vorher empfiehlt sich ein „⬇ Sichern (JSON)" oben.
+    Da alle Daten ausschließlich lokal im Browser (Local Storage) liegen,
+    lässt sich dieser Schritt nur über diesen Button hier im Tool selbst
+    auslösen — von außen kann niemand auf diese Daten zugreifen.
 
 ## Datenquelle der Warengruppen-Empfehlung und SAP-Codes
 
