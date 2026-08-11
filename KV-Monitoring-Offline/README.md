@@ -131,7 +131,18 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     so sieht man auf einen Blick, was sich seit dem Vorgänger geändert hat.
 - **Kostenvoranschläge (KV)** – das Herzstück: pro IAN ein KV mit
   Stammdaten und einer Tabelle mechanischer Prüfpositionen (Kategorie,
-  Bezeichnung, Kürzel, SAP-Code, Kosten, Anzahl, Summe, aktiv/inaktiv). Auch
+  Bezeichnung, Kürzel, SAP-Code, Kosten, Anzahl, Summe, aktiv/inaktiv). Die
+  **Überschrift zeigt bevorzugt die Artikelbezeichnung aus dem verknüpften
+  Prüfauftrag** (aussagekräftiger als die bloße IAN) — ohne verknüpften PA
+  fällt sie auf das freie „Artikel"-Feld des KVs zurück, erst danach auf
+  „KV <IAN>"; die IAN selbst bleibt daneben immer als Badge sichtbar.
+  **Zwischen KV und Prüfauftrag lässt sich in beide Richtungen direkt
+  springen**: „→ Verknüpften Prüfauftrag anzeigen" im KV wechselt zum
+  passenden Prüfauftrag, „→ Verknüpften Kostenvoranschlag anzeigen" auf der
+  Prüfauftrags-Detailseite wieder zurück — praktisch, um bei Bedarf schnell
+  genauere Informationen auf der jeweils anderen Seite nachzuschlagen, ohne
+  über die Liste suchen zu müssen. Beide Buttons erscheinen nur, wenn zur
+  IAN tatsächlich ein Gegenstück existiert. Auch
   hier erscheint — sofern der verknüpfte Prüfauftrag eine „IAN-Vorgänger"
   enthält — dieselbe Vorgänger-Artikel-Karte wie bei den Prüfaufträgen,
   ergänzt um **„↺ Prüfpositionen aus Vorgänger-KV übernehmen"**: kopiert alle
@@ -284,9 +295,11 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     vorgeschlagen, wenn das aus dem Prüfauftrag ausgelesene Feld
     „Batterietyp" auf eine tatsächlich vorhandene Batterie/einen Akku
     hindeutet (nicht „keine"/„nein"/leer). **Mustereinlagerung (18
-    Monate)** ist für diesen Abschnitt nicht relevant und wird deshalb nie
-    automatisch vorgeschlagen — bleibt aber als Position weiterhin manuell
-    hinzufügbar, falls im Einzelfall doch gebraucht.
+    Monate)** wird im Prüfumfang nicht mehr angezeigt (weder als Vorschlag
+    noch manuell hinzufügbar) — bleibt aber im Reiter
+    „Prüfpositionen-Katalog" erhalten und ist dort weiterhin klassisch über
+    das Katalog-Dropdown im KV auswählbar, falls im Einzelfall doch
+    gebraucht.
   - **(Physikalische-) Produktspezifikationen**: durchsuchbare Liste aus dem
     echten, 62 Einträge umfassenden Parameterkatalog (Parameter, Material/
     Kontext, Laufzeit, Norm, SAP-Code, Preis) — Suchfeld oben, „+ hinzufügen"

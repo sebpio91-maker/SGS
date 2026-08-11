@@ -1783,6 +1783,7 @@ function renderPaDetail() {
   if (!pa) { panel.innerHTML = '<div class="card leerzustand">Kein Prüfauftrag ausgewählt.</div>'; return; }
 
   const arbeitsvorratTreffer = data.arbeitsvorrat.find((a) => normalisiere(a.ian) === normalisiere(pa.ian));
+  const kvTreffer = data.kvs.find((k) => normalisiere(k.ian) === normalisiere(pa.ian));
 
   panel.innerHTML = `
     <div class="card">
@@ -1803,6 +1804,7 @@ function renderPaDetail() {
       </div>
       <div class="toolbar-zeile" style="margin-top:0.8rem">
         ${arbeitsvorratTreffer ? `<button class="ghost small" id="pa-in-arbeitsvorrat-uebernehmen">↺ Warengruppe/Styles in den Arbeitsvorrat übernehmen</button>` : `<span class="muted">Kein Arbeitsvorrat-Eintrag mit dieser IAN gefunden.</span>`}
+        ${kvTreffer ? `<button class="ghost small" id="pa-zum-kv">→ Verknüpften Kostenvoranschlag anzeigen</button>` : ""}
         <button class="danger small" id="pa-loeschen" style="margin-left:auto">Prüfauftrag löschen</button>
       </div>
     </div>
@@ -1840,6 +1842,9 @@ function renderPaDetail() {
       renderArbeitsvorratTab();
       zeigeStatus(geaendert ? "In den Arbeitsvorrat übernommen · " + jetzt() : "Keine passenden Felder im Prüfauftrag gefunden", geaendert ? "ok" : "");
     });
+  }
+  if (kvTreffer) {
+    document.getElementById("pa-zum-kv").addEventListener("click", () => { aktiveKvId = kvTreffer.id; wechsleTab("kvs"); });
   }
   document.getElementById("pa-feld-hinzufuegen").addEventListener("click", () => {
     pa.felder.push({ schluessel: "", wert: "" });
@@ -2768,7 +2773,10 @@ function renderKvPruefumfangUebersicht(kv, pa) {
       </div>`;
     }
 
-    const positionen = data.katalog.filter((k) => normalisiere(k.kategorie) === normalisiere(kat.katalogKategorie));
+    /* Mustereinlagerung wird im Prüfumfang nicht mehr angezeigt (weder als Vorschlag noch manuell
+       hinzufügbar) - bleibt aber im Prüfpositionen-Katalog erhalten und ist dort weiterhin klassisch
+       über das Katalog-Dropdown im KV auswählbar, falls im Einzelfall doch gebraucht. */
+    const positionen = data.katalog.filter((k) => normalisiere(k.kategorie) === normalisiere(kat.katalogKategorie) && !/mustereinlagerung/i.test(k.bezeichnung));
     const vorschlaege = new Set(ermittleVorschlagsPositionen(kat, pa, kv).map((k) => k.id));
     const positionenHtml = positionen.map((k) => {
       const istVorschlag = vorschlaege.has(k.id);
@@ -2926,6 +2934,15 @@ function initialisiereKvWarengruppeNeuAuswahl(panel, kv) {
   suche.addEventListener("input", () => baueListe(suche.value));
 }
 
+/* Überschrift zeigt bevorzugt die Artikelbezeichnung aus dem verknüpften Prüfauftrag (aussagekräftiger
+   als die bloße IAN); ohne verknüpften PA fällt sie auf das freie "Artikel"-Feld des KVs zurück, erst
+   danach auf "KV <IAN>". Die IAN selbst bleibt daneben als Badge sichtbar. */
+function kvUeberschrift(kv, pa) {
+  if (pa && pa.artikelbezeichnung) return pa.artikelbezeichnung;
+  if (kv.artikel) return kv.artikel;
+  return "KV " + (kv.ian || "(ohne IAN)");
+}
+
 function renderKvDetail() {
   const panel = document.getElementById("detail-panel-kv");
   const kv = data.kvs.find((k) => k.id === aktiveKvId);
@@ -2941,8 +2958,9 @@ function renderKvDetail() {
   panel.innerHTML = `
     <div class="card">
       <div class="toolbar-zeile">
-        <h2 style="margin:0">KV ${escapeHtml(kv.ian || "(ohne IAN)")}</h2>
+        <h2 style="margin:0">${escapeHtml(kvUeberschrift(kv, verknuepftePa))}</h2>
         ${sharepointSucheLink(kv.ian)}
+        <span class="muted" id="kv-ian-badge" ${kv.ian ? "" : "hidden"}>IAN ${escapeHtml(kv.ian)}</span>
       </div>
       <div class="formular-grid" id="kv-formular">
         <label>IAN<input type="text" data-feld="ian" value="${escapeHtml(kv.ian)}"></label>
@@ -3002,7 +3020,17 @@ function renderKvDetail() {
     </div>`;
 
   panel.querySelectorAll("#kv-formular [data-feld], #kv-formular-2 [data-feld]").forEach((el) => {
-    el.addEventListener("input", () => { kv[el.dataset.feld] = el.value; speichereInLocalStorage(); renderKvListe(); if (el.dataset.feld === "ian" || el.dataset.feld === "artikel") panel.querySelector("h2").textContent = "KV " + (kv.ian || "(ohne IAN)"); });
+    el.addEventListener("input", () => {
+      kv[el.dataset.feld] = el.value;
+      speichereInLocalStorage();
+      renderKvListe();
+      if (el.dataset.feld === "ian" || el.dataset.feld === "artikel") panel.querySelector("h2").textContent = kvUeberschrift(kv, verknuepftePa);
+      if (el.dataset.feld === "ian") {
+        const badge = document.getElementById("kv-ian-badge");
+        badge.textContent = "IAN " + kv.ian;
+        badge.hidden = !kv.ian;
+      }
+    });
   });
   /* Erst beim Verlassen des IAN-Felds (nicht bei jedem Tastendruck, sonst geht der Fokus mitten im
      Tippen verloren) neu prüfen, ob jetzt eine (andere) PA verlinkt ist, und Warengruppe/
