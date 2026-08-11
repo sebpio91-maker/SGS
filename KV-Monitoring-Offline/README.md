@@ -149,14 +149,20 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   den übrigen Stammdaten, damit diese beiden Mussfelder nicht in der Menge
   der restlichen Formularfelder untergehen.
 
-  **Ausgewählte Prüfpositionen**: direkt darunter zeigt eine schreibgeschützte
-  Übersicht auf einen Blick, welche Prüfpositionen für diesen KV bereits
-  aktiv sind (inkl. Gesamtsumme und Anzahl deaktivierter Positionen) — vorher
-  war das nur ganz unten in der vollständigen, editierbaren
-  Prüfpositionen-Tabelle sichtbar und geriet beim Durcharbeiten von
-  Prüfumfang/Warengruppen-Empfehlung leicht aus dem Blick. Bearbeiten bleibt
-  weiterhin Aufgabe der Tabelle ganz unten; die Übersicht aktualisiert sich
-  automatisch bei jeder Änderung dort.
+  **Bereits aktive Prüfpositionen erscheinen direkt neben der zugehörigen
+  Prüfumfang-Checkbox** (Bezeichnung(en) + Kosten als grünes Häkchen-Badge),
+  statt nur ganz unten in der vollständigen, editierbaren
+  Prüfpositionen-Tabelle sichtbar zu sein — so ist der Bezug zwischen
+  Checkbox und tatsächlich übernommener Position sofort erkennbar, ohne
+  scrollen zu müssen. Das Badge aktualisiert sich automatisch bei jeder
+  Änderung in der Tabelle ganz unten (hinzufügen, entfernen,
+  (de-)aktivieren, Kosten/Anzahl anpassen); Bearbeiten bleibt weiterhin
+  Aufgabe der Tabelle selbst.
+
+  **Ist „Sicherheit-/Normprüfung" nicht angehakt, zeigt die Checkliste den
+  Grund** dafür an — „Trivialartikel = Ja" oder „Artikelkategorie Grün*" —
+  direkt neben der Checkbox, entsprechend der Vorbelegungsregel (siehe
+  unten).
 
   **Reihenfolge der übrigen Karten**: Artikelkategorie, dann die beiden
   Prüfumfang-Karten (roher Prüfumfang-Text + Checkliste, siehe unten), dann
@@ -326,7 +332,10 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   nichts angehakt, bleibt nur die Checkliste sichtbar. Ohne verknüpften
   Prüfauftrag startet die Checkliste komplett unangehakt, lässt sich aber
   jederzeit manuell aktivieren (z. B. um Positionen schon vor dem
-  PA-Upload grob vorzubereiten). Innerhalb der Detail-Karten:
+  PA-Upload grob vorzubereiten). Jede einzelne Position steht dabei in einer
+  eigenen, klar umrandeten Zeile statt nur durch eine dünne Trennlinie
+  abgesetzt zu sein — Vorschläge zusätzlich grün hinterlegt. Innerhalb der
+  Detail-Karten:
   - **Sicherheit & Norm / Sonder- & Funktionsparameter**: die allgemeinen
     Katalog-Positionen zu den drei Unterpunkten Kennzeichnung
     (Verpackung & Produkt), Kennzeichnung (Bedienungsanleitung) und

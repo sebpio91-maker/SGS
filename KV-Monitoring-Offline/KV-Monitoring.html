@@ -73,9 +73,8 @@ nav.tabs button.aktiv { background:var(--card); color:var(--accent-dark); font-w
 .vergleich-abweichung td { background:#fff6e0; }
 .pruefumfang-kat { border:1px solid var(--border); border-radius:6px; padding:0.6rem 0.8rem; margin-bottom:0.6rem; }
 .pruefumfang-kat-kopf { display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; }
-.pruefumfang-position { display:flex; align-items:center; justify-content:space-between; gap:0.5rem; padding:0.3rem 0; border-top:1px solid var(--border); font-size:0.85rem; }
-.pruefumfang-position:first-of-type { border-top:none; margin-top:0.3rem; }
-.pruefumfang-position-vorschlag { background:#f2f8f1; margin:0 -0.4rem; padding:0.3rem 0.4rem; border-radius:4px; border-top:none; }
+.pruefumfang-position { display:flex; align-items:center; justify-content:space-between; gap:0.5rem; padding:0.5rem 0.6rem; border:1px solid var(--border); border-radius:6px; font-size:0.85rem; margin-top:0.4rem; }
+.pruefumfang-position-vorschlag { background:#f2f8f1; border-color:#cfe3cb; }
 .mechanik-komponente { border:1px solid var(--border); border-radius:6px; margin:0.4rem 0 !important; padding:0.5rem 0.6rem !important; }
 .mechanik-komponente:first-of-type { margin-top:0.4rem !important; }
 .segment-toggle { display:inline-flex; flex-wrap:wrap; border:1px solid var(--border); border-radius:6px; margin-bottom:0.8rem; }
@@ -2759,7 +2758,49 @@ function renderKvArtikelkategorieKarte(pa) {
   </div>`;
 }
 
-function renderKvPruefumfangCheckliste(kv, pa) {
+/* Zeigt kompakt, welche bereits aktiven KV-Positionen zu einem Prüfumfang-Eintrag (Abschnitt
+   oder Sicherheit&Norm-Unterpunkt) gehören - direkt neben der zugehörigen Checkbox statt in einer
+   separaten Übersichtskarte, damit der Bezug zwischen Checkbox und tatsächlich übernommener
+   Position sofort sichtbar ist. */
+function pruefumfangEintragPositionenHtml(positionen) {
+  if (!positionen.length) return "";
+  const summe = positionen.reduce((s, p) => s + (Number(p.kosten) || 0) * (Number(p.anzahl) || 0), 0);
+  const text = positionen.map((p) => p.bezeichnung).join("; ");
+  return `<span class="badge ja" style="font-weight:400">✓ ${escapeHtml(text)} (${summe} €)</span>`;
+}
+
+const SICHERHEIT_NORM_KATEGORIE_NAME = "Sicherheit & Norm / Sonder- & Funktionsparameter";
+
+/* Ordnet die aktiven KV-Positionen einem Prüfumfang-Eintrag zu - bei den vier Sicherheit&Norm-
+   Unterpunkten anhand ihrer bezeichnungRegex; für "Sicherheit-/Normprüfung" gibt es dafür keine
+   feste Katalog-Bezeichnung mehr (der reale Wert kommt aus der Warengruppen-Empfehlung mit
+   Produkt-/Normtext), daher gilt dort: alles in der Kategorie, was nicht zu den anderen drei
+   Unterpunkten, Mustereinlagerung oder Akkusicherheitskurzcheck gehört. */
+function kvPositionenFuerPruefumfangEintrag(kv, eintragId) {
+  const kat = PA_PRUEFUMFANG_KATEGORIEN.find((k) => k.id === eintragId);
+  if (kat) return kv.positionen.filter((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere(kat.katalogKategorie));
+  const unterpunkt = SICHERHEIT_NORM_UNTERPUNKTE.find((u) => u.id === eintragId);
+  if (!unterpunkt) return [];
+  const inSicherheitNorm = kv.positionen.filter((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere(SICHERHEIT_NORM_KATEGORIE_NAME));
+  if (unterpunkt.id === "sicherheitNormpruefung") {
+    const andereRegexe = SICHERHEIT_NORM_UNTERPUNKTE.filter((u) => u.id !== "sicherheitNormpruefung").map((u) => u.bezeichnungRegex);
+    return inSicherheitNorm.filter((p) => !andereRegexe.some((r) => r.test(p.bezeichnung)) && !/mustereinlagerung/i.test(p.bezeichnung) && !/akkusicherheitskurzcheck/i.test(p.bezeichnung));
+  }
+  return inSicherheitNorm.filter((p) => unterpunkt.bezeichnungRegex.test(p.bezeichnung));
+}
+
+/* Erklärt, wenn Sicherheit-/Normprüfung nicht angehakt ist, warum (Trivial="Ja" oder
+   Artikelkategorie Grün* - die beiden fachlichen Gründe aus sicherheitNormpruefungErforderlich). */
+function sicherheitNormpruefungGrundHtml(kv, pa) {
+  const istTrivialJa = jaNeinAnzeige(kv.trivial) === "Ja";
+  const istGruen = istArtikelkategorieGruen(pa);
+  let grund = "";
+  if (istTrivialJa) grund = "Trivialartikel = Ja";
+  else if (istGruen) grund = "Artikelkategorie Grün*";
+  return grund ? `<span class="muted" style="font-size:0.8rem">nicht erforderlich — ${escapeHtml(grund)}</span>` : "";
+}
+
+function kvPruefumfangCheckelisteInhaltHtml(kv, pa) {
   const zeilen = PA_PRUEFUMFANG_KATEGORIEN.map((kat) => {
     const erkannt = pa ? erkennePruefumfangKategorien(pa.pruefumfang).some((k) => k.id === kat.id) : false;
     const badge = pa ? (erkannt ? `<span class="badge ja">im Prüfumfang erkannt</span>` : `<span class="badge nein">nicht erkannt</span>`) : "";
@@ -2767,25 +2808,57 @@ function renderKvPruefumfangCheckliste(kv, pa) {
     if (kat.id === "sicherheitNorm") {
       const unterpunkteHtml = SICHERHEIT_NORM_UNTERPUNKTE.map((u) => {
         const checked = !!kv.pruefumfangAuswahl[u.id];
-        return `<label style="display:flex;align-items:center;gap:0.5rem;font-weight:400;padding:0.1rem 0 0.1rem 1.4rem">
+        const positionenHtml = pruefumfangEintragPositionenHtml(kvPositionenFuerPruefumfangEintrag(kv, u.id));
+        const grundHtml = (!checked && u.id === "sicherheitNormpruefung") ? sicherheitNormpruefungGrundHtml(kv, pa) : "";
+        return `<label style="display:flex;align-items:center;gap:0.5rem;font-weight:400;padding:0.1rem 0 0.1rem 1.4rem;flex-wrap:wrap">
           <input type="checkbox" data-pruefumfang-kat="${u.id}" ${checked ? "checked" : ""}>
-          ${escapeHtml(u.anzeigeName)}
+          <span>${escapeHtml(u.anzeigeName)}</span>
+          ${grundHtml}
+          ${positionenHtml}
         </label>`;
       }).join("");
       return `<div style="font-weight:600;padding:0.15rem 0">${escapeHtml(kat.anzeigeName)} ${badge}</div>${unterpunkteHtml}`;
     }
 
     const checked = !!kv.pruefumfangAuswahl[kat.id];
-    return `<label style="display:flex;align-items:center;gap:0.5rem;font-weight:600;padding:0.15rem 0">
+    const positionenHtml = pruefumfangEintragPositionenHtml(kvPositionenFuerPruefumfangEintrag(kv, kat.id));
+    return `<label style="display:flex;align-items:center;gap:0.5rem;font-weight:600;padding:0.15rem 0;flex-wrap:wrap">
       <input type="checkbox" data-pruefumfang-kat="${kat.id}" ${checked ? "checked" : ""}>
-      ${escapeHtml(kat.anzeigeName)} ${badge}
+      <span>${escapeHtml(kat.anzeigeName)}</span> ${badge}
+      ${positionenHtml}
     </label>`;
   }).join("");
+  return `<p class="hinweis">Abschnitte auswählen, die für diesen Kostenvoranschlag relevant sind${pa ? " — Vorauswahl automatisch aus dem Prüfumfang des verknüpften Prüfauftrags erkannt, hier aber frei änderbar" : " (kein verknüpfter Prüfauftrag, daher keine automatische Vorauswahl möglich)"}. Erst für angehakte Abschnitte erscheinen unten die einzelnen Prüfpositionen zur Auswahl. „Sicherheit & Norm / Sonder- & Funktionsparameter" ist zusätzlich in vier Unterpunkte gegliedert, die sich unabhängig voneinander auswählen lassen. Bereits aktive Positionen erscheinen direkt neben der zugehörigen Checkbox.</p>
+    <div class="pruefumfang-checkliste">${zeilen}</div>`;
+}
+
+function renderKvPruefumfangCheckliste(kv, pa) {
   return `<div class="card">
     <h2>Prüfumfang</h2>
-    <p class="hinweis">Abschnitte auswählen, die für diesen Kostenvoranschlag relevant sind${pa ? " — Vorauswahl automatisch aus dem Prüfumfang des verknüpften Prüfauftrags erkannt, hier aber frei änderbar" : " (kein verknüpfter Prüfauftrag, daher keine automatische Vorauswahl möglich)"}. Erst für angehakte Abschnitte erscheinen unten die einzelnen Prüfpositionen zur Auswahl. „Sicherheit & Norm / Sonder- & Funktionsparameter" ist zusätzlich in vier Unterpunkte gegliedert, die sich unabhängig voneinander auswählen lassen.</p>
-    <div class="pruefumfang-checkliste">${zeilen}</div>
+    <div id="kv-pruefumfang-checkliste-inhalt">${kvPruefumfangCheckelisteInhaltHtml(kv, pa)}</div>
   </div>`;
+}
+
+function bindePruefumfangCheckboxen(container, kv) {
+  container.querySelectorAll('[data-pruefumfang-kat]').forEach((cb) => {
+    cb.addEventListener("change", () => {
+      kv.pruefumfangManuell[cb.dataset.pruefumfangKat] = true;
+      kv.pruefumfangAuswahl[cb.dataset.pruefumfangKat] = cb.checked;
+      speichereInLocalStorage();
+      renderKvDetail();
+    });
+  });
+}
+
+/* Aktualisiert nur die Checkliste (ohne kompletten renderKvDetail-Aufruf), damit sie auch dann
+   auffrischt, wenn Positionen aus fokus-schonenden Gründen nur teilweise neu gerendert werden
+   (siehe renderKvPositionenTabelle). */
+function aktualisiereKvPruefumfangCheckliste(kv) {
+  const container = document.getElementById("kv-pruefumfang-checkliste-inhalt");
+  if (!container) return;
+  const pa = data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(kv.ian));
+  container.innerHTML = kvPruefumfangCheckelisteInhaltHtml(kv, pa);
+  bindePruefumfangCheckboxen(container, kv);
 }
 
 /* "sicherheitNorm" hat keine eigene Checkbox mehr (siehe SICHERHEIT_NORM_UNTERPUNKTE) - die
@@ -2859,14 +2932,7 @@ function renderKvPruefumfangUebersicht(kv, pa) {
 
 function initialisierePruefumfangUebersicht(panel, kv, pa) {
   initialisiereMechanikEmpfehlungKarte(panel, kv);
-  panel.querySelectorAll('[data-pruefumfang-kat]').forEach((cb) => {
-    cb.addEventListener("change", () => {
-      kv.pruefumfangManuell[cb.dataset.pruefumfangKat] = true;
-      kv.pruefumfangAuswahl[cb.dataset.pruefumfangKat] = cb.checked;
-      speichereInLocalStorage();
-      renderKvDetail();
-    });
-  });
+  bindePruefumfangCheckboxen(panel, kv);
   panel.querySelectorAll('[data-action="kat-position-hinzufuegen"]').forEach((btn) => {
     btn.addEventListener("click", () => {
       const eintrag = data.katalog.find((k) => k.id === btn.dataset.katalogId);
@@ -2986,40 +3052,6 @@ function kvUeberschrift(kv, pa) {
   return "KV " + (kv.ian || "(ohne IAN)");
 }
 
-/* Kompakte Übersicht der bereits aktiven Prüfpositionen, direkt unter den Kopfdaten - vorher war
-   der aktuelle Auswahlstand nur ganz unten in der vollständigen (editierbaren) Prüfpositionen-
-   Tabelle sichtbar, was beim Durcharbeiten von Prüfumfang/Warengruppen-Empfehlung weiter oben
-   leicht aus dem Blick geriet. Rein informativ (nicht editierbar) - Bearbeiten bleibt Aufgabe der
-   Tabelle unten. Der Inhalt steht in einem eigenen Container (siehe
-   aktualisiereKvAusgewaehltePositionenKarte), damit er sich auch dann auffrischen lässt, wenn die
-   Positionen-Tabelle unten aus Fokus-Gründen nur teilweise statt komplett neu gerendert wird. */
-function kvAusgewaehltePositionenInhaltHtml(kv) {
-  if (!kv.positionen.length) {
-    return `<p class="hinweis" style="margin:0">Noch keine Prüfpositionen ausgewählt — weiter unten in den Abschnitten bzw. in der Warengruppen-Empfehlung passende Positionen hinzufügen.</p>`;
-  }
-  const aktive = kv.positionen.filter((p) => p.aktiv);
-  const inaktiveAnzahl = kv.positionen.length - aktive.length;
-  const gesamtsumme = aktive.reduce((s, p) => s + (Number(p.kosten) || 0) * (Number(p.anzahl) || 0), 0);
-  const zeilenHtml = aktive.map((p) => `<div class="pruefumfang-position">
-      <span>${escapeHtml(p.bezeichnung)} <span class="muted">(${escapeHtml(p.kategorie)})</span></span>
-      <span class="muted">${(Number(p.kosten) || 0) * (Number(p.anzahl) || 0)} €</span>
-    </div>`).join("");
-  return `${zeilenHtml || `<p class="muted" style="margin:0">Alle bisher hinzugefügten Positionen sind deaktiviert.</p>`}
-    <p style="margin-top:0.6rem">Gesamtsumme (aktive Positionen): <strong>${gesamtsumme} €</strong>${inaktiveAnzahl ? ` <span class="muted">· ${inaktiveAnzahl} deaktivierte Position${inaktiveAnzahl === 1 ? "" : "en"}</span>` : ""}</p>`;
-}
-
-function renderKvAusgewaehltePositionenKarte(kv) {
-  return `<div class="card">
-    <h2 style="margin:0 0 0.3rem">Ausgewählte Prüfpositionen</h2>
-    <div id="kv-ausgewaehlte-positionen-inhalt">${kvAusgewaehltePositionenInhaltHtml(kv)}</div>
-  </div>`;
-}
-
-function aktualisiereKvAusgewaehltePositionenKarte(kv) {
-  const container = document.getElementById("kv-ausgewaehlte-positionen-inhalt");
-  if (container) container.innerHTML = kvAusgewaehltePositionenInhaltHtml(kv);
-}
-
 function renderKvDetail() {
   const panel = document.getElementById("detail-panel-kv");
   const kv = data.kvs.find((k) => k.id === aktiveKvId);
@@ -3074,7 +3106,6 @@ function renderKvDetail() {
         </select></label>
       </div>
     </div>
-    ${renderKvAusgewaehltePositionenKarte(kv)}
     ${renderKvPruefumfangUebersicht(kv, verknuepftePa)}
     ${renderVorgaengerKarte(vorgaengerIanAus(verknuepftePa), verknuepftePa, kv)}
 
@@ -3200,7 +3231,7 @@ function renderKvPositionenTabelle(kv) {
         speichereInLocalStorage();
         tr.querySelector(".pos-summe").textContent = ((Number(pos.kosten) || 0) * (Number(pos.anzahl) || 0)).toFixed(2);
         document.getElementById("kv-gesamtsumme").textContent = kvGesamtsumme(kv).toFixed(2) + " €";
-        aktualisiereKvAusgewaehltePositionenKarte(kv);
+        aktualisiereKvPruefumfangCheckliste(kv);
         renderKvListe();
       });
     });
@@ -3218,7 +3249,7 @@ function renderKvPositionenTabelle(kv) {
     });
   });
   document.getElementById("kv-gesamtsumme").textContent = kvGesamtsumme(kv).toFixed(2) + " €";
-  aktualisiereKvAusgewaehltePositionenKarte(kv);
+  aktualisiereKvPruefumfangCheckliste(kv);
 }
 
 function renderKvTab() { renderKvListe(); renderKvDetail(); }
