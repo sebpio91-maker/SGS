@@ -2365,15 +2365,18 @@ function migriereKvPruefumfangAuswahl(kv) {
   delete kv.pruefumfangManuell.sicherheitNorm;
 }
 
-/* Sicherheit-/Normprüfung ist Pflicht, außer der Artikel ist Trivial="Ja" UND die Artikelkategorie
-   ist Grün* - in dem Fall entfällt sie, es sei denn, für denselben Artikel ist ohnehin FFU, NGO
-   oder Referenzprüfung gefordert (dann bleibt sie trotzdem Pflicht). Ersetzt für diesen einen
+/* Sicherheit-/Normprüfung ist Pflicht, außer der Artikel ist Trivial="Ja" ODER die Artikelkategorie
+   ist Grün* (MIT Stern) - in dem Fall entfällt sie, es sei denn, für denselben Artikel ist ohnehin
+   FFU, NGO oder Referenzprüfung gefordert (dann bleibt sie trotzdem Pflicht). Wichtig: nur "Grün*"
+   mit Stern gilt als sicher unbedenklich - ein einfaches "Grün" ohne Stern befreit NICHT (dort kann
+   eine Prüfung trotzdem notwendig sein) und bleibt daher ganz normal Pflicht wie jede andere
+   Artikelkategorie auch (siehe istArtikelkategorieGruenMitStern). Ersetzt für diesen einen
    Unterpunkt die sonst übliche "im Prüfumfang-Text erkannt"-Vorbelegung durch diese fachliche
    Regel, die sich direkt aus Artikelkategorie/Trivial/den übrigen Abschnitten ergibt. */
 function sicherheitNormpruefungErforderlich(kv, pa) {
   const istTrivialJa = jaNeinAnzeige(kv.trivial) === "Ja";
-  const istGruen = istArtikelkategorieGruen(pa);
-  if (!istGruen) return !istTrivialJa;
+  const istGruenMitStern = istArtikelkategorieGruenMitStern(pa);
+  if (!istGruenMitStern) return !istTrivialJa;
   const ffuNgoReferenzGefordert = !!(kv.pruefumfangAuswahl.ffuFitting || kv.pruefumfangAuswahl.ngo || kv.pruefumfangAuswahl.referenzpruefung);
   return ffuNgoReferenzGefordert;
 }
@@ -2470,8 +2473,15 @@ function normalisiereArtikelkategorie(pa) {
   const roh = pa ? String(pa.artikelkategorie || "").trim() : "";
   return roh.toLowerCase().replace(/[^a-zäöü]/g, "");
 }
-function istArtikelkategorieGruen(pa) {
-  return normalisiereArtikelkategorie(pa).startsWith("grün");
+/* Für die Sicherheit-/Normprüfung-Pflicht zählt NUR "Grün*" (mit Stern) als sicher unbedenklich -
+   ein einfaches "Grün" ohne Stern bedeutet, dass eine Prüfung ggf. trotzdem notwendig sein kann,
+   und befreit deshalb bewusst NICHT (anders als beim Rabattfaktor oben, der Grün mit und ohne
+   Stern gleich behandelt). Sonderzeichen bleiben hier deshalb nicht komplett entfernt, sondern nur
+   auf "*" reduziert, um genau diesen einen Unterschied erkennen zu können. */
+function istArtikelkategorieGruenMitStern(pa) {
+  const roh = pa ? String(pa.artikelkategorie || "").trim() : "";
+  const norm = roh.toLowerCase().replace(/[^a-zäöü*]/g, "");
+  return norm.startsWith("grün") && norm.includes("*");
 }
 
 /* Rabattfaktor auf die kombinierten Sicherheit&Norm-Kosten je nach Artikelkategorie des verknüpften
@@ -2793,10 +2803,10 @@ function kvPositionenFuerPruefumfangEintrag(kv, eintragId) {
    Artikelkategorie Grün* - die beiden fachlichen Gründe aus sicherheitNormpruefungErforderlich). */
 function sicherheitNormpruefungGrundHtml(kv, pa) {
   const istTrivialJa = jaNeinAnzeige(kv.trivial) === "Ja";
-  const istGruen = istArtikelkategorieGruen(pa);
+  const istGruenMitStern = istArtikelkategorieGruenMitStern(pa);
   let grund = "";
   if (istTrivialJa) grund = "Trivialartikel = Ja";
-  else if (istGruen) grund = "Artikelkategorie Grün*";
+  else if (istGruenMitStern) grund = "Artikelkategorie Grün*";
   return grund ? `<span class="muted" style="font-size:0.8rem">nicht erforderlich — ${escapeHtml(grund)}</span>` : "";
 }
 

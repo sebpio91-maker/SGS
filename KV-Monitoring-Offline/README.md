@@ -296,11 +296,15 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   einer einzigen für den ganzen Abschnitt — und jeder mit eigener
   Vorbelegungs-Regel statt der reinen Prüfumfang-Text-Erkennung:
   - **Sicherheit-/Normprüfung** – Pflicht, außer der Artikel ist
-    **Trivial="Ja"** oder die **Artikelkategorie ist Grün\***; ist die
-    Artikelkategorie Grün\*, aber FFU, NGO oder Referenzprüfung sind für
-    denselben Artikel gefordert (deren Checkboxen oben angehakt), bleibt
-    sie trotzdem Pflicht. Entspricht dem Katalog-Eintrag „Sicherheit-/
-    Normprüfung Teilprüfung EK5/AK5 06-01.3:2011".
+    **Trivial="Ja"** oder die **Artikelkategorie ist Grün\* (mit Stern)**;
+    ist die Artikelkategorie Grün\*, aber FFU, NGO oder Referenzprüfung sind
+    für denselben Artikel gefordert (deren Checkboxen oben angehakt), bleibt
+    sie trotzdem Pflicht. Wichtig: **nur „Grün\*" mit Stern gilt als sicher
+    unbedenklich** — ein einfaches „Grün" ohne Stern befreit bewusst
+    **nicht**, da dort eine Prüfung ggf. trotzdem notwendig sein kann, und
+    bleibt daher ganz normal Pflicht wie jede andere Artikelkategorie auch.
+    Für den tatsächlichen Wert (Norm + Kosten) siehe die
+    Warengruppen-Empfehlung weiter unten.
   - **Kennzeichnung (Verpackung & Produkt)** – **immer Pflicht**, unabhängig
     von Prüfumfang, Artikelkategorie oder Trivial, und deshalb immer
     vorbelegt. Es gibt dafür vier Katalog-Varianten mit demselben Zweck,
