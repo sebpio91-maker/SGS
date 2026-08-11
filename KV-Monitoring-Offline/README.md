@@ -24,13 +24,17 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   Zahl der Bestellnummer abgeleitet). Eine Zeile anklicken (✏️) öffnet sie
   zum Bearbeiten; **„📄" lädt direkt eine PA-PDF für genau dieses Projekt
   hoch** (die IAN steht dabei schon fest und wird nicht erst aus der PDF
-  geraten); „+ KV" legt direkt einen neuen Kostenvoranschlag für diese IAN
-  an. **VK Büro** wird jetzt als eigene Spalte angezeigt. Die Spalte **„PA"**
-  zeigt auf einen Blick, ob zu dieser IAN bereits ein Prüfauftrag hochgeladen
-  wurde: liegt einer vor, erscheint ein anklickbares Feld mit dem **Stand der
-  PA-PDF** (Datum aus dem Dateinamen bzw. ersatzweise aus dem Seitenfuß der
-  PDF), ein Klick springt direkt zum Prüfauftrag; fehlt einer, steht dort nur
-  ein „–". Unter der Kopfzeile der Tabelle gibt es **Filter**: IAN als
+  geraten); **„+ KV" legt einen neuen Kostenvoranschlag für diese IAN an —
+  existiert zu dieser IAN aber bereits einer, wird KEIN Duplikat angelegt**,
+  sondern direkt zum vorhandenen KV gewechselt (Beschriftung wechselt dann
+  entsprechend auf „→ KV"). **VK Büro** wird jetzt als eigene Spalte
+  angezeigt. Die Spalten **„PA"** und **„KV"** zeigen auf einen Blick, ob zu
+  dieser IAN bereits ein Prüfauftrag bzw. ein Kostenvoranschlag existiert:
+  liegt einer vor, erscheint ein anklickbares Feld — bei „PA" mit dem
+  **Stand der PA-PDF** (Datum aus dem Dateinamen bzw. ersatzweise aus dem
+  Seitenfuß der PDF), bei „KV" mit der **aktuellen Gesamtsumme** — ein Klick
+  springt direkt zum jeweiligen Datensatz; fehlt einer, steht dort nur ein
+  „–". Unter der Kopfzeile der Tabelle gibt es **Filter**: IAN als
   Freitextfeld (Teiltreffer); **VK Büro, Lieferant und Warengruppe als
   durchsuchbare Mehrfachauswahl** — anklicken öffnet ein Panel mit Suchfeld
   und Checkbox-Liste, mehrere Werte gleichzeitig ankreuzbar (inkl.
@@ -618,16 +622,23 @@ Set-Bestandteile bei Sicherheit & Norm, FFU, NGO/StiWa), holen ihren
 gibt es dafür ein eigenes, editierbares **SAP-Code-Feld** je Norm/PPM (analog
 zu Bezeichnung, Typ und Bemerkung); referenziert eine Prüfgrundlage mehrere
 Normen in einem Block, zählt der SAP-Code der ersten Norm mit hinterlegtem
-Wert. Die wenigen Positionen ohne Normen-Bezug (die vier Kennzeichnung-
-Varianten, Bedienungsanleitung, Optischer Abgleich, Akkusicherheitskurzcheck,
-die generischen FFU/NGO/Referenzprüfung-Einträge sowie „Projektkosten") sind
-jetzt fest im Code hinterlegt statt in einer eigenen Verwaltungsoberfläche
-pflegbar; die SAP-Codes wurden dabei gegen die reale SAP-Bestellzeilen-Liste
+Wert. Die übrigen festen Positionen ohne direkten Prüfgrundlage-Bezug (die
+vier Kennzeichnung-Varianten, Bedienungsanleitung, Optischer Abgleich,
+Akkusicherheitskurzcheck sowie die generischen FFU/NGO/Referenzprüfung-
+Einträge) bekommen beim ersten Start automatisch **je eine gleichnamige
+Norm im Reiter „Normen"** (Typ „PPM"), damit auch ihr SAP-Code dort zentral
+auffindbar und editierbar ist, statt nur „irgendwo im Code" zu stecken —
+wird eine solche Norm dort umbenannt, verliert sie diese Verknüpfung
+allerdings (der Abgleich läuft über die Bezeichnung); besser nur den
+SAP-Code ändern, nicht die Bezeichnung. Nur „Projektkosten" (Produktspezi-
+fikationen-Pauschale) hat mangels SAP-Code keine solche Norm. Die
+ursprünglichen SAP-Codes wurden gegen die reale SAP-Bestellzeilen-Liste
 (Blatt „SAP") korrigiert — u. a. „MECH_SICHERHEIT_TS" statt der zuvor
 angenommenen „MECH_S_NORM_TS", und „FFU_TS" als gemeinsamer Code für
-Optischer Abgleich/FFU/Referenzprüfung/NGO (jeweils als Fallback, solange die
-zugehörige Norm noch keinen eigenen SAP-Code hat). Das freie Dropdown „Position
-aus Katalog wählen" im KV ist entsprechend entfallen — für Einzelfälle bleibt
+Optischer Abgleich/FFU/Referenzprüfung/NGO — und dienen jetzt als
+Startwert dieser Normen bzw. als Fallback, solange eine referenzierte Norm
+noch keinen eigenen SAP-Code hat. Das freie Dropdown „Position aus Katalog
+wählen" im KV ist entsprechend entfallen — für Einzelfälle bleibt
 „+ Freie Position".
 
 Die **Set-Bestandteile- und Rabattfaktor-Logik** der Sicherheit & Norm-Position

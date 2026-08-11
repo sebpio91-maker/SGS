@@ -252,7 +252,7 @@ input[type=file] { display:none; }
         <thead>
           <tr>
             <th>IAN</th><th>VK Büro</th><th>Bezeichnung</th><th>Lieferant</th><th>Angelegt am</th><th>Sachbearbeiter</th>
-            <th>Warengruppe</th><th>Styles</th><th>LFGB?</th><th>Trivial?</th><th>Mech. erledigt</th><th>PA</th>
+            <th>Warengruppe</th><th>Styles</th><th>LFGB?</th><th>Trivial?</th><th>Mech. erledigt</th><th>PA</th><th>KV</th>
             <th>Bemerkung</th><th>Aktion</th>
           </tr>
           <tr id="arbeitsvorrat-filter-zeile"></tr>
@@ -530,6 +530,10 @@ const NGO_FIXPOSITION = { id: "fix-ngo", kategorie: "NGO", bezeichnung: "NGO", k
 const REFERENZPRUEFUNG_FIXPOSITION = { id: "fix-referenz", kategorie: "Referenzprüfung", bezeichnung: "Referenzprüfung", kuerzel: "REF", sapCode: "FFU_TS", standardKosten: 0 };
 const PRODUKTSPEZI_PROJEKTKOSTEN_FIXPOSITION = { id: "fix-projektkosten", kategorie: "(physikalische-) Produktspezifikation", bezeichnung: "Projektkosten (nicht einsteuern)", kuerzel: "PS", sapCode: "", standardKosten: 330 };
 const ALLE_FIXPOSITIONEN = [...SICHERHEIT_NORM_FIXPOSITIONEN, FFU_FITTING_FIXPOSITION, NGO_FIXPOSITION, REFERENZPRUEFUNG_FIXPOSITION, PRODUKTSPEZI_PROJEKTKOSTEN_FIXPOSITION];
+/* Diese festen Positionen haben (anders als "Projektkosten") einen echten SAP-Code - jede
+   bekommt beim ersten Start eine gleichnamige Norm im Reiter "Normen" (Typ PPM), damit ihr
+   SAP-Code dort zentral pflegbar ist (siehe migriereFixPositionenAlsNormen/fixPositionSapCodeAktuell). */
+const FIXPOSITIONEN_MIT_NORM = [...SICHERHEIT_NORM_FIXPOSITIONEN, FFU_FITTING_FIXPOSITION, NGO_FIXPOSITION, REFERENZPRUEFUNG_FIXPOSITION];
 
 function fixPositionenFuerKategorie(katalogKategorie) {
   if (katalogKategorie === "Sicherheit & Norm / Sonder- & Funktionsparameter") return SICHERHEIT_NORM_FIXPOSITIONEN;
@@ -538,6 +542,30 @@ function fixPositionenFuerKategorie(katalogKategorie) {
   if (katalogKategorie === "Referenzprüfung") return [REFERENZPRUEFUNG_FIXPOSITION];
   if (katalogKategorie === "(physikalische-) Produktspezifikation") return [PRODUKTSPEZI_PROJEKTKOSTEN_FIXPOSITION];
   return [];
+}
+
+/* Legt für jede feste Position mit SAP-Code (FIXPOSITIONEN_MIT_NORM) beim ersten Start eine
+   gleichnamige Norm an (Typ PPM, SAP-Code = bisheriger fest hinterlegter Wert als Startwert) -
+   dadurch ist der SAP-Code dieser Positionen im Reiter "Normen" auffindbar und editierbar, genau
+   wie bei den über Prüfgrundlagen referenzierten Normen. Bereits vorhandene Normen mit exakt
+   passender Bezeichnung werden nicht doppelt angelegt. */
+function migriereFixPositionenAlsNormen() {
+  FIXPOSITIONEN_MIT_NORM.forEach((p) => {
+    const vorhanden = data.normen.some((n) => normalisiere(n.bezeichnung) === normalisiere(p.bezeichnung));
+    if (!vorhanden) {
+      data.normen.push({ id: neueId(), bezeichnung: p.bezeichnung, titel: "", typ: "ppm", dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "", sapCode: p.sapCode });
+    }
+  });
+}
+
+/* Aktueller SAP-Code einer festen Position: sofern im Reiter "Normen" eine gleichnamige Norm mit
+   gepflegtem SAP-Code existiert, zählt deren (jederzeit dort editierbarer) Wert - sonst der fest
+   hinterlegte Startwert der Position als Fallback (z. B. bevor migriereFixPositionenAlsNormen()
+   gelaufen ist, etwa bei einem alten JSON-Import). */
+function fixPositionSapCodeAktuell(fixPosition) {
+  const norm = data.normen.find((n) => normalisiere(n.bezeichnung) === normalisiere(fixPosition.bezeichnung));
+  if (norm && norm.sapCode && String(norm.sapCode).trim()) return String(norm.sapCode).trim();
+  return fixPosition.sapCode;
 }
 
 /* ---------- Prüfgrundlagen (Startdaten aus Preisliste_Mechanik_v2.xlsm, Blatt "Mechanik") ----------
@@ -911,6 +939,7 @@ function init() {
   data.normen.forEach(migriereNorm);
   data.pruefgrundlagen.forEach(migrierePruefgrundlage);
   migriereBereiche();
+  migriereFixPositionenAlsNormen();
 
   document.querySelectorAll("nav.tabs button[data-tab]").forEach((btn) => {
     btn.addEventListener("click", () => wechsleTab(btn.dataset.tab));
@@ -1148,7 +1177,7 @@ function initialisiereMehrfachauswahl(feld) {
 
 function renderArbeitsvorratFilterZeile() {
   const tr = document.getElementById("arbeitsvorrat-filter-zeile");
-  const spaltenReihenfolge = ["ian:text", "vkBuero:multi", "", "lieferant:multi", "", "sachbearbeiter:select", "warengruppe:multi", "", "lfgb:select", "trivial:select", "mechErledigt:select", "", "", ""];
+  const spaltenReihenfolge = ["ian:text", "vkBuero:multi", "", "lieferant:multi", "", "sachbearbeiter:select", "warengruppe:multi", "", "lfgb:select", "trivial:select", "mechErledigt:select", "", "", "", ""];
   tr.innerHTML = spaltenReihenfolge.map((eintragTyp) => {
     if (!eintragTyp) return "<th></th>";
     const [feld, typ] = eintragTyp.split(":");
@@ -1215,15 +1244,18 @@ function renderArbeitsvorratKoerper() {
   document.getElementById("arbeitsvorrat-zaehler").textContent = `${liste.length} von ${data.arbeitsvorrat.length} Einträgen`;
 
   if (!liste.length) {
-    tbody.innerHTML = '<tr><td colspan="14" class="leerzustand">Keine Einträge gefunden.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="15" class="leerzustand">Keine Einträge gefunden.</td></tr>';
     return;
   }
 
   const paNachIan = new Map();
   data.pruefauftraege.forEach((p) => { if (p.ian) paNachIan.set(normalisiere(p.ian), p); });
+  const kvNachIan = new Map();
+  data.kvs.forEach((k) => { if (k.ian) kvNachIan.set(normalisiere(k.ian), k); });
 
   tbody.innerHTML = liste.map((r) => {
     const pa = paNachIan.get(normalisiere(r.ian));
+    const kv = kvNachIan.get(normalisiere(r.ian));
     return `
     <tr data-id="${r.id}">
       <td><strong>${escapeHtml(r.ian)}</strong>${sharepointSucheLink(r.ian)}</td>
@@ -1238,11 +1270,12 @@ function renderArbeitsvorratKoerper() {
       <td>${jaNeinBadge(r.trivial)}</td>
       <td class="zentriert"><input type="checkbox" data-action="mech-toggle" ${r.mechErledigt ? "checked" : ""}></td>
       <td class="zentriert">${pa ? `<button class="badge ja pa-badge" data-action="pa-anzeigen" title="Prüfauftrag anzeigen">📄${pa.stand ? " " + escapeHtml(pa.stand) : ""}</button>` : '<span class="muted">–</span>'}</td>
+      <td class="zentriert">${kv ? `<button class="badge ja kv-badge" data-action="kv-anzeigen" title="Kostenvoranschlag anzeigen">📋 ${kvGesamtsumme(kv).toFixed(2)} €</button>` : '<span class="muted">–</span>'}</td>
       <td title="${escapeHtml(r.bemerkung)}">${escapeHtml(r.bemerkung)}</td>
       <td class="zeile-aktionen">
         <button class="ghost small" data-action="bearbeiten" title="Bearbeiten">✏️</button>
         <button class="ghost small" data-action="pa-hochladen" title="PA-PDF für dieses Projekt hochladen">📄</button>
-        <button class="small" data-action="neuer-kv" title="Neuen KV aus diesem Eintrag anlegen">+ KV</button>
+        <button class="small" data-action="neuer-kv" title="${kv ? "Vorhandenen KV zu dieser IAN anzeigen" : "Neuen KV aus diesem Eintrag anlegen"}">${kv ? "→ KV" : "+ KV"}</button>
       </td>
     </tr>`;
   }).join("");
@@ -1251,6 +1284,8 @@ function renderArbeitsvorratKoerper() {
     const eintrag = data.arbeitsvorrat.find((r) => r.id === tr.dataset.id);
     tr.querySelector('[data-action="bearbeiten"]').addEventListener("click", () => oeffneArbeitsvorratModal(eintrag));
     tr.querySelector('[data-action="neuer-kv"]').addEventListener("click", () => neuerKvAusArbeitsvorrat(eintrag));
+    const kvBadge = tr.querySelector('[data-action="kv-anzeigen"]');
+    if (kvBadge) kvBadge.addEventListener("click", () => { aktiveKvId = kvNachIan.get(normalisiere(eintrag.ian)).id; wechsleTab("kvs"); });
     tr.querySelector('[data-action="pa-hochladen"]').addEventListener("click", () => {
       arbeitsvorratPaZielId = eintrag.id;
       document.getElementById("arbeitsvorrat-pa-upload-input").click();
@@ -1332,7 +1367,16 @@ document.getElementById("btn-neuer-arbeitsvorrat-eintrag").addEventListener("cli
   oeffneArbeitsvorratModal(eintrag);
 });
 
+/* Legt aus einem Arbeitsvorrat-Eintrag einen neuen KV an - existiert zu dieser IAN aber schon ein
+   KV, wird KEIN Duplikat angelegt, sondern direkt zum vorhandenen KV gewechselt (derselbe Zweck
+   wie der "→ KV"-Badge in der Tabelle). */
 function neuerKvAusArbeitsvorrat(eintrag) {
+  const vorhandenerKv = data.kvs.find((k) => normalisiere(k.ian) === normalisiere(eintrag.ian));
+  if (vorhandenerKv) {
+    aktiveKvId = vorhandenerKv.id;
+    wechsleTab("kvs");
+    return;
+  }
   const kv = {
     id: neueId(), ian: eintrag.ian, artikel: eintrag.bezeichnung, lieferant: eintrag.lieferant, sapNummer: "",
     warengruppeNeu: normalisiereWarengruppe(eintrag.warengruppe), warengruppeAlt: eintrag.alteWarengruppe, lfgb: eintrag.lfgb, trivial: eintrag.trivial,
@@ -2430,7 +2474,7 @@ function kvHatPosition(kv, katalogEintrag) {
 
 function fuegeKatalogPositionHinzu(kv, katalogEintrag) {
   if (kvHatPosition(kv, katalogEintrag)) return false;
-  kv.positionen.push({ id: neueId(), kategorie: katalogEintrag.kategorie, bezeichnung: katalogEintrag.bezeichnung, kuerzel: katalogEintrag.kuerzel, sapCode: katalogEintrag.sapCode, kosten: katalogEintrag.standardKosten, anzahl: 1, aktiv: true });
+  kv.positionen.push({ id: neueId(), kategorie: katalogEintrag.kategorie, bezeichnung: katalogEintrag.bezeichnung, kuerzel: katalogEintrag.kuerzel, sapCode: fixPositionSapCodeAktuell(katalogEintrag), kosten: katalogEintrag.standardKosten, anzahl: 1, aktiv: true });
   return true;
 }
 
@@ -2553,8 +2597,8 @@ function renderMechanikEmpfehlungKarte(kv, pa) {
     </div>`;
 
     const zeilenExtra = [];
-    if ((gewaehlt.ffuNormen || []).length) zeilenExtra.push({ label: "FFU", detail: normRefListeText(gewaehlt.ffuNormen), kosten: normenBlockSumme(gewaehlt.ffuNormen), kategorie: "FFU/Fitting", kuerzel: "FFU", sapCode: normRefSapCode(gewaehlt.ffuNormen) || "FFU_TS" });
-    if ((gewaehlt.stiwaNormen || []).length) zeilenExtra.push({ label: "NGO/StiWa", detail: normRefListeText(gewaehlt.stiwaNormen), kosten: normenBlockSumme(gewaehlt.stiwaNormen), kategorie: "NGO", kuerzel: "NGO", sapCode: normRefSapCode(gewaehlt.stiwaNormen) || "FFU_TS" });
+    if ((gewaehlt.ffuNormen || []).length) zeilenExtra.push({ label: "FFU", detail: normRefListeText(gewaehlt.ffuNormen), kosten: normenBlockSumme(gewaehlt.ffuNormen), kategorie: "FFU/Fitting", kuerzel: "FFU", sapCode: normRefSapCode(gewaehlt.ffuNormen) || fixPositionSapCodeAktuell(FFU_FITTING_FIXPOSITION) });
+    if ((gewaehlt.stiwaNormen || []).length) zeilenExtra.push({ label: "NGO/StiWa", detail: normRefListeText(gewaehlt.stiwaNormen), kosten: normenBlockSumme(gewaehlt.stiwaNormen), kategorie: "NGO", kuerzel: "NGO", sapCode: normRefSapCode(gewaehlt.stiwaNormen) || fixPositionSapCodeAktuell(NGO_FIXPOSITION) });
     const extraHtml = zeilenExtra.map((z) => {
       const bezeichnung = z.detail ? `${z.label}: ${z.detail}` : z.label;
       const schonDrin = kv.positionen.some((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere(z.kategorie) && normalisiere(p.bezeichnung) === normalisiere(bezeichnung));
@@ -4302,6 +4346,7 @@ document.getElementById("datei-laden-input").addEventListener("change", async (e
     data.normen.forEach(migriereNorm);
     data.pruefgrundlagen.forEach(migrierePruefgrundlage);
     migriereBereiche();
+    migriereFixPositionenAlsNormen();
     aktivePaId = data.pruefauftraege.length ? data.pruefauftraege[0].id : null;
     aktiveKvId = data.kvs.length ? data.kvs[0].id : null;
     aktiveNormId = data.normen.length ? data.normen[0].id : null;
