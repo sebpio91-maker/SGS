@@ -237,22 +237,39 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
 
   **„Sicherheit & Norm / Sonder- & Funktionsparameter" ist zusätzlich in
   vier eigene Unterpunkte gegliedert**, jeder mit eigener Checkbox statt
-  einer einzigen für den ganzen Abschnitt:
-  - **Sicherheit-/Normprüfung**
-  - **Kennzeichnung (Verpackung & Produkt)**
-  - **Kennzeichnung (Bedienungsanleitung)**
-  - **Optischer Abgleich**
+  einer einzigen für den ganzen Abschnitt — und jeder mit eigener
+  Vorbelegungs-Regel statt der reinen Prüfumfang-Text-Erkennung:
+  - **Sicherheit-/Normprüfung** – Pflicht, außer der Artikel ist
+    **Trivial="Ja"** oder die **Artikelkategorie ist Grün\***; ist die
+    Artikelkategorie Grün\*, aber FFU, NGO oder Referenzprüfung sind für
+    denselben Artikel gefordert (deren Checkboxen oben angehakt), bleibt
+    sie trotzdem Pflicht. Entspricht dem Katalog-Eintrag „Sicherheit-/
+    Normprüfung Teilprüfung EK5/AK5 06-01.3:2011".
+  - **Kennzeichnung (Verpackung & Produkt)** – **immer Pflicht**, unabhängig
+    von Prüfumfang, Artikelkategorie oder Trivial, und deshalb immer
+    vorbelegt. Es gibt dafür vier Katalog-Varianten mit demselben Zweck,
+    aber unterschiedlichem PPM-Code — automatisch als Vorschlag markiert
+    wird genau die zum KV passende: **1001_PPM** (Standard/VK Büro 0070),
+    **1002_PPM** (VK Büro 0049), **1003_PPM** (VK Büro 0072), **1005_PPM**
+    (sobald LFGB="Ja" — hat Vorrang vor der VK-Büro-Zuordnung). Die übrigen
+    drei Varianten bleiben in der Detail-Karte sichtbar und bei Bedarf
+    manuell hinzufügbar.
+  - **Kennzeichnung (Bedienungsanleitung)** – folgt weiterhin der
+    Prüfumfang-Text-Erkennung wie bisher. Entspricht immer dem
+    Katalog-Eintrag „Bedienungsanleitung E&E (1000_PPM)".
+  - **Optischer Abgleich** – folgt ebenfalls weiterhin der
+    Prüfumfang-Text-Erkennung. Entspricht immer dem Katalog-Eintrag
+    „Optischer Abgleich (112_PPM)".
 
-  Alle vier starten mit demselben Erkennungsstatus wie der Abschnitt
-  insgesamt (es gibt in der PA-PDF kein Signal, das die vier einzeln
-  unterscheidet), lassen sich danach aber unabhängig voneinander an- und
-  abhaken — z. B. wenn im Einzelfall nur der optische Abgleich, nicht aber
-  die Kennzeichnungsprüfung benötigt wird. Jeder Unterpunkt steuert direkt,
-  ob die zugehörige Katalog-Position in der Detail-Karte unten als
-  „Vorschlag" markiert ist. Dateien aus einer älteren Tool-Version (ein
-  einzelnes Häkchen für den ganzen Abschnitt) werden beim Laden automatisch
-  auf die vier Unterpunkte übertragen, damit kein bereits gepflegter KV
-  plötzlich alle Sicherheit & Norm-Positionen verliert.
+  Alle vier lassen sich unabhängig voneinander manuell an- und abhaken,
+  unabhängig von ihrer jeweiligen Vorbelegungs-Regel — z. B. wenn im
+  Einzelfall nur der optische Abgleich, nicht aber die Kennzeichnungsprüfung
+  benötigt wird. Jeder Unterpunkt steuert direkt, ob die zugehörige
+  Katalog-Position in der Detail-Karte unten als „Vorschlag" markiert ist.
+  Dateien aus einer älteren Tool-Version (ein einzelnes Häkchen für den
+  ganzen Abschnitt bzw. nur die eine „1001_PPM"-Kennzeichnungs-Position)
+  werden beim Laden automatisch migriert/ergänzt, damit kein bereits
+  gepflegter KV plötzlich Positionen verliert.
 
   **Erst für angehakte Abschnitte/Unterpunkte erscheinen darunter die
   einzelnen Prüfpositionen** zur Auswahl (Karte „Prüfumfang-Details") — ist

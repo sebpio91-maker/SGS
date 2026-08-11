@@ -536,7 +536,10 @@ function seedKatalog() {
   const roh = [
     { kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Sicherheit-/Normprüfung Teilprüfung EK5/AK5 06-01.3:2011", kuerzel: "MS", sapCode: "MECH_SICHERHEIT_TS", standardKosten: 720 },
     { kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Akkusicherheitskurzcheck (163_PPM)", kuerzel: "MS", sapCode: "163_PPM_TS", standardKosten: 950 },
-    { kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Kennzeichnung GER, inkl. BDA-Prüfung falls vorhanden (1001_PPM)", kuerzel: "MS", sapCode: "KENNZEICHNNG_SF_TS", standardKosten: 360 },
+    { kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Kennzeichnung GER, Verpackung & Produkt (1001_PPM)", kuerzel: "MS", sapCode: "KENNZEICHNNG_SF_TS", standardKosten: 360 },
+    { kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Kennzeichnung GER, Verpackung & Produkt (1002_PPM)", kuerzel: "MS", sapCode: "KENNZEICHNNG_SF_TS", standardKosten: 360 },
+    { kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Kennzeichnung GER, Verpackung & Produkt (1003_PPM)", kuerzel: "MS", sapCode: "KENNZEICHNNG_SF_TS", standardKosten: 360 },
+    { kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Kennzeichnung GER, Verpackung & Produkt (1005_PPM)", kuerzel: "MS", sapCode: "KENNZEICHNNG_SF_TS", standardKosten: 360 },
     { kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Bedienungsanleitung E&E (1000_PPM)", kuerzel: "MS", sapCode: "BEDIENUNGANL_SF_TS", standardKosten: 360 },
     { kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Optischer Abgleich (112_PPM)", kuerzel: "MS", sapCode: "FFU_TS", standardKosten: 180 },
     { kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Mustereinlagerung (18 Monate)", kuerzel: "MS", sapCode: "", standardKosten: 3 },
@@ -596,6 +599,20 @@ function migriereBereiche() {
     }
   });
   data.bereiche.sort((a, b) => a.localeCompare(b, "de"));
+}
+
+/* Ergänzt data.katalog um die drei weiteren "Kennzeichnung GER, Verpackung & Produkt"-Varianten
+   (1002_PPM/1003_PPM/1005_PPM je nach VK Büro/LFGB, siehe kennzeichnungGerPpmCode) bei bereits
+   vorhandenen Dateien/Katalogen, die nur die ursprüngliche 1001_PPM-Position kennen - sonst würde
+   die passende Position für andere VK Büros/LFGB=Ja schlicht fehlen. */
+function migriereKatalogKennzeichnungVarianten() {
+  const KENNZEICHNUNG_KATEGORIE = "Sicherheit & Norm / Sonder- & Funktionsparameter";
+  ["1002_PPM", "1003_PPM", "1005_PPM"].forEach((code) => {
+    const vorhanden = data.katalog.some((k) => normalisiere(k.kategorie) === normalisiere(KENNZEICHNUNG_KATEGORIE) && /^kennzeichnung ger/i.test(k.bezeichnung) && k.bezeichnung.includes(code));
+    if (!vorhanden) {
+      data.katalog.push({ id: neueId(), kategorie: KENNZEICHNUNG_KATEGORIE, bezeichnung: `Kennzeichnung GER, Verpackung & Produkt (${code})`, kuerzel: "MS", sapCode: "KENNZEICHNNG_SF_TS", standardKosten: 360 });
+    }
+  });
 }
 
 /* Stellt sicher, dass es zu einem Warengruppen-Code einen Eintrag in data.warengruppen gibt -
@@ -919,6 +936,7 @@ function init() {
   data.normen.forEach(migriereNorm);
   data.pruefgrundlagen.forEach(migrierePruefgrundlage);
   migriereBereiche();
+  migriereKatalogKennzeichnungVarianten();
 
   document.querySelectorAll("nav.tabs button[data-tab]").forEach((btn) => {
     btn.addEventListener("click", () => wechsleTab(btn.dataset.tab));
@@ -2296,6 +2314,19 @@ const SICHERHEIT_NORM_UNTERPUNKTE = [
   { id: "optischerAbgleich", anzeigeName: "Optischer Abgleich", bezeichnungRegex: /^optischer abgleich/i }
 ];
 
+/* Kennzeichnung (Verpackung & Produkt) gibt es als vier Katalog-Varianten mit demselben Zweck,
+   aber unterschiedlichem PPM-Code je nach VK Büro des KVs bzw. LFGB-Kennzeichen - LFGB=Ja hat
+   Vorrang vor der VK-Büro-Zuordnung. Nur der jeweils passende Code wird als Vorschlag markiert,
+   die übrigen drei Varianten bleiben in der Kategorie sichtbar und manuell hinzufügbar. */
+function kennzeichnungGerPpmCode(kv) {
+  if (!kv) return "1001_PPM";
+  if (jaNeinAnzeige(kv.lfgb) === "Ja") return "1005_PPM";
+  const vk = normalisiereVkBuero(kv.vkBuero);
+  if (vk === "49") return "1002_PPM";
+  if (vk === "72") return "1003_PPM";
+  return "1001_PPM";
+}
+
 /* Migriert eine ältere KV-Datenstruktur (ein einzelnes kv.pruefumfangAuswahl.sicherheitNorm) auf
    die vier neuen Unterpunkte - der bisherige Wert (inkl. "manuell gesetzt"-Status) wird auf alle
    vier übertragen, damit vorhandene KVs beim Laden nicht plötzlich alle Sicherheit & Norm-
@@ -2312,12 +2343,29 @@ function migriereKvPruefumfangAuswahl(kv) {
   delete kv.pruefumfangManuell.sicherheitNorm;
 }
 
+/* Sicherheit-/Normprüfung ist Pflicht, außer der Artikel ist Trivial="Ja" UND die Artikelkategorie
+   ist Grün* - in dem Fall entfällt sie, es sei denn, für denselben Artikel ist ohnehin FFU, NGO
+   oder Referenzprüfung gefordert (dann bleibt sie trotzdem Pflicht). Ersetzt für diesen einen
+   Unterpunkt die sonst übliche "im Prüfumfang-Text erkannt"-Vorbelegung durch diese fachliche
+   Regel, die sich direkt aus Artikelkategorie/Trivial/den übrigen Abschnitten ergibt. */
+function sicherheitNormpruefungErforderlich(kv, pa) {
+  const istTrivialJa = jaNeinAnzeige(kv.trivial) === "Ja";
+  const istGruen = istArtikelkategorieGruen(pa);
+  if (!istGruen) return !istTrivialJa;
+  const ffuNgoReferenzGefordert = !!(kv.pruefumfangAuswahl.ffuFitting || kv.pruefumfangAuswahl.ngo || kv.pruefumfangAuswahl.referenzpruefung);
+  return ffuNgoReferenzGefordert;
+}
+
 /* Welche Prüfumfang-Abschnitte für diesen KV angehakt sind - solange der Nutzer einen Abschnitt
    noch nicht manuell umgeschaltet hat (kv.pruefumfangManuell), folgt die Auswahl live der
    Erkennung aus dem Prüfumfang des verknüpften PA (reagiert also automatisch, wenn ein PA erst
    nachträglich verknüpft oder gewechselt wird). Sobald der Nutzer eine Checkbox anfasst, "friert"
    diese auf seine Wahl ein und wird nicht mehr automatisch überschrieben. Ohne PA starten alle
-   noch nicht manuell gesetzten Abschnitte unangehakt, lassen sich aber trotzdem aktivieren. */
+   noch nicht manuell gesetzten Abschnitte unangehakt, lassen sich aber trotzdem aktivieren.
+   Innerhalb der vier Sicherheit & Norm-Unterpunkte gilt das nicht einheitlich: Sicherheit-/
+   Normprüfung folgt der fachlichen Regel (siehe sicherheitNormpruefungErforderlich), Kennzeichnung
+   (Verpackung & Produkt) ist immer Pflicht und daher immer vorbelegt, Kennzeichnung
+   (Bedienungsanleitung) und Optischer Abgleich folgen weiterhin der Prüfumfang-Text-Erkennung. */
 function pruefumfangAuswahlAktualisieren(kv, pa) {
   kv.pruefumfangAuswahl = kv.pruefumfangAuswahl || {};
   kv.pruefumfangManuell = kv.pruefumfangManuell || {};
@@ -2330,9 +2378,10 @@ function pruefumfangAuswahlAktualisieren(kv, pa) {
   });
   const sicherheitErkannt = pa ? erkennePruefumfangKategorien(pa.pruefumfang).some((k) => k.id === "sicherheitNorm") : false;
   SICHERHEIT_NORM_UNTERPUNKTE.forEach((u) => {
-    if (!kv.pruefumfangManuell[u.id]) {
-      kv.pruefumfangAuswahl[u.id] = sicherheitErkannt;
-    }
+    if (kv.pruefumfangManuell[u.id]) return;
+    if (u.id === "sicherheitNormpruefung") kv.pruefumfangAuswahl[u.id] = sicherheitNormpruefungErforderlich(kv, pa);
+    else if (u.id === "kennzeichnungVerpackungProdukt") kv.pruefumfangAuswahl[u.id] = true;
+    else kv.pruefumfangAuswahl[u.id] = sicherheitErkannt;
   });
 }
 
@@ -2361,9 +2410,13 @@ function ermittleVorschlagsPositionen(kategorie, pa, kv) {
   const positionen = data.katalog.filter((k) => normalisiere(k.kategorie) === normalisiere(kategorie.katalogKategorie));
   if (kategorie.id === "sicherheitNorm") {
     const auswahl = kv ? kv.pruefumfangAuswahl : {};
+    const kennzeichnungCode = kennzeichnungGerPpmCode(kv);
     return positionen.filter((k) => {
       if (/mustereinlagerung/i.test(k.bezeichnung)) return false;
       if (/akkusicherheitskurzcheck/i.test(k.bezeichnung)) return paHatBatterie(pa);
+      if (/^kennzeichnung ger/i.test(k.bezeichnung)) {
+        return !!auswahl.kennzeichnungVerpackungProdukt && k.bezeichnung.includes(kennzeichnungCode);
+      }
       const unterpunkt = SICHERHEIT_NORM_UNTERPUNKTE.find((u) => u.bezeichnungRegex.test(k.bezeichnung));
       return unterpunkt ? !!auswahl[unterpunkt.id] : true;
     });
@@ -2385,14 +2438,24 @@ function fuegeKatalogPositionHinzu(kv, katalogEintrag) {
   return true;
 }
 
+/* Artikelkategorie normalisiert (klein geschrieben, ohne Sonderzeichen) statt exakt verglichen,
+   da reale PA-Extraktionen z. B. "Grün*" (Sternchen/Zusatz) statt eines reinen "Grün" liefern. */
+function normalisiereArtikelkategorie(pa) {
+  const roh = pa ? String(pa.artikelkategorie || "").trim() : "";
+  return roh.toLowerCase().replace(/[^a-zäöü]/g, "");
+}
+function istArtikelkategorieGruen(pa) {
+  return normalisiereArtikelkategorie(pa).startsWith("grün");
+}
+
 /* Rabattfaktor auf die kombinierten Sicherheit&Norm-Kosten je nach Artikelkategorie des verknüpften
    PA - nachgebaut aus Auswahl_LIDL (Preisliste_Hilfe_claude.xlsm): Gesamtkosten = SUMME(Kosten VP
    je Setbestandteil) * (Grün:0,3 | Gelb:0,5 | sonst:0,7). Das Original vergleicht die Artikelkategorie
    per exaktem String ("="Grün""); reale PA-Extraktionen liefern aber z.B. "Grün*" (Sternchen/Zusatz) -
-   hier deshalb bewusst normalisiert (klein geschrieben, ohne Sonderzeichen) statt exakt verglichen. */
+   hier deshalb bewusst normalisiert verglichen. */
 function artikelkategorieMultiplikator(pa) {
   const roh = pa ? String(pa.artikelkategorie || "").trim() : "";
-  const norm = roh.toLowerCase().replace(/[^a-zäöü]/g, "");
+  const norm = normalisiereArtikelkategorie(pa);
   if (norm.startsWith("grün")) return { faktor: 0.3, hinweisText: `Rabattfaktor 0,3 (Artikelkategorie „${escapeHtml(roh)}“ → Grün)` };
   if (norm.startsWith("gelb")) return { faktor: 0.5, hinweisText: `Rabattfaktor 0,5 (Artikelkategorie „${escapeHtml(roh)}“ → Gelb)` };
   return { faktor: 0.7, hinweisText: roh ? `Rabattfaktor 0,7 (Artikelkategorie „${escapeHtml(roh)}“ nicht als Grün/Gelb erkannt)` : `Rabattfaktor 0,7 (keine Artikelkategorie hinterlegt)` };
@@ -4145,6 +4208,7 @@ document.getElementById("datei-laden-input").addEventListener("change", async (e
     data.normen.forEach(migriereNorm);
     data.pruefgrundlagen.forEach(migrierePruefgrundlage);
     migriereBereiche();
+    migriereKatalogKennzeichnungVarianten();
     aktivePaId = data.pruefauftraege.length ? data.pruefauftraege[0].id : null;
     aktiveKvId = data.kvs.length ? data.kvs[0].id : null;
     aktiveNormId = data.normen.length ? data.normen[0].id : null;
