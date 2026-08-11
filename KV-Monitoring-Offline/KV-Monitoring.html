@@ -1481,13 +1481,73 @@ function renderVorgaengerVergleichHtml(pa, vorgaengerPa) {
   </details>`;
 }
 
+/* "Ahnentafel": komplette Vorgänger-Kette ab einer Start-IAN, so weit sie sich über
+   "IAN-Vorgänger" der jeweiligen Prüfaufträge zurückverfolgen lässt - bis zum allerersten Projekt
+   (keine ianVorgaenger mehr hinterlegt) oder bis eine IAN in der Kette ohne eigenen Prüfauftrag
+   im System auftaucht (dann ist an dieser Stelle nicht bekannt, ob es noch ältere Vorgänger gibt).
+   gesehen schützt vor Endlosschleifen bei fehlerhaften/zirkulären Daten (IAN verweist letztlich auf
+   sich selbst). */
+function ermittleVorgaengerkette(startIan) {
+  const kette = [];
+  const gesehen = new Set();
+  let aktuelleIan = normalisiereIan(startIan);
+  while (aktuelleIan && !gesehen.has(aktuelleIan)) {
+    gesehen.add(aktuelleIan);
+    const pa = data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(aktuelleIan));
+    const kv = data.kvs.find((k) => normalisiere(k.ian) === normalisiere(aktuelleIan));
+    kette.push({ ian: aktuelleIan, pa, kv });
+    aktuelleIan = pa ? vorgaengerIanAus(pa) : "";
+  }
+  return kette;
+}
+
+/* Zeigt die Ahnentafel als nummerierte Liste - jede Generation mit IAN, Artikelbezeichnung (falls
+   PA vorhanden), Sprung-Links zu PA/KV sowie einem Hinweis, ob/warum die Kette dort endet. */
+function renderAhnentafelHtml(kette) {
+  if (!kette.length) return "";
+  const zeilenHtml = kette.map((g, i) => {
+    const bezeichnung = g.pa && g.pa.artikelbezeichnung ? escapeHtml(g.pa.artikelbezeichnung) : "";
+    const linksHtml = [
+      g.pa ? `<button type="button" class="ghost small" data-action="ahnentafel-pa-anzeigen" data-id="${g.pa.id}">→ Prüfauftrag</button>` : "",
+      g.kv ? `<button type="button" class="ghost small" data-action="ahnentafel-kv-anzeigen" data-id="${g.kv.id}">→ KV (${kvGesamtsumme(g.kv).toFixed(2)} €)</button>` : "",
+      !g.pa && !g.kv ? sharepointSucheLink(g.ian) : ""
+    ].filter(Boolean).join(" ");
+    let endeHinweis = "";
+    if (!g.pa) endeHinweis = `<span class="muted">Kein Prüfauftrag zu dieser IAN im System — Kette kann hier nicht weiterverfolgt werden.</span>`;
+    else if (!vorgaengerIanAus(g.pa)) endeHinweis = `<span class="badge nein">Erstes Projekt in der Kette</span>`;
+    return `<div class="pruefumfang-position" style="align-items:flex-start;flex-direction:column;gap:0.25rem">
+      <span><strong>${i + 1}. IAN ${escapeHtml(g.ian)}</strong>${bezeichnung ? ` — ${bezeichnung}` : ""}</span>
+      <div class="toolbar-zeile">${linksHtml}</div>
+      ${endeHinweis}
+    </div>`;
+  }).join("");
+  return `<details style="margin-top:0.6rem" open>
+    <summary class="muted" style="cursor:pointer">Ahnentafel anzeigen (${kette.length} Generation${kette.length === 1 ? "" : "en"} zurückverfolgt)</summary>
+    <div style="margin-top:0.4rem">${zeilenHtml}</div>
+  </details>`;
+}
+
+/* Kompakte, rein informative Liste der aktiven Prüfpositionen eines (Vorgänger-)KVs - anders als
+   "↺ Prüfpositionen aus Vorgänger-KV übernehmen" (Aktion) hier nur zum Nachlesen, was beim
+   jüngsten Vorgänger-Projekt tatsächlich geprüft wurde, ohne extra zu dessen KV wechseln zu
+   müssen. */
+function pruefpositionenUebersichtHtml(kv) {
+  const aktive = kv.positionen.filter((p) => p.aktiv);
+  if (!aktive.length) return `<p class="hinweis" style="margin:0.3rem 0 0">Keine aktiven Prüfpositionen im Vorgänger-KV hinterlegt.</p>`;
+  return `<div style="margin-top:0.4rem">${aktive.map((p) => `<div class="pruefumfang-position">
+    <span>${escapeHtml(p.kategorie || "(ohne Kategorie)")} — ${escapeHtml(p.bezeichnung || "(ohne Bezeichnung)")} <span class="muted">(${((Number(p.kosten) || 0) * (Number(p.anzahl) || 0)).toFixed(2)} €${Number(p.anzahl) > 1 ? `, ${p.anzahl}×` : ""})</span></span>
+  </div>`).join("")}</div>`;
+}
+
 /* Zeigt eine Karte zum Vorgänger-Artikel: SharePoint-Suchlink plus - falls im System vorhanden -
-   direkte Sprünge zu dessen Prüfauftrag/KV sowie eine Vergleichstabelle (aktuell vs. Vorgänger).
-   Wichtig vor allem bei der KV-Erstellung, da Daten des Vorgängers oft als Ausgangspunkt
-   übernommen werden können (nach Prüfung). aktuellePa (optional) ist der PA, gegen den verglichen
-   wird - auf der PA-Detailseite der Prüfauftrag selbst, auf der KV-Detailseite der verknüpfte PA.
-   aktuelleKv (optional, nur auf der KV-Detailseite) ermöglicht die direkte Übernahme der
-   Prüfpositionen des Vorgänger-KVs in den gerade bearbeiteten KV. */
+   direkte Sprünge zu dessen Prüfauftrag/KV, eine Vergleichstabelle (aktuell vs. Vorgänger) sowie
+   die vollständige Ahnentafel (alle Vorgänger-Generationen, so weit bekannt). Wichtig vor allem bei
+   der KV-Erstellung, da Daten des Vorgängers oft als Ausgangspunkt übernommen werden können (nach
+   Prüfung). aktuellePa (optional) ist der PA, gegen den verglichen wird - auf der PA-Detailseite
+   der Prüfauftrag selbst, auf der KV-Detailseite der verknüpfte PA. aktuelleKv (optional, nur auf
+   der KV-Detailseite) ermöglicht die direkte Übernahme der Prüfpositionen des Vorgänger-KVs in den
+   gerade bearbeiteten KV, sowie - zusätzlich zur Ahnentafel - eine Übersicht der beim jüngsten
+   Vorgänger tatsächlich geprüften Positionen. */
 function renderVorgaengerKarte(vorgaengerIan, aktuellePa, aktuelleKv) {
   if (!vorgaengerIan) return "";
   const vorgaengerPa = data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(vorgaengerIan));
@@ -1505,8 +1565,10 @@ function renderVorgaengerKarte(vorgaengerIan, aktuellePa, aktuelleKv) {
           ${vorgaengerKv ? `<button class="ghost small" data-action="vorgaenger-kv-anzeigen" data-id="${vorgaengerKv.id}">→ KV des Vorgängers (${kvGesamtsumme(vorgaengerKv).toFixed(2)} €)</button>` : `<span class="muted">Kein KV zum Vorgänger im System.</span>`}
           ${aktuelleKv && vorgaengerKv && vorgaengerKv.positionen.length ? `<button class="ghost small" data-action="vorgaenger-positionen-uebernehmen">↺ Prüfpositionen aus Vorgänger-KV übernehmen</button>` : ""}
         </div>
-        ${aktuellePa && vorgaengerPa ? renderVorgaengerVergleichHtml(aktuellePa, vorgaengerPa) : ""}`
+        ${aktuellePa && vorgaengerPa ? renderVorgaengerVergleichHtml(aktuellePa, vorgaengerPa) : ""}
+        ${aktuelleKv && vorgaengerKv ? `<div class="pa-block-feld" style="margin-top:0.6rem"><h3>Beim jüngsten Vorgänger (IAN ${escapeHtml(vorgaengerIan)}) geprüft</h3>${pruefpositionenUebersichtHtml(vorgaengerKv)}</div>` : ""}`
       : `<p class="hinweis">Kein Prüfauftrag oder KV zu dieser Vorgänger-IAN im System vorhanden — ggf. über 🔍 auf SharePoint suchen.</p>`}
+    ${renderAhnentafelHtml(ermittleVorgaengerkette(vorgaengerIan))}
   </div>`;
 }
 
@@ -1518,6 +1580,12 @@ function initialisiereVorgaengerKarte(panel, aktuelleKv) {
   if (paBtn) paBtn.addEventListener("click", () => { aktivePaId = paBtn.dataset.id; renderPaTab(); });
   const kvBtn = panel.querySelector('[data-action="vorgaenger-kv-anzeigen"]');
   if (kvBtn) kvBtn.addEventListener("click", () => { aktiveKvId = kvBtn.dataset.id; wechsleTab("kvs"); });
+  panel.querySelectorAll('[data-action="ahnentafel-pa-anzeigen"]').forEach((btn) => {
+    btn.addEventListener("click", () => { aktivePaId = btn.dataset.id; wechsleTab("pruefauftraege"); });
+  });
+  panel.querySelectorAll('[data-action="ahnentafel-kv-anzeigen"]').forEach((btn) => {
+    btn.addEventListener("click", () => { aktiveKvId = btn.dataset.id; wechsleTab("kvs"); });
+  });
   const positionenBtn = panel.querySelector('[data-action="vorgaenger-positionen-uebernehmen"]');
   if (positionenBtn && aktuelleKv) {
     positionenBtn.addEventListener("click", () => {

@@ -133,6 +133,13 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     Material, Markenreferenz, Garantie) aktuell gegen Vorgänger stellt und
     abweichende Zeilen (⚠, gelb hinterlegt) von gleichen (✓) unterscheidet —
     so sieht man auf einen Blick, was sich seit dem Vorgänger geändert hat.
+    Ganz unten in der Karte steht die **Ahnentafel**: die komplette
+    Vorgänger-Kette, über „IAN-Vorgänger" so weit zurückverfolgt, wie
+    Prüfaufträge dafür im System vorliegen — Generation für Generation
+    nummeriert, jede mit Sprung-Buttons zum jeweiligen Prüfauftrag/KV
+    (fehlt zu einer IAN in der Kette ein Prüfauftrag, endet die Verfolgung
+    dort mit einem entsprechenden Hinweis; das erste Projekt der Kette —
+    keine weitere „IAN-Vorgänger" mehr hinterlegt — ist als solches markiert).
 - **Kostenvoranschläge (KV)** – das Herzstück: pro IAN ein KV mit
   Stammdaten und einer Tabelle mechanischer Prüfpositionen (Kategorie,
   Bezeichnung, Kürzel, SAP-Code, Kosten, Anzahl, Summe, aktiv/inaktiv). Die
@@ -177,12 +184,17 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   danach die Vorgänger-Artikel-Karte sowie die Prüfpositionen-Tabelle.
 
   Sofern der verknüpfte Prüfauftrag eine „IAN-Vorgänger"
-  enthält, erscheint dieselbe Vorgänger-Artikel-Karte wie bei den Prüfaufträgen,
-  ergänzt um **„↺ Prüfpositionen aus Vorgänger-KV übernehmen"**: kopiert alle
+  enthält, erscheint dieselbe Vorgänger-Artikel-Karte wie bei den Prüfaufträgen
+  (inkl. Ahnentafel, siehe oben), ergänzt um zwei zusätzliche Punkte:
+  **„↺ Prüfpositionen aus Vorgänger-KV übernehmen"**: kopiert alle
   aktiven Positionen des Vorgänger-KVs (mit dessen tatsächlichen Kosten/
   Anzahl, nicht den ursprünglichen Standardwerten) in den aktuellen KV; bereits
   vorhandene Positionen werden dabei übersprungen, ein zweiter Klick legt also
-  nichts doppelt an.
+  nichts doppelt an. Und, sofern zum jüngsten Vorgänger ein KV im System
+  vorliegt: **„Beim jüngsten Vorgänger geprüft"** — eine schreibgeschützte
+  Liste aller dort aktiven Prüfpositionen (Kategorie, Bezeichnung, Kosten ×
+  Anzahl), direkt zum Nachlesen, was beim letzten Projekt tatsächlich geprüft
+  wurde, ohne extra zu dessen KV wechseln zu müssen.
 
   **Warengruppe (neu) ist ein durchsuchbares Dropdown** (dieselbe Liste wie
   im Reiter „Prüfgrundlagen"/„Verwaltung") und wird **automatisch aus dem
