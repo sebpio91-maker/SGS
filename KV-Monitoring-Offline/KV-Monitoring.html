@@ -3163,6 +3163,13 @@ function renderKvDetail() {
     const neuVerknuepft = data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(kv.ian));
     if (neuVerknuepft && fuelleKvAusPa(kv, neuVerknuepft, false)) renderKvDetail();
   });
+  /* LFGB/Trivial fließen direkt in die Vorbelegung von Sicherheit-/Normprüfung (Trivial="Ja") bzw.
+     die Kennzeichnung-GER-Variante (LFGB="Ja") ein - bei einer Dropdown-Auswahl (kein Tippen, also
+     kein Fokus-Risiko) deshalb sofort komplett neu rendern, statt erst bei der nächsten anderen
+     Aktion nachzuziehen. */
+  panel.querySelectorAll('#kv-formular-pflicht [data-feld="lfgb"], #kv-formular-pflicht [data-feld="trivial"]').forEach((el) => {
+    el.addEventListener("change", () => renderKvDetail());
+  });
   document.getElementById("kv-duplizieren").addEventListener("click", () => {
     const kopie = JSON.parse(JSON.stringify(kv));
     kopie.id = neueId();

@@ -147,7 +147,10 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   **Pflichtangaben** (LFGB?, Trivialartikel?) stehen in einer eigenen,
   bewusst hervorgehobenen Karte direkt unter den Kopfdaten — getrennt von
   den übrigen Stammdaten, damit diese beiden Mussfelder nicht in der Menge
-  der restlichen Formularfelder untergehen.
+  der restlichen Formularfelder untergehen. Eine Änderung von LFGB? oder
+  Trivialartikel? aktualisiert die komplette KV-Detailseite **sofort** —
+  wird z. B. Trivialartikel? auf „Ja" gesetzt, verschwindet der Haken bei
+  „Sicherheit-/Normprüfung" unmittelbar, ganz ohne Tab-Wechsel.
 
   **Bereits aktive Prüfpositionen erscheinen direkt neben der zugehörigen
   Prüfumfang-Checkbox** (Bezeichnung(en) + Kosten als grünes Häkchen-Badge),
