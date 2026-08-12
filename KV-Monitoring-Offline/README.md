@@ -157,8 +157,17 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   passenden Prüfauftrag, „→ Verknüpften Kostenvoranschlag anzeigen" auf der
   Prüfauftrags-Detailseite wieder zurück — praktisch, um bei Bedarf schnell
   genauere Informationen auf der jeweils anderen Seite nachzuschlagen, ohne
-  über die Liste suchen zu müssen. Beide Buttons erscheinen nur, wenn zur
-  IAN tatsächlich ein Gegenstück existiert.
+  über die Liste suchen zu müssen. **Existiert zur IAN des Prüfauftrags noch
+  kein KV**, erscheint stattdessen „+ Kostenvoranschlag für diese IAN
+  anlegen" — legt direkt einen neuen, minimalen KV (IAN, Artikelbezeichnung,
+  Lieferant, Warengruppe) an und wechselt in den KV-Tab; Warengruppe und
+  Styleanzahl übernimmt der KV danach wie gewohnt automatisch aus dem
+  verlinkten Prüfauftrag. Bei der **Vorgänger-Artikel-Karte** (siehe oben)
+  ist das bewusst anders: dort gibt es ausschließlich Sprung-Buttons zu
+  bereits vorhandenen Prüfaufträgen/KVs des Vorgängers, aber **keine
+  Möglichkeit, von dort aus einen neuen KV anzulegen** — ein KV soll immer
+  nur zum aktuellen Artikel selbst entstehen, nicht versehentlich zu einem
+  Vorgänger.
 
   **Pflichtangaben** (LFGB?, Trivialartikel?) stehen in einer eigenen,
   bewusst hervorgehobenen Karte direkt unter den Kopfdaten — getrennt von

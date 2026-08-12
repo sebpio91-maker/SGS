@@ -2955,6 +2955,19 @@ function neuerKvAusArbeitsvorrat(eintrag) {
   renderKvTab();
 }
 
+/* Erstellt (oder springt zu einem bereits vorhandenen) Kostenvoranschlag direkt aus einem
+   Prüfauftrag heraus, ohne den Umweg über den Arbeitsvorrat - baut dafür ein Arbeitsvorrat-
+   förmiges Objekt und delegiert an neuerKvAusArbeitsvorrat, die die "springen falls vorhanden,
+   sonst anlegen"-Logik bereits implementiert. Warengruppe/Styleanzahl werden hier nicht extra
+   vorbefüllt, da renderKvDetail() das beim ersten Rendern ohnehin automatisch aus dem verlinkten
+   Prüfauftrag übernimmt (fuelleKvAusPa). */
+function neuerKvAusPa(pa) {
+  neuerKvAusArbeitsvorrat({
+    ian: pa.ian, bezeichnung: pa.artikelbezeichnung, lieferant: pa.lieferant, warengruppe: pa.warengruppe,
+    alteWarengruppe: "", lfgb: "", trivial: "", anzahlStyles: "", vkBuero: ""
+  });
+}
+
 /* ---------- Warengruppe/Styles aus verknüpftem Prüfauftrag übernehmen ---------- */
 
 function fuelleAusPa(eintrag, ueberschreiben) {
@@ -3486,7 +3499,7 @@ function renderPaDetail() {
       </div>
       <div class="toolbar-zeile" style="margin-top:0.8rem">
         ${arbeitsvorratTreffer ? `<button class="ghost small" id="pa-in-arbeitsvorrat-uebernehmen">↺ Warengruppe/Styles in den Arbeitsvorrat übernehmen</button>` : `<span class="muted">Kein Arbeitsvorrat-Eintrag mit dieser IAN gefunden.</span>`}
-        ${kvTreffer ? `<button class="ghost small" id="pa-zum-kv">→ Verknüpften Kostenvoranschlag anzeigen</button>` : ""}
+        ${kvTreffer ? `<button class="ghost small" id="pa-zum-kv">→ Verknüpften Kostenvoranschlag anzeigen</button>` : `<button class="ghost small" id="pa-neuer-kv">+ Kostenvoranschlag für diese IAN anlegen</button>`}
         <button class="danger small" id="pa-loeschen" style="margin-left:auto">Prüfauftrag löschen</button>
       </div>
     </div>
@@ -3527,6 +3540,8 @@ function renderPaDetail() {
   }
   if (kvTreffer) {
     document.getElementById("pa-zum-kv").addEventListener("click", () => { aktiveKvId = kvTreffer.id; wechsleTab("kvs"); });
+  } else {
+    document.getElementById("pa-neuer-kv").addEventListener("click", () => { neuerKvAusPa(pa); });
   }
   document.getElementById("pa-feld-hinzufuegen").addEventListener("click", () => {
     pa.felder.push({ schluessel: "", wert: "" });
