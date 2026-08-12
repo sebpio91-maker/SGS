@@ -34,7 +34,12 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   **Stand der PA-PDF** (Datum aus dem Dateinamen bzw. ersatzweise aus dem
   Seitenfuß der PDF), bei „KV" mit der **aktuellen Gesamtsumme** — ein Klick
   springt direkt zum jeweiligen Datensatz; fehlt einer, steht dort nur ein
-  „–". Unter der Kopfzeile der Tabelle gibt es **Filter**: IAN und
+  „–". Die Spalten **„LFGB?"** und **„Trivial?"** zeigen den jeweiligen Wert,
+  **sobald er irgendwo vorliegt** — da beide in der Praxis erst bei der
+  KV-Erstellung (Karte „Pflichtangaben") gepflegt werden, zählt hier
+  automatisch der Wert des verknüpften KVs, falls das Feld am
+  Arbeitsvorrat-Eintrag selbst noch leer ist (ein dort manuell eingetragener
+  Wert hat weiterhin Vorrang). Unter der Kopfzeile der Tabelle gibt es **Filter**: IAN und
   **Bezeichnung** als Freitextfeld (Teiltreffer); **VK Büro, Lieferant und Warengruppe als
   durchsuchbare Mehrfachauswahl** — anklicken öffnet ein Panel mit Suchfeld
   und Checkbox-Liste, mehrere Werte gleichzeitig ankreuzbar (inkl.

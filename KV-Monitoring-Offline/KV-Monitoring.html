@@ -1027,10 +1027,20 @@ function jaNeinAnzeige(wert) {
 }
 
 /* Einheitlicher Zugriff auf den (normalisierten) Anzeige-/Vergleichswert eines Feldes. */
+/* LFGB?/Trivial? werden in der Praxis nicht am Arbeitsvorrat-Eintrag selbst gepflegt, sondern bei
+   der KV-Erstellung (Karte "Pflichtangaben") - eigenes Feld am Arbeitsvorrat-Eintrag bleibt daher
+   meist leer. Fällt r[feld] leer aus, zählt ersatzweise der Wert des verknüpften KVs (falls
+   vorhanden), damit Anzeige, Filter-Dropdown und Filter-Abgleich den tatsächlich gepflegten Wert
+   zeigen/finden. */
 function arbeitsvorratAnzeigewert(r, feld) {
   if (feld === "mechErledigt") return r.mechErledigt ? "Ja" : "Nein";
   if (feld === "vkBuero") return normalisiereVkBuero(r.vkBuero);
   if (feld === "warengruppe") return normalisiereWarengruppe(r.warengruppe);
+  if (feld === "lfgb" || feld === "trivial") {
+    if (r[feld]) return r[feld];
+    const kv = data.kvs.find((k) => normalisiere(k.ian) === normalisiere(r.ian));
+    return kv ? kv[feld] : "";
+  }
   return r[feld];
 }
 
@@ -1067,10 +1077,7 @@ function gefiltertArbeitsvorrat() {
   ARBEITSVORRAT_SELECT_FELDER.forEach((f) => {
     const wert = arbeitsvorratFilter[f];
     if (wert === "") return;
-    liste = liste.filter((r) => {
-      const rWert = f === "mechErledigt" ? (r.mechErledigt ? "ja" : "nein") : normalisiere(r[f]);
-      return rWert === wert;
-    });
+    liste = liste.filter((r) => normalisiere(arbeitsvorratAnzeigewert(r, f)) === wert);
   });
   const ianFilter = normalisiere(arbeitsvorratFilter.ian);
   if (ianFilter) liste = liste.filter((r) => normalisiere(r.ian).includes(ianFilter));
@@ -1277,8 +1284,8 @@ function renderArbeitsvorratKoerper() {
       <td>${escapeHtml(r.sachbearbeiter)}</td>
       <td>${escapeHtml(normalisiereWarengruppe(r.warengruppe))}</td>
       <td>${escapeHtml(r.anzahlStyles)}</td>
-      <td>${jaNeinBadge(r.lfgb)}</td>
-      <td>${jaNeinBadge(r.trivial)}</td>
+      <td>${jaNeinBadge(arbeitsvorratAnzeigewert(r, "lfgb"))}</td>
+      <td>${jaNeinBadge(arbeitsvorratAnzeigewert(r, "trivial"))}</td>
       <td class="zentriert"><input type="checkbox" data-action="mech-toggle" ${r.mechErledigt ? "checked" : ""}></td>
       <td class="zentriert">${pa ? `<button class="badge ja pa-badge" data-action="pa-anzeigen" title="Prüfauftrag anzeigen">📄${pa.stand ? " " + escapeHtml(pa.stand) : ""}</button>` : '<span class="muted">–</span>'}</td>
       <td class="zentriert">${kv ? `<button class="badge ja kv-badge" data-action="kv-anzeigen" title="Kostenvoranschlag anzeigen">📋 ${kvGesamtsumme(kv).toFixed(2)} €</button>` : '<span class="muted">–</span>'}</td>
