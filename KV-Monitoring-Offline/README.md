@@ -481,6 +481,13 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   sofort eine neue Norm an (auch schon vor dem Speichern der
   Prüfgrundlage). Je ausgewählter Norm lässt sich zusätzlich
   **„in Anlehnung an"** ankreuzen, falls sie nicht vollständig anwendbar ist.
+  **„→ bearbeiten"** neben jeder ausgewählten Norm/PPM springt direkt in
+  deren Bearbeitung im Reiter „Normen" (schließt dafür das
+  Prüfgrundlage-Fenster wie „Abbrechen", verwirft also ungespeicherte
+  Änderungen an der Prüfgrundlage) — praktisch, um z. B. schnell den
+  SAP-Code oder eine Bemerkung der referenzierten Norm zu prüfen/anzupassen,
+  ohne die Prüfgrundlage separat wiederzufinden. Bei einer inzwischen
+  gelöschten Norm-Referenz fehlt der Button entsprechend.
   Diese Normen-Auswahl gibt es jetzt für alle drei Prüfblöcke — **Sicherheit
   & Norm, FFU/Fitting und NGO/StiWa** —, die vorherigen reinen
   Freitext-Hinweise bei FFU/StiWa sind entsprechend entfallen. Das frühere,

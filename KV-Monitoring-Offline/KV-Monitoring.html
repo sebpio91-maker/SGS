@@ -5292,6 +5292,7 @@ function renderNormenChips(container, entwurf, feldName) {
         return `<div class="norm-ref-item">
           <div class="norm-ref-kopf">
             <span class="norm-ref-bezeichnung">${norm ? normTypBadgeHtml(norm.typ) : ""}${escapeHtml(bez)}</span>
+            ${norm ? `<button type="button" class="ghost small" data-normid="${escapeHtml(norm.id)}" data-rolle="norm-bearbeiten" title="Norm/PPM in eigenem Reiter bearbeiten">→ bearbeiten</button>` : ""}
             <button type="button" data-idx="${i}" data-rolle="entfernen" title="Entfernen">✕</button>
           </div>
           <div class="norm-ref-zeile">
@@ -5310,6 +5311,16 @@ function renderNormenChips(container, entwurf, feldName) {
     : `<span class="muted" style="font-size:0.78rem">Keine.</span>`;
   liste.querySelectorAll('[data-rolle="entfernen"]').forEach((btn) => {
     btn.addEventListener("click", () => { refs.splice(Number(btn.dataset.idx), 1); renderNormenChips(container, entwurf, feldName); });
+  });
+  /* Springt direkt in die Bearbeitung der referenzierten Norm/PPM im Reiter "Normen" - schließt
+     dafür (wie "Abbrechen") das Prüfgrundlage-Overlay und verwirft dessen ungespeicherten Entwurf,
+     da die Prüfgrundlage sonst nicht gleichzeitig sichtbar bliebe. */
+  liste.querySelectorAll('[data-rolle="norm-bearbeiten"]').forEach((btn) => {
+    btn.addEventListener("click", () => {
+      aktiveNormId = btn.dataset.normid;
+      schliesseOverlay();
+      wechsleTab("normen");
+    });
   });
   liste.querySelectorAll('[data-rolle="anlehnung"]').forEach((cb) => {
     cb.addEventListener("change", () => { refs[Number(cb.dataset.idx)].inAnlehnungAn = cb.checked; });
