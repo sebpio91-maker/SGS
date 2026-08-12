@@ -142,6 +142,10 @@ tr#arbeitsvorrat-filter-zeile select, tr#arbeitsvorrat-filter-zeile input[type=t
 .pruefgrundlagen-gruppe summary::before { content:"▸"; display:inline-block; transition:transform 0.15s; }
 .pruefgrundlagen-gruppe[open] summary::before { transform:rotate(90deg); }
 .pruefgrundlagen-gruppe .tabellen-wrapper { border:none; border-radius:0; border-top:1px solid var(--border); max-height:none; }
+.pruefgrundlagen-untergruppen { padding:0.6rem; border-top:1px solid var(--border); background:#f7f9f8; }
+.pruefgrundlagen-untergruppen .pruefgrundlagen-untergruppe { margin-bottom:0.5rem; }
+.pruefgrundlagen-untergruppen .pruefgrundlagen-untergruppe:last-child { margin-bottom:0; }
+.pruefgrundlagen-untergruppen .pruefgrundlagen-untergruppe summary { background:#e4eae8; font-size:0.86rem; }
 tr.klickbar { cursor:pointer; }
 tr.klickbar:hover td { background:#faf9f6; }
 
@@ -189,6 +193,9 @@ tr.klickbar:hover td { background:#faf9f6; }
 .verwaltung-zeile input[type="text"] { flex:1; font-family:inherit; font-size:0.88rem; padding:0.35rem 0.5rem; border:1px solid var(--border); border-radius:6px; }
 .verwaltung-zeile input.code-feld { flex:0 0 140px; }
 .verwaltung-zeile input.alt-feld { flex:0 0 140px; }
+.verwaltung-zeile select.bereich-feld { flex:0 0 190px; font-family:inherit; font-size:0.88rem; padding:0.35rem 0.5rem; border:1px solid var(--border); border-radius:6px; }
+.verwaltung-paginierung { display:flex; align-items:center; justify-content:center; gap:0.7rem; padding:0.5rem 0; }
+.verwaltung-paginierung .muted { font-size:0.82rem; white-space:nowrap; }
 
 .anwendungsbereich-item { border:1px solid var(--border); border-radius:6px; padding:0.5rem 0.6rem; margin-bottom:0.5rem; }
 .anwendungsbereich-kopf { display:flex; gap:0.4rem; margin-bottom:0.35rem; }
@@ -312,12 +319,18 @@ input[type=file] { display:none; }
       <div class="spacer"></div>
       <button id="btn-neue-pruefgrundlage">+ Neue Prüfgrundlage</button>
     </div>
+    <div class="pill-toggle" id="pruefgrundlagen-ansicht-toggle">
+      <button type="button" data-ansicht="warengruppe" class="aktiv">Nach Warengruppe (LIDL)</button>
+      <button type="button" data-ansicht="bereich">Nach Bereich (andere Kunden)</button>
+    </div>
     <p class="hinweis">Referenzdaten für die Warengruppen-Empfehlung im Kostenvoranschlag (Norm, Anzahl
-      Muster, Kosten Sicherheit &amp; Norm / FFU / NGO-StiWa) — zuerst nach Warengruppe gruppiert, darunter
-      nach Produkt sortiert. Gruppen lassen sich auf-/zuklappen. Alle Felder direkt in der Zeile bearbeitbar,
-      Änderungen werden wie überall automatisch gespeichert. Über die Suche oben (aktueller Bereich) lässt
-      sich nach Warengruppe, Produkt, Norm oder Bemerkung filtern. Wird der Warengruppen-Code eines Eintrags
-      geändert, wandert die Zeile nach dem Verlassen des Feldes in die passende Gruppe.</p>
+      Muster, Kosten Sicherheit &amp; Norm / FFU / NGO-StiWa). In der Ansicht „Nach Warengruppe" zuerst nach
+      Warengruppe gruppiert, darunter nach Produkt sortiert; in der Ansicht „Nach Bereich" zuerst nach Bereich
+      (Reiter „Verwaltung" → Warengruppen → Feld „Bereich"), darunter nach Warengruppe. Gruppen lassen sich
+      auf-/zuklappen. Alle Felder direkt in der Zeile bearbeitbar, Änderungen werden wie überall automatisch
+      gespeichert. Über die Suche oben (aktueller Bereich) lässt sich nach Warengruppe, Produkt, Norm oder
+      Bemerkung filtern. Wird der Warengruppen-Code eines Eintrags geändert, wandert die Zeile nach dem
+      Verlassen des Feldes in die passende Gruppe.</p>
     <div id="pruefgrundlagen-gruppen"></div>
   </div>
 </section>
@@ -359,12 +372,13 @@ input[type=file] { display:none; }
       anlegen, umbenennen oder löschen. Umbenennen aktualisiert automatisch alle Prüfgrundlagen, die
       den bisherigen Wert verwenden.</p>
     <div id="bereiche-liste"></div>
+    <div class="verwaltung-paginierung" id="bereiche-paginierung"></div>
     <div class="toolbar-zeile" style="margin-top:0.6rem">
       <input type="text" id="bereich-neu-input" placeholder="Neuer Bereich…" style="flex:1;font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px">
       <button type="button" id="bereich-hinzufuegen-btn">+ Hinzufügen</button>
     </div>
   </div>
-  <div class="card" style="max-width:900px">
+  <div class="card" style="max-width:1000px">
     <h2 style="margin-top:0">Warengruppen</h2>
     <p class="hinweis">Code und Bezeichnung speisen das Warengruppen-Dropdown in den Reitern
       „Prüfgrundlagen" und „Kostenvoranschläge" (dort als „Warengruppe (neu)") — hier anlegen,
@@ -373,12 +387,16 @@ input[type=file] { display:none; }
       dem Code den passenden Alt-Wert zu (offizielle ADMIN-Blatt-Liste als Startbestand) — sobald
       hier ein Eintrag existiert, wird „Warengruppe (alt)" im Kostenvoranschlag automatisch daraus
       befüllt (nur wenn dort noch leer). Zeilen ohne eigene Bezeichnung (Code wurde automatisch als
-      Platzhalter übernommen) zeigen die Bezeichnung als „– noch keine Bezeichnung –".</p>
+      Platzhalter übernommen) zeigen die Bezeichnung als „– noch keine Bezeichnung –". „Bereich"
+      ordnet die Warengruppe einem Bereich zu (offizielle Tabelle als Startbestand) — diese
+      Zuordnung speist die Bereich-Ansicht im Reiter „Prüfgrundlagen" (siehe dort).</p>
     <div id="warengruppen-liste"></div>
+    <div class="verwaltung-paginierung" id="warengruppen-paginierung"></div>
     <div class="toolbar-zeile" style="margin-top:0.6rem">
       <input type="text" id="warengruppe-neu-code-input" placeholder="Code (z. B. 250.045)" style="width:140px;font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px">
       <input type="text" id="warengruppe-neu-name-input" placeholder="Bezeichnung (optional)" style="flex:1;font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px">
       <input type="text" id="warengruppe-neu-alt-input" placeholder="Warengruppe alt (optional)" style="width:160px;font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px">
+      <select id="warengruppe-neu-bereich-input" style="font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px"></select>
       <button type="button" id="warengruppe-hinzufuegen-btn">+ Hinzufügen</button>
     </div>
   </div>
@@ -635,14 +653,15 @@ function migriereBereiche() {
    (Stand 01.03.2026) - rein additiv wie migriereBereiche() oben, daher ohne Einmal-Merker sicher
    bei jedem Laden erneut ausführbar. Der Wert "keine Zuordnung" (fehlende EK-Säule bei einzelnen
    Warengruppen) wird bewusst nicht als Bereich übernommen, da er keine echte Bereichsbezeichnung
-   ist. */
+   ist. Ursprünglich getrennte Säulen wie "Baumarkt 1"/"Baumarkt 2" werden hier bereits als ein
+   gemeinsamer Bereich ("Baumarkt") geführt (siehe migriereBereicheOhneZahlensuffix für bereits
+   installierte, noch getrennte Altbestände). */
 function migriereEkSaeulenAlsBereiche() {
   const vorhanden = new Set(data.bereiche.map((b) => normalisiere(b)));
   [
-    "Baumarkt 1", "Baumarkt 2", "Damen Bekleidung", "Herren Bekleidung", "Kinder Bekleidung",
-    "Küche & Haushalt 1", "Küche & Haushalt 2", "Schuhe & Strumpfwaren", "Spiel- & Schreibwaren",
-    "Sport & Freizeit 1", "Sport & Freizeit 2", "Wohnen & Einrichten 1", "Wohnen & Einrichten 2",
-    "Wohnen & Einrichten 3"
+    "Baumarkt", "Damen Bekleidung", "Herren Bekleidung", "Kinder Bekleidung",
+    "Küche & Haushalt", "Schuhe & Strumpfwaren", "Spiel- & Schreibwaren",
+    "Sport & Freizeit", "Wohnen & Einrichten"
   ].forEach((saeule) => {
     if (!vorhanden.has(normalisiere(saeule))) {
       data.bereiche.push(saeule);
@@ -652,6 +671,28 @@ function migriereEkSaeulenAlsBereiche() {
   data.bereiche.sort((a, b) => a.localeCompare(b, "de"));
 }
 
+/* Fasst Bereiche zusammen, deren Name nur durch eine einzelne, angehängte Zahl unterschieden
+   wird (z. B. "Baumarkt 1" + "Baumarkt 2" -> "Baumarkt") - rein additiv/idempotent wie
+   migriereEkSaeulenAlsBereiche() oben: einmal zusammengeführt bleibt beim erneuten Lauf nichts
+   mehr zu tun, da der verbleibende Name selbst nicht mehr auf eine Zahl endet. Betrifft sowohl
+   die Bereiche-Liste selbst als auch alle Prüfgrundlagen, die einen der zusammengefassten Namen
+   referenzieren (Kaskade wie bei einer manuellen Umbenennung in der Verwaltung). */
+function migriereBereicheOhneZahlensuffix() {
+  let geaendert = false;
+  [...data.bereiche].forEach((b) => {
+    const treffer = /^(.*\S)\s+\d+$/.exec(b.trim());
+    if (!treffer) return;
+    const basis = treffer[1];
+    data.pruefgrundlagen.forEach((e) => {
+      if (normalisiere(e.bereich) === normalisiere(b)) e.bereich = basis;
+    });
+    data.bereiche = data.bereiche.filter((x) => normalisiere(x) !== normalisiere(b));
+    if (!data.bereiche.some((x) => normalisiere(x) === normalisiere(basis))) data.bereiche.push(basis);
+    geaendert = true;
+  });
+  if (geaendert) data.bereiche.sort((a, b) => a.localeCompare(b, "de"));
+}
+
 /* ---------- Offizielle Warengruppen-Stammdaten (Code + Bezeichnung, Stand 01.03.2026) ----------
    Vom Nutzer als vollständige Zuordnungstabelle geliefert (730 eindeutige Codes, deckt alle
    Warenbereiche ab - nicht nur die zuvor genutzten mechanischen Warengruppen). Ersetzt/ergänzt
@@ -659,748 +700,751 @@ function migriereEkSaeulenAlsBereiche() {
    Zuordnung (data.warengruppenZuordnung, siehe unten) bleibt davon unberührt. */
 function offizielleWarengruppenStammdaten() {
   return [
-    { code: "201.001", name: "D- Blusen u. Hemden" },
-    { code: "201.002", name: "D- Pullover, Sweatjacken u. Cardigan" },
-    { code: "201.003", name: "D- Westen" },
-    { code: "201.004", name: "D- Jacken" },
-    { code: "201.005", name: "D- Mäntel" },
-    { code: "201.007", name: "D- Shirts u. Polos" },
-    { code: "201.010", name: "D- Hosen lang/kurz" },
-    { code: "201.011", name: "D- Leggings inkl. 3/4" },
-    { code: "201.012", name: "D- Röcke" },
-    { code: "201.020", name: "D- Einteiler" },
-    { code: "201.021", name: "D- Kleider" },
-    { code: "201.022", name: "D- Ganzkörper Sets" },
-    { code: "201.023", name: "D- Arbeitsbekleidung" },
-    { code: "201.100", name: "D- BH's" },
-    { code: "201.101", name: "D- Bodies" },
-    { code: "201.102", name: "D- Bustiers u. Bralettes" },
-    { code: "201.103", name: "D- Unterhemden" },
-    { code: "201.104", name: "D- Slips alle Formen" },
-    { code: "201.106", name: "D- lange Unterhosen inkl- 3/4" },
-    { code: "201.107", name: "D- Unterwäsche Sets inkl- Unterkleider" },
-    { code: "201.110", name: "D- Morgenmäntel" },
-    { code: "201.111", name: "D- Nachtwäsche Oberteile inkl. Nachthemden" },
-    { code: "201.112", name: "D- Nachtwäsche-Sets inkl. Pyjamas" },
-    { code: "201.113", name: "D- Nachtwäsche Unterteile inkl. Einteiler" },
-    { code: "201.120", name: "D- Shapewear Oberteile inkl. Bodies u. Kleider" },
-    { code: "201.121", name: "D- Shapewear Unterteile inkl. Einteiler" },
-    { code: "201.200", name: "D- Füßlinge" },
-    { code: "201.201", name: "D- Sneakersocken" },
-    { code: "201.202", name: "D- Socken" },
-    { code: "201.203", name: "D- Kniestrümpfe inkl. Overknee u. Stulpe" },
-    { code: "201.204", name: "D- Stützstrümpfe" },
-    { code: "201.205", name: "D- Haussocken" },
-    { code: "201.206", name: "D- Arbeitssocken" },
-    { code: "201.207", name: "D- Strumpfhosen u. Leggings" },
-    { code: "201.250", name: "D- F- Füßlinge" },
-    { code: "201.251", name: "D- F-Sneakersocken" },
-    { code: "201.252", name: "D- F-Socken" },
-    { code: "201.253", name: "D- F-Kniestrümpfe inkl. Overknee u. Stulpe" },
-    { code: "201.254", name: "D- F-Stützstrümpfe" },
-    { code: "201.255", name: "D- F-Strumpfhosen u. Leggings" },
-    { code: "201.256", name: "D- Panty" },
-    { code: "201.258", name: "D- F-Strumpfartikel gemischt" },
-    { code: "201.300", name: "D- Anlass Oberteile" },
-    { code: "201.310", name: "D- Anlass Unterteile (Kleider/ Röcke)" },
-    { code: "201.320", name: "D- Anlass Einteiler" },
-    { code: "201.330", name: "D- Anlass Sets" },
-    { code: "201.340", name: "D- Anlass Accessoires" },
-    { code: "202.001", name: "H- Blusen u. Hemden" },
-    { code: "202.002", name: "H- Pullover, Sweatjacken u. Cardigan" },
-    { code: "202.003", name: "H- Westen" },
-    { code: "202.004", name: "H- Jacken" },
-    { code: "202.005", name: "H- Mäntel" },
-    { code: "202.007", name: "H- Shirts u. Polos" },
-    { code: "202.010", name: "H- Hosen lang/kurz" },
-    { code: "202.020", name: "H- Einteiler" },
-    { code: "202.022", name: "H- Ganzkörper Sets" },
-    { code: "202.023", name: "H- Arbeitsbekleidung" },
-    { code: "202.103", name: "H- Unterhemden" },
-    { code: "202.104", name: "H- Slips alle Formen" },
-    { code: "202.105", name: "H- Panty Boxer alle Formen" },
-    { code: "202.106", name: "H- lange Unterhosen inkl.- 3/4" },
-    { code: "202.107", name: "H- Unterwäsche Sets" },
-    { code: "202.110", name: "H- Morgenmäntel" },
-    { code: "202.111", name: "H- Nachtwäsche Oberteile inkl. Nachthemden" },
-    { code: "202.112", name: "H- Nachtwäsche- Sets inkl. Pyjamas" },
-    { code: "202.113", name: "H- Nachtwäsche Unterteile inkl. Einteiler" },
-    { code: "202.200", name: "H- Füßlinge" },
-    { code: "202.201", name: "H- Sneakersocken" },
-    { code: "202.202", name: "H- Socken" },
-    { code: "202.203", name: "H- Kniestrümpfe" },
-    { code: "202.204", name: "H- Stützstrümpfe" },
-    { code: "202.205", name: "H- Haussocken" },
-    { code: "202.206", name: "H- Arbeitssocken" },
-    { code: "202.300", name: "H- Anlass Oberteile" },
-    { code: "202.310", name: "H- Anlass Unterteile" },
-    { code: "202.320", name: "H- Anlass Einteiler" },
-    { code: "202.330", name: "H- Anlass Sets" },
-    { code: "202.340", name: "H- Anlass Accessoires" },
-    { code: "203.001", name: "K- Blusen u. Hemden" },
-    { code: "203.002", name: "K- Pullover, Sweatjacken u. Cardigan" },
-    { code: "203.003", name: "K- Westen" },
-    { code: "203.004", name: "K- Jacken" },
-    { code: "203.005", name: "K- Mäntel" },
-    { code: "203.007", name: "K- Shirts u. Polos" },
-    { code: "203.010", name: "K- Hosen lang/kurz" },
-    { code: "203.011", name: "K- Leggings inkl. 3/4" },
-    { code: "203.012", name: "K- Röcke" },
-    { code: "203.020", name: "K- Einteiler" },
-    { code: "203.021", name: "K- Kleider" },
-    { code: "203.022", name: "K- Ganzkörper Sets" },
-    { code: "203.100", name: "K- BH's" },
-    { code: "203.102", name: "K- Bustiers u. Bralettes" },
-    { code: "203.103", name: "K- Unterhemden" },
-    { code: "203.104", name: "K- Slips alle Formen" },
-    { code: "203.105", name: "K- Panty Boxer alle Formen" },
-    { code: "203.106", name: "K- lange Unterhosen inkl- 3/4" },
-    { code: "203.107", name: "K- Unterwäsche Sets inkl.- Unterkleider" },
-    { code: "203.111", name: "K- Nachtwäsche Oberteile inkl. Nachthemden" },
-    { code: "203.112", name: "K- Nachtwäsche Sets inkl. Pyjamas" },
-    { code: "203.113", name: "K- Nachtwäsche Unterteile inkl. Einteiler" },
-    { code: "203.200", name: "K- Füßlinge" },
-    { code: "203.201", name: "K- Sneakersocken" },
-    { code: "203.202", name: "K- Socken" },
-    { code: "203.203", name: "K- Kniestrümpfe inkl. Overknee u. Stulpe" },
-    { code: "203.205", name: "K- Haussocken" },
-    { code: "203.207", name: "K- Strumpfhosen u. Leggings" },
-    { code: "203.250", name: "K- F-Füßlinge" },
-    { code: "203.251", name: "K- F-Sneakersocken" },
-    { code: "203.252", name: "K- F-Socken" },
-    { code: "203.255", name: "K- F-Strumpfhosen u. Leggings" },
-    { code: "203.300", name: "K- Anlass Oberteile" },
-    { code: "203.310", name: "K- Anlass Unterteile" },
-    { code: "203.320", name: "K- Anlass Einteiler" },
-    { code: "203.330", name: "K- Anlass Sets" },
-    { code: "203.340", name: "K- Anlass Accessoires" },
-    { code: "204.001", name: "KK- Blusen u. Hemden" },
-    { code: "204.002", name: "KK- Pullover, Sweatjacken u. Cardigan" },
-    { code: "204.003", name: "KK- Westen" },
-    { code: "204.004", name: "KK- Jacken" },
-    { code: "204.005", name: "KK- Mäntel" },
-    { code: "204.007", name: "KK- Shirts u. Polos" },
-    { code: "204.010", name: "KK- Hosen lang/kurz" },
-    { code: "204.011", name: "KK- Leggings inkl. 3/4" },
-    { code: "204.012", name: "KK- Röcke" },
-    { code: "204.020", name: "KK- Einteiler" },
-    { code: "204.021", name: "KK- Kleider" },
-    { code: "204.022", name: "KK- Ganzkörper Sets" },
-    { code: "204.101", name: "KK- Bodies" },
-    { code: "204.102", name: "KK- Bustiers u. Bralettes" },
-    { code: "204.103", name: "KK- Unterhemden" },
-    { code: "204.104", name: "KK- Slips alle Formen" },
-    { code: "204.105", name: "KK- Panty Boxer alle Formen" },
-    { code: "204.106", name: "KK- lange Unterhosen inkl. 3/4" },
-    { code: "204.107", name: "KK- Unterwäsche Sets inkl. Garnituren" },
-    { code: "204.111", name: "KK- Nachtwäsche Oberteile inkl. Nachthemden" },
-    { code: "204.112", name: "KK- Nachtwäsche Sets inkl. Pyjamas" },
-    { code: "204.113", name: "KK- Nachtwäsche Unterteile inkl. Einteiler" },
-    { code: "204.200", name: "KK- Füßlinge" },
-    { code: "204.201", name: "KK- Sneakersocken" },
-    { code: "204.202", name: "KK- Socken" },
-    { code: "204.203", name: "KK- Kniestrümpfe inkl. Overknee und Stulpe" },
-    { code: "204.205", name: "KK- Haussocken" },
-    { code: "204.207", name: "KK- Strumpfhosen u. Leggings" },
-    { code: "204.250", name: "KK- F-Füßlinge" },
-    { code: "204.251", name: "KK- F-Sneakersocken" },
-    { code: "204.252", name: "KK- F-Socken" },
-    { code: "204.255", name: "KK- F-Strumpfhosen u. Leggings" },
-    { code: "204.300", name: "KK- Anlass Oberteile" },
-    { code: "204.310", name: "KK- Anlass Unterteile" },
-    { code: "204.320", name: "KK- Anlass Einteiler" },
-    { code: "204.330", name: "KK- Anlass Sets" },
-    { code: "204.340", name: "KK- Anlass Accessoires" },
-    { code: "205.001", name: "Baby- Blusen u. Hemden" },
-    { code: "205.002", name: "Baby- Pullover, Sweatjacken u. Cardigan" },
-    { code: "205.004", name: "Baby- Jacken" },
-    { code: "205.007", name: "Baby- Shirts u. Polos" },
-    { code: "205.010", name: "Baby- Hosen lang/kurz" },
-    { code: "205.011", name: "Baby- Leggings inkl. 3/4" },
-    { code: "205.012", name: "Baby- Röcke" },
-    { code: "205.020", name: "Baby- Einteiler" },
-    { code: "205.021", name: "Baby- Kleider" },
-    { code: "205.022", name: "Baby- Ganzkörper Sets" },
-    { code: "205.101", name: "Baby- Bodies" },
-    { code: "205.107", name: "Baby- Sets inkl. Garnituren" },
-    { code: "205.111", name: "Baby- Nachtwäsche Oberteile inkl. Nachthemden" },
-    { code: "205.113", name: "Baby- Nachtwäsche Unterteile inkl. Strampler" },
-    { code: "205.201", name: "Baby- Sneakersocken" },
-    { code: "205.202", name: "Baby- Socken" },
-    { code: "205.203", name: "Baby- Kniestrümpfe inkl. Stulpe" },
-    { code: "205.205", name: "Baby- Haussocken" },
-    { code: "205.207", name: "Baby- Strumpfhosen u. Leggings" },
-    { code: "205.300", name: "Baby- Anlass Oberteile" },
-    { code: "205.310", name: "Baby- Anlass Unterteile" },
-    { code: "205.320", name: "Baby- Anlass Einteiler" },
-    { code: "205.330", name: "Baby- Anlass Sets" },
-    { code: "205.340", name: "Baby- Anlass Accessoires" },
-    { code: "236.001", name: "DH-Sport-Blusen u. Hemden" },
-    { code: "236.002", name: "DH-Sport-Pullover, Sweat (-jacken u. Cardigan)" },
-    { code: "236.003", name: "DH-Sport-Westen" },
-    { code: "236.004", name: "DH-Sport-Jacken" },
-    { code: "236.005", name: "DH-Sport-Mäntel" },
-    { code: "236.006", name: "DH-Sport-Regenbekleidung Oberkörper (Jacke)" },
-    { code: "236.007", name: "DH-Sport-Funktionsshirts" },
-    { code: "236.010", name: "DH-Sport-Hosen lang/ kurz (bis 7/8)" },
-    { code: "236.011", name: "DH-Sport-Tights inkl. 3/4 lang/ kurz (bis 7/8)" },
-    { code: "236.012", name: "DH-Sport-Röcke" },
-    { code: "236.016", name: "DH-Sport-Regenbekleidung Unterkörper lang/ kurz (bis 7/8)" },
-    { code: "236.020", name: "DH-Sport-Einteiler" },
-    { code: "236.021", name: "DH-Sport-Kleider" },
-    { code: "236.022", name: "DH-Sport-Sets u. Ganzkörperanzüge" },
-    { code: "236.026", name: "DH-Sport-Regenbekleidung Ganzkörper" },
-    { code: "236.100", name: "DH-Sport-BH's" },
-    { code: "236.101", name: "DH-Sport-Bodies" },
-    { code: "236.102", name: "DH-Sport-Bustiers u. Bralettes" },
-    { code: "236.103", name: "DH-Sport-Unterhemden" },
-    { code: "236.104", name: "DH-Sport-Slips alle Formen" },
-    { code: "236.106", name: "DH-Sport-lange Unterhosen inkl. 3/4" },
-    { code: "236.107", name: "DH-Sport-Sets inkl. Unterkleider" },
-    { code: "236.200", name: "DH-Sport-Füßlinge" },
-    { code: "236.201", name: "DH-Sport-Sneakersocken" },
-    { code: "236.202", name: "DH-Sport-Socken" },
-    { code: "236.203", name: "DH-Sport-Kniestrümpfe" },
-    { code: "236.204", name: "DH-Sport-Kompressionsstrümpfe" },
-    { code: "236.207", name: "DH-Sport-Strumpfhosen u. Leggings" },
-    { code: "236.400", name: "DH-Sport-Badehosen" },
-    { code: "236.401", name: "DH-Sport-Bademäntel" },
-    { code: "236.402", name: "DH-Sport-Badeanzüge" },
-    { code: "236.403", name: "DH-Sport-Bikinis inkl. Sets" },
-    { code: "236.499", name: "DH-Sport-Bademode (Sonstige)" },
-    { code: "236.500", name: "DH-Sport-Kopfbedeckungen" },
-    { code: "236.501", name: "DH-Sport-Handschuhe" },
-    { code: "236.502", name: "DH-Sport-Halsbedeckungen" },
-    { code: "236.503", name: "DH-Sport-Accessoires" },
-    { code: "237.001", name: "K KK-Sport-Blusen u. Hemden" },
-    { code: "237.002", name: "K KK-Sport-Pullover, Sweatjacken u. Cardigan" },
-    { code: "237.003", name: "K KK-Sport-Westen" },
-    { code: "237.004", name: "K KK-Sport-Jacken" },
-    { code: "237.005", name: "K KK-Sport-Mäntel" },
-    { code: "237.006", name: "K KK-Sport-Regenbekleidung Oberkörper (-jacken)" },
-    { code: "237.007", name: "K KK-Sport-Funktionsshirts" },
-    { code: "237.010", name: "K KK-Sport-Hosen" },
-    { code: "237.011", name: "K KK-Sport-Tights inkl. 3/4" },
-    { code: "237.012", name: "K KK-Sport-Röcke" },
-    { code: "237.016", name: "K KK-Sport-Regenbekleidung Unterkörper" },
-    { code: "237.020", name: "K KK-Sport-Einteiler" },
-    { code: "237.021", name: "K KK-Sport-Kleider" },
-    { code: "237.022", name: "K KK-Sport-Sets u. Ganzkörperanzüge" },
-    { code: "237.026", name: "K KK-Sport-Regenbekleidung Ganzkörper" },
-    { code: "237.100", name: "K KK-Sport-BH's" },
-    { code: "237.101", name: "K KK-Sport-Bodies" },
-    { code: "237.102", name: "K KK-Sport-Bustiers u. Bralettes" },
-    { code: "237.103", name: "K KK-Sport-Unterhemden" },
-    { code: "237.104", name: "K KK-Sport-Slips alle Formen" },
-    { code: "237.105", name: "K KK-Sport-Panty Boxer alle Formen" },
-    { code: "237.106", name: "K KK-Sport-lange Unterhosen inkl. 3/4" },
-    { code: "237.107", name: "K KK-Sport-Sets inkl. Unterkleiderer" },
-    { code: "237.200", name: "K KK-Sport-Füßlinge" },
-    { code: "237.201", name: "K KK-Sport-Sneakersocken" },
-    { code: "237.202", name: "K KK-Sport-Socken" },
-    { code: "237.203", name: "K KK-Sport-Kniestrümpfe inkl. Overknee u. Stulpe" },
-    { code: "237.204", name: "K KK-Sport-Stützstrümpfe" },
-    { code: "237.207", name: "K KK-Sport-Strumpfhosen u. Leggings" },
-    { code: "237.400", name: "K KK-Sport-Badehosen" },
-    { code: "237.401", name: "K KK-Sport-Bademäntel" },
-    { code: "237.402", name: "K KK-Sport-Badeanzüge" },
-    { code: "237.403", name: "K KK-Sport-Bikinis" },
-    { code: "237.499", name: "K KK-Sport-Bademode (Sonstige)" },
-    { code: "237.500", name: "K KK-Sport-Kopfbedeckungen" },
-    { code: "237.501", name: "K KK-Sport-Handschuhe" },
-    { code: "237.502", name: "K KK-Sport-Halsbedeckungen" },
-    { code: "237.503", name: "K KK-Sport-Accessoires" },
-    { code: "250.001", name: "Rucksäcke (Modisch)" },
-    { code: "250.005", name: "Taschen (Modisch)" },
-    { code: "250.041", name: "Rucksäcke (Funktional)" },
-    { code: "250.042", name: "Laptoptaschen" },
-    { code: "250.043", name: "Koffer Softschalen" },
-    { code: "250.044", name: "Koffer Hartschalen" },
-    { code: "250.045", name: "Taschen (Funktional)" },
-    { code: "250.080", name: "Schultaschen und -aufbewahrung (Sonstige)" },
-    { code: "250.100", name: "Regenschirme" },
-    { code: "250.110", name: "Geldbörsen u. Etuis" },
-    { code: "250.120", name: "Gürtel" },
-    { code: "250.130", name: "Schmuck u. Haar-Accessoires" },
-    { code: "250.140", name: "Sonnenbrillen" },
-    { code: "250.141", name: "Lesebrillen" },
-    { code: "250.142", name: "Brillen Accessoires" },
-    { code: "250.199", name: "Accessoires (Sonstige)" },
-    { code: "250.200", name: "Kopfbedeckungen" },
-    { code: "250.201", name: "Halsbedeckungen" },
-    { code: "250.202", name: "Handschuhe" },
-    { code: "250.203", name: "Haustiere" },
-    { code: "250.299", name: "Bekleidungsaccessoires (Sonstige)" },
-    { code: "250.300", name: "Babyaccessoires (Sonstige)" },
-    { code: "261.001", name: "D- Ballerinas" },
-    { code: "261.002", name: "D- Pumps" },
-    { code: "261.004", name: "D- Slipper" },
-    { code: "261.005", name: "D- Halbhausschuhe" },
-    { code: "261.006", name: "D- Aquaschuhe (Bade)" },
-    { code: "261.007", name: "D- Schnürer" },
-    { code: "261.008", name: "D- Freizeitschuhe u. Sneaker" },
-    { code: "261.009", name: "D- Arbeits- u. Sicherheitshalbschuhe" },
-    { code: "261.100", name: "D- Schnür-Stiefel" },
-    { code: "261.101", name: "D- Stiefeletten" },
-    { code: "261.102", name: "D- Stiefel lang" },
-    { code: "261.103", name: "D- Knöchelbedeckende Freizeitschuhe" },
-    { code: "261.104", name: "D- Snowboot" },
-    { code: "261.105", name: "D- Knöchelbedeckende Hausschuhe" },
-    { code: "261.107", name: "D- Regenstiefel" },
-    { code: "261.109", name: "D- Knöchelbedeckende Arbeits- u. Sicherheitsschuhe" },
-    { code: "261.200", name: "D- Sandaletten" },
-    { code: "261.201", name: "D- Zehentrenner Sandaletten" },
-    { code: "261.202", name: "D- Tieffußbett Sandaletten" },
-    { code: "261.300", name: "D- Pantoletten" },
-    { code: "261.301", name: "D- Zehentrenner Pantoletten" },
-    { code: "261.302", name: "D- Sabots" },
-    { code: "261.303", name: "D- Tieffußbett Pantoletten" },
-    { code: "261.305", name: "D- Hausschuhe Pantoletten" },
-    { code: "261.306", name: "D- Pantoletten (Bade)" },
-    { code: "261.307", name: "D- Zehentrenner Pantoletten (Bade)" },
-    { code: "261.308", name: "D- Clogs (Bade)" },
-    { code: "261.309", name: "D- Arbeits- u. Sicherheitspantoletten" },
-    { code: "261.400", name: "D- S- Slipper" },
-    { code: "261.401", name: "D- S- Sneaker" },
-    { code: "261.402", name: "D- S- Funktionsschuhe" },
-    { code: "261.403", name: "D- S- Trekking low" },
-    { code: "261.410", name: "D- S- Trekking high" },
-    { code: "261.420", name: "D- S- Trekking Sandaletten" },
-    { code: "262.004", name: "H- Slipper" },
-    { code: "262.005", name: "H- Halbhausschuhe" },
-    { code: "262.006", name: "H- Aquaschuhe (Bade)" },
-    { code: "262.007", name: "H- Schnürer" },
-    { code: "262.008", name: "H- Freizeithalbschuhe u. Sneaker" },
-    { code: "262.009", name: "H- Arbeits- u. Sicherheitshalbschuhe" },
-    { code: "262.100", name: "H- Schnür-Stiefel" },
-    { code: "262.101", name: "H- Stiefeletten" },
-    { code: "262.103", name: "H- Knöchelbedeckende Freizeitschuhe" },
-    { code: "262.104", name: "H- Snowboot" },
-    { code: "262.105", name: "H- Knöchelbedeckende Hausschuhe" },
-    { code: "262.107", name: "H- Regenstiefel" },
-    { code: "262.109", name: "H- Knöchelbedeckende Arbeits- u. Sicherheitsschuhe" },
-    { code: "262.200", name: "H- Sandaletten" },
-    { code: "262.201", name: "H- Zehentrenner Sandaletten" },
-    { code: "262.202", name: "H- Tieffußbett Sandaletten" },
-    { code: "262.300", name: "H- Pantoletten" },
-    { code: "262.301", name: "H- Zehentrenner Pantoletten" },
-    { code: "262.302", name: "H- Sabots" },
-    { code: "262.303", name: "H- Tieffußbett Pantoletten" },
-    { code: "262.305", name: "H- Hausschuhe Pantoletten" },
-    { code: "262.306", name: "H- Pantoletten (Bade)" },
-    { code: "262.307", name: "H- Zehentrenner Pantolleten (Bade)" },
-    { code: "262.308", name: "H- Clogs (Bade)" },
-    { code: "262.309", name: "H- Arbeits- u. Sicherheitsschuhe Pantoletten" },
-    { code: "262.400", name: "H- S- Slipper" },
-    { code: "262.401", name: "H- S- Sneaker" },
-    { code: "262.402", name: "H- S- Funktionsschuhe" },
-    { code: "262.403", name: "H- S- Trekking low" },
-    { code: "262.410", name: "H- S- Trekking high" },
-    { code: "262.420", name: "H- S- Trekking Sandaletten" },
-    { code: "267.001", name: "K KK- Ballerinas" },
-    { code: "267.004", name: "K KK- Slipper" },
-    { code: "267.005", name: "K KK- Halbhausschuhe" },
-    { code: "267.006", name: "K KK- Aquaschuhe (Bade)" },
-    { code: "267.007", name: "K KK- Schnürer" },
-    { code: "267.008", name: "K KK- Freizeithalbschuhe u. Sneaker" },
-    { code: "267.100", name: "K KK- Schnür-Stiefel" },
-    { code: "267.101", name: "K KK- Stiefeletten" },
-    { code: "267.102", name: "K KK- Stiefel lang" },
-    { code: "267.103", name: "K KK- Freizeit" },
-    { code: "267.104", name: "K KK- Snowboot" },
-    { code: "267.105", name: "K KK- Knöchelbedeckende Hausschuhe" },
-    { code: "267.107", name: "K KK- Regenstiefel" },
-    { code: "267.200", name: "K KK- Sandaletten" },
-    { code: "267.201", name: "K KK- Zehentrenner Sandaletten" },
-    { code: "267.202", name: "K KK- Tieffußbett Sandaletten" },
-    { code: "267.300", name: "K KK- Pantoletten" },
-    { code: "267.301", name: "K KK- Zehentrenner Pantoletten" },
-    { code: "267.302", name: "K KK- Sabots" },
-    { code: "267.303", name: "K KK- Tieffußbett Pantoletten" },
-    { code: "267.305", name: "K KK- Hausschuhe Pantoletten" },
-    { code: "267.306", name: "K KK- Pantoletten (Bade)" },
-    { code: "267.307", name: "K KK- Zehentrenner Pantoletten (Bade)" },
-    { code: "267.308", name: "K KK- Clogs" },
-    { code: "267.401", name: "K KK S- Sneaker" },
-    { code: "267.402", name: "K KK S- Funktionsschuhe" },
-    { code: "267.403", name: "K KK S- Trekking low" },
-    { code: "267.404", name: "K KK S- Slipper" },
-    { code: "267.410", name: "K KK S- Trekking high" },
-    { code: "267.420", name: "K KK S- Trekking Sandaletten" },
-    { code: "269.100", name: "D H K KK- Einlegesohlen" },
-    { code: "269.199", name: "D H K KK- Schuhzubehör (Sonstige)" },
-    { code: "280.001", name: "Deko-Kissen" },
-    { code: "280.002", name: "Teppiche (größer 60x80cm)" },
-    { code: "280.003", name: "Vorhänge" },
-    { code: "280.004", name: "Decken" },
-    { code: "280.099", name: "Wohnzimmertextilien (Sonstige)" },
-    { code: "280.100", name: "Geschirrtücher" },
-    { code: "280.101", name: "Schürzen, Ofenhandschuhe, Topflappen" },
-    { code: "280.102", name: "Sitzkissen" },
-    { code: "280.103", name: "Tischdecken u. Platzsets" },
-    { code: "280.199", name: "Küchentextilien (Sonstige)" },
-    { code: "280.200", name: "Bademäntel" },
-    { code: "280.201", name: "Badematten (Sets)" },
-    { code: "280.202", name: "Duschvorhänge" },
-    { code: "280.203", name: "Handtücher (Sets, größer 50x100cm)" },
-    { code: "280.299", name: "Badezimmertextilien (Sonstige)" },
-    { code: "280.300", name: "Spannbettlaken" },
-    { code: "280.301", name: "Bettwaren u. Kissen" },
-    { code: "280.302", name: "Bettwäsche" },
-    { code: "280.304", name: "Topper" },
-    { code: "280.305", name: "Matratzen" },
-    { code: "280.399", name: "Schlafzimmertextilien (Sonstige)" },
-    { code: "280.400", name: "Fußmatten (größer 60x80cm)" },
-    { code: "280.401", name: "Polsterauflagen" },
-    { code: "280.499", name: "Outdoortextilien (Sonstige)" },
-    { code: "280.500", name: "DIY Sets" },
-    { code: "280.501", name: "Kurzwaren u. Nähbedarf (Sets)" },
-    { code: "280.502", name: "Wolle u. Strickbedarf (Sets)" },
-    { code: "280.599", name: "Handarbeitstextilien (Sonstige) (Sets)" },
-    { code: "300.010", name: "Regale" },
-    { code: "300.020", name: "Kommoden" },
-    { code: "300.030", name: "Schränke" },
-    { code: "300.040", name: "Tische" },
-    { code: "300.050", name: "Sitzmöbel" },
-    { code: "300.060", name: "Betten u. Lattenroste" },
-    { code: "300.070", name: "Möbel zur Aufbewahrung u. Organisation" },
-    { code: "300.080", name: "Küchenzeilen u. Küchenblöcke" },
-    { code: "300.099", name: "Wohnmöbel (Sonstige)" },
-    { code: "300.100", name: "Wohn-Dekoration" },
-    { code: "300.110", name: "Kerzen u. Raumduft" },
-    { code: "300.120", name: "Indoor Stimmungsbeleuchtung" },
-    { code: "300.130", name: "Saison u. Party Deko" },
-    { code: "300.140", name: "LED Saison u. Party Deko" },
-    { code: "300.199", name: "Wanddekorationen u. Innen Dekoration (Sonstige)" },
-    { code: "300.210", name: "Leuchtmittel" },
-    { code: "300.211", name: "Funktionale Leuchtmittel" },
-    { code: "300.250", name: "Wand- u. Deckenleuchten" },
-    { code: "300.251", name: "Tisch- u. Stehleuchten" },
-    { code: "300.299", name: "Arbeitsbeleuchtung u. Beleuchtung (Sonstige)" },
-    { code: "300.300", name: "Insektenschutz, Rollos, Plissees" },
-    { code: "310.010", name: "Kühl- u. Gefriergeräte" },
-    { code: "310.020", name: "Geschirrspüler" },
-    { code: "310.030", name: "Herde u. Backöfen" },
-    { code: "310.040", name: "Dunstabzugshauben" },
-    { code: "310.099", name: "Küchengroßgeräte (Sonstige)" },
-    { code: "310.110", name: "Küchenmaschinen u. Foodprozessoren" },
-    { code: "310.115", name: "Küchenmaschinen mit Kochfunktion" },
-    { code: "310.120", name: "Kaffeemaschinen" },
-    { code: "310.130", name: "Wasserkocher u. Teebereiter" },
-    { code: "310.140", name: "Toaster" },
-    { code: "310.150", name: "Mixer u. Rührgeräte" },
-    { code: "310.160", name: "Zerkleinerer, Fleischwölfe, Allesschneider" },
-    { code: "310.170", name: "Elektrogrills" },
-    { code: "310.180", name: "Backautomaten u. Mikrowellen" },
-    { code: "310.210", name: "Koch- u. Warmhalteplatten" },
-    { code: "310.220", name: "Garer u. Eierkocher" },
-    { code: "310.230", name: "Fritteusen" },
-    { code: "310.240", name: "Eis- u. Joghurtbereiter" },
-    { code: "310.250", name: "Entsafter u. Saftpressen" },
-    { code: "310.260", name: "Funcooking" },
-    { code: "310.270", name: "Küchenwaagen" },
-    { code: "310.280", name: "Vakuumierer u. Folienschweißgeräte" },
-    { code: "310.299", name: "Küchenkleingeräte (Sonstige)" },
-    { code: "311.010", name: "Tafelbesteck" },
-    { code: "311.020", name: "Trinkgefäße u. Gläser" },
-    { code: "311.030", name: "Karaffen u. Kannen" },
-    { code: "311.040", name: "Tafelgeschirr" },
-    { code: "311.099", name: "Tafelgeschirr u. -besteck (Sonstige)" },
-    { code: "311.110", name: "Töpfe" },
-    { code: "311.120", name: "Pfannen" },
-    { code: "311.199", name: "Töpfe u. Pfannen (Sonstige)" },
-    { code: "311.210", name: "Auflaufformen u. Bräter" },
-    { code: "311.299", name: "Kochgeschirr (Sonstige)" },
-    { code: "311.310", name: "Backformen u. Backbleche" },
-    { code: "311.399", name: "Backgeschirr (Sonstige)" },
-    { code: "311.410", name: "Vorratsdosen" },
-    { code: "311.420", name: "Lunchboxen" },
-    { code: "311.430", name: "Einmachgläser u. Drahtbügelgläser" },
-    { code: "311.440", name: "Brot- u. Kuchenaufbewahrung" },
-    { code: "311.499", name: "Haushaltsaufbewahrung (Sonstige)" },
-    { code: "311.510", name: "Tabletts, Servierplatten, Schalen, Schüsseln" },
-    { code: "311.599", name: "Organisation Küchenhaushaltswaren (Sonstige)" },
-    { code: "311.610", name: "Küchen- u. Servierhelfer" },
-    { code: "311.620", name: "Backhelfer" },
-    { code: "311.630", name: "Schneidebretter u. Herdabdeckplatten" },
-    { code: "311.640", name: "Küchenmesser, Küchenscheren u. Zubehör" },
-    { code: "311.650", name: "Gewürzmühlen u. Menagen" },
-    { code: "311.660", name: "Zerkleinerer" },
-    { code: "311.670", name: "Kaffee- u. Teezubehör" },
-    { code: "311.680", name: "Küchenmaschinenzubehör" },
-    { code: "311.699", name: "Küchenhelfer (Sonstige)" },
-    { code: "311.710", name: "Wassersprudler u. Zubehör" },
-    { code: "311.720", name: "Wasserfilter u. Zubehör" },
-    { code: "311.799", name: "Getränkebereiter (Sonstige)" },
-    { code: "320.010", name: "Handstaubsauger" },
-    { code: "320.020", name: "Stielstaubsauger" },
-    { code: "320.030", name: "Bodenstaubsauger u. Roboter" },
-    { code: "320.099", name: "Reinigungsgeräte elektrisch (Sonstige)" },
-    { code: "320.110", name: "Bodenreinigung manuell" },
-    { code: "320.199", name: "Reinigungshelfer (Sonstige)" },
-    { code: "320.210", name: "Bügeleisen u. -systeme" },
-    { code: "320.220", name: "Bügeltische u. Zubehör" },
-    { code: "320.300", name: "Wäschespinnen u.-trockner" },
-    { code: "320.410", name: "Nähmaschinen" },
-    { code: "320.420", name: "Nähzubehör" },
-    { code: "320.510", name: "Waschmaschinen" },
-    { code: "320.515", name: "Waschtrockner" },
-    { code: "320.520", name: "Trockner" },
-    { code: "320.599", name: "Haushaltselektrogroßgeräte (Sonstige)" },
-    { code: "320.610", name: "Wäschekörbe u. -sammler" },
-    { code: "320.620", name: "Klarsicht- u. Aufbewahrungsboxen" },
-    { code: "320.630", name: "Abfalleimer, Eimer u. Wannen" },
-    { code: "320.640", name: "Kleider-, Textil- u. Schuhaufbewahrung" },
-    { code: "320.699", name: "Wäschekörbe, Eimer, Aufbewahrungsboxen (Sonstige)" },
-    { code: "320.710", name: "Befestigungen, Haken, Türpuffer" },
-    { code: "320.720", name: "Wäscheklammern u. Kleiderbügel" },
-    { code: "321.100", name: "Armaturen" },
-    { code: "321.200", name: "Brausen u. Zubehör" },
-    { code: "321.300", name: "Keramik u. Sanitärinstallation" },
-    { code: "321.400", name: "Badaccessoires, WC-Garnituren, Kosmetikeimer" },
-    { code: "321.500", name: "WC-Sitze" },
-    { code: "321.600", name: "Dusch- u. Badewannenausstattung" },
-    { code: "321.700", name: "Badmöbel" },
-    { code: "325.110", name: "Rasur u. Haarentfernung Herren" },
-    { code: "325.120", name: "Rasur u. Haarentfernung Damen" },
-    { code: "325.210", name: "Haartrocknung" },
-    { code: "325.220", name: "Haarstyling" },
-    { code: "325.310", name: "Kosmetik" },
-    { code: "325.320", name: "Maniküre u. Pediküre" },
-    { code: "325.400", name: "Zahnpflege" },
-    { code: "326.110", name: "Kompressen u. Verbandsmaterial" },
-    { code: "326.120", name: "Bandagen u. Tapes" },
-    { code: "326.200", name: "Seniorenartikel" },
-    { code: "326.300", name: "Personen- u. Diagnosewaagen" },
-    { code: "326.410", name: "Wärmetherapie" },
-    { code: "326.420", name: "Massage u. Schmerztherapie" },
-    { code: "326.430", name: "Wellness- u. Saunaartikel" },
-    { code: "326.500", name: "Luftreiniger, Luftbefeuchter, Luftentfeuchter" },
-    { code: "326.600", name: "Medizinische Geräte" },
-    { code: "330.010", name: "Kopfhörer On Ear" },
-    { code: "330.020", name: "Kopfhörer In Ear" },
-    { code: "330.030", name: "Lautsprecher (Audio)" },
-    { code: "330.040", name: "Radios u. Audiogeräte" },
-    { code: "330.099", name: "Audiogeräte (Sonstige)" },
-    { code: "330.110", name: "Fernseher" },
-    { code: "330.120", name: "Kameras" },
-    { code: "330.130", name: "Portable Abspielgeräte (Video)" },
-    { code: "330.140", name: "Streaming" },
-    { code: "330.150", name: "Navigationsgeräte" },
-    { code: "330.199", name: "Video (Sonstige)" },
-    { code: "330.200", name: "Audio u. Videozubehör (Sonstige)" },
-    { code: "330.300", name: "Smartphones, Telefon- u. Funkgeräte" },
-    { code: "330.390", name: "Zubehör Smartphones, Telefon- u. Funkgeräte" },
-    { code: "330.410", name: "Kabeltrommeln u. Kabel" },
-    { code: "330.420", name: "Mehrfachstecker u. Steckdosenadapter" },
-    { code: "330.430", name: "Batterien u. Akkus" },
-    { code: "330.440", name: "Powerbanks u. Stromspeicher" },
-    { code: "330.450", name: "Strom Einbauartikel" },
-    { code: "330.460", name: "Ladegeräte u. Netzstecker" },
-    { code: "330.510", name: "PCs u. Laptops" },
-    { code: "330.520", name: "Tablets" },
-    { code: "330.530", name: "Drucker, Scanner, Multifunktionsgeräte" },
-    { code: "330.540", name: "Monitor" },
-    { code: "330.550", name: "Eingabegeräte" },
-    { code: "330.590", name: "Zubehör Hardware Unterhaltungselektronik" },
-    { code: "330.610", name: "Konsolen" },
-    { code: "330.690", name: "Konsolenzubehör" },
-    { code: "330.710", name: "Elektroinstallation" },
-    { code: "330.720", name: "Sensorik" },
-    { code: "330.730", name: "Gateway u. Zubehör" },
-    { code: "332.010", name: "Kinder u. Jugendliche (Bücher)" },
-    { code: "332.050", name: "Erwachsene (Bücher)" },
-    { code: "332.100", name: "CD´s" },
-    { code: "332.200", name: "DVD u. Blu Ray" },
-    { code: "332.300", name: "Software u. Games" },
-    { code: "334.010", name: "Armbanduhren" },
-    { code: "334.020", name: "Wearables" },
-    { code: "334.030", name: "Wecker" },
-    { code: "334.040", name: "Wanduhren" },
-    { code: "334.100", name: "Wetterstationen" },
-    { code: "336.010", name: "Geschenkpapier" },
-    { code: "336.011", name: "Geschenkbänder" },
-    { code: "336.012", name: "Geschenkbehälter" },
-    { code: "336.020", name: "Karten" },
-    { code: "338.100", name: "Ordnungshelfer (Bürobedarf u. Sonstige)" },
-    { code: "338.210", name: "Kopierpapier" },
-    { code: "338.220", name: "Hefte" },
-    { code: "338.230", name: "Notizbücher" },
-    { code: "338.240", name: "Notizen" },
-    { code: "338.250", name: "Versandartikel" },
-    { code: "338.310", name: "Aktenvernichter" },
-    { code: "338.320", name: "Laminiergeräte" },
-    { code: "338.330", name: "Folien" },
-    { code: "338.399", name: "Büroelektrogeräte u. Zubehör (Sonstige)" },
-    { code: "338.400", name: "Schreibgeräte" },
-    { code: "338.500", name: "Korrekturmittel u. Kleber" },
-    { code: "338.600", name: "Kalender u. Notizen" },
-    { code: "338.700", name: "Sticker u. Aufkleber" },
-    { code: "338.800", name: "Schreibtischaccessoires" },
-    { code: "340.010", name: "Holzbahnwelt" },
-    { code: "340.020", name: "Holzlern- u. Motorikspielzeug" },
-    { code: "340.030", name: "Holzrollenspiele" },
-    { code: "340.110", name: "Gartenspielgeräte" },
-    { code: "340.120", name: "Kinderfahrzeuge" },
-    { code: "340.130", name: "Outdoorspiele" },
-    { code: "340.140", name: "Wasser- u. Sandspielzeug" },
-    { code: "340.210", name: "Babyspielzeug" },
-    { code: "340.220", name: "Babyausstattung" },
-    { code: "340.310", name: "Bau- u. Konstruktionsspielzeug" },
-    { code: "340.320", name: "Elektrische Spielwaren" },
-    { code: "340.330", name: "Gesellschaftsspiele" },
-    { code: "340.340", name: "Puzzles" },
-    { code: "340.350", name: "Kinder Modelliersets" },
-    { code: "340.360", name: "Plüsch" },
-    { code: "340.365", name: "Puppen" },
-    { code: "340.370", name: "Rollenspiele" },
-    { code: "340.375", name: "Experimentieren u. Entdecken" },
-    { code: "340.380", name: "Spielzeugautos u. Flieger" },
-    { code: "340.390", name: "Spielfiguren" },
-    { code: "340.400", name: "Indoorspielgeräte" },
-    { code: "340.430", name: "Indoorspiele" },
-    { code: "345.010", name: "Papiere" },
-    { code: "345.020", name: "Farben" },
-    { code: "345.040", name: "Schreibgeräte" },
-    { code: "345.090", name: "Mal- u. Zeichenzubehör" },
-    { code: "345.110", name: "Bastelsets u. Bastelbögen" },
-    { code: "345.190", name: "Bastelzubehör" },
-    { code: "350.010", name: "Campingausrüstung" },
-    { code: "350.020", name: "Outdoor Kühltaschen, Kühlboxen u. Zubehör" },
-    { code: "350.030", name: "Outdoor Schlafunterlagen u. Schlafsäcke" },
-    { code: "350.040", name: "Outdoorzubehör" },
-    { code: "350.050", name: "Zelte" },
-    { code: "350.060", name: "Taschenlampen" },
-    { code: "350.110", name: "Boote, Boards, Stand up Paddle" },
-    { code: "350.120", name: "Luftmatratzen u. aufblasbare Wasserartikel" },
-    { code: "350.130", name: "Pools u. Planschbecken" },
-    { code: "350.140", name: "Schwimm- u. Badeartikel" },
-    { code: "350.210", name: "Angeln" },
-    { code: "350.220", name: "Inliner, Rollschuhe, Skateboards, Roller u. Zubehör" },
-    { code: "350.230", name: "Racketsport" },
-    { code: "350.240", name: "Teamsport" },
-    { code: "350.250", name: "Wintersport" },
-    { code: "350.299", name: "Weitere Sportarten (Sonstige)" },
-    { code: "350.310", name: "Fitnessgroßgeräte" },
-    { code: "350.320", name: "Fitnesskleingeräte" },
-    { code: "350.330", name: "Fitness- u. Yogamatten" },
-    { code: "350.340", name: "Fitnesszubehör" },
-    { code: "350.350", name: "Hanteln, Gewichte, Kettlebells" },
-    { code: "350.410", name: "E-Scooter u. sonstige Elektromobilität" },
-    { code: "350.420", name: "Fahrräder u. E-Bikes" },
-    { code: "350.430", name: "Fahrradbeleuchtung" },
-    { code: "350.440", name: "Fahrradhelme u. Protektoren" },
-    { code: "350.450", name: "Fahrradpumpen" },
-    { code: "350.460", name: "Fahrradtaschen u. -körbe" },
-    { code: "350.499", name: "Fahrrad- u. E-Scooterzubehör (Sonstige)" },
-    { code: "350.500", name: "Musikinstrumente" },
-    { code: "350.600", name: "Optische Geräte zur Vergrößerung" },
-    { code: "360.000", name: "Feuerwerk (Sonstige)" },
-    { code: "365.100", name: "Hunde- u. Katzenbedarf" },
-    { code: "365.199", name: "Katzenbedarf (Sonstige)" },
-    { code: "370.010", name: "Gasgrills" },
-    { code: "370.020", name: "Kohlegrills" },
-    { code: "370.030", name: "Grillzubehör" },
-    { code: "370.040", name: "Grills u. Feuerstellen" },
-    { code: "371.010", name: "Elektro Gartengeräte" },
-    { code: "371.020", name: "Akku Gartengeräte" },
-    { code: "371.030", name: "Benzin Gartengeräte" },
-    { code: "371.040", name: "Gartensägen, Gartenscheren handgeführt" },
-    { code: "371.050", name: "Gartenwerkzeug handgeführt u. Zubehör" },
-    { code: "371.099", name: "Gartengeräte u. -zubehör (Sonstige)" },
-    { code: "372.010", name: "Pumpen u. Automaten" },
-    { code: "372.020", name: "Bewässerungsgeräte u. -systeme" },
-    { code: "372.030", name: "Gartenschläuche u. Aufroller" },
-    { code: "372.099", name: "Gartenbewässerung (Sonstige)" },
-    { code: "373.010", name: "Pflanzgefäße u. Gewächshäuser" },
-    { code: "373.020", name: "Zubehör Anzucht u. Bepflanzung" },
-    { code: "374.040", name: "Garten Tische" },
-    { code: "374.050", name: "Garten Stühle u. Bänke" },
-    { code: "374.051", name: "Garten Sessel, Lounges, Gartensets" },
-    { code: "374.060", name: "Garten Liegen, Hängematten, Hollywoodschaukeln" },
-    { code: "374.070", name: "Gartenaufbewahrung, -schutzhüllen u. Pflanzzubehör" },
-    { code: "374.100", name: "Gartendekoration ohne LED" },
-    { code: "374.250", name: "Außenbeleuchtung" },
-    { code: "374.251", name: "Gartendekoration mit LED o. Solar" },
-    { code: "374.252", name: "Dekorative Außenbeleuchtung" },
-    { code: "374.310", name: "Sonnenschirme u. Zubehör" },
-    { code: "374.320", name: "Sichtschutz, Sonnensegel, Markisen, Pavillons" },
-    { code: "375.100", name: "Gartenhäuser" },
-    { code: "380.010", name: "Auto-Innenausstattung" },
-    { code: "380.020", name: "Autositzbezüge u. Autositzauflagen" },
-    { code: "380.030", name: "Autokindersitze u. Autobabysitze" },
-    { code: "380.040", name: "Autopflege u. Autoreinigung" },
-    { code: "380.050", name: "Autowartung u. Autoreparatur" },
-    { code: "380.060", name: "Autostarthilfegeräte u. Autoladegeräte" },
-    { code: "380.070", name: "Autotransportzubehör u. Autolagerungszubehör" },
-    { code: "380.080", name: "Autoaussenausstattung u. Autozubehör" },
-    { code: "380.100", name: "Motorrad" },
-    { code: "385.010", name: "Farben (Baustoff)" },
-    { code: "385.020", name: "Lacke" },
-    { code: "385.030", name: "Holzlasuren u. -pflege" },
-    { code: "385.040", name: "Malerwerkzeug" },
-    { code: "385.050", name: "Dichtstoffe u. Pflegemittel" },
-    { code: "385.099", name: "Baustoffe, Farben u. Zubehör (Sonstige)" },
-    { code: "385.300", name: "Sauna, Infrarotkabinen, Solarium" },
-    { code: "385.310", name: "Türen u. Fenster" },
-    { code: "385.320", name: "Zäune u. Tore" },
-    { code: "385.330", name: "Terassensysteme" },
-    { code: "385.340", name: "Carports" },
-    { code: "385.350", name: "Briefkästen" },
-    { code: "385.399", name: "Hausbau, Fertigteile u. -Systeme (Sonstige)" },
-    { code: "386.010", name: "Elektro Bohren u. Schrauben" },
-    { code: "386.020", name: "Elektro Sägen" },
-    { code: "386.030", name: "Elektro Schleifen u. Fräsen" },
-    { code: "386.040", name: "Elektro Löten u. Schweißen" },
-    { code: "386.050", name: "Elektro Test u. Messgeräte" },
-    { code: "386.060", name: "Elektro Nass- u. Trockensauger" },
-    { code: "386.099", name: "Elektrowerkzeuge (Sonstige)" },
-    { code: "386.110", name: "Akku Bohren u. Schrauben" },
-    { code: "386.120", name: "Akku Sägen" },
-    { code: "386.130", name: "Akku Schleifen u. Fräsen" },
-    { code: "386.140", name: "Akku Löten u. Schweißen" },
-    { code: "386.150", name: "Akku Test u. Messgeräte" },
-    { code: "386.160", name: "Akku Nass- u. Trockensauger" },
-    { code: "386.170", name: "Akkus u. Ladegeräte" },
-    { code: "386.199", name: "Akkuwerkzeuge (Sonstige)" },
-    { code: "386.200", name: "Druckluftwerkzeug, Zubehör u. Kompressoren" },
-    { code: "386.300", name: "Benzinwerkzeug" },
-    { code: "386.999", name: "Werkstatt - Maschinen (Sonstige)" },
-    { code: "387.010", name: "Bohren u. Schrauben Zubehör" },
-    { code: "387.020", name: "Sägen Zubehör" },
-    { code: "387.030", name: "Schleifen u. Fräsen Zubehör" },
-    { code: "387.040", name: "Löten u. Schweißen Zubehör" },
-    { code: "387.099", name: "Werkzeug Zubehör (Sonstige)" },
-    { code: "387.110", name: "Schraubendreher" },
-    { code: "387.120", name: "Ratschen, Nüsse, Schlüssel" },
-    { code: "387.130", name: "Zangen" },
-    { code: "387.140", name: "Spann- u. Klemmwerkzeuge" },
-    { code: "387.150", name: "Prüf- u. Messwerkzeuge" },
-    { code: "387.199", name: "Handwerkzeug (Sonstige)" },
-    { code: "387.200", name: "Werkzeugaufbewahrung" },
-    { code: "387.300", name: "Kleinteilesets u. Eisenwaren" },
-    { code: "387.400", name: "Transport" },
-    { code: "387.500", name: "Leitern u. Gerüste" },
-    { code: "387.699", name: "Werkstatt -Hartwaren (Sonstige)" },
-    { code: "388.100", name: "Sicherheitsartikel" },
-    { code: "389.010", name: "Kamine, Öfen u. Zubehör" },
-    { code: "389.020", name: "Elektrische Heizgeräte" },
-    { code: "389.030", name: "Gas Heizgeräte" },
-    { code: "389.040", name: "Heizungs- u. Wassertechnik" },
-    { code: "389.110", name: "Ventilatoren" },
-    { code: "389.120", name: "Klimageräte u. Luftkühler" }
+    { code: "201.001", name: "D- Blusen u. Hemden", bereich: "Damen Bekleidung" },
+    { code: "201.002", name: "D- Pullover, Sweatjacken u. Cardigan", bereich: "Damen Bekleidung" },
+    { code: "201.003", name: "D- Westen", bereich: "Damen Bekleidung" },
+    { code: "201.004", name: "D- Jacken", bereich: "Damen Bekleidung" },
+    { code: "201.005", name: "D- Mäntel", bereich: "Damen Bekleidung" },
+    { code: "201.007", name: "D- Shirts u. Polos", bereich: "Damen Bekleidung" },
+    { code: "201.010", name: "D- Hosen lang/kurz", bereich: "Damen Bekleidung" },
+    { code: "201.011", name: "D- Leggings inkl. 3/4", bereich: "Damen Bekleidung" },
+    { code: "201.012", name: "D- Röcke", bereich: "Damen Bekleidung" },
+    { code: "201.020", name: "D- Einteiler", bereich: "Damen Bekleidung" },
+    { code: "201.021", name: "D- Kleider", bereich: "Damen Bekleidung" },
+    { code: "201.022", name: "D- Ganzkörper Sets", bereich: "Damen Bekleidung" },
+    { code: "201.023", name: "D- Arbeitsbekleidung", bereich: "Herren Bekleidung" },
+    { code: "201.100", name: "D- BH's", bereich: "Damen Bekleidung" },
+    { code: "201.101", name: "D- Bodies", bereich: "Damen Bekleidung" },
+    { code: "201.102", name: "D- Bustiers u. Bralettes", bereich: "Damen Bekleidung" },
+    { code: "201.103", name: "D- Unterhemden", bereich: "Damen Bekleidung" },
+    { code: "201.104", name: "D- Slips alle Formen", bereich: "Damen Bekleidung" },
+    { code: "201.106", name: "D- lange Unterhosen inkl- 3/4", bereich: "Damen Bekleidung" },
+    { code: "201.107", name: "D- Unterwäsche Sets inkl- Unterkleider", bereich: "Damen Bekleidung" },
+    { code: "201.110", name: "D- Morgenmäntel", bereich: "Damen Bekleidung" },
+    { code: "201.111", name: "D- Nachtwäsche Oberteile inkl. Nachthemden", bereich: "Damen Bekleidung" },
+    { code: "201.112", name: "D- Nachtwäsche-Sets inkl. Pyjamas", bereich: "Damen Bekleidung" },
+    { code: "201.113", name: "D- Nachtwäsche Unterteile inkl. Einteiler", bereich: "Damen Bekleidung" },
+    { code: "201.120", name: "D- Shapewear Oberteile inkl. Bodies u. Kleider", bereich: "Damen Bekleidung" },
+    { code: "201.121", name: "D- Shapewear Unterteile inkl. Einteiler", bereich: "Damen Bekleidung" },
+    { code: "201.200", name: "D- Füßlinge", bereich: "Schuhe & Strumpfwaren" },
+    { code: "201.201", name: "D- Sneakersocken", bereich: "Schuhe & Strumpfwaren" },
+    { code: "201.202", name: "D- Socken", bereich: "Schuhe & Strumpfwaren" },
+    { code: "201.203", name: "D- Kniestrümpfe inkl. Overknee u. Stulpe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "201.204", name: "D- Stützstrümpfe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "201.205", name: "D- Haussocken", bereich: "Schuhe & Strumpfwaren" },
+    { code: "201.206", name: "D- Arbeitssocken", bereich: "Schuhe & Strumpfwaren" },
+    { code: "201.207", name: "D- Strumpfhosen u. Leggings", bereich: "Schuhe & Strumpfwaren" },
+    { code: "201.250", name: "D- F- Füßlinge", bereich: "Schuhe & Strumpfwaren" },
+    { code: "201.251", name: "D- F-Sneakersocken", bereich: "Schuhe & Strumpfwaren" },
+    { code: "201.252", name: "D- F-Socken", bereich: "Schuhe & Strumpfwaren" },
+    { code: "201.253", name: "D- F-Kniestrümpfe inkl. Overknee u. Stulpe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "201.254", name: "D- F-Stützstrümpfe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "201.255", name: "D- F-Strumpfhosen u. Leggings", bereich: "Schuhe & Strumpfwaren" },
+    { code: "201.256", name: "D- Panty", bereich: "Schuhe & Strumpfwaren" },
+    { code: "201.258", name: "D- F-Strumpfartikel gemischt", bereich: "Schuhe & Strumpfwaren" },
+    { code: "201.300", name: "D- Anlass Oberteile", bereich: "Damen Bekleidung" },
+    { code: "201.310", name: "D- Anlass Unterteile (Kleider/ Röcke)", bereich: "Damen Bekleidung" },
+    { code: "201.320", name: "D- Anlass Einteiler", bereich: "Damen Bekleidung" },
+    { code: "201.330", name: "D- Anlass Sets", bereich: "Damen Bekleidung" },
+    { code: "201.340", name: "D- Anlass Accessoires", bereich: "Schuhe & Strumpfwaren" },
+    { code: "202.001", name: "H- Blusen u. Hemden", bereich: "Herren Bekleidung" },
+    { code: "202.002", name: "H- Pullover, Sweatjacken u. Cardigan", bereich: "Herren Bekleidung" },
+    { code: "202.003", name: "H- Westen", bereich: "Herren Bekleidung" },
+    { code: "202.004", name: "H- Jacken", bereich: "Herren Bekleidung" },
+    { code: "202.005", name: "H- Mäntel", bereich: "Herren Bekleidung" },
+    { code: "202.007", name: "H- Shirts u. Polos", bereich: "Herren Bekleidung" },
+    { code: "202.010", name: "H- Hosen lang/kurz", bereich: "Herren Bekleidung" },
+    { code: "202.020", name: "H- Einteiler", bereich: "Herren Bekleidung" },
+    { code: "202.022", name: "H- Ganzkörper Sets", bereich: "Herren Bekleidung" },
+    { code: "202.023", name: "H- Arbeitsbekleidung", bereich: "Herren Bekleidung" },
+    { code: "202.103", name: "H- Unterhemden", bereich: "Herren Bekleidung" },
+    { code: "202.104", name: "H- Slips alle Formen", bereich: "Herren Bekleidung" },
+    { code: "202.105", name: "H- Panty Boxer alle Formen", bereich: "Herren Bekleidung" },
+    { code: "202.106", name: "H- lange Unterhosen inkl.- 3/4", bereich: "Herren Bekleidung" },
+    { code: "202.107", name: "H- Unterwäsche Sets", bereich: "Herren Bekleidung" },
+    { code: "202.110", name: "H- Morgenmäntel", bereich: "Herren Bekleidung" },
+    { code: "202.111", name: "H- Nachtwäsche Oberteile inkl. Nachthemden", bereich: "Herren Bekleidung" },
+    { code: "202.112", name: "H- Nachtwäsche- Sets inkl. Pyjamas", bereich: "Herren Bekleidung" },
+    { code: "202.113", name: "H- Nachtwäsche Unterteile inkl. Einteiler", bereich: "Herren Bekleidung" },
+    { code: "202.200", name: "H- Füßlinge", bereich: "Schuhe & Strumpfwaren" },
+    { code: "202.201", name: "H- Sneakersocken", bereich: "Schuhe & Strumpfwaren" },
+    { code: "202.202", name: "H- Socken", bereich: "Schuhe & Strumpfwaren" },
+    { code: "202.203", name: "H- Kniestrümpfe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "202.204", name: "H- Stützstrümpfe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "202.205", name: "H- Haussocken", bereich: "Schuhe & Strumpfwaren" },
+    { code: "202.206", name: "H- Arbeitssocken", bereich: "Schuhe & Strumpfwaren" },
+    { code: "202.300", name: "H- Anlass Oberteile", bereich: "Herren Bekleidung" },
+    { code: "202.310", name: "H- Anlass Unterteile", bereich: "Herren Bekleidung" },
+    { code: "202.320", name: "H- Anlass Einteiler", bereich: "Herren Bekleidung" },
+    { code: "202.330", name: "H- Anlass Sets", bereich: "Herren Bekleidung" },
+    { code: "202.340", name: "H- Anlass Accessoires", bereich: "Schuhe & Strumpfwaren" },
+    { code: "203.001", name: "K- Blusen u. Hemden", bereich: "Kinder Bekleidung" },
+    { code: "203.002", name: "K- Pullover, Sweatjacken u. Cardigan", bereich: "Kinder Bekleidung" },
+    { code: "203.003", name: "K- Westen", bereich: "Kinder Bekleidung" },
+    { code: "203.004", name: "K- Jacken", bereich: "Kinder Bekleidung" },
+    { code: "203.005", name: "K- Mäntel", bereich: "Kinder Bekleidung" },
+    { code: "203.007", name: "K- Shirts u. Polos", bereich: "Kinder Bekleidung" },
+    { code: "203.010", name: "K- Hosen lang/kurz", bereich: "Kinder Bekleidung" },
+    { code: "203.011", name: "K- Leggings inkl. 3/4", bereich: "Kinder Bekleidung" },
+    { code: "203.012", name: "K- Röcke", bereich: "Kinder Bekleidung" },
+    { code: "203.020", name: "K- Einteiler", bereich: "Kinder Bekleidung" },
+    { code: "203.021", name: "K- Kleider", bereich: "Kinder Bekleidung" },
+    { code: "203.022", name: "K- Ganzkörper Sets", bereich: "Kinder Bekleidung" },
+    { code: "203.100", name: "K- BH's", bereich: "Kinder Bekleidung" },
+    { code: "203.102", name: "K- Bustiers u. Bralettes", bereich: "Kinder Bekleidung" },
+    { code: "203.103", name: "K- Unterhemden", bereich: "Kinder Bekleidung" },
+    { code: "203.104", name: "K- Slips alle Formen", bereich: "Kinder Bekleidung" },
+    { code: "203.105", name: "K- Panty Boxer alle Formen", bereich: "Kinder Bekleidung" },
+    { code: "203.106", name: "K- lange Unterhosen inkl- 3/4", bereich: "Kinder Bekleidung" },
+    { code: "203.107", name: "K- Unterwäsche Sets inkl.- Unterkleider", bereich: "Kinder Bekleidung" },
+    { code: "203.111", name: "K- Nachtwäsche Oberteile inkl. Nachthemden", bereich: "Kinder Bekleidung" },
+    { code: "203.112", name: "K- Nachtwäsche Sets inkl. Pyjamas", bereich: "Kinder Bekleidung" },
+    { code: "203.113", name: "K- Nachtwäsche Unterteile inkl. Einteiler", bereich: "Kinder Bekleidung" },
+    { code: "203.200", name: "K- Füßlinge", bereich: "Schuhe & Strumpfwaren" },
+    { code: "203.201", name: "K- Sneakersocken", bereich: "Schuhe & Strumpfwaren" },
+    { code: "203.202", name: "K- Socken", bereich: "Schuhe & Strumpfwaren" },
+    { code: "203.203", name: "K- Kniestrümpfe inkl. Overknee u. Stulpe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "203.205", name: "K- Haussocken", bereich: "Schuhe & Strumpfwaren" },
+    { code: "203.207", name: "K- Strumpfhosen u. Leggings", bereich: "Schuhe & Strumpfwaren" },
+    { code: "203.250", name: "K- F-Füßlinge", bereich: "Schuhe & Strumpfwaren" },
+    { code: "203.251", name: "K- F-Sneakersocken", bereich: "Schuhe & Strumpfwaren" },
+    { code: "203.252", name: "K- F-Socken", bereich: "Schuhe & Strumpfwaren" },
+    { code: "203.255", name: "K- F-Strumpfhosen u. Leggings", bereich: "Schuhe & Strumpfwaren" },
+    { code: "203.300", name: "K- Anlass Oberteile", bereich: "Kinder Bekleidung" },
+    { code: "203.310", name: "K- Anlass Unterteile", bereich: "Kinder Bekleidung" },
+    { code: "203.320", name: "K- Anlass Einteiler", bereich: "Kinder Bekleidung" },
+    { code: "203.330", name: "K- Anlass Sets", bereich: "Kinder Bekleidung" },
+    { code: "203.340", name: "K- Anlass Accessoires", bereich: "Kinder Bekleidung" },
+    { code: "204.001", name: "KK- Blusen u. Hemden", bereich: "Kinder Bekleidung" },
+    { code: "204.002", name: "KK- Pullover, Sweatjacken u. Cardigan", bereich: "Kinder Bekleidung" },
+    { code: "204.003", name: "KK- Westen", bereich: "Kinder Bekleidung" },
+    { code: "204.004", name: "KK- Jacken", bereich: "Kinder Bekleidung" },
+    { code: "204.005", name: "KK- Mäntel", bereich: "Kinder Bekleidung" },
+    { code: "204.007", name: "KK- Shirts u. Polos", bereich: "Kinder Bekleidung" },
+    { code: "204.010", name: "KK- Hosen lang/kurz", bereich: "Kinder Bekleidung" },
+    { code: "204.011", name: "KK- Leggings inkl. 3/4", bereich: "Kinder Bekleidung" },
+    { code: "204.012", name: "KK- Röcke", bereich: "Kinder Bekleidung" },
+    { code: "204.020", name: "KK- Einteiler", bereich: "Kinder Bekleidung" },
+    { code: "204.021", name: "KK- Kleider", bereich: "Kinder Bekleidung" },
+    { code: "204.022", name: "KK- Ganzkörper Sets", bereich: "Kinder Bekleidung" },
+    { code: "204.101", name: "KK- Bodies", bereich: "Kinder Bekleidung" },
+    { code: "204.102", name: "KK- Bustiers u. Bralettes", bereich: "Kinder Bekleidung" },
+    { code: "204.103", name: "KK- Unterhemden", bereich: "Kinder Bekleidung" },
+    { code: "204.104", name: "KK- Slips alle Formen", bereich: "Kinder Bekleidung" },
+    { code: "204.105", name: "KK- Panty Boxer alle Formen", bereich: "Kinder Bekleidung" },
+    { code: "204.106", name: "KK- lange Unterhosen inkl. 3/4", bereich: "Kinder Bekleidung" },
+    { code: "204.107", name: "KK- Unterwäsche Sets inkl. Garnituren", bereich: "Kinder Bekleidung" },
+    { code: "204.111", name: "KK- Nachtwäsche Oberteile inkl. Nachthemden", bereich: "Kinder Bekleidung" },
+    { code: "204.112", name: "KK- Nachtwäsche Sets inkl. Pyjamas", bereich: "Kinder Bekleidung" },
+    { code: "204.113", name: "KK- Nachtwäsche Unterteile inkl. Einteiler", bereich: "Kinder Bekleidung" },
+    { code: "204.200", name: "KK- Füßlinge", bereich: "Schuhe & Strumpfwaren" },
+    { code: "204.201", name: "KK- Sneakersocken", bereich: "Schuhe & Strumpfwaren" },
+    { code: "204.202", name: "KK- Socken", bereich: "Schuhe & Strumpfwaren" },
+    { code: "204.203", name: "KK- Kniestrümpfe inkl. Overknee und Stulpe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "204.205", name: "KK- Haussocken", bereich: "Schuhe & Strumpfwaren" },
+    { code: "204.207", name: "KK- Strumpfhosen u. Leggings", bereich: "Schuhe & Strumpfwaren" },
+    { code: "204.250", name: "KK- F-Füßlinge", bereich: "Schuhe & Strumpfwaren" },
+    { code: "204.251", name: "KK- F-Sneakersocken", bereich: "Schuhe & Strumpfwaren" },
+    { code: "204.252", name: "KK- F-Socken", bereich: "Schuhe & Strumpfwaren" },
+    { code: "204.255", name: "KK- F-Strumpfhosen u. Leggings", bereich: "Schuhe & Strumpfwaren" },
+    { code: "204.300", name: "KK- Anlass Oberteile", bereich: "Kinder Bekleidung" },
+    { code: "204.310", name: "KK- Anlass Unterteile", bereich: "Kinder Bekleidung" },
+    { code: "204.320", name: "KK- Anlass Einteiler", bereich: "Kinder Bekleidung" },
+    { code: "204.330", name: "KK- Anlass Sets", bereich: "Kinder Bekleidung" },
+    { code: "204.340", name: "KK- Anlass Accessoires", bereich: "Kinder Bekleidung" },
+    { code: "205.001", name: "Baby- Blusen u. Hemden", bereich: "Kinder Bekleidung" },
+    { code: "205.002", name: "Baby- Pullover, Sweatjacken u. Cardigan", bereich: "Kinder Bekleidung" },
+    { code: "205.004", name: "Baby- Jacken", bereich: "Kinder Bekleidung" },
+    { code: "205.007", name: "Baby- Shirts u. Polos", bereich: "Kinder Bekleidung" },
+    { code: "205.010", name: "Baby- Hosen lang/kurz", bereich: "Kinder Bekleidung" },
+    { code: "205.011", name: "Baby- Leggings inkl. 3/4", bereich: "Kinder Bekleidung" },
+    { code: "205.012", name: "Baby- Röcke", bereich: "Kinder Bekleidung" },
+    { code: "205.020", name: "Baby- Einteiler", bereich: "Kinder Bekleidung" },
+    { code: "205.021", name: "Baby- Kleider", bereich: "Kinder Bekleidung" },
+    { code: "205.022", name: "Baby- Ganzkörper Sets", bereich: "Kinder Bekleidung" },
+    { code: "205.101", name: "Baby- Bodies", bereich: "Kinder Bekleidung" },
+    { code: "205.107", name: "Baby- Sets inkl. Garnituren", bereich: "Kinder Bekleidung" },
+    { code: "205.111", name: "Baby- Nachtwäsche Oberteile inkl. Nachthemden", bereich: "Kinder Bekleidung" },
+    { code: "205.113", name: "Baby- Nachtwäsche Unterteile inkl. Strampler", bereich: "Kinder Bekleidung" },
+    { code: "205.201", name: "Baby- Sneakersocken", bereich: "Schuhe & Strumpfwaren" },
+    { code: "205.202", name: "Baby- Socken", bereich: "Schuhe & Strumpfwaren" },
+    { code: "205.203", name: "Baby- Kniestrümpfe inkl. Stulpe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "205.205", name: "Baby- Haussocken", bereich: "Schuhe & Strumpfwaren" },
+    { code: "205.207", name: "Baby- Strumpfhosen u. Leggings", bereich: "Schuhe & Strumpfwaren" },
+    { code: "205.300", name: "Baby- Anlass Oberteile", bereich: "Kinder Bekleidung" },
+    { code: "205.310", name: "Baby- Anlass Unterteile", bereich: "Kinder Bekleidung" },
+    { code: "205.320", name: "Baby- Anlass Einteiler", bereich: "Kinder Bekleidung" },
+    { code: "205.330", name: "Baby- Anlass Sets", bereich: "Kinder Bekleidung" },
+    { code: "205.340", name: "Baby- Anlass Accessoires", bereich: "Kinder Bekleidung" },
+    { code: "236.001", name: "DH-Sport-Blusen u. Hemden", bereich: "Sport & Freizeit" },
+    { code: "236.002", name: "DH-Sport-Pullover, Sweat (-jacken u. Cardigan)", bereich: "Sport & Freizeit" },
+    { code: "236.003", name: "DH-Sport-Westen", bereich: "Sport & Freizeit" },
+    { code: "236.004", name: "DH-Sport-Jacken", bereich: "Sport & Freizeit" },
+    { code: "236.005", name: "DH-Sport-Mäntel", bereich: "Sport & Freizeit" },
+    { code: "236.006", name: "DH-Sport-Regenbekleidung Oberkörper (Jacke)", bereich: "Sport & Freizeit" },
+    { code: "236.007", name: "DH-Sport-Funktionsshirts", bereich: "Sport & Freizeit" },
+    { code: "236.010", name: "DH-Sport-Hosen lang/ kurz (bis 7/8)", bereich: "Sport & Freizeit" },
+    { code: "236.011", name: "DH-Sport-Tights inkl. 3/4 lang/ kurz (bis 7/8)", bereich: "Sport & Freizeit" },
+    { code: "236.012", name: "DH-Sport-Röcke", bereich: "Sport & Freizeit" },
+    { code: "236.016", name: "DH-Sport-Regenbekleidung Unterkörper lang/ kurz (bis 7/8)", bereich: "Sport & Freizeit" },
+    { code: "236.020", name: "DH-Sport-Einteiler", bereich: "Sport & Freizeit" },
+    { code: "236.021", name: "DH-Sport-Kleider", bereich: "Sport & Freizeit" },
+    { code: "236.022", name: "DH-Sport-Sets u. Ganzkörperanzüge", bereich: "Sport & Freizeit" },
+    { code: "236.026", name: "DH-Sport-Regenbekleidung Ganzkörper", bereich: "Sport & Freizeit" },
+    { code: "236.100", name: "DH-Sport-BH's", bereich: "Sport & Freizeit" },
+    { code: "236.101", name: "DH-Sport-Bodies", bereich: "Sport & Freizeit" },
+    { code: "236.102", name: "DH-Sport-Bustiers u. Bralettes", bereich: "Sport & Freizeit" },
+    { code: "236.103", name: "DH-Sport-Unterhemden", bereich: "Sport & Freizeit" },
+    { code: "236.104", name: "DH-Sport-Slips alle Formen", bereich: "Sport & Freizeit" },
+    { code: "236.106", name: "DH-Sport-lange Unterhosen inkl. 3/4", bereich: "Sport & Freizeit" },
+    { code: "236.107", name: "DH-Sport-Sets inkl. Unterkleider", bereich: "Sport & Freizeit" },
+    { code: "236.200", name: "DH-Sport-Füßlinge", bereich: "Schuhe & Strumpfwaren" },
+    { code: "236.201", name: "DH-Sport-Sneakersocken", bereich: "Schuhe & Strumpfwaren" },
+    { code: "236.202", name: "DH-Sport-Socken", bereich: "Schuhe & Strumpfwaren" },
+    { code: "236.203", name: "DH-Sport-Kniestrümpfe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "236.204", name: "DH-Sport-Kompressionsstrümpfe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "236.207", name: "DH-Sport-Strumpfhosen u. Leggings", bereich: "Schuhe & Strumpfwaren" },
+    { code: "236.400", name: "DH-Sport-Badehosen", bereich: "Sport & Freizeit" },
+    { code: "236.401", name: "DH-Sport-Bademäntel", bereich: "Sport & Freizeit" },
+    { code: "236.402", name: "DH-Sport-Badeanzüge", bereich: "Sport & Freizeit" },
+    { code: "236.403", name: "DH-Sport-Bikinis inkl. Sets", bereich: "Sport & Freizeit" },
+    { code: "236.499", name: "DH-Sport-Bademode (Sonstige)", bereich: "Sport & Freizeit" },
+    { code: "236.500", name: "DH-Sport-Kopfbedeckungen", bereich: "Sport & Freizeit" },
+    { code: "236.501", name: "DH-Sport-Handschuhe", bereich: "Sport & Freizeit" },
+    { code: "236.502", name: "DH-Sport-Halsbedeckungen", bereich: "Sport & Freizeit" },
+    { code: "236.503", name: "DH-Sport-Accessoires", bereich: "Sport & Freizeit" },
+    { code: "237.001", name: "K KK-Sport-Blusen u. Hemden", bereich: "Sport & Freizeit" },
+    { code: "237.002", name: "K KK-Sport-Pullover, Sweatjacken u. Cardigan", bereich: "Sport & Freizeit" },
+    { code: "237.003", name: "K KK-Sport-Westen", bereich: "Sport & Freizeit" },
+    { code: "237.004", name: "K KK-Sport-Jacken", bereich: "Sport & Freizeit" },
+    { code: "237.005", name: "K KK-Sport-Mäntel", bereich: "Sport & Freizeit" },
+    { code: "237.006", name: "K KK-Sport-Regenbekleidung Oberkörper (-jacken)", bereich: "Sport & Freizeit" },
+    { code: "237.007", name: "K KK-Sport-Funktionsshirts", bereich: "Sport & Freizeit" },
+    { code: "237.010", name: "K KK-Sport-Hosen", bereich: "Sport & Freizeit" },
+    { code: "237.011", name: "K KK-Sport-Tights inkl. 3/4", bereich: "Sport & Freizeit" },
+    { code: "237.012", name: "K KK-Sport-Röcke", bereich: "Sport & Freizeit" },
+    { code: "237.016", name: "K KK-Sport-Regenbekleidung Unterkörper", bereich: "Sport & Freizeit" },
+    { code: "237.020", name: "K KK-Sport-Einteiler", bereich: "Sport & Freizeit" },
+    { code: "237.021", name: "K KK-Sport-Kleider", bereich: "Sport & Freizeit" },
+    { code: "237.022", name: "K KK-Sport-Sets u. Ganzkörperanzüge", bereich: "Sport & Freizeit" },
+    { code: "237.026", name: "K KK-Sport-Regenbekleidung Ganzkörper", bereich: "Sport & Freizeit" },
+    { code: "237.100", name: "K KK-Sport-BH's", bereich: "Sport & Freizeit" },
+    { code: "237.101", name: "K KK-Sport-Bodies", bereich: "Sport & Freizeit" },
+    { code: "237.102", name: "K KK-Sport-Bustiers u. Bralettes", bereich: "Sport & Freizeit" },
+    { code: "237.103", name: "K KK-Sport-Unterhemden", bereich: "Sport & Freizeit" },
+    { code: "237.104", name: "K KK-Sport-Slips alle Formen", bereich: "Sport & Freizeit" },
+    { code: "237.105", name: "K KK-Sport-Panty Boxer alle Formen", bereich: "Sport & Freizeit" },
+    { code: "237.106", name: "K KK-Sport-lange Unterhosen inkl. 3/4", bereich: "Sport & Freizeit" },
+    { code: "237.107", name: "K KK-Sport-Sets inkl. Unterkleiderer", bereich: "Sport & Freizeit" },
+    { code: "237.200", name: "K KK-Sport-Füßlinge", bereich: "Schuhe & Strumpfwaren" },
+    { code: "237.201", name: "K KK-Sport-Sneakersocken", bereich: "Schuhe & Strumpfwaren" },
+    { code: "237.202", name: "K KK-Sport-Socken", bereich: "Schuhe & Strumpfwaren" },
+    { code: "237.203", name: "K KK-Sport-Kniestrümpfe inkl. Overknee u. Stulpe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "237.204", name: "K KK-Sport-Stützstrümpfe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "237.207", name: "K KK-Sport-Strumpfhosen u. Leggings", bereich: "Schuhe & Strumpfwaren" },
+    { code: "237.400", name: "K KK-Sport-Badehosen", bereich: "Sport & Freizeit" },
+    { code: "237.401", name: "K KK-Sport-Bademäntel", bereich: "Sport & Freizeit" },
+    { code: "237.402", name: "K KK-Sport-Badeanzüge", bereich: "Sport & Freizeit" },
+    { code: "237.403", name: "K KK-Sport-Bikinis", bereich: "Sport & Freizeit" },
+    { code: "237.499", name: "K KK-Sport-Bademode (Sonstige)", bereich: "Sport & Freizeit" },
+    { code: "237.500", name: "K KK-Sport-Kopfbedeckungen", bereich: "Sport & Freizeit" },
+    { code: "237.501", name: "K KK-Sport-Handschuhe", bereich: "Sport & Freizeit" },
+    { code: "237.502", name: "K KK-Sport-Halsbedeckungen", bereich: "Sport & Freizeit" },
+    { code: "237.503", name: "K KK-Sport-Accessoires", bereich: "Sport & Freizeit" },
+    { code: "250.001", name: "Rucksäcke (Modisch)", bereich: "Schuhe & Strumpfwaren" },
+    { code: "250.005", name: "Taschen (Modisch)", bereich: "Schuhe & Strumpfwaren" },
+    { code: "250.041", name: "Rucksäcke (Funktional)", bereich: "Sport & Freizeit" },
+    { code: "250.042", name: "Laptoptaschen", bereich: "Sport & Freizeit" },
+    { code: "250.043", name: "Koffer Softschalen", bereich: "Sport & Freizeit" },
+    { code: "250.044", name: "Koffer Hartschalen", bereich: "Sport & Freizeit" },
+    { code: "250.045", name: "Taschen (Funktional)", bereich: "Sport & Freizeit" },
+    { code: "250.080", name: "Schultaschen und -aufbewahrung (Sonstige)", bereich: "Sport & Freizeit" },
+    { code: "250.100", name: "Regenschirme", bereich: "Sport & Freizeit" },
+    { code: "250.110", name: "Geldbörsen u. Etuis", bereich: "Schuhe & Strumpfwaren" },
+    { code: "250.120", name: "Gürtel", bereich: "Schuhe & Strumpfwaren" },
+    { code: "250.130", name: "Schmuck u. Haar-Accessoires", bereich: "Schuhe & Strumpfwaren" },
+    { code: "250.140", name: "Sonnenbrillen", bereich: "Schuhe & Strumpfwaren" },
+    { code: "250.141", name: "Lesebrillen", bereich: "Schuhe & Strumpfwaren" },
+    { code: "250.142", name: "Brillen Accessoires", bereich: "Schuhe & Strumpfwaren" },
+    { code: "250.199", name: "Accessoires (Sonstige)", bereich: "Schuhe & Strumpfwaren" },
+    { code: "250.200", name: "Kopfbedeckungen", bereich: "Schuhe & Strumpfwaren" },
+    { code: "250.201", name: "Halsbedeckungen", bereich: "Schuhe & Strumpfwaren" },
+    { code: "250.202", name: "Handschuhe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "250.203", name: "Haustiere", bereich: "Schuhe & Strumpfwaren" },
+    { code: "250.299", name: "Bekleidungsaccessoires (Sonstige)", bereich: "Kinder Bekleidung" },
+    { code: "250.300", name: "Babyaccessoires (Sonstige)", bereich: "Kinder Bekleidung" },
+    { code: "261.001", name: "D- Ballerinas", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.002", name: "D- Pumps", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.004", name: "D- Slipper", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.005", name: "D- Halbhausschuhe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.006", name: "D- Aquaschuhe (Bade)", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.007", name: "D- Schnürer", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.008", name: "D- Freizeitschuhe u. Sneaker", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.009", name: "D- Arbeits- u. Sicherheitshalbschuhe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.100", name: "D- Schnür-Stiefel", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.101", name: "D- Stiefeletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.102", name: "D- Stiefel lang", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.103", name: "D- Knöchelbedeckende Freizeitschuhe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.104", name: "D- Snowboot", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.105", name: "D- Knöchelbedeckende Hausschuhe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.107", name: "D- Regenstiefel", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.109", name: "D- Knöchelbedeckende Arbeits- u. Sicherheitsschuhe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.200", name: "D- Sandaletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.201", name: "D- Zehentrenner Sandaletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.202", name: "D- Tieffußbett Sandaletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.300", name: "D- Pantoletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.301", name: "D- Zehentrenner Pantoletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.302", name: "D- Sabots", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.303", name: "D- Tieffußbett Pantoletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.305", name: "D- Hausschuhe Pantoletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.306", name: "D- Pantoletten (Bade)", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.307", name: "D- Zehentrenner Pantoletten (Bade)", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.308", name: "D- Clogs (Bade)", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.309", name: "D- Arbeits- u. Sicherheitspantoletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.400", name: "D- S- Slipper", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.401", name: "D- S- Sneaker", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.402", name: "D- S- Funktionsschuhe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.403", name: "D- S- Trekking low", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.410", name: "D- S- Trekking high", bereich: "Schuhe & Strumpfwaren" },
+    { code: "261.420", name: "D- S- Trekking Sandaletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.004", name: "H- Slipper", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.005", name: "H- Halbhausschuhe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.006", name: "H- Aquaschuhe (Bade)", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.007", name: "H- Schnürer", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.008", name: "H- Freizeithalbschuhe u. Sneaker", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.009", name: "H- Arbeits- u. Sicherheitshalbschuhe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.100", name: "H- Schnür-Stiefel", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.101", name: "H- Stiefeletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.103", name: "H- Knöchelbedeckende Freizeitschuhe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.104", name: "H- Snowboot", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.105", name: "H- Knöchelbedeckende Hausschuhe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.107", name: "H- Regenstiefel", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.109", name: "H- Knöchelbedeckende Arbeits- u. Sicherheitsschuhe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.200", name: "H- Sandaletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.201", name: "H- Zehentrenner Sandaletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.202", name: "H- Tieffußbett Sandaletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.300", name: "H- Pantoletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.301", name: "H- Zehentrenner Pantoletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.302", name: "H- Sabots", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.303", name: "H- Tieffußbett Pantoletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.305", name: "H- Hausschuhe Pantoletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.306", name: "H- Pantoletten (Bade)", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.307", name: "H- Zehentrenner Pantolleten (Bade)", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.308", name: "H- Clogs (Bade)", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.309", name: "H- Arbeits- u. Sicherheitsschuhe Pantoletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.400", name: "H- S- Slipper", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.401", name: "H- S- Sneaker", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.402", name: "H- S- Funktionsschuhe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.403", name: "H- S- Trekking low", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.410", name: "H- S- Trekking high", bereich: "Schuhe & Strumpfwaren" },
+    { code: "262.420", name: "H- S- Trekking Sandaletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.001", name: "K KK- Ballerinas", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.004", name: "K KK- Slipper", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.005", name: "K KK- Halbhausschuhe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.006", name: "K KK- Aquaschuhe (Bade)", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.007", name: "K KK- Schnürer", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.008", name: "K KK- Freizeithalbschuhe u. Sneaker", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.100", name: "K KK- Schnür-Stiefel", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.101", name: "K KK- Stiefeletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.102", name: "K KK- Stiefel lang", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.103", name: "K KK- Freizeit", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.104", name: "K KK- Snowboot", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.105", name: "K KK- Knöchelbedeckende Hausschuhe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.107", name: "K KK- Regenstiefel", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.200", name: "K KK- Sandaletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.201", name: "K KK- Zehentrenner Sandaletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.202", name: "K KK- Tieffußbett Sandaletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.300", name: "K KK- Pantoletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.301", name: "K KK- Zehentrenner Pantoletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.302", name: "K KK- Sabots", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.303", name: "K KK- Tieffußbett Pantoletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.305", name: "K KK- Hausschuhe Pantoletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.306", name: "K KK- Pantoletten (Bade)", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.307", name: "K KK- Zehentrenner Pantoletten (Bade)", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.308", name: "K KK- Clogs", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.401", name: "K KK S- Sneaker", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.402", name: "K KK S- Funktionsschuhe", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.403", name: "K KK S- Trekking low", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.404", name: "K KK S- Slipper", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.410", name: "K KK S- Trekking high", bereich: "Schuhe & Strumpfwaren" },
+    { code: "267.420", name: "K KK S- Trekking Sandaletten", bereich: "Schuhe & Strumpfwaren" },
+    { code: "269.100", name: "D H K KK- Einlegesohlen", bereich: "Schuhe & Strumpfwaren" },
+    { code: "269.199", name: "D H K KK- Schuhzubehör (Sonstige)", bereich: "Schuhe & Strumpfwaren" },
+    { code: "280.001", name: "Deko-Kissen", bereich: "Wohnen & Einrichten" },
+    { code: "280.002", name: "Teppiche (größer 60x80cm)", bereich: "Wohnen & Einrichten" },
+    { code: "280.003", name: "Vorhänge", bereich: "Wohnen & Einrichten" },
+    { code: "280.004", name: "Decken", bereich: "Wohnen & Einrichten" },
+    { code: "280.099", name: "Wohnzimmertextilien (Sonstige)", bereich: "Wohnen & Einrichten" },
+    { code: "280.100", name: "Geschirrtücher", bereich: "Wohnen & Einrichten" },
+    { code: "280.101", name: "Schürzen, Ofenhandschuhe, Topflappen", bereich: "Wohnen & Einrichten" },
+    { code: "280.102", name: "Sitzkissen", bereich: "Wohnen & Einrichten" },
+    { code: "280.103", name: "Tischdecken u. Platzsets", bereich: "Wohnen & Einrichten" },
+    { code: "280.199", name: "Küchentextilien (Sonstige)", bereich: "Wohnen & Einrichten" },
+    { code: "280.200", name: "Bademäntel", bereich: "Wohnen & Einrichten" },
+    { code: "280.201", name: "Badematten (Sets)", bereich: "Wohnen & Einrichten" },
+    { code: "280.202", name: "Duschvorhänge", bereich: "Wohnen & Einrichten" },
+    { code: "280.203", name: "Handtücher (Sets, größer 50x100cm)", bereich: "Wohnen & Einrichten" },
+    { code: "280.299", name: "Badezimmertextilien (Sonstige)", bereich: "Wohnen & Einrichten" },
+    { code: "280.300", name: "Spannbettlaken", bereich: "Wohnen & Einrichten" },
+    { code: "280.301", name: "Bettwaren u. Kissen", bereich: "Wohnen & Einrichten" },
+    { code: "280.302", name: "Bettwäsche", bereich: "Wohnen & Einrichten" },
+    { code: "280.304", name: "Topper", bereich: "Wohnen & Einrichten" },
+    { code: "280.305", name: "Matratzen", bereich: "Wohnen & Einrichten" },
+    { code: "280.399", name: "Schlafzimmertextilien (Sonstige)", bereich: "Wohnen & Einrichten" },
+    { code: "280.400", name: "Fußmatten (größer 60x80cm)", bereich: "Wohnen & Einrichten" },
+    { code: "280.401", name: "Polsterauflagen", bereich: "Wohnen & Einrichten" },
+    { code: "280.499", name: "Outdoortextilien (Sonstige)", bereich: "Wohnen & Einrichten" },
+    { code: "280.500", name: "DIY Sets", bereich: "Wohnen & Einrichten" },
+    { code: "280.501", name: "Kurzwaren u. Nähbedarf (Sets)", bereich: "Wohnen & Einrichten" },
+    { code: "280.502", name: "Wolle u. Strickbedarf (Sets)", bereich: "Wohnen & Einrichten" },
+    { code: "280.599", name: "Handarbeitstextilien (Sonstige) (Sets)", bereich: "Wohnen & Einrichten" },
+    { code: "300.010", name: "Regale", bereich: "Wohnen & Einrichten" },
+    { code: "300.020", name: "Kommoden", bereich: "Wohnen & Einrichten" },
+    { code: "300.030", name: "Schränke", bereich: "Wohnen & Einrichten" },
+    { code: "300.040", name: "Tische", bereich: "Wohnen & Einrichten" },
+    { code: "300.050", name: "Sitzmöbel", bereich: "Wohnen & Einrichten" },
+    { code: "300.060", name: "Betten u. Lattenroste", bereich: "Wohnen & Einrichten" },
+    { code: "300.070", name: "Möbel zur Aufbewahrung u. Organisation", bereich: "Wohnen & Einrichten" },
+    { code: "300.080", name: "Küchenzeilen u. Küchenblöcke", bereich: "Wohnen & Einrichten" },
+    { code: "300.099", name: "Wohnmöbel (Sonstige)", bereich: "Wohnen & Einrichten" },
+    { code: "300.100", name: "Wohn-Dekoration", bereich: "Wohnen & Einrichten" },
+    { code: "300.110", name: "Kerzen u. Raumduft", bereich: "Wohnen & Einrichten" },
+    { code: "300.120", name: "Indoor Stimmungsbeleuchtung", bereich: "Wohnen & Einrichten" },
+    { code: "300.130", name: "Saison u. Party Deko", bereich: "Wohnen & Einrichten" },
+    { code: "300.140", name: "LED Saison u. Party Deko", bereich: "Wohnen & Einrichten" },
+    { code: "300.199", name: "Wanddekorationen u. Innen Dekoration (Sonstige)", bereich: "Wohnen & Einrichten" },
+    { code: "300.210", name: "Leuchtmittel", bereich: "Wohnen & Einrichten" },
+    { code: "300.211", name: "Funktionale Leuchtmittel", bereich: "Wohnen & Einrichten" },
+    { code: "300.250", name: "Wand- u. Deckenleuchten", bereich: "Wohnen & Einrichten" },
+    { code: "300.251", name: "Tisch- u. Stehleuchten", bereich: "Wohnen & Einrichten" },
+    { code: "300.299", name: "Arbeitsbeleuchtung u. Beleuchtung (Sonstige)", bereich: "Wohnen & Einrichten" },
+    { code: "300.300", name: "Insektenschutz, Rollos, Plissees", bereich: "Wohnen & Einrichten" },
+    { code: "310.010", name: "Kühl- u. Gefriergeräte", bereich: "Küche & Haushalt" },
+    { code: "310.020", name: "Geschirrspüler", bereich: "Küche & Haushalt" },
+    { code: "310.030", name: "Herde u. Backöfen", bereich: "Küche & Haushalt" },
+    { code: "310.040", name: "Dunstabzugshauben", bereich: "Küche & Haushalt" },
+    { code: "310.099", name: "Küchengroßgeräte (Sonstige)", bereich: "Küche & Haushalt" },
+    { code: "310.110", name: "Küchenmaschinen u. Foodprozessoren", bereich: "Küche & Haushalt" },
+    { code: "310.115", name: "Küchenmaschinen mit Kochfunktion", bereich: "Küche & Haushalt" },
+    { code: "310.120", name: "Kaffeemaschinen", bereich: "Küche & Haushalt" },
+    { code: "310.130", name: "Wasserkocher u. Teebereiter", bereich: "Küche & Haushalt" },
+    { code: "310.140", name: "Toaster", bereich: "Küche & Haushalt" },
+    { code: "310.150", name: "Mixer u. Rührgeräte", bereich: "Küche & Haushalt" },
+    { code: "310.160", name: "Zerkleinerer, Fleischwölfe, Allesschneider", bereich: "Küche & Haushalt" },
+    { code: "310.170", name: "Elektrogrills", bereich: "Küche & Haushalt" },
+    { code: "310.180", name: "Backautomaten u. Mikrowellen", bereich: "Küche & Haushalt" },
+    { code: "310.210", name: "Koch- u. Warmhalteplatten", bereich: "Küche & Haushalt" },
+    { code: "310.220", name: "Garer u. Eierkocher", bereich: "Küche & Haushalt" },
+    { code: "310.230", name: "Fritteusen", bereich: "Küche & Haushalt" },
+    { code: "310.240", name: "Eis- u. Joghurtbereiter", bereich: "Küche & Haushalt" },
+    { code: "310.250", name: "Entsafter u. Saftpressen", bereich: "Küche & Haushalt" },
+    { code: "310.260", name: "Funcooking", bereich: "Küche & Haushalt" },
+    { code: "310.270", name: "Küchenwaagen", bereich: "Küche & Haushalt" },
+    { code: "310.280", name: "Vakuumierer u. Folienschweißgeräte", bereich: "Küche & Haushalt" },
+    { code: "310.299", name: "Küchenkleingeräte (Sonstige)", bereich: "Küche & Haushalt" },
+    { code: "311.010", name: "Tafelbesteck", bereich: "Küche & Haushalt" },
+    { code: "311.020", name: "Trinkgefäße u. Gläser", bereich: "Küche & Haushalt" },
+    { code: "311.030", name: "Karaffen u. Kannen", bereich: "Küche & Haushalt" },
+    { code: "311.040", name: "Tafelgeschirr", bereich: "Küche & Haushalt" },
+    { code: "311.099", name: "Tafelgeschirr u. -besteck (Sonstige)", bereich: "Küche & Haushalt" },
+    { code: "311.110", name: "Töpfe", bereich: "Küche & Haushalt" },
+    { code: "311.120", name: "Pfannen", bereich: "Küche & Haushalt" },
+    { code: "311.199", name: "Töpfe u. Pfannen (Sonstige)", bereich: "Küche & Haushalt" },
+    { code: "311.210", name: "Auflaufformen u. Bräter", bereich: "Küche & Haushalt" },
+    { code: "311.299", name: "Kochgeschirr (Sonstige)", bereich: "Küche & Haushalt" },
+    { code: "311.310", name: "Backformen u. Backbleche", bereich: "Küche & Haushalt" },
+    { code: "311.399", name: "Backgeschirr (Sonstige)", bereich: "Küche & Haushalt" },
+    { code: "311.410", name: "Vorratsdosen", bereich: "Küche & Haushalt" },
+    { code: "311.420", name: "Lunchboxen", bereich: "Küche & Haushalt" },
+    { code: "311.430", name: "Einmachgläser u. Drahtbügelgläser", bereich: "Küche & Haushalt" },
+    { code: "311.440", name: "Brot- u. Kuchenaufbewahrung", bereich: "Küche & Haushalt" },
+    { code: "311.499", name: "Haushaltsaufbewahrung (Sonstige)", bereich: "Küche & Haushalt" },
+    { code: "311.510", name: "Tabletts, Servierplatten, Schalen, Schüsseln", bereich: "Küche & Haushalt" },
+    { code: "311.599", name: "Organisation Küchenhaushaltswaren (Sonstige)", bereich: "Küche & Haushalt" },
+    { code: "311.610", name: "Küchen- u. Servierhelfer", bereich: "Küche & Haushalt" },
+    { code: "311.620", name: "Backhelfer", bereich: "Küche & Haushalt" },
+    { code: "311.630", name: "Schneidebretter u. Herdabdeckplatten", bereich: "Küche & Haushalt" },
+    { code: "311.640", name: "Küchenmesser, Küchenscheren u. Zubehör", bereich: "Küche & Haushalt" },
+    { code: "311.650", name: "Gewürzmühlen u. Menagen", bereich: "Küche & Haushalt" },
+    { code: "311.660", name: "Zerkleinerer", bereich: "Küche & Haushalt" },
+    { code: "311.670", name: "Kaffee- u. Teezubehör", bereich: "Küche & Haushalt" },
+    { code: "311.680", name: "Küchenmaschinenzubehör", bereich: "Küche & Haushalt" },
+    { code: "311.699", name: "Küchenhelfer (Sonstige)", bereich: "Küche & Haushalt" },
+    { code: "311.710", name: "Wassersprudler u. Zubehör", bereich: "Küche & Haushalt" },
+    { code: "311.720", name: "Wasserfilter u. Zubehör", bereich: "Küche & Haushalt" },
+    { code: "311.799", name: "Getränkebereiter (Sonstige)", bereich: "Küche & Haushalt" },
+    { code: "320.010", name: "Handstaubsauger", bereich: "Küche & Haushalt" },
+    { code: "320.020", name: "Stielstaubsauger", bereich: "Küche & Haushalt" },
+    { code: "320.030", name: "Bodenstaubsauger u. Roboter", bereich: "Küche & Haushalt" },
+    { code: "320.099", name: "Reinigungsgeräte elektrisch (Sonstige)", bereich: "Küche & Haushalt" },
+    { code: "320.110", name: "Bodenreinigung manuell", bereich: "Küche & Haushalt" },
+    { code: "320.199", name: "Reinigungshelfer (Sonstige)", bereich: "Küche & Haushalt" },
+    { code: "320.210", name: "Bügeleisen u. -systeme", bereich: "Küche & Haushalt" },
+    { code: "320.220", name: "Bügeltische u. Zubehör", bereich: "Küche & Haushalt" },
+    { code: "320.300", name: "Wäschespinnen u.-trockner", bereich: "Küche & Haushalt" },
+    { code: "320.410", name: "Nähmaschinen", bereich: "Küche & Haushalt" },
+    { code: "320.420", name: "Nähzubehör", bereich: "Küche & Haushalt" },
+    { code: "320.510", name: "Waschmaschinen", bereich: "Küche & Haushalt" },
+    { code: "320.515", name: "Waschtrockner", bereich: "Küche & Haushalt" },
+    { code: "320.520", name: "Trockner", bereich: "Küche & Haushalt" },
+    { code: "320.599", name: "Haushaltselektrogroßgeräte (Sonstige)", bereich: "Küche & Haushalt" },
+    { code: "320.610", name: "Wäschekörbe u. -sammler", bereich: "Küche & Haushalt" },
+    { code: "320.620", name: "Klarsicht- u. Aufbewahrungsboxen", bereich: "Küche & Haushalt" },
+    { code: "320.630", name: "Abfalleimer, Eimer u. Wannen", bereich: "Küche & Haushalt" },
+    { code: "320.640", name: "Kleider-, Textil- u. Schuhaufbewahrung", bereich: "Küche & Haushalt" },
+    { code: "320.699", name: "Wäschekörbe, Eimer, Aufbewahrungsboxen (Sonstige)", bereich: "Küche & Haushalt" },
+    { code: "320.710", name: "Befestigungen, Haken, Türpuffer", bereich: "Küche & Haushalt" },
+    { code: "320.720", name: "Wäscheklammern u. Kleiderbügel", bereich: "Küche & Haushalt" },
+    { code: "321.100", name: "Armaturen", bereich: "Wohnen & Einrichten" },
+    { code: "321.200", name: "Brausen u. Zubehör", bereich: "Wohnen & Einrichten" },
+    { code: "321.300", name: "Keramik u. Sanitärinstallation", bereich: "Wohnen & Einrichten" },
+    { code: "321.400", name: "Badaccessoires, WC-Garnituren, Kosmetikeimer", bereich: "Wohnen & Einrichten" },
+    { code: "321.500", name: "WC-Sitze", bereich: "Wohnen & Einrichten" },
+    { code: "321.600", name: "Dusch- u. Badewannenausstattung", bereich: "Wohnen & Einrichten" },
+    { code: "321.700", name: "Badmöbel", bereich: "Wohnen & Einrichten" },
+    { code: "325.110", name: "Rasur u. Haarentfernung Herren", bereich: "Wohnen & Einrichten" },
+    { code: "325.120", name: "Rasur u. Haarentfernung Damen", bereich: "Wohnen & Einrichten" },
+    { code: "325.210", name: "Haartrocknung", bereich: "Wohnen & Einrichten" },
+    { code: "325.220", name: "Haarstyling", bereich: "Wohnen & Einrichten" },
+    { code: "325.310", name: "Kosmetik", bereich: "Wohnen & Einrichten" },
+    { code: "325.320", name: "Maniküre u. Pediküre", bereich: "Wohnen & Einrichten" },
+    { code: "325.400", name: "Zahnpflege", bereich: "Wohnen & Einrichten" },
+    { code: "326.110", name: "Kompressen u. Verbandsmaterial", bereich: "Sport & Freizeit" },
+    { code: "326.120", name: "Bandagen u. Tapes", bereich: "Sport & Freizeit" },
+    { code: "326.200", name: "Seniorenartikel", bereich: "Sport & Freizeit" },
+    { code: "326.300", name: "Personen- u. Diagnosewaagen", bereich: "Wohnen & Einrichten" },
+    { code: "326.410", name: "Wärmetherapie", bereich: "Sport & Freizeit" },
+    { code: "326.420", name: "Massage u. Schmerztherapie", bereich: "Sport & Freizeit" },
+    { code: "326.430", name: "Wellness- u. Saunaartikel", bereich: "Sport & Freizeit" },
+    { code: "326.500", name: "Luftreiniger, Luftbefeuchter, Luftentfeuchter", bereich: "Wohnen & Einrichten" },
+    { code: "326.600", name: "Medizinische Geräte", bereich: "Sport & Freizeit" },
+    { code: "330.010", name: "Kopfhörer On Ear", bereich: "Wohnen & Einrichten" },
+    { code: "330.020", name: "Kopfhörer In Ear", bereich: "Wohnen & Einrichten" },
+    { code: "330.030", name: "Lautsprecher (Audio)", bereich: "Wohnen & Einrichten" },
+    { code: "330.040", name: "Radios u. Audiogeräte", bereich: "Wohnen & Einrichten" },
+    { code: "330.099", name: "Audiogeräte (Sonstige)", bereich: "Wohnen & Einrichten" },
+    { code: "330.110", name: "Fernseher", bereich: "Wohnen & Einrichten" },
+    { code: "330.120", name: "Kameras", bereich: "Wohnen & Einrichten" },
+    { code: "330.130", name: "Portable Abspielgeräte (Video)", bereich: "Wohnen & Einrichten" },
+    { code: "330.140", name: "Streaming", bereich: "Wohnen & Einrichten" },
+    { code: "330.150", name: "Navigationsgeräte", bereich: "Sport & Freizeit" },
+    { code: "330.199", name: "Video (Sonstige)", bereich: "Wohnen & Einrichten" },
+    { code: "330.200", name: "Audio u. Videozubehör (Sonstige)", bereich: "Wohnen & Einrichten" },
+    { code: "330.300", name: "Smartphones, Telefon- u. Funkgeräte", bereich: "Wohnen & Einrichten" },
+    { code: "330.390", name: "Zubehör Smartphones, Telefon- u. Funkgeräte", bereich: "Wohnen & Einrichten" },
+    { code: "330.410", name: "Kabeltrommeln u. Kabel", bereich: "Wohnen & Einrichten" },
+    { code: "330.420", name: "Mehrfachstecker u. Steckdosenadapter", bereich: "Wohnen & Einrichten" },
+    { code: "330.430", name: "Batterien u. Akkus", bereich: "Wohnen & Einrichten" },
+    { code: "330.440", name: "Powerbanks u. Stromspeicher", bereich: "Wohnen & Einrichten" },
+    { code: "330.450", name: "Strom Einbauartikel", bereich: "Wohnen & Einrichten" },
+    { code: "330.460", name: "Ladegeräte u. Netzstecker", bereich: "Wohnen & Einrichten" },
+    { code: "330.510", name: "PCs u. Laptops", bereich: "Wohnen & Einrichten" },
+    { code: "330.520", name: "Tablets", bereich: "Sport & Freizeit" },
+    { code: "330.530", name: "Drucker, Scanner, Multifunktionsgeräte", bereich: "Wohnen & Einrichten" },
+    { code: "330.540", name: "Monitor", bereich: "Wohnen & Einrichten" },
+    { code: "330.550", name: "Eingabegeräte", bereich: "Wohnen & Einrichten" },
+    { code: "330.590", name: "Zubehör Hardware Unterhaltungselektronik", bereich: "Wohnen & Einrichten" },
+    { code: "330.610", name: "Konsolen", bereich: "Wohnen & Einrichten" },
+    { code: "330.690", name: "Konsolenzubehör", bereich: "Wohnen & Einrichten" },
+    { code: "330.710", name: "Elektroinstallation", bereich: "Wohnen & Einrichten" },
+    { code: "330.720", name: "Sensorik", bereich: "Wohnen & Einrichten" },
+    { code: "330.730", name: "Gateway u. Zubehör", bereich: "Wohnen & Einrichten" },
+    { code: "332.010", name: "Kinder u. Jugendliche (Bücher)", bereich: "Spiel- & Schreibwaren" },
+    { code: "332.050", name: "Erwachsene (Bücher)", bereich: "Spiel- & Schreibwaren" },
+    { code: "332.100", name: "CD´s", bereich: "" },
+    { code: "332.200", name: "DVD u. Blu Ray", bereich: "" },
+    { code: "332.300", name: "Software u. Games", bereich: "" },
+    { code: "334.010", name: "Armbanduhren", bereich: "Wohnen & Einrichten" },
+    { code: "334.020", name: "Wearables", bereich: "Wohnen & Einrichten" },
+    { code: "334.030", name: "Wecker", bereich: "Wohnen & Einrichten" },
+    { code: "334.040", name: "Wanduhren", bereich: "Wohnen & Einrichten" },
+    { code: "334.100", name: "Wetterstationen", bereich: "Wohnen & Einrichten" },
+    { code: "336.010", name: "Geschenkpapier", bereich: "Spiel- & Schreibwaren" },
+    { code: "336.011", name: "Geschenkbänder", bereich: "Spiel- & Schreibwaren" },
+    { code: "336.012", name: "Geschenkbehälter", bereich: "Spiel- & Schreibwaren" },
+    { code: "336.020", name: "Karten", bereich: "Spiel- & Schreibwaren" },
+    { code: "338.100", name: "Ordnungshelfer (Bürobedarf u. Sonstige)", bereich: "Spiel- & Schreibwaren" },
+    { code: "338.210", name: "Kopierpapier", bereich: "Spiel- & Schreibwaren" },
+    { code: "338.220", name: "Hefte", bereich: "Spiel- & Schreibwaren" },
+    { code: "338.230", name: "Notizbücher", bereich: "Spiel- & Schreibwaren" },
+    { code: "338.240", name: "Notizen", bereich: "Spiel- & Schreibwaren" },
+    { code: "338.250", name: "Versandartikel", bereich: "Spiel- & Schreibwaren" },
+    { code: "338.310", name: "Aktenvernichter", bereich: "Wohnen & Einrichten" },
+    { code: "338.320", name: "Laminiergeräte", bereich: "Wohnen & Einrichten" },
+    { code: "338.330", name: "Folien", bereich: "Wohnen & Einrichten" },
+    { code: "338.399", name: "Büroelektrogeräte u. Zubehör (Sonstige)", bereich: "Wohnen & Einrichten" },
+    { code: "338.400", name: "Schreibgeräte", bereich: "Spiel- & Schreibwaren" },
+    { code: "338.500", name: "Korrekturmittel u. Kleber", bereich: "Spiel- & Schreibwaren" },
+    { code: "338.600", name: "Kalender u. Notizen", bereich: "Spiel- & Schreibwaren" },
+    { code: "338.700", name: "Sticker u. Aufkleber", bereich: "Spiel- & Schreibwaren" },
+    { code: "338.800", name: "Schreibtischaccessoires", bereich: "Spiel- & Schreibwaren" },
+    { code: "340.010", name: "Holzbahnwelt", bereich: "Spiel- & Schreibwaren" },
+    { code: "340.020", name: "Holzlern- u. Motorikspielzeug", bereich: "Spiel- & Schreibwaren" },
+    { code: "340.030", name: "Holzrollenspiele", bereich: "Spiel- & Schreibwaren" },
+    { code: "340.110", name: "Gartenspielgeräte", bereich: "Spiel- & Schreibwaren" },
+    { code: "340.120", name: "Kinderfahrzeuge", bereich: "Spiel- & Schreibwaren" },
+    { code: "340.130", name: "Outdoorspiele", bereich: "Spiel- & Schreibwaren" },
+    { code: "340.140", name: "Wasser- u. Sandspielzeug", bereich: "Spiel- & Schreibwaren" },
+    { code: "340.210", name: "Babyspielzeug", bereich: "Spiel- & Schreibwaren" },
+    { code: "340.220", name: "Babyausstattung", bereich: "Spiel- & Schreibwaren" },
+    { code: "340.310", name: "Bau- u. Konstruktionsspielzeug", bereich: "Spiel- & Schreibwaren" },
+    { code: "340.320", name: "Elektrische Spielwaren", bereich: "Spiel- & Schreibwaren" },
+    { code: "340.330", name: "Gesellschaftsspiele", bereich: "Spiel- & Schreibwaren" },
+    { code: "340.340", name: "Puzzles", bereich: "Spiel- & Schreibwaren" },
+    { code: "340.350", name: "Kinder Modelliersets", bereich: "Spiel- & Schreibwaren" },
+    { code: "340.360", name: "Plüsch", bereich: "Spiel- & Schreibwaren" },
+    { code: "340.365", name: "Puppen", bereich: "Spiel- & Schreibwaren" },
+    { code: "340.370", name: "Rollenspiele", bereich: "Spiel- & Schreibwaren" },
+    { code: "340.375", name: "Experimentieren u. Entdecken", bereich: "Spiel- & Schreibwaren" },
+    { code: "340.380", name: "Spielzeugautos u. Flieger", bereich: "Spiel- & Schreibwaren" },
+    { code: "340.390", name: "Spielfiguren", bereich: "Spiel- & Schreibwaren" },
+    { code: "340.400", name: "Indoorspielgeräte", bereich: "Spiel- & Schreibwaren" },
+    { code: "340.430", name: "Indoorspiele", bereich: "Spiel- & Schreibwaren" },
+    { code: "345.010", name: "Papiere", bereich: "Spiel- & Schreibwaren" },
+    { code: "345.020", name: "Farben", bereich: "Spiel- & Schreibwaren" },
+    { code: "345.040", name: "Schreibgeräte", bereich: "Spiel- & Schreibwaren" },
+    { code: "345.090", name: "Mal- u. Zeichenzubehör", bereich: "Spiel- & Schreibwaren" },
+    { code: "345.110", name: "Bastelsets u. Bastelbögen", bereich: "Spiel- & Schreibwaren" },
+    { code: "345.190", name: "Bastelzubehör", bereich: "Spiel- & Schreibwaren" },
+    { code: "350.010", name: "Campingausrüstung", bereich: "Sport & Freizeit" },
+    { code: "350.020", name: "Outdoor Kühltaschen, Kühlboxen u. Zubehör", bereich: "Sport & Freizeit" },
+    { code: "350.030", name: "Outdoor Schlafunterlagen u. Schlafsäcke", bereich: "Sport & Freizeit" },
+    { code: "350.040", name: "Outdoorzubehör", bereich: "Sport & Freizeit" },
+    { code: "350.050", name: "Zelte", bereich: "Sport & Freizeit" },
+    { code: "350.060", name: "Taschenlampen", bereich: "Wohnen & Einrichten" },
+    { code: "350.110", name: "Boote, Boards, Stand up Paddle", bereich: "Sport & Freizeit" },
+    { code: "350.120", name: "Luftmatratzen u. aufblasbare Wasserartikel", bereich: "Sport & Freizeit" },
+    { code: "350.130", name: "Pools u. Planschbecken", bereich: "Sport & Freizeit" },
+    { code: "350.140", name: "Schwimm- u. Badeartikel", bereich: "Sport & Freizeit" },
+    { code: "350.210", name: "Angeln", bereich: "Sport & Freizeit" },
+    { code: "350.220", name: "Inliner, Rollschuhe, Skateboards, Roller u. Zubehör", bereich: "Sport & Freizeit" },
+    { code: "350.230", name: "Racketsport", bereich: "Sport & Freizeit" },
+    { code: "350.240", name: "Teamsport", bereich: "Sport & Freizeit" },
+    { code: "350.250", name: "Wintersport", bereich: "Sport & Freizeit" },
+    { code: "350.299", name: "Weitere Sportarten (Sonstige)", bereich: "Sport & Freizeit" },
+    { code: "350.310", name: "Fitnessgroßgeräte", bereich: "Sport & Freizeit" },
+    { code: "350.320", name: "Fitnesskleingeräte", bereich: "Sport & Freizeit" },
+    { code: "350.330", name: "Fitness- u. Yogamatten", bereich: "Sport & Freizeit" },
+    { code: "350.340", name: "Fitnesszubehör", bereich: "Sport & Freizeit" },
+    { code: "350.350", name: "Hanteln, Gewichte, Kettlebells", bereich: "Sport & Freizeit" },
+    { code: "350.410", name: "E-Scooter u. sonstige Elektromobilität", bereich: "Sport & Freizeit" },
+    { code: "350.420", name: "Fahrräder u. E-Bikes", bereich: "Sport & Freizeit" },
+    { code: "350.430", name: "Fahrradbeleuchtung", bereich: "Sport & Freizeit" },
+    { code: "350.440", name: "Fahrradhelme u. Protektoren", bereich: "Sport & Freizeit" },
+    { code: "350.450", name: "Fahrradpumpen", bereich: "Sport & Freizeit" },
+    { code: "350.460", name: "Fahrradtaschen u. -körbe", bereich: "Sport & Freizeit" },
+    { code: "350.499", name: "Fahrrad- u. E-Scooterzubehör (Sonstige)", bereich: "Sport & Freizeit" },
+    { code: "350.500", name: "Musikinstrumente", bereich: "Sport & Freizeit" },
+    { code: "350.600", name: "Optische Geräte zur Vergrößerung", bereich: "Sport & Freizeit" },
+    { code: "360.000", name: "Feuerwerk (Sonstige)", bereich: "" },
+    { code: "365.100", name: "Hunde- u. Katzenbedarf", bereich: "Sport & Freizeit" },
+    { code: "365.199", name: "Katzenbedarf (Sonstige)", bereich: "Sport & Freizeit" },
+    { code: "370.010", name: "Gasgrills", bereich: "Küche & Haushalt" },
+    { code: "370.020", name: "Kohlegrills", bereich: "Küche & Haushalt" },
+    { code: "370.030", name: "Grillzubehör", bereich: "Küche & Haushalt" },
+    { code: "370.040", name: "Grills u. Feuerstellen", bereich: "Küche & Haushalt" },
+    { code: "371.010", name: "Elektro Gartengeräte", bereich: "Baumarkt" },
+    { code: "371.020", name: "Akku Gartengeräte", bereich: "Baumarkt" },
+    { code: "371.030", name: "Benzin Gartengeräte", bereich: "Baumarkt" },
+    { code: "371.040", name: "Gartensägen, Gartenscheren handgeführt", bereich: "Baumarkt" },
+    { code: "371.050", name: "Gartenwerkzeug handgeführt u. Zubehör", bereich: "Baumarkt" },
+    { code: "371.099", name: "Gartengeräte u. -zubehör (Sonstige)", bereich: "Baumarkt" },
+    { code: "372.010", name: "Pumpen u. Automaten", bereich: "Baumarkt" },
+    { code: "372.020", name: "Bewässerungsgeräte u. -systeme", bereich: "Baumarkt" },
+    { code: "372.030", name: "Gartenschläuche u. Aufroller", bereich: "Baumarkt" },
+    { code: "372.099", name: "Gartenbewässerung (Sonstige)", bereich: "Baumarkt" },
+    { code: "373.010", name: "Pflanzgefäße u. Gewächshäuser", bereich: "Baumarkt" },
+    { code: "373.020", name: "Zubehör Anzucht u. Bepflanzung", bereich: "Baumarkt" },
+    { code: "374.040", name: "Garten Tische", bereich: "Wohnen & Einrichten" },
+    { code: "374.050", name: "Garten Stühle u. Bänke", bereich: "Wohnen & Einrichten" },
+    { code: "374.051", name: "Garten Sessel, Lounges, Gartensets", bereich: "Wohnen & Einrichten" },
+    { code: "374.060", name: "Garten Liegen, Hängematten, Hollywoodschaukeln", bereich: "Wohnen & Einrichten" },
+    { code: "374.070", name: "Gartenaufbewahrung, -schutzhüllen u. Pflanzzubehör", bereich: "Wohnen & Einrichten" },
+    { code: "374.100", name: "Gartendekoration ohne LED", bereich: "Wohnen & Einrichten" },
+    { code: "374.250", name: "Außenbeleuchtung", bereich: "Wohnen & Einrichten" },
+    { code: "374.251", name: "Gartendekoration mit LED o. Solar", bereich: "Wohnen & Einrichten" },
+    { code: "374.252", name: "Dekorative Außenbeleuchtung", bereich: "Wohnen & Einrichten" },
+    { code: "374.310", name: "Sonnenschirme u. Zubehör", bereich: "Wohnen & Einrichten" },
+    { code: "374.320", name: "Sichtschutz, Sonnensegel, Markisen, Pavillons", bereich: "Wohnen & Einrichten" },
+    { code: "375.100", name: "Gartenhäuser", bereich: "Baumarkt" },
+    { code: "380.010", name: "Auto-Innenausstattung", bereich: "Sport & Freizeit" },
+    { code: "380.020", name: "Autositzbezüge u. Autositzauflagen", bereich: "Sport & Freizeit" },
+    { code: "380.030", name: "Autokindersitze u. Autobabysitze", bereich: "Sport & Freizeit" },
+    { code: "380.040", name: "Autopflege u. Autoreinigung", bereich: "Sport & Freizeit" },
+    { code: "380.050", name: "Autowartung u. Autoreparatur", bereich: "Sport & Freizeit" },
+    { code: "380.060", name: "Autostarthilfegeräte u. Autoladegeräte", bereich: "Sport & Freizeit" },
+    { code: "380.070", name: "Autotransportzubehör u. Autolagerungszubehör", bereich: "Sport & Freizeit" },
+    { code: "380.080", name: "Autoaussenausstattung u. Autozubehör", bereich: "Sport & Freizeit" },
+    { code: "380.100", name: "Motorrad", bereich: "Sport & Freizeit" },
+    { code: "385.010", name: "Farben (Baustoff)", bereich: "Baumarkt" },
+    { code: "385.020", name: "Lacke", bereich: "Baumarkt" },
+    { code: "385.030", name: "Holzlasuren u. -pflege", bereich: "Baumarkt" },
+    { code: "385.040", name: "Malerwerkzeug", bereich: "Baumarkt" },
+    { code: "385.050", name: "Dichtstoffe u. Pflegemittel", bereich: "Baumarkt" },
+    { code: "385.099", name: "Baustoffe, Farben u. Zubehör (Sonstige)", bereich: "Baumarkt" },
+    { code: "385.300", name: "Sauna, Infrarotkabinen, Solarium", bereich: "Baumarkt" },
+    { code: "385.310", name: "Türen u. Fenster", bereich: "Baumarkt" },
+    { code: "385.320", name: "Zäune u. Tore", bereich: "Baumarkt" },
+    { code: "385.330", name: "Terassensysteme", bereich: "Baumarkt" },
+    { code: "385.340", name: "Carports", bereich: "Baumarkt" },
+    { code: "385.350", name: "Briefkästen", bereich: "Wohnen & Einrichten" },
+    { code: "385.399", name: "Hausbau, Fertigteile u. -Systeme (Sonstige)", bereich: "Baumarkt" },
+    { code: "386.010", name: "Elektro Bohren u. Schrauben", bereich: "Baumarkt" },
+    { code: "386.020", name: "Elektro Sägen", bereich: "Baumarkt" },
+    { code: "386.030", name: "Elektro Schleifen u. Fräsen", bereich: "Baumarkt" },
+    { code: "386.040", name: "Elektro Löten u. Schweißen", bereich: "Baumarkt" },
+    { code: "386.050", name: "Elektro Test u. Messgeräte", bereich: "Baumarkt" },
+    { code: "386.060", name: "Elektro Nass- u. Trockensauger", bereich: "Baumarkt" },
+    { code: "386.099", name: "Elektrowerkzeuge (Sonstige)", bereich: "Baumarkt" },
+    { code: "386.110", name: "Akku Bohren u. Schrauben", bereich: "Baumarkt" },
+    { code: "386.120", name: "Akku Sägen", bereich: "Baumarkt" },
+    { code: "386.130", name: "Akku Schleifen u. Fräsen", bereich: "Baumarkt" },
+    { code: "386.140", name: "Akku Löten u. Schweißen", bereich: "Baumarkt" },
+    { code: "386.150", name: "Akku Test u. Messgeräte", bereich: "Baumarkt" },
+    { code: "386.160", name: "Akku Nass- u. Trockensauger", bereich: "Baumarkt" },
+    { code: "386.170", name: "Akkus u. Ladegeräte", bereich: "Baumarkt" },
+    { code: "386.199", name: "Akkuwerkzeuge (Sonstige)", bereich: "Baumarkt" },
+    { code: "386.200", name: "Druckluftwerkzeug, Zubehör u. Kompressoren", bereich: "Baumarkt" },
+    { code: "386.300", name: "Benzinwerkzeug", bereich: "Baumarkt" },
+    { code: "386.999", name: "Werkstatt - Maschinen (Sonstige)", bereich: "Baumarkt" },
+    { code: "387.010", name: "Bohren u. Schrauben Zubehör", bereich: "Baumarkt" },
+    { code: "387.020", name: "Sägen Zubehör", bereich: "Baumarkt" },
+    { code: "387.030", name: "Schleifen u. Fräsen Zubehör", bereich: "Baumarkt" },
+    { code: "387.040", name: "Löten u. Schweißen Zubehör", bereich: "Baumarkt" },
+    { code: "387.099", name: "Werkzeug Zubehör (Sonstige)", bereich: "Baumarkt" },
+    { code: "387.110", name: "Schraubendreher", bereich: "Baumarkt" },
+    { code: "387.120", name: "Ratschen, Nüsse, Schlüssel", bereich: "Baumarkt" },
+    { code: "387.130", name: "Zangen", bereich: "Baumarkt" },
+    { code: "387.140", name: "Spann- u. Klemmwerkzeuge", bereich: "Baumarkt" },
+    { code: "387.150", name: "Prüf- u. Messwerkzeuge", bereich: "Baumarkt" },
+    { code: "387.199", name: "Handwerkzeug (Sonstige)", bereich: "Baumarkt" },
+    { code: "387.200", name: "Werkzeugaufbewahrung", bereich: "Baumarkt" },
+    { code: "387.300", name: "Kleinteilesets u. Eisenwaren", bereich: "Baumarkt" },
+    { code: "387.400", name: "Transport", bereich: "Baumarkt" },
+    { code: "387.500", name: "Leitern u. Gerüste", bereich: "Baumarkt" },
+    { code: "387.699", name: "Werkstatt -Hartwaren (Sonstige)", bereich: "Baumarkt" },
+    { code: "388.100", name: "Sicherheitsartikel", bereich: "Baumarkt" },
+    { code: "389.010", name: "Kamine, Öfen u. Zubehör", bereich: "Wohnen & Einrichten" },
+    { code: "389.020", name: "Elektrische Heizgeräte", bereich: "Wohnen & Einrichten" },
+    { code: "389.030", name: "Gas Heizgeräte", bereich: "Wohnen & Einrichten" },
+    { code: "389.040", name: "Heizungs- u. Wassertechnik", bereich: "Wohnen & Einrichten" },
+    { code: "389.110", name: "Ventilatoren", bereich: "Wohnen & Einrichten" },
+    { code: "389.120", name: "Klimageräte u. Luftkühler", bereich: "Wohnen & Einrichten" }
   ];
 }
 
 /* Einmalige Migration: überschreibt bei bereits vorhandenen Codes die Bezeichnung mit dem
    offiziellen Wortlaut (kaskadiert wie eine manuelle Umbenennung in der Verwaltung auf verknüpfte
-   Prüfgrundlagen) und legt fehlende Codes neu an. Läuft dank Einmal-Merker
-   (data.warengruppenStammdatenV2) nur beim ersten Laden nach diesem Update, damit spätere
+   Prüfgrundlagen), übernimmt den zugehörigen Bereich (für die Bereich-Ansicht im Reiter
+   "Prüfgrundlagen", siehe dort) und legt fehlende Codes neu an. Läuft dank Einmal-Merker
+   (data.warengruppenStammdatenV3) nur beim ersten Laden nach diesem Update, damit spätere
    manuelle Anpassungen im Reiter "Verwaltung" nicht bei jedem weiteren Laden wieder überschrieben
-   werden. */
+   werden. (V2 -> V3: der Merker wurde bewusst erneut hochgezählt, damit Installationen, die die
+   V2-Migration bereits durchlaufen hatten, hier trotzdem einmalig den neuen Bereich-Wert
+   nachgeliefert bekommen.) */
 function migriereOffizielleWarengruppenStammdaten() {
-  if (data.warengruppenStammdatenV2) return;
-  offizielleWarengruppenStammdaten().forEach(({ code, name }) => {
+  if (data.warengruppenStammdatenV3) return;
+  offizielleWarengruppenStammdaten().forEach(({ code, name, bereich }) => {
     const norm = normalisiereWarengruppe(code);
     const eintrag = data.warengruppen.find((w) => normalisiereWarengruppe(w.code) === norm);
     if (eintrag) {
@@ -1410,12 +1454,13 @@ function migriereOffizielleWarengruppenStammdaten() {
           if (normalisiereWarengruppe(e.warengruppeCode) === norm) e.warengruppeName = name;
         });
       }
+      if (bereich && !eintrag.bereich) eintrag.bereich = bereich;
     } else {
-      data.warengruppen.push({ code, name });
+      data.warengruppen.push({ code, name, bereich: bereich || "" });
     }
   });
   data.warengruppen.sort((a, b) => a.code.localeCompare(b.code, "de", { numeric: true }));
-  data.warengruppenStammdatenV2 = true;
+  data.warengruppenStammdatenV3 = true;
 }
 
 /* ---------- Warengruppen-Zuordnung Neu → Alt (offizielle ADMIN-Blatt-Liste) ----------
@@ -2052,6 +2097,14 @@ let aktivePaId = null;
 let aktiveKvId = null;
 let aktiveNormId = null;
 let suchbegriffe = { arbeitsvorrat: "", pruefauftraege: "", kvs: "", pruefgrundlagen: "", normen: "" };
+/* Aktuelle Seite je paginierter Liste im Reiter "Verwaltung" - bei sehr vielen Einträgen (z. B.
+   730 Warengruppen) sonst zu viel Scrollen; 1-basiert wie in der UI angezeigt. */
+let verwaltungSeite = { bereiche: 1, warengruppen: 1 };
+const VERWALTUNG_SEITENGROESSE = { bereiche: 25, warengruppen: 50 };
+/* "warengruppe" = bisherige, LIDL-spezifische Gruppierung nach Warengruppen-Code; "bereich" =
+   neue, kundenübergreifende Gruppierung anhand des Bereichs der jeweiligen Warengruppe (siehe
+   Reiter "Verwaltung" -> Warengruppen -> Feld "Bereich"). */
+let pruefgrundlagenAnsicht = "warengruppe";
 
 function ladeAusLocalStorage() {
   try {
@@ -2088,12 +2141,13 @@ function init() {
     warengruppen: (geladen && geladen.warengruppen && geladen.warengruppen.length) ? geladen.warengruppen : seedWarengruppen(),
     bereiche: (geladen && geladen.bereiche && geladen.bereiche.length) ? geladen.bereiche : seedBereiche(),
     warengruppenZuordnung: (geladen && geladen.warengruppenZuordnung && geladen.warengruppenZuordnung.length) ? geladen.warengruppenZuordnung : seedWarengruppenZuordnung(),
-    warengruppenStammdatenV2: !!(geladen && geladen.warengruppenStammdatenV2)
+    warengruppenStammdatenV3: !!(geladen && geladen.warengruppenStammdatenV3)
   };
   data.normen.forEach(migriereNorm);
   data.pruefgrundlagen.forEach(migrierePruefgrundlage);
   migriereBereiche();
   migriereEkSaeulenAlsBereiche();
+  migriereBereicheOhneZahlensuffix();
   migriereOffizielleWarengruppenStammdaten();
   migriereFixPositionenAlsNormen();
 
@@ -4782,6 +4836,33 @@ function pruefgrundlageZeileKompaktHtml(e) {
   </tr>`;
 }
 
+/* Bereich einer Warengruppe (für die Ansicht "Nach Bereich") - über den Warengruppen-Code aus der
+   Verwaltung (data.warengruppen[].bereich) nachgeschlagen; "" wenn Code unbekannt oder (noch) ohne
+   Bereich-Zuordnung. */
+function bereichFuerWarengruppe(warengruppeCode) {
+  const norm = normalisiereWarengruppe(warengruppeCode);
+  if (!norm) return "";
+  const eintrag = data.warengruppen.find((w) => normalisiereWarengruppe(w.code) === norm);
+  return eintrag ? (eintrag.bereich || "") : "";
+}
+
+/* Rendert eine Warengruppen-Untergruppe (Produkttabelle) - gemeinsam genutzt von beiden Ansichten
+   des Prüfgrundlagen-Tabs (flach nach Warengruppe, bzw. verschachtelt innerhalb eines Bereichs). */
+function warengruppenGruppeHtml(gruppenKey, anzeigeKey, zeilen, offen, klasse) {
+  const wgName = zeilen.find((z) => z.warengruppeName)?.warengruppeName || "";
+  return `<details class="pruefgrundlagen-gruppe ${klasse || ""}" data-gruppe="${escapeHtml(gruppenKey)}" ${offen ? "open" : ""}>
+    <summary><strong>${escapeHtml(anzeigeKey)}</strong> ${wgName ? "– " + escapeHtml(wgName) : ""} <span class="muted">(${zeilen.length} Produkt${zeilen.length === 1 ? "" : "e"})</span></summary>
+    <div class="tabellen-wrapper">
+      <table class="tabelle readonly">
+        <thead><tr>
+          <th>Produkt</th><th>Normen</th><th>Kosten S&amp;N €</th><th>Muster</th><th>Kennzeichnung</th><th>FFU</th><th>StiWa</th><th>Aktion</th>
+        </tr></thead>
+        <tbody>${zeilen.map((e) => pruefgrundlageZeileKompaktHtml(e)).join("")}</tbody>
+      </table>
+    </div>
+  </details>`;
+}
+
 function renderPruefgrundlagenTab() {
   const container = document.getElementById("pruefgrundlagen-gruppen");
   if (!container) return;
@@ -4792,30 +4873,52 @@ function renderPruefgrundlagenTab() {
   const offeneGruppen = new Set([...container.querySelectorAll("details.pruefgrundlagen-gruppe[open]")].map((d) => d.dataset.gruppe));
   const ersteRuntergerendet = !container.dataset.gerendert;
 
-  const gruppen = new Map();
-  liste.forEach((e) => {
-    const key = normalisiereWarengruppe(e.warengruppeCode) || "(ohne Warengruppe)";
-    if (!gruppen.has(key)) gruppen.set(key, []);
-    gruppen.get(key).push(e);
-  });
-  const keys = [...gruppen.keys()].sort((a, b) => a.localeCompare(b, "de"));
+  if (pruefgrundlagenAnsicht === "bereich") {
+    const bereichGruppen = new Map();
+    liste.forEach((e) => {
+      const key = bereichFuerWarengruppe(e.warengruppeCode) || "(ohne Bereich)";
+      if (!bereichGruppen.has(key)) bereichGruppen.set(key, []);
+      bereichGruppen.get(key).push(e);
+    });
+    const bereichKeys = [...bereichGruppen.keys()].sort((a, b) => a.localeCompare(b, "de"));
 
-  container.innerHTML = keys.map((key) => {
-    const zeilen = gruppen.get(key).slice().sort((a, b) => (a.produkt || "").localeCompare(b.produkt || "", "de"));
-    const wgName = zeilen.find((z) => z.warengruppeName)?.warengruppeName || "";
-    const offen = ersteRuntergerendet || offeneGruppen.has(key) || keys.length === 1 || key === "(ohne Warengruppe)";
-    return `<details class="pruefgrundlagen-gruppe" data-gruppe="${escapeHtml(key)}" ${offen ? "open" : ""}>
-      <summary><strong>${escapeHtml(key)}</strong> ${wgName ? "– " + escapeHtml(wgName) : ""} <span class="muted">(${zeilen.length} Produkt${zeilen.length === 1 ? "" : "e"})</span></summary>
-      <div class="tabellen-wrapper">
-        <table class="tabelle readonly">
-          <thead><tr>
-            <th>Produkt</th><th>Normen</th><th>Kosten S&amp;N €</th><th>Muster</th><th>Kennzeichnung</th><th>FFU</th><th>StiWa</th><th>Aktion</th>
-          </tr></thead>
-          <tbody>${zeilen.map((e) => pruefgrundlageZeileKompaktHtml(e)).join("")}</tbody>
-        </table>
-      </div>
-    </details>`;
-  }).join("");
+    container.innerHTML = bereichKeys.map((bereichKey) => {
+      const bereichGruppenKey = "bereich:" + bereichKey;
+      const bereichZeilen = bereichGruppen.get(bereichKey);
+      const wgGruppen = new Map();
+      bereichZeilen.forEach((e) => {
+        const wgKey = normalisiereWarengruppe(e.warengruppeCode) || "(ohne Warengruppe)";
+        if (!wgGruppen.has(wgKey)) wgGruppen.set(wgKey, []);
+        wgGruppen.get(wgKey).push(e);
+      });
+      const wgKeys = [...wgGruppen.keys()].sort((a, b) => a.localeCompare(b, "de"));
+      const bereichOffen = ersteRuntergerendet || offeneGruppen.has(bereichGruppenKey) || bereichKeys.length === 1;
+      const untergruppenHtml = wgKeys.map((wgKey) => {
+        const wgGruppenKey = bereichGruppenKey + ":wg:" + wgKey;
+        const wgZeilen = wgGruppen.get(wgKey).slice().sort((a, b) => (a.produkt || "").localeCompare(b.produkt || "", "de"));
+        const wgOffen = offeneGruppen.has(wgGruppenKey) || wgKeys.length === 1;
+        return warengruppenGruppeHtml(wgGruppenKey, wgKey, wgZeilen, wgOffen, "pruefgrundlagen-untergruppe");
+      }).join("");
+      return `<details class="pruefgrundlagen-gruppe pruefgrundlagen-bereichsgruppe" data-gruppe="${escapeHtml(bereichGruppenKey)}" ${bereichOffen ? "open" : ""}>
+        <summary><strong>${escapeHtml(bereichKey)}</strong> <span class="muted">(${bereichZeilen.length} Produkt${bereichZeilen.length === 1 ? "" : "e"} in ${wgKeys.length} Warengruppe${wgKeys.length === 1 ? "" : "n"})</span></summary>
+        <div class="pruefgrundlagen-untergruppen">${untergruppenHtml}</div>
+      </details>`;
+    }).join("");
+  } else {
+    const gruppen = new Map();
+    liste.forEach((e) => {
+      const key = normalisiereWarengruppe(e.warengruppeCode) || "(ohne Warengruppe)";
+      if (!gruppen.has(key)) gruppen.set(key, []);
+      gruppen.get(key).push(e);
+    });
+    const keys = [...gruppen.keys()].sort((a, b) => a.localeCompare(b, "de"));
+
+    container.innerHTML = keys.map((key) => {
+      const zeilen = gruppen.get(key).slice().sort((a, b) => (a.produkt || "").localeCompare(b.produkt || "", "de"));
+      const offen = ersteRuntergerendet || offeneGruppen.has(key) || keys.length === 1 || key === "(ohne Warengruppe)";
+      return warengruppenGruppeHtml(key, key, zeilen, offen);
+    }).join("");
+  }
   container.dataset.gerendert = "1";
 
   container.querySelectorAll("tbody tr").forEach((tr) => {
@@ -5188,6 +5291,16 @@ function oeffnePruefgrundlageModal(entwurf) {
 
 document.getElementById("btn-neue-pruefgrundlage").addEventListener("click", () => oeffnePruefgrundlageModal(pruefgrundlageEntwurfNeu()));
 
+document.getElementById("pruefgrundlagen-ansicht-toggle").querySelectorAll("button[data-ansicht]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    if (btn.dataset.ansicht === pruefgrundlagenAnsicht) return;
+    pruefgrundlagenAnsicht = btn.dataset.ansicht;
+    document.querySelectorAll("#pruefgrundlagen-ansicht-toggle button").forEach((b) => b.classList.toggle("aktiv", b === btn));
+    document.getElementById("pruefgrundlagen-gruppen").dataset.gerendert = "";
+    renderPruefgrundlagenTab();
+  });
+});
+
 /* ================= NORMEN (einzeln gepflegt, .docx-Upload für Rohtext) =================
    PDF-Upload wurde bewusst entfernt - Normen werden entweder manuell angelegt oder per .docx
    hochgeladen (nur Rohtext-Extraktion, siehe extrahiereDocxRohtext). Prüfpunkte werden in beiden
@@ -5440,17 +5553,48 @@ function renderVerwaltungTab() {
   renderWarengruppenVerwaltung();
 }
 
+/* Schneidet liste auf die aktuelle Seite (verwaltungSeite[schluessel]) zu VERWALTUNG_SEITENGROESSE
+   Einträgen zurecht - klemmt eine ungültig gewordene Seitennummer (z. B. nach Löschen des letzten
+   Eintrags einer Seite) automatisch auf den gültigen Bereich [1, seiten]. */
+function paginiereListe(liste, schluessel) {
+  const groesse = VERWALTUNG_SEITENGROESSE[schluessel];
+  const seiten = Math.max(1, Math.ceil(liste.length / groesse));
+  if (verwaltungSeite[schluessel] > seiten) verwaltungSeite[schluessel] = seiten;
+  if (verwaltungSeite[schluessel] < 1) verwaltungSeite[schluessel] = 1;
+  const seite = verwaltungSeite[schluessel];
+  const start = (seite - 1) * groesse;
+  return { ausschnitt: liste.slice(start, start + groesse), seiten, seite, gesamt: liste.length };
+}
+
+function renderPaginierung(containerId, schluessel, info) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  if (info.seiten <= 1) { container.innerHTML = ""; return; }
+  container.innerHTML = `
+    <button type="button" class="ghost small" data-paginierung="${schluessel}" data-richtung="-1" ${info.seite <= 1 ? "disabled" : ""}>‹ Zurück</button>
+    <span class="muted">Seite ${info.seite} von ${info.seiten} (${info.gesamt} Einträge)</span>
+    <button type="button" class="ghost small" data-paginierung="${schluessel}" data-richtung="1" ${info.seite >= info.seiten ? "disabled" : ""}>Weiter ›</button>`;
+  container.querySelectorAll("[data-paginierung]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      verwaltungSeite[schluessel] += Number(btn.dataset.richtung);
+      renderVerwaltungTab();
+    });
+  });
+}
+
 function renderBereicheVerwaltung() {
   const liste = document.getElementById("bereiche-liste");
   if (!liste) return;
-  liste.innerHTML = data.bereiche.length
-    ? data.bereiche.map((b, i) => `
+  const mitIndex = data.bereiche.map((b, i) => ({ b, i }));
+  const { ausschnitt, seiten, seite, gesamt } = paginiereListe(mitIndex, "bereiche");
+  liste.innerHTML = ausschnitt.length
+    ? ausschnitt.map(({ b, i }) => `
       <div class="verwaltung-zeile" data-idx="${i}">
         <input type="text" value="${escapeHtml(b)}" data-alt="${escapeHtml(b)}">
-        <span class="muted" style="font-size:0.78rem;white-space:nowrap">${data.pruefgrundlagen.filter((e) => e.bereich === b).length}×</span>
         <button type="button" class="danger small" data-action="bereich-loeschen">Löschen</button>
       </div>`).join("")
     : `<p class="muted">Noch keine Bereiche angelegt.</p>`;
+  renderPaginierung("bereiche-paginierung", "bereiche", { seiten, seite, gesamt });
 
   liste.querySelectorAll(".verwaltung-zeile input[type=\"text\"]").forEach((inp) => {
     inp.addEventListener("change", () => {
@@ -5517,29 +5661,40 @@ function vereinigteWarengruppenzeilen() {
     const w = data.warengruppen.find((x) => normalisiereWarengruppe(x.code) === norm);
     const z = data.warengruppenZuordnung.find((x) => normalisiereWarengruppe(x.neu) === norm);
     const platzhalter = !!w && normalisiere(w.name) === normalisiere(w.code);
-    return { norm, code, name: w && !platzhalter ? w.name : "", alt: z ? z.alt : "" };
+    return { norm, code, name: w && !platzhalter ? w.name : "", alt: z ? z.alt : "", bereich: w ? (w.bereich || "") : "" };
   }).sort((a, b) => a.code.localeCompare(b.code, "de", { numeric: true }));
+}
+
+/* <option>-Liste für ein Bereich-Dropdown (Warengruppen-Verwaltung) - erste Option immer "kein
+   Bereich" (leerer Wert), da nicht jede Warengruppe zwangsläufig einem Bereich zugeordnet ist. */
+function bereichOptionenHtml(ausgewaehlt) {
+  return `<option value="" ${ausgewaehlt ? "" : "selected"}>– kein Bereich –</option>`
+    + data.bereiche.map((b) => `<option value="${escapeHtml(b)}" ${normalisiere(b) === normalisiere(ausgewaehlt) ? "selected" : ""}>${escapeHtml(b)}</option>`).join("");
 }
 
 function renderWarengruppenVerwaltung() {
   const liste = document.getElementById("warengruppen-liste");
   if (!liste) return;
-  const zeilen = vereinigteWarengruppenzeilen();
+  const alleZeilen = vereinigteWarengruppenzeilen();
+  const { ausschnitt: zeilen, seiten, seite, gesamt } = paginiereListe(alleZeilen, "warengruppen");
   liste.innerHTML = zeilen.length
     ? zeilen.map((z) => `
       <div class="verwaltung-zeile" data-code-alt="${escapeHtml(z.code)}">
         <input type="text" class="code-feld" value="${escapeHtml(z.code)}" data-feld="code" data-alt="${escapeHtml(z.code)}">
         <input type="text" value="${escapeHtml(z.name)}" data-feld="name" data-alt="${escapeHtml(z.name)}" placeholder="– noch keine Bezeichnung –">
         <input type="text" class="alt-feld" value="${escapeHtml(z.alt)}" data-feld="alt" data-alt="${escapeHtml(z.alt)}" placeholder="Warengruppe alt">
-        <span class="muted" style="font-size:0.78rem;white-space:nowrap">${data.pruefgrundlagen.filter((e) => normalisiereWarengruppe(e.warengruppeCode) === z.norm).length}×</span>
+        <select class="bereich-feld" data-feld="bereich" data-alt="${escapeHtml(z.bereich)}">${bereichOptionenHtml(z.bereich)}</select>
         <button type="button" class="danger small" data-action="warengruppe-loeschen">Löschen</button>
       </div>`).join("")
     : `<p class="muted">Noch keine Warengruppen angelegt.</p>`;
+  renderPaginierung("warengruppen-paginierung", "warengruppen", { seiten, seite, gesamt });
+  const neuBereichSelect = document.getElementById("warengruppe-neu-bereich-input");
+  if (neuBereichSelect) neuBereichSelect.innerHTML = bereichOptionenHtml("");
 
   liste.querySelectorAll(".verwaltung-zeile").forEach((zeile) => {
     const alterCode = zeile.dataset.codeAlt;
     const norm = normalisiereWarengruppe(alterCode);
-    zeile.querySelectorAll("input[type=\"text\"]").forEach((inp) => {
+    zeile.querySelectorAll("input[type=\"text\"], select[data-feld=\"bereich\"]").forEach((inp) => {
       inp.addEventListener("change", () => {
         const wert = inp.value.trim();
         if (wert === inp.dataset.alt) return;
@@ -5556,6 +5711,20 @@ function renderWarengruppenVerwaltung() {
           speichereInLocalStorage();
           renderVerwaltungTab();
           zeigeStatus(`Warengruppe (alt) für „${alterCode}" aktualisiert · ` + jetzt(), "ok");
+          return;
+        }
+
+        if (inp.dataset.feld === "bereich") {
+          let eintrag = data.warengruppen.find((w) => normalisiereWarengruppe(w.code) === norm);
+          if (!eintrag) {
+            eintrag = { code: alterCode, name: alterCode, bereich: wert };
+            data.warengruppen.push(eintrag);
+          } else {
+            eintrag.bereich = wert;
+          }
+          speichereInLocalStorage();
+          renderVerwaltungTab();
+          zeigeStatus(`Bereich für „${alterCode}" aktualisiert · ` + jetzt(), "ok");
           return;
         }
 
@@ -5580,7 +5749,7 @@ function renderWarengruppenVerwaltung() {
           }
           if (zEintrag) zEintrag.neu = wert;
         } else if (!eintrag) {
-          data.warengruppen.push({ code: alterCode, name: wert });
+          data.warengruppen.push({ code: alterCode, name: wert, bereich: "" });
         } else {
           eintrag.name = wert;
           data.pruefgrundlagen.forEach((e) => {
@@ -5615,16 +5784,18 @@ document.getElementById("warengruppe-hinzufuegen-btn").addEventListener("click",
   const codeInp = document.getElementById("warengruppe-neu-code-input");
   const nameInp = document.getElementById("warengruppe-neu-name-input");
   const altInp = document.getElementById("warengruppe-neu-alt-input");
+  const bereichSelect = document.getElementById("warengruppe-neu-bereich-input");
   const code = codeInp.value.trim();
   const name = nameInp.value.trim();
   const alt = altInp.value.trim();
+  const bereich = bereichSelect.value;
   if (!code) { alert("Bitte einen Code angeben."); return; }
   const norm = normalisiereWarengruppe(code);
   if (data.warengruppen.some((w) => normalisiereWarengruppe(w.code) === norm) || data.warengruppenZuordnung.some((z) => normalisiereWarengruppe(z.neu) === norm)) {
     alert(`Warengruppen-Code „${code}" existiert bereits — bitte die vorhandene Zeile bearbeiten.`);
     return;
   }
-  data.warengruppen.push({ code, name: name || code });
+  data.warengruppen.push({ code, name: name || code, bereich });
   if (alt) data.warengruppenZuordnung.push({ neu: code, alt });
   codeInp.value = "";
   nameInp.value = "";
@@ -5744,12 +5915,13 @@ document.getElementById("datei-laden-input").addEventListener("change", async (e
       warengruppen: (geparst.warengruppen && geparst.warengruppen.length) ? geparst.warengruppen : seedWarengruppen(),
       bereiche: (geparst.bereiche && geparst.bereiche.length) ? geparst.bereiche : seedBereiche(),
       warengruppenZuordnung: (geparst.warengruppenZuordnung && geparst.warengruppenZuordnung.length) ? geparst.warengruppenZuordnung : seedWarengruppenZuordnung(),
-      warengruppenStammdatenV2: !!geparst.warengruppenStammdatenV2
+      warengruppenStammdatenV3: !!geparst.warengruppenStammdatenV3
     };
     data.normen.forEach(migriereNorm);
     data.pruefgrundlagen.forEach(migrierePruefgrundlage);
     migriereBereiche();
     migriereEkSaeulenAlsBereiche();
+    migriereBereicheOhneZahlensuffix();
     migriereOffizielleWarengruppenStammdaten();
     migriereFixPositionenAlsNormen();
     aktivePaId = data.pruefauftraege.length ? data.pruefauftraege[0].id : null;

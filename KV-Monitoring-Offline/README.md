@@ -435,10 +435,17 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   Duplizieren zu finden.
 - **Prüfgrundlagen** – die Datenquelle der Warengruppen-Empfehlung im KV
   (siehe oben) ist **direkt in der Oberfläche bearbeitbar und neu anlegbar**,
-  nicht mehr nur fest eingebettet. Zuerst nach **Warengruppe** gruppiert
-  (auf-/zuklappbar), darunter nach **Produkt** sortiert. Die Übersichtszeile
-  je Produkt zeigt nur das Nötigste (Produkt, Normen, Kosten Sicherheit &
-  Norm, Anzahl Muster, KEZ-Badge, ob FFU/StiWa hinterlegt sind) — der
+  nicht mehr nur fest eingebettet. **Zwei umschaltbare Ansichten** (Pillen
+  oben im Reiter): **„Nach Warengruppe (LIDL)"** (Standard) gruppiert zuerst
+  nach **Warengruppe**, darunter nach **Produkt** sortiert — die
+  LIDL-spezifische Sicht, wie bisher. **„Nach Bereich (andere Kunden)"**
+  gruppiert stattdessen zuerst nach **Bereich** (siehe Reiter „Verwaltung" →
+  Warengruppen → Feld „Bereich"), darunter verschachtelt nach Warengruppe —
+  gedacht für Kunden, bei denen die Zuordnung nach Warengruppen-Code keine
+  Rolle spielt, aber die übergeordnete Produktkategorie schon. Einträge ohne
+  zugeordneten Bereich landen in „(ohne Bereich)". Die Übersichtszeile je
+  Produkt zeigt nur das Nötigste (Produkt, Normen, Kosten Sicherheit & Norm,
+  Anzahl Muster, KEZ-Badge, ob FFU/StiWa hinterlegt sind) — der
   Warengruppen-Code selbst wird hier bewusst **nicht** als eigene Spalte
   angezeigt (steht ja schon im Gruppenkopf), ist aber weiterhin die Basis für
   die Zuordnung. **Auf eine Zeile klicken** (oder ✏️) öffnet die
@@ -446,16 +453,16 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   Änderungen werden erst mit „Speichern" übernommen — „Abbrechen" verwirft
   sie wieder vollständig, inklusive aller Normen-Referenzen. Sobald die
   Warengruppe gespeichert wird, wandert der Eintrag automatisch in die
-  passende (neue oder bestehende) Gruppe.
+  passende (neue oder bestehende) Gruppe (in beiden Ansichten).
 
   **Warengruppe wird nur noch per durchsuchbarem Dropdown gewählt**, kein
   Freitext mehr — Klick öffnet die vollständige Liste, Tippen filtert nach
   Code oder Name (Code wird nicht mehr doppelt angezeigt, da er im Namen
-  bereits enthalten ist). Die Liste ist anfangs aus den 64 in den
-  Prüfgrundlagen-Startdaten vorkommenden Warengruppen abgeleitet, aber wie
-  Bereich (siehe unten) über den Reiter **„Verwaltung"** frei pflegbar —
-  neue Warengruppen anlegen, Code/Name bestehender ändern oder welche
-  löschen, bis die offizielle Warengruppen-Liste geliefert wird.
+  bereits enthalten ist). Die Liste ist mit der vollständigen offiziellen
+  Warengruppen-Stammdaten-Tabelle (730 Codes über alle Warenbereiche)
+  vorbelegt und wie Bereich (siehe unten) über den Reiter **„Verwaltung"**
+  frei pflegbar — neue Warengruppen anlegen, Code/Name/Bereich bestehender
+  ändern oder welche löschen.
 
   **Bereich ist ebenfalls ein durchsuchbares Dropdown**, kein Freitext mehr
   — genau wie Warengruppe gibt es hier **kein "+ Neue anlegen" direkt aus
@@ -645,20 +652,26 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   erscheint dort „(gelöschte Norm)" statt der Bezeichnung — die Referenz
   bleibt technisch bestehen, sollte aber in der Prüfgrundlage entfernt oder
   ersetzt werden.
-- **Verwaltung** – Pflege von zwei Stammdaten-Listen:
+- **Verwaltung** – Pflege von zwei Stammdaten-Listen, beide bei mehr als
+  einer Bildschirmseite an Einträgen paginiert (Standardgröße 25 Bereiche
+  bzw. 50 Warengruppen pro Seite, „‹ Zurück"/„Weiter ›" darunter):
   - **Bereiche** – Dropdown-Quelle im Reiter „Prüfgrundlagen". Neue Werte
     anlegen, bestehende umbenennen (aktualisiert automatisch alle
     Prüfgrundlagen, die den bisherigen Wert verwenden) oder löschen (mit
-    Warnhinweis, falls der Wert noch verwendet wird); die Anzahl der
-    Verwendungen steht neben jedem Eintrag. Neben den ursprünglich aus den
-    Prüfgrundlagen-Startdaten abgeleiteten Werten sind hier zusätzlich die
-    14 offiziellen „EK-Säulen" aus der Warengruppenzuordnung-Tabelle (Stand
-    01.03.2026) vorbelegt (z. B. „Baumarkt 1/2", „Küche & Haushalt 1/2",
-    „Wohnen & Einrichten 1–3", diverse Bekleidungs-Säulen) — der Wert
-    „keine Zuordnung" einzelner Warengruppen wurde bewusst nicht als
-    Bereich übernommen.
+    Warnhinweis, falls der Wert noch verwendet wird). Neben den ursprünglich
+    aus den Prüfgrundlagen-Startdaten abgeleiteten Werten sind hier
+    zusätzlich die offiziellen „EK-Säulen" aus der
+    Warengruppenzuordnung-Tabelle (Stand 01.03.2026) vorbelegt (z. B.
+    „Baumarkt", „Küche & Haushalt", „Wohnen & Einrichten", diverse
+    Bekleidungs-Säulen) — der Wert „keine Zuordnung" einzelner Warengruppen
+    wurde bewusst nicht als Bereich übernommen. Bereiche, deren Name nur
+    durch eine angehängte einzelne Zahl unterschieden wird (z. B. ursprünglich
+    „Baumarkt 1"/„Baumarkt 2"), werden automatisch zu einem gemeinsamen
+    Bereich ohne Zahl zusammengefasst (inkl. Kaskade auf betroffene
+    Prüfgrundlagen) — das gilt auch für künftig von Hand angelegte, ähnlich
+    benannte Bereiche.
   - **Warengruppen** – eine gemeinsame Liste aus Warengruppen-Stammdaten
-    (Code + Bezeichnung) und der Neu-↔-Alt-Zuordnung (drittes Feld
+    (Code + Bezeichnung + Bereich) und der Neu-↔-Alt-Zuordnung (viertes Feld
     „Warengruppe alt"), damit die Verlinkung zwischen neuer und alter
     Warengruppe direkt hier sichtbar und editierbar ist, statt in zwei
     getrennten Listen. Code + Bezeichnung speisen die Dropdowns im Reiter
@@ -666,35 +679,38 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     Ändern von Code oder Bezeichnung aktualisiert automatisch alle
     Prüfgrundlagen und Kostenvoranschläge mit dem bisherigen Code. Ändern
     von „Warengruppe alt" befüllt automatisch „Warengruppe (alt)" im
-    Kostenvoranschlag (nur wenn dort noch leer). Ein Code kann auch nur in
-    einer der beiden Quellen vorkommen; solche Zeilen zeigen die
-    Bezeichnung als „– noch keine Bezeichnung –" statt den Code doppelt
+    Kostenvoranschlag (nur wenn dort noch leer). Das Feld **Bereich**
+    (Dropdown aus der Bereiche-Liste, siehe oben) ordnet die Warengruppe
+    einem Bereich zu — diese Zuordnung speist die Bereich-Ansicht im Reiter
+    „Prüfgrundlagen" (siehe dort). Ein Code kann auch nur in einer der
+    beiden Quellen (Stammdaten/Zuordnung) vorkommen; solche Zeilen zeigen
+    die Bezeichnung als „– noch keine Bezeichnung –" statt den Code doppelt
     (einmal als Code, einmal als Platzhalter-Bezeichnung) anzuzeigen. Wird
     im PA eine noch unbekannte Warengruppe gelesen und automatisch in einen
     KV übernommen, landet sie ebenfalls automatisch hier als Zeile
-    (zunächst ohne eigene Bezeichnung), statt das Dropdown mit einem
+    (zunächst ohne eigene Bezeichnung/Bereich), statt das Dropdown mit einem
     unbekannten Wert leer zu lassen. Löschen entfernt sowohl den Stammdaten-
     als auch den Zuordnungs-Eintrag für diesen Code und warnt bei noch
     bestehender Verwendung in Prüfgrundlagen.
 
-    Code+Bezeichnung sind mit der vollständigen offiziellen
+    Code+Bezeichnung+Bereich sind mit der vollständigen offiziellen
     Warengruppen-Stammdaten-Tabelle (Stand 01.03.2026, 730 eindeutige Codes
     über alle Warenbereiche) vorbelegt — bei bereits vorhandenen Codes wird
     die Bezeichnung dabei einmalig auf den offiziellen Wortlaut
     aktualisiert (kaskadiert wie eine manuelle Umbenennung auf verknüpfte
-    Prüfgrundlagen), fehlende Codes werden neu angelegt. Diese Aktualisierung
-    läuft nur **einmal** je Installation (intern über einen Merker
-    gesteuert) — spätere manuelle Umbenennungen im Reiter „Verwaltung"
-    werden bei künftigen Ladevorgängen nicht wieder überschrieben. Die
-    Neu-↔-Alt-Zuordnung selbst ist mit der vollständigen offiziellen
-    ADMIN-Blatt-Zuordnungstabelle vorbelegt (341 eindeutige Neu-Codes; eine
-    Handvoll Codes kam in der Rohliste mit mehreren unterschiedlichen
-    Alt-Codes vor — dort zählt der jeweils zuerst genannte, von Hand hier
-    korrigierbar; ein Eintrag ohne gültigen Alt-Code wurde beim Einlesen
-    übersprungen). Die beiden Quellen (730 Stammdaten-Codes, 341
-    Zuordnungs-Codes) überschneiden sich größtenteils, aber nicht
-    vollständig, daher zeigt die vereinigte Liste geringfügig mehr als 730
-    Zeilen.
+    Prüfgrundlagen) und der Bereich ergänzt, fehlende Codes werden neu
+    angelegt. Diese Aktualisierung läuft nur **einmal** je Installation
+    (intern über einen Merker gesteuert) — spätere manuelle Umbenennungen im
+    Reiter „Verwaltung" werden bei künftigen Ladevorgängen nicht wieder
+    überschrieben. Die Neu-↔-Alt-Zuordnung selbst ist mit der vollständigen
+    offiziellen ADMIN-Blatt-Zuordnungstabelle vorbelegt (341 eindeutige
+    Neu-Codes; eine Handvoll Codes kam in der Rohliste mit mehreren
+    unterschiedlichen Alt-Codes vor — dort zählt der jeweils zuerst
+    genannte, von Hand hier korrigierbar; ein Eintrag ohne gültigen Alt-Code
+    wurde beim Einlesen übersprungen). Die beiden Quellen (730
+    Stammdaten-Codes, 341 Zuordnungs-Codes) überschneiden sich
+    größtenteils, aber nicht vollständig, daher zeigt die vereinigte Liste
+    geringfügig mehr als 730 Zeilen.
   - **Gefahrenzone** – löscht **Arbeitsvorrat, Prüfaufträge und
     Kostenvoranschläge** unwiderruflich (zwei Sicherheitsabfragen), z. B. um
     nach dem Testen sauber mit echten Daten neu zu starten.
