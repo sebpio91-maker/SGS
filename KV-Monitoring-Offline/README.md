@@ -650,7 +650,13 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     anlegen, bestehende umbenennen (aktualisiert automatisch alle
     Prüfgrundlagen, die den bisherigen Wert verwenden) oder löschen (mit
     Warnhinweis, falls der Wert noch verwendet wird); die Anzahl der
-    Verwendungen steht neben jedem Eintrag.
+    Verwendungen steht neben jedem Eintrag. Neben den ursprünglich aus den
+    Prüfgrundlagen-Startdaten abgeleiteten Werten sind hier zusätzlich die
+    14 offiziellen „EK-Säulen" aus der Warengruppenzuordnung-Tabelle (Stand
+    01.03.2026) vorbelegt (z. B. „Baumarkt 1/2", „Küche & Haushalt 1/2",
+    „Wohnen & Einrichten 1–3", diverse Bekleidungs-Säulen) — der Wert
+    „keine Zuordnung" einzelner Warengruppen wurde bewusst nicht als
+    Bereich übernommen.
   - **Warengruppen** – eine gemeinsame Liste aus Warengruppen-Stammdaten
     (Code + Bezeichnung) und der Neu-↔-Alt-Zuordnung (drittes Feld
     „Warengruppe alt"), damit die Verlinkung zwischen neuer und alter
@@ -661,23 +667,34 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     Prüfgrundlagen und Kostenvoranschläge mit dem bisherigen Code. Ändern
     von „Warengruppe alt" befüllt automatisch „Warengruppe (alt)" im
     Kostenvoranschlag (nur wenn dort noch leer). Ein Code kann auch nur in
-    einer der beiden Quellen vorkommen — die meisten der 341 offiziellen
-    Zuordnungs-Codes (siehe unten) haben noch keine eigene Bezeichnung,
-    solange sie in keiner Prüfgrundlage/keinem KV verwendet wurden; solche
-    Zeilen zeigen die Bezeichnung als „– noch keine Bezeichnung –" statt
-    den Code doppelt (einmal als Code, einmal als Platzhalter-Bezeichnung)
-    anzuzeigen. Wird im PA eine noch unbekannte Warengruppe gelesen und
-    automatisch in einen KV übernommen, landet sie ebenfalls automatisch
-    hier als Zeile (zunächst ohne eigene Bezeichnung), statt das Dropdown
-    mit einem unbekannten Wert leer zu lassen. Löschen entfernt sowohl den
-    Stammdaten- als auch den Zuordnungs-Eintrag für diesen Code und warnt
-    bei noch bestehender Verwendung in Prüfgrundlagen. Die Neu-↔-Alt-
-    Zuordnung selbst ist mit der vollständigen offiziellen
+    einer der beiden Quellen vorkommen; solche Zeilen zeigen die
+    Bezeichnung als „– noch keine Bezeichnung –" statt den Code doppelt
+    (einmal als Code, einmal als Platzhalter-Bezeichnung) anzuzeigen. Wird
+    im PA eine noch unbekannte Warengruppe gelesen und automatisch in einen
+    KV übernommen, landet sie ebenfalls automatisch hier als Zeile
+    (zunächst ohne eigene Bezeichnung), statt das Dropdown mit einem
+    unbekannten Wert leer zu lassen. Löschen entfernt sowohl den Stammdaten-
+    als auch den Zuordnungs-Eintrag für diesen Code und warnt bei noch
+    bestehender Verwendung in Prüfgrundlagen.
+
+    Code+Bezeichnung sind mit der vollständigen offiziellen
+    Warengruppen-Stammdaten-Tabelle (Stand 01.03.2026, 730 eindeutige Codes
+    über alle Warenbereiche) vorbelegt — bei bereits vorhandenen Codes wird
+    die Bezeichnung dabei einmalig auf den offiziellen Wortlaut
+    aktualisiert (kaskadiert wie eine manuelle Umbenennung auf verknüpfte
+    Prüfgrundlagen), fehlende Codes werden neu angelegt. Diese Aktualisierung
+    läuft nur **einmal** je Installation (intern über einen Merker
+    gesteuert) — spätere manuelle Umbenennungen im Reiter „Verwaltung"
+    werden bei künftigen Ladevorgängen nicht wieder überschrieben. Die
+    Neu-↔-Alt-Zuordnung selbst ist mit der vollständigen offiziellen
     ADMIN-Blatt-Zuordnungstabelle vorbelegt (341 eindeutige Neu-Codes; eine
     Handvoll Codes kam in der Rohliste mit mehreren unterschiedlichen
     Alt-Codes vor — dort zählt der jeweils zuerst genannte, von Hand hier
     korrigierbar; ein Eintrag ohne gültigen Alt-Code wurde beim Einlesen
-    übersprungen).
+    übersprungen). Die beiden Quellen (730 Stammdaten-Codes, 341
+    Zuordnungs-Codes) überschneiden sich größtenteils, aber nicht
+    vollständig, daher zeigt die vereinigte Liste geringfügig mehr als 730
+    Zeilen.
   - **Gefahrenzone** – löscht **Arbeitsvorrat, Prüfaufträge und
     Kostenvoranschläge** unwiderruflich (zwei Sicherheitsabfragen), z. B. um
     nach dem Testen sauber mit echten Daten neu zu starten.
@@ -738,17 +755,13 @@ bleibt `Preisliste_Mechanik_v2.xlsm`. Noch nicht übernommen: eine Lockerung
 der Prüfumfang-Schlüsselwort-Erkennung auf das dort verwendete, einfachere
 Teilstring-Prinzip.
 
-Die Neue-↔-Alte-Warengruppe-Zuordnungstabelle vom ADMIN-Blatt liefert nur
-Code-Paare (Neu/Alt), keine Namen, und taugt daher nicht direkt als Quelle
-für die vollständige, offizielle **Warengruppen-Liste** im Dropdown bei
-Prüfgrundlagen/Kostenvoranschlag (aktuell ein 64-Einträge-Startbestand aus
-den bereits genutzten Warengruppen). Die Warengruppen-Liste selbst lässt
-sich direkt im Reiter „Verwaltung" pflegen (siehe oben) — die offizielle
-Liste könnte dort bei Bedarf auch komplett von Hand nachgetragen werden. Für
-die reine **Neu→Alt-Zuordnung** (das Feld „Warengruppe alt" in derselben
-Verwaltungsliste, unabhängig von Code/Bezeichnung) liegt die vollständige
-ADMIN-Blatt-Liste dagegen bereits als Startbestand vor (siehe oben) und
-befüllt „Warengruppe (alt)" im Kostenvoranschlag automatisch.
+Die vollständige, offizielle **Warengruppen-Liste** (Code+Bezeichnung, 730
+Zeilen über alle Warenbereiche) liegt inzwischen als Startbestand vor (siehe
+oben) und lässt sich bei Bedarf weiterhin frei im Reiter „Verwaltung"
+pflegen. Die reine **Neu→Alt-Zuordnung** (das Feld „Warengruppe alt" in
+derselben Verwaltungsliste, unabhängig von Code/Bezeichnung, separate Quelle
+vom ADMIN-Blatt) liegt ebenfalls bereits als Startbestand vor (siehe oben)
+und befüllt „Warengruppe (alt)" im Kostenvoranschlag automatisch.
 
 ## SharePoint-Suche nach IAN
 
