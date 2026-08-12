@@ -553,7 +553,15 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   geht.
 - **Normen** – eigenständige Verwaltung einzelner Normen, im Listen-/
   Detail-Layout wie bei Prüfaufträgen/KVs, und jetzt direkt mit den
-  Prüfgrundlagen verknüpft (siehe oben). Über **„📄 Norm(en)/Prüfprogramm(e)
+  Prüfgrundlagen verknüpft (siehe oben). Über der Liste steht ein eigenes
+  **Suchfeld** (Bezeichnung, Titel, Dateiname, Bemerkung, Anwendungsbereiche) —
+  synchron mit der allgemeinen Suche oben im Header, beide filtern dieselbe
+  Liste, welches der beiden Felder benutzt wird ist egal. Darunter der
+  **Typ-Filter** (Alle/Normen/PPM/PPM_FFU/StiWa) als eigenständige, frei
+  umbrechende Pillen-Gruppe statt eines starren Segment-Balkens — bleibt auch
+  bei allen fünf Optionen in der schmalen Listen-Spalte sauber lesbar, egal
+  ob ein-, zwei- oder mehrzeilig. Suche und Typ-Filter lassen sich
+  kombinieren. Über **„📄 Norm(en)/Prüfprogramm(e)
   hochladen"** lassen sich eine oder mehrere **.docx**-Dateien auf einmal
   hochladen — jede Datei legt eine eigene Norm an (Bezeichnung anfangs aus
   dem Dateinamen abgeleitet, danach frei editierbar). Wie überall beim

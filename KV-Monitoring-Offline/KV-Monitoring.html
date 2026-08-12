@@ -86,6 +86,15 @@ nav.tabs button.aktiv { background:var(--card); color:var(--accent-dark); font-w
 .segment-toggle button + button { border-left:1px solid var(--border); }
 .segment-toggle button.aktiv { background:var(--accent); color:#fff; }
 .segment-toggle button.aktiv:hover { background:var(--accent-dark); }
+/* Für Toggle-Gruppen mit mehr Optionen, die in schmalen Spalten (z. B. .liste-panel) öfter
+   umbrechen: jede Schaltfläche ist eine eigenständige Pille statt eines zusammenhängenden,
+   segmentierten Balkens - dadurch sieht auch ein Umbruch auf mehrere Zeilen sauber aus, ohne
+   abgeschnittene/verrutschte Ecken wie bei .segment-toggle. */
+.pill-toggle { display:flex; flex-wrap:wrap; gap:0.35rem; padding:0.5rem 0.6rem; }
+.pill-toggle button { padding:0.32rem 0.75rem; border:1px solid var(--border); border-radius:999px; background:#fff; color:var(--muted); font-weight:600; font-size:0.82rem; }
+.pill-toggle button:hover { background:#f0f4f3; }
+.pill-toggle button.aktiv { background:var(--accent); color:#fff; border-color:var(--accent); }
+.pill-toggle button.aktiv:hover { background:var(--accent-dark); border-color:var(--accent-dark); }
 
 .tabellen-wrapper { overflow-x:auto; border:1px solid var(--border); border-radius:8px; background:var(--card); max-height:70vh; overflow-y:auto; }
 table.tabelle { width:100%; border-collapse:collapse; }
@@ -326,7 +335,10 @@ input[type=file] { display:none; }
   <div class="layout">
     <div class="liste-panel">
       <h2>Normen</h2>
-      <div class="segment-toggle" id="normen-typ-toggle" style="margin:0.5rem 0.6rem">
+      <div style="padding:0.6rem 0.6rem 0">
+        <input type="text" id="normen-suche" placeholder="Norm/PPM suchen…" style="width:100%;box-sizing:border-box;font-family:inherit;font-size:0.85rem;padding:0.4rem 0.55rem;border:1px solid var(--border);border-radius:6px">
+      </div>
+      <div class="pill-toggle" id="normen-typ-toggle">
         <button type="button" data-typ="" class="aktiv">Alle</button>
         <button type="button" data-typ="norm">Normen</button>
         <button type="button" data-typ="ppm">PPM</button>
@@ -4025,6 +4037,8 @@ function gefiltereNormen() {
 }
 
 function renderNormenListe() {
+  const suchfeld = document.getElementById("normen-suche");
+  if (suchfeld && suchfeld !== document.activeElement) suchfeld.value = suchbegriffe.normen;
   const ul = document.getElementById("normen-liste");
   const liste = gefiltereNormen();
   if (!liste.length) { ul.innerHTML = '<li class="leer">Keine Normen gefunden.</li>'; return; }
@@ -4042,6 +4056,15 @@ document.getElementById("normen-typ-toggle").querySelectorAll("button[data-typ]"
     document.querySelectorAll("#normen-typ-toggle button").forEach((b) => b.classList.toggle("aktiv", b === btn));
     renderNormenListe();
   });
+});
+
+/* Eigenes, direkt sichtbares Suchfeld im Reiter "Normen" - schreibt in dieselbe suchbegriffe.normen
+   wie die allgemeine Suche oben im Header, beide bleiben also synchron, egal welches der beiden
+   Felder benutzt wird. */
+document.getElementById("normen-suche").addEventListener("input", (e) => {
+  suchbegriffe.normen = e.target.value;
+  if (aktiverTab === "normen") document.getElementById("suche").value = e.target.value;
+  renderNormenListe();
 });
 
 /* Anwendungsbereiche einer Norm: manche Normen (z. B. DIN EN 581-2) stellen je nach
