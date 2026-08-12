@@ -720,13 +720,28 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   - **Trivialartikel-Preisliste** – Preisliste für triviale Artikel je
     **alter** Warengruppe (Code wie im Feld „Warengruppe (alt)" im
     Kostenvoranschlag), mit der offiziellen Preisliste (69 Zeilen) als
-    Startbestand: Bezeichnung (DE/EN), Preis „Chemie ≥4 Risikoparameter",
-    Preis „VP & Kennzeichnung", Preis „LFGB Stichprobe" (nur bei relevanten
+    Startbestand: Bezeichnung, Preis „Chemie ≥4 Risikoparameter", Preis
+    „VP & Kennzeichnung", Preis „LFGB Stichprobe" (nur bei relevanten
     Warengruppen befüllt), Gesamtpreis (inkl. 3 Sortierungen/Varianten) und
     Preis „Add Sortierung/Variante (ab der 4.)" — alle Felder direkt in der
-    Zeile editierbar, neue Zeilen über das Formular darunter anlegen. Wie
-    diese Preise konkret auf den Kostenvoranschlag angewendet werden, ist
-    noch offen (Stand: Tabelle ist übernommen, Anwendungslogik folgt).
+    Zeile editierbar, neue Zeilen über das Formular darunter anlegen.
+    **Angewendet wird davon aktuell nur der Preis „VP & Kennzeichnung"** (die
+    übrigen Preise betreffen den chemischen Teil der Prüfung und sind noch
+    nicht verdrahtet): Im Kostenvoranschlag erscheint im Abschnitt „Sicherheit
+    & Norm" ein Hinweis-Banner, sobald **Trivial = Ja** ODER die
+    **Artikelkategorie des verknüpften Prüfauftrags „Grün*" (mit Stern)**
+    ist — derselbe Artikelkreis, der auch von der Sicherheit-/Normprüfung-
+    Pflicht befreit ist. Findet sich zur „Warengruppe (alt)" des KVs ein
+    Eintrag in der Trivialartikel-Preisliste, zeigt das Banner den
+    VP&Kennzeichnung-Preis und einen Button **„Paketpreis übernehmen"**: er
+    legt bei Bedarf die beiden Positionen „Kennzeichnung (Verpackung &
+    Produkt)" und „Kennzeichnung (Bedienungsanleitung)" an und verteilt den
+    Preis gleichmäßig auf die aktiven der beiden (nur eine aktiv → volle
+    Summe dort) — der Preis gilt als **Summe für beide zusammen**, nicht je
+    Position. Stimmt die aktuelle Summe schon mit dem Paketpreis überein,
+    zeigt das Banner „✓ übernommen" statt des Buttons. Ohne passenden
+    Eintrag in der Preisliste erscheint stattdessen ein reiner Hinweis ohne
+    Button.
   - **Gefahrenzone** – löscht **Arbeitsvorrat, Prüfaufträge und
     Kostenvoranschläge** unwiderruflich (zwei Sicherheitsabfragen), z. B. um
     nach dem Testen sauber mit echten Daten neu zu starten.

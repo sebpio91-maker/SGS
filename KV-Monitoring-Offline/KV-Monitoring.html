@@ -75,6 +75,7 @@ nav.tabs button.aktiv { background:var(--card); color:var(--accent-dark); font-w
 .pruefumfang-kat-kopf { display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; }
 .pruefumfang-position { display:flex; align-items:center; justify-content:space-between; gap:0.5rem; padding:0.5rem 0.6rem; border:1px solid var(--border); border-radius:6px; font-size:0.85rem; margin-top:0.4rem; }
 .pruefumfang-position-vorschlag { background:#f2f8f1; border-color:#cfe3cb; }
+.trivial-paketpreis-hinweis { display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap; background:#fff8e6; border:1px solid #ecd9a0; border-radius:6px; padding:0.5rem 0.7rem; font-size:0.82rem; margin:0.4rem 0; }
 .pruefumfang-eintrag-positionen { display:flex; flex-direction:column; align-items:flex-start; gap:0.2rem; width:100%; margin:0.15rem 0 0.1rem 1.4rem; }
 .mechanik-komponente { border:1px solid var(--border); border-radius:6px; margin:0.4rem 0 !important; padding:0.5rem 0.6rem !important; }
 .mechanik-komponente:first-of-type { margin-top:0.4rem !important; }
@@ -415,7 +416,6 @@ input[type=file] { display:none; }
     <div class="toolbar-zeile" style="margin-top:0.6rem;flex-wrap:wrap">
       <input type="text" id="trivialpreisliste-neu-code-input" placeholder="Code alt (z. B. 103.110)" style="width:150px;font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px">
       <input type="text" id="trivialpreisliste-neu-bezeichnungde-input" placeholder="Bezeichnung (DE)" style="flex:1;min-width:160px;font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px">
-      <input type="text" id="trivialpreisliste-neu-bezeichnungen-input" placeholder="Bezeichnung (EN, optional)" style="flex:1;min-width:160px;font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px">
       <input type="number" id="trivialpreisliste-neu-chemie-input" placeholder="Chemie €" style="width:100px;font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px">
       <input type="number" id="trivialpreisliste-neu-vp-input" placeholder="VP&Kennz. €" style="width:100px;font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px">
       <input type="number" id="trivialpreisliste-neu-lfgb-input" placeholder="LFGB € (optional)" style="width:110px;font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px">
@@ -1848,75 +1848,75 @@ function seedWarengruppenZuordnung() {
    der Vorlage kein LFGB-Stichprobenpreis angegeben war (nicht bei jeder Warengruppe relevant). */
 function offizielleTrivialPreisliste() {
   return [
-    { code: "103.110", bezeichnungDe: "Koffer, Trolleys, Kosmetikkoffer", bezeichnungEn: "Suitcases, trolleys, cosmetic cases", preisChemie: 490, preisVpKennzeichnung: 250, preisLfgbStichprobe: "", preisGesamt: 740, preisAddSortierung: 196 },
-    { code: "103.120", bezeichnungDe: "Rucksäcke, Taschen, Kulturtaschen u. Regenschirme", bezeichnungEn: "Backpacks, bags, toiletry bags and umbrellas", preisChemie: 490, preisVpKennzeichnung: 220, preisLfgbStichprobe: "", preisGesamt: 710, preisAddSortierung: 196 },
-    { code: "107.100", bezeichnungDe: "Camping, Wandern", bezeichnungEn: "Camping, hiking", preisChemie: 490, preisVpKennzeichnung: 320, preisLfgbStichprobe: "", preisGesamt: 810, preisAddSortierung: 196 },
-    { code: "107.101", bezeichnungDe: "Grill, Kamin u. Zubehör", bezeichnungEn: "Grill, fireplace and accessories", preisChemie: 310, preisVpKennzeichnung: 320, preisLfgbStichprobe: 230, preisGesamt: 630, preisAddSortierung: 216 },
-    { code: "107.102", bezeichnungDe: "Wasser-, Strandartikel", bezeichnungEn: "Water, beach items", preisChemie: 490, preisVpKennzeichnung: 220, preisLfgbStichprobe: "", preisGesamt: 710, preisAddSortierung: 196 },
-    { code: "107.103", bezeichnungDe: "Bewässerung, Pflanzgefäße u. Zubehör", bezeichnungEn: "Watering, planters and accessories", preisChemie: 340, preisVpKennzeichnung: 220, preisLfgbStichprobe: "", preisGesamt: 560, preisAddSortierung: 136 },
-    { code: "107.104", bezeichnungDe: "Gartenmöbel, Sonnenschirme u. Zubehör", bezeichnungEn: "Garden furniture, parasols and accessories", preisChemie: 430, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 740, preisAddSortierung: 172 },
-    { code: "107.105", bezeichnungDe: "Insektenschutz", bezeichnungEn: "Insect repellent", preisChemie: 320, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 630, preisAddSortierung: 128 },
-    { code: "107.106", bezeichnungDe: "Kühltaschen, Kühlboxen u. Zubehör", bezeichnungEn: "Cool bags, cool boxes and accessories", preisChemie: 340, preisVpKennzeichnung: 230, preisLfgbStichprobe: 520, preisGesamt: 570, preisAddSortierung: 344 },
-    { code: "108.100", bezeichnungDe: "Regale", bezeichnungEn: "Shelves", preisChemie: 350, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 660, preisAddSortierung: 140 },
-    { code: "108.101", bezeichnungDe: "Tische u. Servierwagen", bezeichnungEn: "Tables and serving trolleys", preisChemie: 490, preisVpKennzeichnung: 250, preisLfgbStichprobe: "", preisGesamt: 740, preisAddSortierung: 196 },
-    { code: "108.102", bezeichnungDe: "Stühle, Bänke u. Hocker", bezeichnungEn: "Chairs, benches and stools", preisChemie: 490, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 800, preisAddSortierung: 196 },
-    { code: "108.103", bezeichnungDe: "Kommoden u. Sideboards", bezeichnungEn: "Chests of drawers and sideboards", preisChemie: 490, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 800, preisAddSortierung: 196 },
-    { code: "108.104", bezeichnungDe: "Badmöbel", bezeichnungEn: "Bathroom furniture", preisChemie: 490, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 800, preisAddSortierung: 196 },
-    { code: "108.105", bezeichnungDe: "Garderoben, Flur- u. Schuhmöbel", bezeichnungEn: "Cloakrooms, hallway and shoe furniture", preisChemie: 420, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 730, preisAddSortierung: 168 },
-    { code: "108.106", bezeichnungDe: "Betten u. Lattenroste", bezeichnungEn: "Beds and slatted frames", preisChemie: 490, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 800, preisAddSortierung: 196 },
-    { code: "110.100", bezeichnungDe: "Garten, Balkon", bezeichnungEn: "Garden, balcony", preisChemie: 320, preisVpKennzeichnung: 240, preisLfgbStichprobe: "", preisGesamt: 560, preisAddSortierung: 128 },
-    { code: "110.101", bezeichnungDe: "Spiegel, Bilder, Tafeln, Rahmen u. Briefkasten", bezeichnungEn: "Mirrors, pictures, boards, frames and mailboxes", preisChemie: 320, preisVpKennzeichnung: 220, preisLfgbStichprobe: "", preisGesamt: 540, preisAddSortierung: 128 },
-    { code: "110.102", bezeichnungDe: "Weihnachten", bezeichnungEn: "Christmas", preisChemie: 320, preisVpKennzeichnung: 220, preisLfgbStichprobe: "", preisGesamt: 540, preisAddSortierung: 128 },
-    { code: "110.103", bezeichnungDe: "Ostern, Frühling, Herbst", bezeichnungEn: "Easter, spring, autumn", preisChemie: 320, preisVpKennzeichnung: 220, preisLfgbStichprobe: "", preisGesamt: 540, preisAddSortierung: 128 },
-    { code: "110.104", bezeichnungDe: "Geschenkverpackung u. Karten", bezeichnungEn: "Gift packaging and cards", preisChemie: 320, preisVpKennzeichnung: 220, preisLfgbStichprobe: "", preisGesamt: 540, preisAddSortierung: 128 },
-    { code: "110.105", bezeichnungDe: "Kerzen", bezeichnungEn: "Candles", preisChemie: 320, preisVpKennzeichnung: 220, preisLfgbStichprobe: "", preisGesamt: 540, preisAddSortierung: 128 },
-    { code: "110.106", bezeichnungDe: "sonstige Deko", bezeichnungEn: "other decoration", preisChemie: 320, preisVpKennzeichnung: 220, preisLfgbStichprobe: "", preisGesamt: 540, preisAddSortierung: 128 },
-    { code: "111.101", bezeichnungDe: "Multimedia Zubehör", bezeichnungEn: "Multimedia accessories", preisChemie: 340, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 650, preisAddSortierung: 136 },
-    { code: "112.101", bezeichnungDe: "Reinigungsgeräte, Bügeleisen u. Zubehör", bezeichnungEn: "Cleaning equipment, irons and accessories", preisChemie: 320, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 630, preisAddSortierung: 128 },
-    { code: "112.102", bezeichnungDe: "Körperpflege", bezeichnungEn: "Personal care", preisChemie: 320, preisVpKennzeichnung: 310, preisLfgbStichprobe: 640, preisGesamt: 630, preisAddSortierung: 384 },
-    { code: "112.105", bezeichnungDe: "Video- u. Audio-Zubehör", bezeichnungEn: "Video and audio accessories", preisChemie: 370, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 680, preisAddSortierung: 148 },
-    { code: "112.106", bezeichnungDe: "Systemzubehör", bezeichnungEn: "System accessories", preisChemie: 370, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 680, preisAddSortierung: 148 },
-    { code: "112.111", bezeichnungDe: "Gartengeräte", bezeichnungEn: "Gardening tools", preisChemie: 380, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 690, preisAddSortierung: 152 },
-    { code: "112.112", bezeichnungDe: "medizinische Geräte u. Wellness", bezeichnungEn: "medical devices & wellness", preisChemie: 510, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 820, preisAddSortierung: 204 },
-    { code: "113.101", bezeichnungDe: "Bücher", bezeichnungEn: "Books", preisChemie: 320, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 630, preisAddSortierung: 128 },
-    { code: "113.102", bezeichnungDe: "DVDs", bezeichnungEn: "DVDs", preisChemie: 320, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 630, preisAddSortierung: 128 },
-    { code: "113.103", bezeichnungDe: "CDs", bezeichnungEn: "CDs", preisChemie: 320, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 630, preisAddSortierung: 128 },
-    { code: "114.100", bezeichnungDe: "Schreibtischaccessoires", bezeichnungEn: "Desk accessories", preisChemie: 320, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 630, preisAddSortierung: 128 },
-    { code: "114.101", bezeichnungDe: "Schreibgeräte", bezeichnungEn: "Writing implements", preisChemie: 220, preisVpKennzeichnung: 280, preisLfgbStichprobe: "", preisGesamt: 500, preisAddSortierung: 88 },
-    { code: "114.103", bezeichnungDe: "Ablagen, Ordnungshelfer, Register, Notizbücher, Fotoalben", bezeichnungEn: "Shelves, tidying aids, registers, notebooks, photo albums", preisChemie: 280, preisVpKennzeichnung: 210, preisLfgbStichprobe: "", preisGesamt: 490, preisAddSortierung: 112 },
-    { code: "114.104", bezeichnungDe: "Papier, Pappe", bezeichnungEn: "Paper, cardboard", preisChemie: 250, preisVpKennzeichnung: 210, preisLfgbStichprobe: "", preisGesamt: 460, preisAddSortierung: 100 },
-    { code: "114.105", bezeichnungDe: "Kalender, Poster, Boards, Tafeln", bezeichnungEn: "Calendars, posters, boards, chalkboards", preisChemie: 320, preisVpKennzeichnung: 210, preisLfgbStichprobe: "", preisGesamt: 530, preisAddSortierung: 128 },
-    { code: "114.106", bezeichnungDe: "Aufkleber, Sticker", bezeichnungEn: "Stickers, stickers", preisChemie: 320, preisVpKennzeichnung: 210, preisLfgbStichprobe: "", preisGesamt: 530, preisAddSortierung: 128 },
-    { code: "115.100", bezeichnungDe: "Wäschekörbe, Eimer, Bügel, Aufbewahrungsboxen", bezeichnungEn: "Laundry baskets, buckets, hangers, storage boxes", preisChemie: 320, preisVpKennzeichnung: 210, preisLfgbStichprobe: "", preisGesamt: 530, preisAddSortierung: 128 },
-    { code: "115.101", bezeichnungDe: "Befestigungen, Haken, Türpuffer (Baumarkt)", bezeichnungEn: "Fixings, hooks, door buffers (hardware store)", preisChemie: 320, preisVpKennzeichnung: 210, preisLfgbStichprobe: "", preisGesamt: 530, preisAddSortierung: 128 },
-    { code: "115.102", bezeichnungDe: "Wäschespinnen, -trockner, -netz", bezeichnungEn: "Rotary clothes dryer, dryer, net", preisChemie: 250, preisVpKennzeichnung: 210, preisLfgbStichprobe: "", preisGesamt: 460, preisAddSortierung: 100 },
-    { code: "115.104", bezeichnungDe: "Bügeltische und Zubehör", bezeichnungEn: "Ironing boards and accessories", preisChemie: 320, preisVpKennzeichnung: 320, preisLfgbStichprobe: "", preisGesamt: 640, preisAddSortierung: 128 },
-    { code: "115.105", bezeichnungDe: "Tabletts, Schalen, Schüsseln, Schneidebretter", bezeichnungEn: "Trays, bowls, bowls, cutting boards", preisChemie: 380, preisVpKennzeichnung: 210, preisLfgbStichprobe: 510, preisGesamt: 590, preisAddSortierung: 356 },
-    { code: "115.106", bezeichnungDe: "Aufbewahrungsdosen u. Behälter", bezeichnungEn: "Storage jars and containers", preisChemie: 380, preisVpKennzeichnung: 210, preisLfgbStichprobe: 510, preisGesamt: 590, preisAddSortierung: 356 },
-    { code: "115.107", bezeichnungDe: "Reinigungshelfer", bezeichnungEn: "Cleaning aid", preisChemie: 310, preisVpKennzeichnung: 210, preisLfgbStichprobe: 510, preisGesamt: 520, preisAddSortierung: 328 },
-    { code: "115.108", bezeichnungDe: "Küchenhelfer", bezeichnungEn: "Kitchen helpers", preisChemie: 310, preisVpKennzeichnung: 210, preisLfgbStichprobe: 510, preisGesamt: 520, preisAddSortierung: 328 },
-    { code: "115.109", bezeichnungDe: "Bestecke, Messer, Scheren", bezeichnungEn: "Cutlery, knives, scissors", preisChemie: 310, preisVpKennzeichnung: 210, preisLfgbStichprobe: 510, preisGesamt: 520, preisAddSortierung: 328 },
-    { code: "115.110", bezeichnungDe: "Trinkgefäße u. Kannen", bezeichnungEn: "Drinking vessels and jugs", preisChemie: 310, preisVpKennzeichnung: 210, preisLfgbStichprobe: 510, preisGesamt: 520, preisAddSortierung: 328 },
-    { code: "115.111", bezeichnungDe: "Kaffee-, Tafelgeschirr", bezeichnungEn: "Coffee, tableware", preisChemie: 310, preisVpKennzeichnung: 210, preisLfgbStichprobe: 510, preisGesamt: 520, preisAddSortierung: 328 },
-    { code: "115.112", bezeichnungDe: "Bräter, Auflaufformen", bezeichnungEn: "Roasters, casserole dishes", preisChemie: 310, preisVpKennzeichnung: 210, preisLfgbStichprobe: 510, preisGesamt: 520, preisAddSortierung: 328 },
-    { code: "115.113", bezeichnungDe: "Töpfe u. Pfannen", bezeichnungEn: "Pots and pans", preisChemie: 310, preisVpKennzeichnung: 210, preisLfgbStichprobe: 510, preisGesamt: 520, preisAddSortierung: 328 },
-    { code: "115.114", bezeichnungDe: "Küchenwaagen u. Kleingeräte", bezeichnungEn: "Kitchen scales and small appliances", preisChemie: 310, preisVpKennzeichnung: 360, preisLfgbStichprobe: 510, preisGesamt: 670, preisAddSortierung: 328 },
-    { code: "115.115", bezeichnungDe: "Backbleche u. Zubehör", bezeichnungEn: "Baking trays and accessories", preisChemie: 310, preisVpKennzeichnung: 250, preisLfgbStichprobe: 510, preisGesamt: 560, preisAddSortierung: 328 },
-    { code: "116.100", bezeichnungDe: "Bandagen, Kompressen, Wärmflaschen, Massage u. Verbandsmaterial", bezeichnungEn: "Bandages, compresses, hot water bottles, massage and bandages", preisChemie: 510, preisVpKennzeichnung: 250, preisLfgbStichprobe: "", preisGesamt: 760, preisAddSortierung: 204 },
-    { code: "116.101", bezeichnungDe: "Seniorenartikel", bezeichnungEn: "Senior articles", preisChemie: 420, preisVpKennzeichnung: 360, preisLfgbStichprobe: "", preisGesamt: 780, preisAddSortierung: 168 },
-    { code: "118.101", bezeichnungDe: "Bad- u. WC-Artikel", bezeichnungEn: "Bathroom and toilet articles", preisChemie: 350, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 660, preisAddSortierung: 140 },
-    { code: "118.102", bezeichnungDe: "Maniküre, Kosmetik u. Haarbürsten", bezeichnungEn: "Manicure, cosmetics and hairbrushes", preisChemie: 320, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 630, preisAddSortierung: 128 },
-    { code: "119.100", bezeichnungDe: "Werkzeuge manuell", bezeichnungEn: "Manual tools", preisChemie: 360, preisVpKennzeichnung: 210, preisLfgbStichprobe: "", preisGesamt: 570, preisAddSortierung: 144 },
-    { code: "119.101", bezeichnungDe: "Werkzeugaufbewahrung", bezeichnungEn: "Tool storage", preisChemie: 360, preisVpKennzeichnung: 210, preisLfgbStichprobe: "", preisGesamt: 570, preisAddSortierung: 144 },
-    { code: "119.102", bezeichnungDe: "Heimwerkerzubehör", bezeichnungEn: "DIY accessories", preisChemie: 640, preisVpKennzeichnung: 210, preisLfgbStichprobe: "", preisGesamt: 850, preisAddSortierung: 256 },
-    { code: "119.103", bezeichnungDe: "Gartenwerkzeuge manuell", bezeichnungEn: "Garden tools manual", preisChemie: 400, preisVpKennzeichnung: 210, preisLfgbStichprobe: "", preisGesamt: 610, preisAddSortierung: 160 },
-    { code: "121.100", bezeichnungDe: "Fahrrad", bezeichnungEn: "Bike", preisChemie: 560, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 870, preisAddSortierung: 224 },
-    { code: "121.101", bezeichnungDe: "Fitnessgeräte u. Sportartikel", bezeichnungEn: "Fitness equipment and sporting goods", preisChemie: 560, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 870, preisAddSortierung: 224 },
-    { code: "121.102", bezeichnungDe: "Angeln", bezeichnungEn: "Fishing", preisChemie: 560, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 870, preisAddSortierung: 224 },
-    { code: "123.100", bezeichnungDe: "Baustoffe/Malerbedarf/Klebstoffe", bezeichnungEn: "Building materials / painting supplies / adhesives", preisChemie: 560, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 870, preisAddSortierung: 224 },
-    { code: "125.100", bezeichnungDe: "Haustierartikel", bezeichnungEn: "Pet articles", preisChemie: 460, preisVpKennzeichnung: 210, preisLfgbStichprobe: "", preisGesamt: 670, preisAddSortierung: 184 },
-    { code: "127.100", bezeichnungDe: "Kunstartikel, Malartikel", bezeichnungEn: "Art articles, painting articles", preisChemie: 460, preisVpKennzeichnung: 210, preisLfgbStichprobe: "", preisGesamt: 670, preisAddSortierung: 184 },
-    { code: "127.102", bezeichnungDe: "Bastelzubehör", bezeichnungEn: "Craft accessories", preisChemie: 320, preisVpKennzeichnung: 210, preisLfgbStichprobe: "", preisGesamt: 530, preisAddSortierung: 128 }
+    { code: "103.110", bezeichnungDe: "Koffer, Trolleys, Kosmetikkoffer", preisChemie: 490, preisVpKennzeichnung: 250, preisLfgbStichprobe: "", preisGesamt: 740, preisAddSortierung: 196 },
+    { code: "103.120", bezeichnungDe: "Rucksäcke, Taschen, Kulturtaschen u. Regenschirme", preisChemie: 490, preisVpKennzeichnung: 220, preisLfgbStichprobe: "", preisGesamt: 710, preisAddSortierung: 196 },
+    { code: "107.100", bezeichnungDe: "Camping, Wandern", preisChemie: 490, preisVpKennzeichnung: 320, preisLfgbStichprobe: "", preisGesamt: 810, preisAddSortierung: 196 },
+    { code: "107.101", bezeichnungDe: "Grill, Kamin u. Zubehör", preisChemie: 310, preisVpKennzeichnung: 320, preisLfgbStichprobe: 230, preisGesamt: 630, preisAddSortierung: 216 },
+    { code: "107.102", bezeichnungDe: "Wasser-, Strandartikel", preisChemie: 490, preisVpKennzeichnung: 220, preisLfgbStichprobe: "", preisGesamt: 710, preisAddSortierung: 196 },
+    { code: "107.103", bezeichnungDe: "Bewässerung, Pflanzgefäße u. Zubehör", preisChemie: 340, preisVpKennzeichnung: 220, preisLfgbStichprobe: "", preisGesamt: 560, preisAddSortierung: 136 },
+    { code: "107.104", bezeichnungDe: "Gartenmöbel, Sonnenschirme u. Zubehör", preisChemie: 430, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 740, preisAddSortierung: 172 },
+    { code: "107.105", bezeichnungDe: "Insektenschutz", preisChemie: 320, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 630, preisAddSortierung: 128 },
+    { code: "107.106", bezeichnungDe: "Kühltaschen, Kühlboxen u. Zubehör", preisChemie: 340, preisVpKennzeichnung: 230, preisLfgbStichprobe: 520, preisGesamt: 570, preisAddSortierung: 344 },
+    { code: "108.100", bezeichnungDe: "Regale", preisChemie: 350, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 660, preisAddSortierung: 140 },
+    { code: "108.101", bezeichnungDe: "Tische u. Servierwagen", preisChemie: 490, preisVpKennzeichnung: 250, preisLfgbStichprobe: "", preisGesamt: 740, preisAddSortierung: 196 },
+    { code: "108.102", bezeichnungDe: "Stühle, Bänke u. Hocker", preisChemie: 490, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 800, preisAddSortierung: 196 },
+    { code: "108.103", bezeichnungDe: "Kommoden u. Sideboards", preisChemie: 490, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 800, preisAddSortierung: 196 },
+    { code: "108.104", bezeichnungDe: "Badmöbel", preisChemie: 490, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 800, preisAddSortierung: 196 },
+    { code: "108.105", bezeichnungDe: "Garderoben, Flur- u. Schuhmöbel", preisChemie: 420, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 730, preisAddSortierung: 168 },
+    { code: "108.106", bezeichnungDe: "Betten u. Lattenroste", preisChemie: 490, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 800, preisAddSortierung: 196 },
+    { code: "110.100", bezeichnungDe: "Garten, Balkon", preisChemie: 320, preisVpKennzeichnung: 240, preisLfgbStichprobe: "", preisGesamt: 560, preisAddSortierung: 128 },
+    { code: "110.101", bezeichnungDe: "Spiegel, Bilder, Tafeln, Rahmen u. Briefkasten", preisChemie: 320, preisVpKennzeichnung: 220, preisLfgbStichprobe: "", preisGesamt: 540, preisAddSortierung: 128 },
+    { code: "110.102", bezeichnungDe: "Weihnachten", preisChemie: 320, preisVpKennzeichnung: 220, preisLfgbStichprobe: "", preisGesamt: 540, preisAddSortierung: 128 },
+    { code: "110.103", bezeichnungDe: "Ostern, Frühling, Herbst", preisChemie: 320, preisVpKennzeichnung: 220, preisLfgbStichprobe: "", preisGesamt: 540, preisAddSortierung: 128 },
+    { code: "110.104", bezeichnungDe: "Geschenkverpackung u. Karten", preisChemie: 320, preisVpKennzeichnung: 220, preisLfgbStichprobe: "", preisGesamt: 540, preisAddSortierung: 128 },
+    { code: "110.105", bezeichnungDe: "Kerzen", preisChemie: 320, preisVpKennzeichnung: 220, preisLfgbStichprobe: "", preisGesamt: 540, preisAddSortierung: 128 },
+    { code: "110.106", bezeichnungDe: "sonstige Deko", preisChemie: 320, preisVpKennzeichnung: 220, preisLfgbStichprobe: "", preisGesamt: 540, preisAddSortierung: 128 },
+    { code: "111.101", bezeichnungDe: "Multimedia Zubehör", preisChemie: 340, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 650, preisAddSortierung: 136 },
+    { code: "112.101", bezeichnungDe: "Reinigungsgeräte, Bügeleisen u. Zubehör", preisChemie: 320, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 630, preisAddSortierung: 128 },
+    { code: "112.102", bezeichnungDe: "Körperpflege", preisChemie: 320, preisVpKennzeichnung: 310, preisLfgbStichprobe: 640, preisGesamt: 630, preisAddSortierung: 384 },
+    { code: "112.105", bezeichnungDe: "Video- u. Audio-Zubehör", preisChemie: 370, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 680, preisAddSortierung: 148 },
+    { code: "112.106", bezeichnungDe: "Systemzubehör", preisChemie: 370, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 680, preisAddSortierung: 148 },
+    { code: "112.111", bezeichnungDe: "Gartengeräte", preisChemie: 380, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 690, preisAddSortierung: 152 },
+    { code: "112.112", bezeichnungDe: "medizinische Geräte u. Wellness", preisChemie: 510, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 820, preisAddSortierung: 204 },
+    { code: "113.101", bezeichnungDe: "Bücher", preisChemie: 320, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 630, preisAddSortierung: 128 },
+    { code: "113.102", bezeichnungDe: "DVDs", preisChemie: 320, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 630, preisAddSortierung: 128 },
+    { code: "113.103", bezeichnungDe: "CDs", preisChemie: 320, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 630, preisAddSortierung: 128 },
+    { code: "114.100", bezeichnungDe: "Schreibtischaccessoires", preisChemie: 320, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 630, preisAddSortierung: 128 },
+    { code: "114.101", bezeichnungDe: "Schreibgeräte", preisChemie: 220, preisVpKennzeichnung: 280, preisLfgbStichprobe: "", preisGesamt: 500, preisAddSortierung: 88 },
+    { code: "114.103", bezeichnungDe: "Ablagen, Ordnungshelfer, Register, Notizbücher, Fotoalben", preisChemie: 280, preisVpKennzeichnung: 210, preisLfgbStichprobe: "", preisGesamt: 490, preisAddSortierung: 112 },
+    { code: "114.104", bezeichnungDe: "Papier, Pappe", preisChemie: 250, preisVpKennzeichnung: 210, preisLfgbStichprobe: "", preisGesamt: 460, preisAddSortierung: 100 },
+    { code: "114.105", bezeichnungDe: "Kalender, Poster, Boards, Tafeln", preisChemie: 320, preisVpKennzeichnung: 210, preisLfgbStichprobe: "", preisGesamt: 530, preisAddSortierung: 128 },
+    { code: "114.106", bezeichnungDe: "Aufkleber, Sticker", preisChemie: 320, preisVpKennzeichnung: 210, preisLfgbStichprobe: "", preisGesamt: 530, preisAddSortierung: 128 },
+    { code: "115.100", bezeichnungDe: "Wäschekörbe, Eimer, Bügel, Aufbewahrungsboxen", preisChemie: 320, preisVpKennzeichnung: 210, preisLfgbStichprobe: "", preisGesamt: 530, preisAddSortierung: 128 },
+    { code: "115.101", bezeichnungDe: "Befestigungen, Haken, Türpuffer (Baumarkt)", preisChemie: 320, preisVpKennzeichnung: 210, preisLfgbStichprobe: "", preisGesamt: 530, preisAddSortierung: 128 },
+    { code: "115.102", bezeichnungDe: "Wäschespinnen, -trockner, -netz", preisChemie: 250, preisVpKennzeichnung: 210, preisLfgbStichprobe: "", preisGesamt: 460, preisAddSortierung: 100 },
+    { code: "115.104", bezeichnungDe: "Bügeltische und Zubehör", preisChemie: 320, preisVpKennzeichnung: 320, preisLfgbStichprobe: "", preisGesamt: 640, preisAddSortierung: 128 },
+    { code: "115.105", bezeichnungDe: "Tabletts, Schalen, Schüsseln, Schneidebretter", preisChemie: 380, preisVpKennzeichnung: 210, preisLfgbStichprobe: 510, preisGesamt: 590, preisAddSortierung: 356 },
+    { code: "115.106", bezeichnungDe: "Aufbewahrungsdosen u. Behälter", preisChemie: 380, preisVpKennzeichnung: 210, preisLfgbStichprobe: 510, preisGesamt: 590, preisAddSortierung: 356 },
+    { code: "115.107", bezeichnungDe: "Reinigungshelfer", preisChemie: 310, preisVpKennzeichnung: 210, preisLfgbStichprobe: 510, preisGesamt: 520, preisAddSortierung: 328 },
+    { code: "115.108", bezeichnungDe: "Küchenhelfer", preisChemie: 310, preisVpKennzeichnung: 210, preisLfgbStichprobe: 510, preisGesamt: 520, preisAddSortierung: 328 },
+    { code: "115.109", bezeichnungDe: "Bestecke, Messer, Scheren", preisChemie: 310, preisVpKennzeichnung: 210, preisLfgbStichprobe: 510, preisGesamt: 520, preisAddSortierung: 328 },
+    { code: "115.110", bezeichnungDe: "Trinkgefäße u. Kannen", preisChemie: 310, preisVpKennzeichnung: 210, preisLfgbStichprobe: 510, preisGesamt: 520, preisAddSortierung: 328 },
+    { code: "115.111", bezeichnungDe: "Kaffee-, Tafelgeschirr", preisChemie: 310, preisVpKennzeichnung: 210, preisLfgbStichprobe: 510, preisGesamt: 520, preisAddSortierung: 328 },
+    { code: "115.112", bezeichnungDe: "Bräter, Auflaufformen", preisChemie: 310, preisVpKennzeichnung: 210, preisLfgbStichprobe: 510, preisGesamt: 520, preisAddSortierung: 328 },
+    { code: "115.113", bezeichnungDe: "Töpfe u. Pfannen", preisChemie: 310, preisVpKennzeichnung: 210, preisLfgbStichprobe: 510, preisGesamt: 520, preisAddSortierung: 328 },
+    { code: "115.114", bezeichnungDe: "Küchenwaagen u. Kleingeräte", preisChemie: 310, preisVpKennzeichnung: 360, preisLfgbStichprobe: 510, preisGesamt: 670, preisAddSortierung: 328 },
+    { code: "115.115", bezeichnungDe: "Backbleche u. Zubehör", preisChemie: 310, preisVpKennzeichnung: 250, preisLfgbStichprobe: 510, preisGesamt: 560, preisAddSortierung: 328 },
+    { code: "116.100", bezeichnungDe: "Bandagen, Kompressen, Wärmflaschen, Massage u. Verbandsmaterial", preisChemie: 510, preisVpKennzeichnung: 250, preisLfgbStichprobe: "", preisGesamt: 760, preisAddSortierung: 204 },
+    { code: "116.101", bezeichnungDe: "Seniorenartikel", preisChemie: 420, preisVpKennzeichnung: 360, preisLfgbStichprobe: "", preisGesamt: 780, preisAddSortierung: 168 },
+    { code: "118.101", bezeichnungDe: "Bad- u. WC-Artikel", preisChemie: 350, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 660, preisAddSortierung: 140 },
+    { code: "118.102", bezeichnungDe: "Maniküre, Kosmetik u. Haarbürsten", preisChemie: 320, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 630, preisAddSortierung: 128 },
+    { code: "119.100", bezeichnungDe: "Werkzeuge manuell", preisChemie: 360, preisVpKennzeichnung: 210, preisLfgbStichprobe: "", preisGesamt: 570, preisAddSortierung: 144 },
+    { code: "119.101", bezeichnungDe: "Werkzeugaufbewahrung", preisChemie: 360, preisVpKennzeichnung: 210, preisLfgbStichprobe: "", preisGesamt: 570, preisAddSortierung: 144 },
+    { code: "119.102", bezeichnungDe: "Heimwerkerzubehör", preisChemie: 640, preisVpKennzeichnung: 210, preisLfgbStichprobe: "", preisGesamt: 850, preisAddSortierung: 256 },
+    { code: "119.103", bezeichnungDe: "Gartenwerkzeuge manuell", preisChemie: 400, preisVpKennzeichnung: 210, preisLfgbStichprobe: "", preisGesamt: 610, preisAddSortierung: 160 },
+    { code: "121.100", bezeichnungDe: "Fahrrad", preisChemie: 560, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 870, preisAddSortierung: 224 },
+    { code: "121.101", bezeichnungDe: "Fitnessgeräte u. Sportartikel", preisChemie: 560, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 870, preisAddSortierung: 224 },
+    { code: "121.102", bezeichnungDe: "Angeln", preisChemie: 560, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 870, preisAddSortierung: 224 },
+    { code: "123.100", bezeichnungDe: "Baustoffe/Malerbedarf/Klebstoffe", preisChemie: 560, preisVpKennzeichnung: 310, preisLfgbStichprobe: "", preisGesamt: 870, preisAddSortierung: 224 },
+    { code: "125.100", bezeichnungDe: "Haustierartikel", preisChemie: 460, preisVpKennzeichnung: 210, preisLfgbStichprobe: "", preisGesamt: 670, preisAddSortierung: 184 },
+    { code: "127.100", bezeichnungDe: "Kunstartikel, Malartikel", preisChemie: 460, preisVpKennzeichnung: 210, preisLfgbStichprobe: "", preisGesamt: 670, preisAddSortierung: 184 },
+    { code: "127.102", bezeichnungDe: "Bastelzubehör", preisChemie: 320, preisVpKennzeichnung: 210, preisLfgbStichprobe: "", preisGesamt: 530, preisAddSortierung: 128 }
   ];
 }
 
@@ -3925,6 +3925,81 @@ function istArtikelkategorieGruenMitStern(pa) {
   return norm.startsWith("grün") && norm.includes("*");
 }
 
+/* Trivialartikel-Paketpreis (Reiter "Verwaltung" -> Trivialartikel-Preisliste) gilt für denselben
+   Artikelkreis, der auch von der Sicherheit-/Normprüfung-Pflicht befreit ist (siehe
+   sicherheitNormpruefungErforderlich): Trivial="Ja" ODER Artikelkategorie Grün* (mit Stern). */
+function trivialPaketpreisAktiv(kv, pa) {
+  return jaNeinAnzeige(kv.trivial) === "Ja" || istArtikelkategorieGruenMitStern(pa);
+}
+
+/* Eintrag der Trivialartikel-Preisliste für die ALTE Warengruppe dieses KVs (Feld "Warengruppe
+   (alt)"), nicht die neue - die Preisliste ist über die alten Codes indiziert. */
+function trivialPreislisteEintragFuerKv(kv) {
+  const norm = normalisiereWarengruppe(kv.warengruppeAlt);
+  if (!norm) return null;
+  return data.trivialPreisliste.find((e) => normalisiereWarengruppe(e.code) === norm) || null;
+}
+
+/* Übernimmt den Trivialartikel-Paketpreis "VP & Kennzeichnung" als SUMME für die beiden
+   Kennzeichnungsprüfungen (Verpackung & Produkt + Bedienungsanleitung) - legt beide Positionen bei
+   Bedarf an (der passenden Kennzeichnung-GER-Variante je VK-Büro/LFGB, siehe
+   kennzeichnungGerPpmCode) und verteilt den Gesamtpreis gleichmäßig auf die aktiven der beiden
+   Positionen (nur eine aktiv -> volle Summe dort). Alle übrigen Preisfelder der Preisliste
+   (Chemie, LFGB-Stichprobe, Gesamt, Add Sortierung) betreffen den chemischen Teil der Prüfung und
+   werden hier bewusst NICHT angewendet. */
+function wendeTrivialPaketpreisAn(kv) {
+  const eintrag = trivialPreislisteEintragFuerKv(kv);
+  if (!eintrag || eintrag.preisVpKennzeichnung === "" || eintrag.preisVpKennzeichnung === null || eintrag.preisVpKennzeichnung === undefined) return false;
+  const gesamt = Number(eintrag.preisVpKennzeichnung);
+  const vpKatalog = SICHERHEIT_NORM_FIXPOSITIONEN.find((k) => k.bezeichnung.includes(kennzeichnungGerPpmCode(kv)));
+  const bdaKatalog = SICHERHEIT_NORM_FIXPOSITIONEN.find((k) => k.id === "fix-bda");
+  if (vpKatalog) fuegeKatalogPositionHinzu(kv, vpKatalog);
+  if (bdaKatalog) fuegeKatalogPositionHinzu(kv, bdaKatalog);
+  const aktivePositionen = [vpKatalog, bdaKatalog]
+    .filter(Boolean)
+    .map((katalogEintrag) => kv.positionen.find((p) => normalisiere(p.bezeichnung) === normalisiere(katalogEintrag.bezeichnung)))
+    .filter((p) => p && p.aktiv);
+  if (!aktivePositionen.length) return false;
+  const anteil = Math.round((gesamt / aktivePositionen.length) * 100) / 100;
+  aktivePositionen.forEach((p, idx) => {
+    p.kosten = idx === aktivePositionen.length - 1 ? Math.round((gesamt - anteil * (aktivePositionen.length - 1)) * 100) / 100 : anteil;
+  });
+  return true;
+}
+
+/* Banner im "Sicherheit & Norm"-Abschnitt der Prüfumfang-Details, sobald für diesen KV ein
+   Trivialartikel-Paketpreis infrage kommt (siehe trivialPaketpreisAktiv) - zeigt den anwendbaren
+   VP&Kennzeichnung-Preis und, falls die beiden Kennzeichnungspositionen bereits im KV stehen, ob
+   ihre aktuelle Summe schon damit übereinstimmt. */
+function trivialPaketpreisBannerHtml(kv, pa) {
+  if (!trivialPaketpreisAktiv(kv, pa)) return "";
+  const grund = jaNeinAnzeige(kv.trivial) === "Ja" ? "Trivial = Ja" : "Artikelkategorie Grün*";
+  const eintrag = trivialPreislisteEintragFuerKv(kv);
+  if (!eintrag || eintrag.preisVpKennzeichnung === "" || eintrag.preisVpKennzeichnung === null || eintrag.preisVpKennzeichnung === undefined) {
+    return `<div class="trivial-paketpreis-hinweis">
+      <strong>Trivialartikel-Paketpreis</strong> wäre anwendbar (${grund}), aber für die Warengruppe
+      (alt) „${escapeHtml(kv.warengruppeAlt || "– nicht gesetzt –")}" liegt kein VP&amp;Kennzeichnung-Preis
+      in der Trivialartikel-Preisliste (Reiter „Verwaltung") vor.
+    </div>`;
+  }
+  const vpKatalog = SICHERHEIT_NORM_FIXPOSITIONEN.find((k) => k.bezeichnung.includes(kennzeichnungGerPpmCode(kv)));
+  const bdaKatalog = SICHERHEIT_NORM_FIXPOSITIONEN.find((k) => k.id === "fix-bda");
+  const aktuelleSumme = [vpKatalog, bdaKatalog]
+    .filter(Boolean)
+    .map((k) => kv.positionen.find((p) => p.aktiv && normalisiere(p.bezeichnung) === normalisiere(k.bezeichnung)))
+    .filter(Boolean)
+    .reduce((summe, p) => summe + (Number(p.kosten) || 0), 0);
+  const summeStimmt = Math.abs(aktuelleSumme - Number(eintrag.preisVpKennzeichnung)) < 0.01;
+  return `<div class="trivial-paketpreis-hinweis">
+    <strong>Trivialartikel-Paketpreis</strong> (${grund}, Warengruppe alt „${escapeHtml(eintrag.code)}"):
+    VP &amp; Kennzeichnung <strong>${Number(eintrag.preisVpKennzeichnung).toFixed(2)} €</strong> als Summe für
+    „Kennzeichnung (Verpackung &amp; Produkt)" + „Kennzeichnung (Bedienungsanleitung)". Weitere Preise der
+    Preisliste (Chemie, LFGB-Stichprobe, Gesamt, Add Sortierung) betreffen den chemischen Teil und sind
+    aktuell nicht relevant.
+    ${summeStimmt ? `<span class="badge ja">✓ übernommen</span>` : `<button type="button" class="ghost small" data-action="trivialpreis-anwenden">Paketpreis übernehmen</button>`}
+  </div>`;
+}
+
 /* Rabattfaktor auf die kombinierten Sicherheit&Norm-Kosten je nach Artikelkategorie des verknüpften
    PA - nachgebaut aus Auswahl_LIDL (Preisliste_Hilfe_claude.xlsm): Gesamtkosten = SUMME(Kosten VP
    je Setbestandteil) * (Grün:0,3 | Gelb:0,5 | sonst:0,7). Das Original vergleicht die Artikelkategorie
@@ -4460,10 +4535,13 @@ function renderKvPruefumfangUebersicht(kv, pa) {
       ? `<p class="hinweis"><strong>Markenreferenz (aus PA):</strong> ${escapeHtml(markenreferenz)}</p>`
       : "";
 
+    const trivialPaketpreisHtml = kat.id === "sicherheitNorm" ? trivialPaketpreisBannerHtml(kv, pa) : "";
+
     return `<div class="pruefumfang-kat">
       <div class="pruefumfang-kat-kopf"><strong>${escapeHtml(kat.anzeigeName)}</strong> ${badge} ${alleVorschlaegeButton}</div>
       <p class="hinweis">${escapeHtml(kat.beschreibung)}</p>
       ${zusatzHinweis}
+      ${trivialPaketpreisHtml}
       ${positionenHtml}
     </div>`;
   }).join("");
@@ -4500,6 +4578,17 @@ function initialisierePruefumfangUebersicht(panel, kv, pa) {
       speichereInLocalStorage();
       renderKvDetail();
       zeigeStatus(hinzugefuegt ? `${hinzugefuegt} Position(en) übernommen · ${jetzt()}` : "Alle Vorschläge waren bereits im KV", "ok");
+    });
+  });
+  panel.querySelectorAll('[data-action="trivialpreis-anwenden"]').forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (wendeTrivialPaketpreisAn(kv)) {
+        speichereInLocalStorage();
+        renderKvDetail();
+        zeigeStatus("Trivialartikel-Paketpreis übernommen · " + jetzt(), "ok");
+      } else {
+        alert("Paketpreis konnte nicht übernommen werden.");
+      }
     });
   });
   const produktspeziSuche = panel.querySelector("#produktspezi-suche");
@@ -5927,23 +6016,22 @@ function renderTrivialpreislisteVerwaltung() {
   container.innerHTML = `
     <table class="tabelle">
       <thead><tr>
-        <th style="width:9%">Code (alt)</th><th style="width:20%">Bezeichnung (DE)</th><th style="width:20%">Bezeichnung (EN)</th>
-        <th style="width:10%">Chemie ≥4 Risiko&shy;parameter €</th><th style="width:10%">VP &amp; Kennzeichnung €</th>
-        <th style="width:10%">LFGB Stichprobe €</th><th style="width:10%">Gesamtpreis €</th><th style="width:8%">Add Sortierung €</th>
+        <th style="width:11%">Code (alt)</th><th style="width:28%">Bezeichnung</th>
+        <th style="width:12%">Chemie ≥4 Risiko&shy;parameter €</th><th style="width:12%">VP &amp; Kennzeichnung €</th>
+        <th style="width:12%">LFGB Stichprobe €</th><th style="width:12%">Gesamtpreis €</th><th style="width:10%">Add Sortierung €</th>
         <th style="width:3%">Aktion</th>
       </tr></thead>
       <tbody>${zeilen.length ? zeilen.map((z) => `
         <tr data-code="${escapeHtml(z.code)}">
           <td><input type="text" data-feld="code" value="${escapeHtml(z.code)}"></td>
           <td><input type="text" data-feld="bezeichnungDe" value="${escapeHtml(z.bezeichnungDe)}"></td>
-          <td><input type="text" data-feld="bezeichnungEn" value="${escapeHtml(z.bezeichnungEn)}"></td>
           <td><input type="number" data-feld="preisChemie" value="${zahlOderLeer(z.preisChemie)}"></td>
           <td><input type="number" data-feld="preisVpKennzeichnung" value="${zahlOderLeer(z.preisVpKennzeichnung)}"></td>
           <td><input type="number" data-feld="preisLfgbStichprobe" value="${zahlOderLeer(z.preisLfgbStichprobe)}"></td>
           <td><input type="number" data-feld="preisGesamt" value="${zahlOderLeer(z.preisGesamt)}"></td>
           <td><input type="number" data-feld="preisAddSortierung" value="${zahlOderLeer(z.preisAddSortierung)}"></td>
           <td class="zeile-aktionen"><button type="button" class="danger small" data-action="trivialpreis-loeschen">🗑</button></td>
-        </tr>`).join("") : `<tr><td colspan="9" class="leerzustand">Noch keine Einträge.</td></tr>`}
+        </tr>`).join("") : `<tr><td colspan="8" class="leerzustand">Noch keine Einträge.</td></tr>`}
       </tbody>
     </table>`;
   renderPaginierung("trivialpreisliste-paginierung", "trivialpreisliste", { seiten, seite, gesamt });
@@ -5982,7 +6070,6 @@ function renderTrivialpreislisteVerwaltung() {
 document.getElementById("trivialpreisliste-hinzufuegen-btn").addEventListener("click", () => {
   const codeInp = document.getElementById("trivialpreisliste-neu-code-input");
   const deInp = document.getElementById("trivialpreisliste-neu-bezeichnungde-input");
-  const enInp = document.getElementById("trivialpreisliste-neu-bezeichnungen-input");
   const chemieInp = document.getElementById("trivialpreisliste-neu-chemie-input");
   const vpInp = document.getElementById("trivialpreisliste-neu-vp-input");
   const lfgbInp = document.getElementById("trivialpreisliste-neu-lfgb-input");
@@ -5997,14 +6084,13 @@ document.getElementById("trivialpreisliste-hinzufuegen-btn").addEventListener("c
   data.trivialPreisliste.push({
     code,
     bezeichnungDe: deInp.value.trim(),
-    bezeichnungEn: enInp.value.trim(),
     preisChemie: chemieInp.value === "" ? "" : Number(chemieInp.value),
     preisVpKennzeichnung: vpInp.value === "" ? "" : Number(vpInp.value),
     preisLfgbStichprobe: lfgbInp.value === "" ? "" : Number(lfgbInp.value),
     preisGesamt: gesamtInp.value === "" ? "" : Number(gesamtInp.value),
     preisAddSortierung: addInp.value === "" ? "" : Number(addInp.value)
   });
-  [codeInp, deInp, enInp, chemieInp, vpInp, lfgbInp, gesamtInp, addInp].forEach((inp) => { inp.value = ""; });
+  [codeInp, deInp, chemieInp, vpInp, lfgbInp, gesamtInp, addInp].forEach((inp) => { inp.value = ""; });
   speichereInLocalStorage();
   renderVerwaltungTab();
   zeigeStatus(`Trivialartikel-Preisliste „${code}" angelegt · ` + jetzt(), "ok");
