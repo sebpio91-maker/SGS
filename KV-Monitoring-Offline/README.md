@@ -645,34 +645,39 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   erscheint dort „(gelöschte Norm)" statt der Bezeichnung — die Referenz
   bleibt technisch bestehen, sollte aber in der Prüfgrundlage entfernt oder
   ersetzt werden.
-- **Verwaltung** – Pflege von drei Stammdaten-Listen:
+- **Verwaltung** – Pflege von zwei Stammdaten-Listen:
   - **Bereiche** – Dropdown-Quelle im Reiter „Prüfgrundlagen". Neue Werte
     anlegen, bestehende umbenennen (aktualisiert automatisch alle
     Prüfgrundlagen, die den bisherigen Wert verwenden) oder löschen (mit
     Warnhinweis, falls der Wert noch verwendet wird); die Anzahl der
     Verwendungen steht neben jedem Eintrag.
-  - **Warengruppen** – Dropdown-Quelle sowohl im Reiter „Prüfgrundlagen" als
-    auch bei „Warengruppe (neu)" im Kostenvoranschlag, mit zwei Feldern je
-    Eintrag (Code und Name). Ändern von Code oder Name aktualisiert
-    automatisch alle Prüfgrundlagen und Kostenvoranschläge mit dem
-    bisherigen Code; Löschen warnt ebenfalls bei noch bestehender
-    Verwendung. Ersetzt die bisher rein aus den Prüfgrundlagen-Startdaten
-    abgeleitete, nicht editierbare Liste (siehe unten) — die 64 Startwerte
-    sind hier jetzt frei pflegbar, bis die offizielle Warengruppen-Liste
-    geliefert wird. Wird im PA eine noch unbekannte Warengruppe gelesen und
+  - **Warengruppen** – eine gemeinsame Liste aus Warengruppen-Stammdaten
+    (Code + Bezeichnung) und der Neu-↔-Alt-Zuordnung (drittes Feld
+    „Warengruppe alt"), damit die Verlinkung zwischen neuer und alter
+    Warengruppe direkt hier sichtbar und editierbar ist, statt in zwei
+    getrennten Listen. Code + Bezeichnung speisen die Dropdowns im Reiter
+    „Prüfgrundlagen" und bei „Warengruppe (neu)" im Kostenvoranschlag;
+    Ändern von Code oder Bezeichnung aktualisiert automatisch alle
+    Prüfgrundlagen und Kostenvoranschläge mit dem bisherigen Code. Ändern
+    von „Warengruppe alt" befüllt automatisch „Warengruppe (alt)" im
+    Kostenvoranschlag (nur wenn dort noch leer). Ein Code kann auch nur in
+    einer der beiden Quellen vorkommen — die meisten der 341 offiziellen
+    Zuordnungs-Codes (siehe unten) haben noch keine eigene Bezeichnung,
+    solange sie in keiner Prüfgrundlage/keinem KV verwendet wurden; solche
+    Zeilen zeigen die Bezeichnung als „– noch keine Bezeichnung –" statt
+    den Code doppelt (einmal als Code, einmal als Platzhalter-Bezeichnung)
+    anzuzeigen. Wird im PA eine noch unbekannte Warengruppe gelesen und
     automatisch in einen KV übernommen, landet sie ebenfalls automatisch
-    hier als Platzhalter-Eintrag (Code = Name), statt das Dropdown mit
-    einem unbekannten Wert leer zu lassen.
-  - **Warengruppen-Zuordnung (Neu → Alt)** – ordnet einer neuen Warengruppe
-    (Code) den passenden Alt-Wert zu; sobald hier ein Eintrag existiert,
-    befüllt er automatisch „Warengruppe (alt)" im Kostenvoranschlag (nur
-    wenn dort noch leer). Ist mit der vollständigen offiziellen
+    hier als Zeile (zunächst ohne eigene Bezeichnung), statt das Dropdown
+    mit einem unbekannten Wert leer zu lassen. Löschen entfernt sowohl den
+    Stammdaten- als auch den Zuordnungs-Eintrag für diesen Code und warnt
+    bei noch bestehender Verwendung in Prüfgrundlagen. Die Neu-↔-Alt-
+    Zuordnung selbst ist mit der vollständigen offiziellen
     ADMIN-Blatt-Zuordnungstabelle vorbelegt (341 eindeutige Neu-Codes; eine
     Handvoll Codes kam in der Rohliste mit mehreren unterschiedlichen
     Alt-Codes vor — dort zählt der jeweils zuerst genannte, von Hand hier
     korrigierbar; ein Eintrag ohne gültigen Alt-Code wurde beim Einlesen
-    übersprungen). Einzelne Zeilen lassen sich jederzeit von Hand anlegen,
-    bearbeiten oder löschen.
+    übersprungen).
   - **Gefahrenzone** – löscht **Arbeitsvorrat, Prüfaufträge und
     Kostenvoranschläge** unwiderruflich (zwei Sicherheitsabfragen), z. B. um
     nach dem Testen sauber mit echten Daten neu zu starten.
@@ -740,8 +745,8 @@ Prüfgrundlagen/Kostenvoranschlag (aktuell ein 64-Einträge-Startbestand aus
 den bereits genutzten Warengruppen). Die Warengruppen-Liste selbst lässt
 sich direkt im Reiter „Verwaltung" pflegen (siehe oben) — die offizielle
 Liste könnte dort bei Bedarf auch komplett von Hand nachgetragen werden. Für
-die reine **Neu→Alt-Zuordnung** (unabhängig von der Warengruppen-Liste,
-Tabelle „Warengruppen-Zuordnung (Neu → Alt)") liegt die vollständige
+die reine **Neu→Alt-Zuordnung** (das Feld „Warengruppe alt" in derselben
+Verwaltungsliste, unabhängig von Code/Bezeichnung) liegt die vollständige
 ADMIN-Blatt-Liste dagegen bereits als Startbestand vor (siehe oben) und
 befüllt „Warengruppe (alt)" im Kostenvoranschlag automatisch.
 

@@ -188,6 +188,7 @@ tr.klickbar:hover td { background:#faf9f6; }
 .verwaltung-zeile:last-child { border-bottom:none; }
 .verwaltung-zeile input[type="text"] { flex:1; font-family:inherit; font-size:0.88rem; padding:0.35rem 0.5rem; border:1px solid var(--border); border-radius:6px; }
 .verwaltung-zeile input.code-feld { flex:0 0 140px; }
+.verwaltung-zeile input.alt-feld { flex:0 0 140px; }
 
 .anwendungsbereich-item { border:1px solid var(--border); border-radius:6px; padding:0.5rem 0.6rem; margin-bottom:0.5rem; }
 .anwendungsbereich-kopf { display:flex; gap:0.4rem; margin-bottom:0.35rem; }
@@ -363,30 +364,22 @@ input[type=file] { display:none; }
       <button type="button" id="bereich-hinzufuegen-btn">+ Hinzufügen</button>
     </div>
   </div>
-  <div class="card" style="max-width:720px">
+  <div class="card" style="max-width:900px">
     <h2 style="margin-top:0">Warengruppen</h2>
-    <p class="hinweis">Diese Liste speist das Warengruppen-Dropdown in den Reitern
+    <p class="hinweis">Code und Bezeichnung speisen das Warengruppen-Dropdown in den Reitern
       „Prüfgrundlagen" und „Kostenvoranschläge" (dort als „Warengruppe (neu)") — hier anlegen,
-      umbenennen oder löschen. Ändern von Code oder Name aktualisiert automatisch alle
-      Prüfgrundlagen und Kostenvoranschläge mit dem bisherigen Code.</p>
+      umbenennen oder löschen. Ändern von Code oder Bezeichnung aktualisiert automatisch alle
+      Prüfgrundlagen und Kostenvoranschläge mit dem bisherigen Code. „Warengruppe (alt)" ordnet
+      dem Code den passenden Alt-Wert zu (offizielle ADMIN-Blatt-Liste als Startbestand) — sobald
+      hier ein Eintrag existiert, wird „Warengruppe (alt)" im Kostenvoranschlag automatisch daraus
+      befüllt (nur wenn dort noch leer). Zeilen ohne eigene Bezeichnung (Code wurde automatisch als
+      Platzhalter übernommen) zeigen die Bezeichnung als „– noch keine Bezeichnung –".</p>
     <div id="warengruppen-liste"></div>
     <div class="toolbar-zeile" style="margin-top:0.6rem">
-      <input type="text" id="warengruppe-neu-code-input" placeholder="Code (z. B. 250.045)" style="width:160px;font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px">
-      <input type="text" id="warengruppe-neu-name-input" placeholder="Name…" style="flex:1;font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px">
+      <input type="text" id="warengruppe-neu-code-input" placeholder="Code (z. B. 250.045)" style="width:140px;font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px">
+      <input type="text" id="warengruppe-neu-name-input" placeholder="Bezeichnung (optional)" style="flex:1;font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px">
+      <input type="text" id="warengruppe-neu-alt-input" placeholder="Warengruppe alt (optional)" style="width:160px;font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px">
       <button type="button" id="warengruppe-hinzufuegen-btn">+ Hinzufügen</button>
-    </div>
-  </div>
-  <div class="card" style="max-width:720px">
-    <h2 style="margin-top:0">Warengruppen-Zuordnung (Neu → Alt)</h2>
-    <p class="hinweis">Ordnet einer neuen Warengruppe (Code) den passenden Alt-Wert zu — sobald
-      hier ein Eintrag existiert, wird „Warengruppe (alt)" im Kostenvoranschlag automatisch daraus
-      befüllt (nur wenn dort noch leer). Noch ohne Startdaten; die vollständige Zuordnungstabelle
-      lässt sich hier nach und nach eintragen.</p>
-    <div id="warengruppen-zuordnung-liste"></div>
-    <div class="toolbar-zeile" style="margin-top:0.6rem">
-      <input type="text" id="wgz-neu-neu-input" placeholder="Warengruppe neu (Code)…" style="width:200px;font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px">
-      <input type="text" id="wgz-neu-alt-input" placeholder="Warengruppe alt…" style="flex:1;font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px">
-      <button type="button" id="wgz-hinzufuegen-btn">+ Hinzufügen</button>
     </div>
   </div>
   <div class="card" style="max-width:720px;border-color:#d98a8a">
@@ -4655,7 +4648,6 @@ function renderNormenTab() { renderNormenListe(); renderNormDetail(); }
 function renderVerwaltungTab() {
   renderBereicheVerwaltung();
   renderWarengruppenVerwaltung();
-  renderWarengruppenZuordnungVerwaltung();
 }
 
 function renderBereicheVerwaltung() {
@@ -4720,60 +4712,111 @@ document.getElementById("bereich-hinzufuegen-btn").addEventListener("click", () 
   zeigeStatus(`Bereich „${wert}" angelegt · ` + jetzt(), "ok");
 });
 
+/* Vereinigt Warengruppen-Stammdaten (Code+Bezeichnung, data.warengruppen) und die Neu->Alt-
+   Zuordnung (data.warengruppenZuordnung) zu EINER Zeile pro Code, damit die Verlinkung zwischen
+   neuer und alter Warengruppe direkt hier sichtbar/editierbar ist, statt in zwei getrennten,
+   redundant wirkenden Listen. Ein Code kann nur in einer der beiden Quellen vorkommen (z. B. die
+   meisten der 341 offiziellen Zuordnungs-Codes haben noch keine eigene Warengruppen-Stammdaten-
+   Zeile, solange sie in keiner Prüfgrundlage/keinem KV verwendet wurden) - in dem Fall bleiben
+   Bezeichnung bzw. Alt-Wert für diese Zeile leer, bis von Hand nachgetragen. */
+function vereinigteWarengruppenzeilen() {
+  const codes = new Map();
+  data.warengruppen.forEach((w) => codes.set(normalisiereWarengruppe(w.code), w.code));
+  data.warengruppenZuordnung.forEach((z) => { if (!codes.has(normalisiereWarengruppe(z.neu))) codes.set(normalisiereWarengruppe(z.neu), z.neu); });
+  return [...codes.entries()].map(([norm, code]) => {
+    const w = data.warengruppen.find((x) => normalisiereWarengruppe(x.code) === norm);
+    const z = data.warengruppenZuordnung.find((x) => normalisiereWarengruppe(x.neu) === norm);
+    const platzhalter = !!w && normalisiere(w.name) === normalisiere(w.code);
+    return { norm, code, name: w && !platzhalter ? w.name : "", alt: z ? z.alt : "" };
+  }).sort((a, b) => a.code.localeCompare(b.code, "de", { numeric: true }));
+}
+
 function renderWarengruppenVerwaltung() {
   const liste = document.getElementById("warengruppen-liste");
   if (!liste) return;
-  const sortiert = [...data.warengruppen].sort((a, b) => a.code.localeCompare(b.code));
-  liste.innerHTML = sortiert.length
-    ? sortiert.map((w, i) => `
-      <div class="verwaltung-zeile" data-code-alt="${escapeHtml(w.code)}">
-        <input type="text" class="code-feld" value="${escapeHtml(w.code)}" data-feld="code" data-alt="${escapeHtml(w.code)}">
-        <input type="text" value="${escapeHtml(w.name)}" data-feld="name" data-alt="${escapeHtml(w.name)}">
-        <span class="muted" style="font-size:0.78rem;white-space:nowrap">${data.pruefgrundlagen.filter((e) => normalisiereWarengruppe(e.warengruppeCode) === normalisiereWarengruppe(w.code)).length}×</span>
+  const zeilen = vereinigteWarengruppenzeilen();
+  liste.innerHTML = zeilen.length
+    ? zeilen.map((z) => `
+      <div class="verwaltung-zeile" data-code-alt="${escapeHtml(z.code)}">
+        <input type="text" class="code-feld" value="${escapeHtml(z.code)}" data-feld="code" data-alt="${escapeHtml(z.code)}">
+        <input type="text" value="${escapeHtml(z.name)}" data-feld="name" data-alt="${escapeHtml(z.name)}" placeholder="– noch keine Bezeichnung –">
+        <input type="text" class="alt-feld" value="${escapeHtml(z.alt)}" data-feld="alt" data-alt="${escapeHtml(z.alt)}" placeholder="Warengruppe alt">
+        <span class="muted" style="font-size:0.78rem;white-space:nowrap">${data.pruefgrundlagen.filter((e) => normalisiereWarengruppe(e.warengruppeCode) === z.norm).length}×</span>
         <button type="button" class="danger small" data-action="warengruppe-loeschen">Löschen</button>
       </div>`).join("")
     : `<p class="muted">Noch keine Warengruppen angelegt.</p>`;
 
   liste.querySelectorAll(".verwaltung-zeile").forEach((zeile) => {
     const alterCode = zeile.dataset.codeAlt;
+    const norm = normalisiereWarengruppe(alterCode);
     zeile.querySelectorAll("input[type=\"text\"]").forEach((inp) => {
       inp.addEventListener("change", () => {
-        const eintrag = data.warengruppen.find((w) => normalisiereWarengruppe(w.code) === normalisiereWarengruppe(alterCode));
-        if (!eintrag) return;
-        const neu = inp.value.trim();
-        if (!neu) { inp.value = inp.dataset.alt; return; }
-        if (neu === inp.dataset.alt) return;
-        if (inp.dataset.feld === "code" && data.warengruppen.some((w) => w !== eintrag && normalisiereWarengruppe(w.code) === normalisiereWarengruppe(neu))) {
-          alert(`Warengruppen-Code „${neu}" existiert bereits.`);
+        const wert = inp.value.trim();
+        if (wert === inp.dataset.alt) return;
+
+        if (inp.dataset.feld === "alt") {
+          const zEintrag = data.warengruppenZuordnung.find((x) => normalisiereWarengruppe(x.neu) === norm);
+          if (!wert) {
+            if (zEintrag) data.warengruppenZuordnung = data.warengruppenZuordnung.filter((x) => x !== zEintrag);
+          } else if (zEintrag) {
+            zEintrag.alt = wert;
+          } else {
+            data.warengruppenZuordnung.push({ neu: alterCode, alt: wert });
+          }
+          speichereInLocalStorage();
+          renderVerwaltungTab();
+          zeigeStatus(`Warengruppe (alt) für „${alterCode}" aktualisiert · ` + jetzt(), "ok");
+          return;
+        }
+
+        if (!wert) { inp.value = inp.dataset.alt; return; }
+        const wertNorm = normalisiereWarengruppe(wert);
+        if (data.warengruppen.some((w) => normalisiereWarengruppe(w.code) !== norm && normalisiereWarengruppe(w.code) === wertNorm)
+          || data.warengruppenZuordnung.some((z) => normalisiereWarengruppe(z.neu) !== norm && normalisiereWarengruppe(z.neu) === wertNorm)) {
+          alert(`Warengruppen-Code „${wert}" existiert bereits.`);
           inp.value = inp.dataset.alt;
           return;
         }
-        const alterCodeFuerKaskade = eintrag.code;
-        eintrag[inp.dataset.feld] = neu;
-        data.pruefgrundlagen.forEach((e) => {
-          if (normalisiereWarengruppe(e.warengruppeCode) === normalisiereWarengruppe(alterCodeFuerKaskade)) {
-            e.warengruppeCode = eintrag.code;
-            e.warengruppeName = eintrag.name;
+
+        let eintrag = data.warengruppen.find((w) => normalisiereWarengruppe(w.code) === norm);
+        const zEintrag = data.warengruppenZuordnung.find((x) => normalisiereWarengruppe(x.neu) === norm);
+
+        if (inp.dataset.feld === "code") {
+          if (eintrag) {
+            eintrag.code = wert;
+            data.pruefgrundlagen.forEach((e) => {
+              if (normalisiereWarengruppe(e.warengruppeCode) === norm) { e.warengruppeCode = wert; e.warengruppeName = eintrag.name; }
+            });
           }
-        });
+          if (zEintrag) zEintrag.neu = wert;
+        } else if (!eintrag) {
+          data.warengruppen.push({ code: alterCode, name: wert });
+        } else {
+          eintrag.name = wert;
+          data.pruefgrundlagen.forEach((e) => {
+            if (normalisiereWarengruppe(e.warengruppeCode) === norm) e.warengruppeName = wert;
+          });
+        }
         speichereInLocalStorage();
         renderVerwaltungTab();
-        zeigeStatus(`Warengruppe „${alterCodeFuerKaskade}" aktualisiert · ` + jetzt(), "ok");
+        zeigeStatus(`Warengruppe „${alterCode}" aktualisiert · ` + jetzt(), "ok");
       });
     });
   });
   liste.querySelectorAll('[data-action="warengruppe-loeschen"]').forEach((btn) => {
     btn.addEventListener("click", () => {
       const alterCode = btn.closest(".verwaltung-zeile").dataset.codeAlt;
-      const eintrag = data.warengruppen.find((w) => normalisiereWarengruppe(w.code) === normalisiereWarengruppe(alterCode));
-      if (!eintrag) return;
-      const anzahl = data.pruefgrundlagen.filter((e) => normalisiereWarengruppe(e.warengruppeCode) === normalisiereWarengruppe(eintrag.code)).length;
+      const norm = normalisiereWarengruppe(alterCode);
+      const eintrag = data.warengruppen.find((w) => normalisiereWarengruppe(w.code) === norm);
+      const zEintrag = data.warengruppenZuordnung.find((x) => normalisiereWarengruppe(x.neu) === norm);
+      const anzahl = data.pruefgrundlagen.filter((e) => normalisiereWarengruppe(e.warengruppeCode) === norm).length;
       const hinweis = anzahl ? ` (aktuell von ${anzahl} Prüfgrundlage${anzahl === 1 ? "" : "n"} verwendet)` : "";
-      if (!confirm(`Warengruppe „${eintrag.code} ${eintrag.name}" wirklich löschen${hinweis}?`)) return;
-      data.warengruppen = data.warengruppen.filter((w) => w !== eintrag);
+      if (!confirm(`Warengruppe „${alterCode}" (inkl. Zuordnung „alt") wirklich löschen${hinweis}?`)) return;
+      if (eintrag) data.warengruppen = data.warengruppen.filter((w) => w !== eintrag);
+      if (zEintrag) data.warengruppenZuordnung = data.warengruppenZuordnung.filter((x) => x !== zEintrag);
       speichereInLocalStorage();
       renderVerwaltungTab();
-      zeigeStatus(`Warengruppe „${eintrag.code}" gelöscht · ` + jetzt(), "ok");
+      zeigeStatus(`Warengruppe „${alterCode}" gelöscht · ` + jetzt(), "ok");
     });
   });
 }
@@ -4781,75 +4824,24 @@ function renderWarengruppenVerwaltung() {
 document.getElementById("warengruppe-hinzufuegen-btn").addEventListener("click", () => {
   const codeInp = document.getElementById("warengruppe-neu-code-input");
   const nameInp = document.getElementById("warengruppe-neu-name-input");
+  const altInp = document.getElementById("warengruppe-neu-alt-input");
   const code = codeInp.value.trim();
   const name = nameInp.value.trim();
-  if (!code || !name) { alert("Bitte Code und Name angeben."); return; }
-  if (data.warengruppen.some((w) => normalisiereWarengruppe(w.code) === normalisiereWarengruppe(code))) {
-    alert(`Warengruppen-Code „${code}" existiert bereits.`);
+  const alt = altInp.value.trim();
+  if (!code) { alert("Bitte einen Code angeben."); return; }
+  const norm = normalisiereWarengruppe(code);
+  if (data.warengruppen.some((w) => normalisiereWarengruppe(w.code) === norm) || data.warengruppenZuordnung.some((z) => normalisiereWarengruppe(z.neu) === norm)) {
+    alert(`Warengruppen-Code „${code}" existiert bereits — bitte die vorhandene Zeile bearbeiten.`);
     return;
   }
-  data.warengruppen.push({ code, name });
+  data.warengruppen.push({ code, name: name || code });
+  if (alt) data.warengruppenZuordnung.push({ neu: code, alt });
   codeInp.value = "";
   nameInp.value = "";
+  altInp.value = "";
   speichereInLocalStorage();
   renderVerwaltungTab();
   zeigeStatus(`Warengruppe „${code}" angelegt · ` + jetzt(), "ok");
-});
-
-function renderWarengruppenZuordnungVerwaltung() {
-  const liste = document.getElementById("warengruppen-zuordnung-liste");
-  if (!liste) return;
-  liste.innerHTML = data.warengruppenZuordnung.length
-    ? data.warengruppenZuordnung.map((z, i) => `
-      <div class="verwaltung-zeile" data-idx="${i}">
-        <input type="text" class="code-feld" value="${escapeHtml(z.neu)}" data-feld="neu" data-alt="${escapeHtml(z.neu)}" placeholder="Warengruppe neu">
-        <input type="text" value="${escapeHtml(z.alt)}" data-feld="alt" data-alt="${escapeHtml(z.alt)}" placeholder="Warengruppe alt">
-        <button type="button" class="danger small" data-action="wgz-loeschen">Löschen</button>
-      </div>`).join("")
-    : `<p class="muted">Noch keine Zuordnungen angelegt.</p>`;
-
-  liste.querySelectorAll(".verwaltung-zeile").forEach((zeile) => {
-    const idx = Number(zeile.dataset.idx);
-    zeile.querySelectorAll("input[type=\"text\"]").forEach((inp) => {
-      inp.addEventListener("change", () => {
-        const neu = inp.value.trim();
-        if (neu === inp.dataset.alt) return;
-        data.warengruppenZuordnung[idx][inp.dataset.feld] = neu;
-        speichereInLocalStorage();
-        renderWarengruppenZuordnungVerwaltung();
-        zeigeStatus("Warengruppen-Zuordnung aktualisiert · " + jetzt(), "ok");
-      });
-    });
-  });
-  liste.querySelectorAll('[data-action="wgz-loeschen"]').forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const idx = Number(btn.closest(".verwaltung-zeile").dataset.idx);
-      const z = data.warengruppenZuordnung[idx];
-      if (!confirm(`Zuordnung „${z.neu} → ${z.alt}" wirklich löschen?`)) return;
-      data.warengruppenZuordnung.splice(idx, 1);
-      speichereInLocalStorage();
-      renderWarengruppenZuordnungVerwaltung();
-      zeigeStatus("Zuordnung gelöscht · " + jetzt(), "ok");
-    });
-  });
-}
-
-document.getElementById("wgz-hinzufuegen-btn").addEventListener("click", () => {
-  const neuInp = document.getElementById("wgz-neu-neu-input");
-  const altInp = document.getElementById("wgz-neu-alt-input");
-  const neu = neuInp.value.trim();
-  const alt = altInp.value.trim();
-  if (!neu || !alt) { alert("Bitte Warengruppe neu und Warengruppe alt angeben."); return; }
-  if (data.warengruppenZuordnung.some((z) => normalisiereWarengruppe(z.neu) === normalisiereWarengruppe(neu))) {
-    alert(`Für Warengruppe „${neu}" existiert bereits eine Zuordnung.`);
-    return;
-  }
-  data.warengruppenZuordnung.push({ neu, alt });
-  neuInp.value = "";
-  altInp.value = "";
-  speichereInLocalStorage();
-  renderWarengruppenZuordnungVerwaltung();
-  zeigeStatus(`Zuordnung „${neu} → ${alt}" angelegt · ` + jetzt(), "ok");
 });
 
 /* Löscht Arbeitsvorrat/Prüfaufträge/Kostenvoranschläge, lässt Prüfgrundlagen und Normen (sowie die
