@@ -660,6 +660,24 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   erscheint dort „(gelöschte Norm)" statt der Bezeichnung — die Referenz
   bleibt technisch bestehen, sollte aber in der Prüfgrundlage entfernt oder
   ersetzt werden.
+- **MAK (Materialanforderungskatalog)** – schreibgeschützte Referenzliste
+  (193 Zeilen, Spalten ID/Kategorie/Bereich/Parameter/Anforderung/Norm-EU/
+  Norm-US/Mindest-Prüfnachweis aus der offiziellen Vorlage), im gleichen
+  Listen-/Detail-Layout wie der Reiter „Normen". Die Detailansicht zeigt je
+  Eintrag Anforderung, Norm/Standard EU, Norm/Standard US (AATCC/ASTM) und
+  Mindest-Prüfnachweis vollständig (mehrzeilig, mit Zeilenumbrüchen wie in
+  der Originaltabelle). Eine **übergeordnete Textsuche** (durchsucht alle
+  Felder, synchron mit der allgemeinen Suche oben im Header wie beim
+  Normen-Tab) lässt sich mit zwei weiteren Filtern kombinieren: einem
+  **Kategorie-Dropdown** (die acht Kategorien der Liste, z. B. „Akku",
+  „Textilphysik") und einem **ID-Textfilter** (Teilstring-Suche, z. B. „TX00"
+  oder „BA"). Alle drei Filter wirken gemeinsam. Bei „Kategorie" und
+  „Mindest-Prüfnachweis" wurde die englische Übersetzung aus der Original-
+  Vorlage (jeweils nach einem „/") entfernt; in den übrigen Spalten ist „/"
+  auch regulärer Bestandteil des deutschen Texts bzw. Trennzeichen zwischen
+  mehreren Normen/Werten (z. B. „2100 mAh / 2400 mAh", „DIN EN ISO 105/X12")
+  und bleibt daher unverändert. CSV-Export wie bei den anderen Reitern
+  verfügbar (exportiert die aktuell gefilterte Liste).
 - **Verwaltung** – **vier umschaltbare Ansichten** (Pillen oben im Reiter:
   „Bereiche" / „Warengruppen" / „Trivialartikel-Preisliste" / „Gefahrenzone"),
   von denen jeweils nur eine gleichzeitig sichtbar ist — analog zum
