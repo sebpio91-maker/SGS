@@ -2666,6 +2666,29 @@ function mechanikKostenBearbeitenHtml(pgId, feld, refs) {
   return `<button type="button" class="ghost small" data-action="mechanik-kosten-in-pg-bearbeiten" data-pg-id="${escapeHtml(pgId)}">→ Kosten in der Prüfgrundlage bearbeiten</button>`;
 }
 
+/* Anwendungsbereich-Auswahl (z. B. Camping-/Wohn-/Objektbereich bei DIN EN 581-2) passiert bewusst
+   erst hier, beim tatsächlichen Hinzufügen einer Norm-Position zu einem konkreten KV - nicht mehr
+   an der (über viele Projekte geteilten) Prüfgrundlage/Norm-Referenz, wo zum Zeitpunkt der
+   Referenzierung noch kein konkretes Projekt feststeht. Die Auswahl gilt dadurch automatisch nur
+   für diesen einen KV: sie fließt direkt in die Bezeichnung der neu angelegten Position ein (analog
+   zur Style-Zuordnung), nicht in eine geteilte Datenstruktur. Bei mehreren referenzierten Normen
+   zählt - wie bei SAP-Code/Kosten - die erste mit hinterlegten Anwendungsbereichen. */
+function mechanikNormMitAnwendungsbereichen(refs) {
+  for (const r of (refs || [])) {
+    const norm = data.normen.find((n) => n.id === r.normId);
+    if (norm && (norm.anwendungsbereiche || []).length) return norm;
+  }
+  return null;
+}
+function mechanikAnwendungsbereichAuswahlHtml(refs) {
+  const norm = mechanikNormMitAnwendungsbereichen(refs);
+  if (!norm) return "";
+  return `<select class="mechanik-anwendungsbereich-auswahl" title="Anwendungsbereich (gilt nur für diesen KV)" style="font-family:inherit;font-size:0.82rem;padding:0.3rem 0.4rem;border:1px solid var(--border);border-radius:6px">
+      <option value="">— kein bestimmter Bereich —</option>
+      ${norm.anwendungsbereiche.map((b) => `<option value="${escapeHtml(b.id)}">${escapeHtml(b.name || "(ohne Namen)")}</option>`).join("")}
+    </select>`;
+}
+
 function renderMechanikEmpfehlungKarte(kv, pa) {
   kv.mechanikSetbestandteile = kv.mechanikSetbestandteile || [];
   const warengruppe = kv.warengruppeNeu || kv.warengruppeAlt;
@@ -2727,11 +2750,13 @@ function renderMechanikEmpfehlungKarte(kv, pa) {
             ${styleNamen.map((s) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("")}
           </select>`
         : "";
+      const anwendungsbereichAuswahlHtml = mechanikAnwendungsbereichAuswahlHtml(k.refs);
       return `<div class="pruefumfang-position pruefumfang-position-vorschlag mechanik-komponente" style="align-items:flex-start;flex-direction:column;gap:0.3rem">
         <span>${escapeHtml(bezeichnungBasis)} <span class="muted">(${kostenText})</span> <span class="badge ja">Vorschlag</span></span>
         ${mechanikKostenBearbeitenHtml(k.pgId, "normen", k.refs)}
         <div class="toolbar-zeile" style="width:100%">
           ${styleAuswahlHtml}
+          ${anwendungsbereichAuswahlHtml}
           <button type="button" class="ghost small" data-action="mechanik-komponente-hinzufuegen" data-bezeichnung-basis="${escapeHtml(bezeichnungBasis)}" data-kosten="${hatKosten ? kostenRabattiert : 0}" data-sapcode="${escapeHtml(k.sapCode || "")}">+ hinzufügen</button>
           <div class="spacer"></div>
           ${k.entfernbar ? `<button type="button" class="ghost small" data-action="setbestandteil-entfernen" data-id="${escapeHtml(k.id)}" title="Set-Bestandteil entfernen">✕ entfernen</button>` : ""}
@@ -2755,10 +2780,12 @@ function renderMechanikEmpfehlungKarte(kv, pa) {
       const schonDrin = kv.positionen.some((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere(z.kategorie) && normalisiere(p.bezeichnung) === normalisiere(bezeichnung));
       const hatKosten = z.kosten !== null && z.kosten !== undefined;
       const kostenText = hatKosten ? `${z.kosten} €` : "Preis auf Anfrage";
+      const anwendungsbereichAuswahlHtml = schonDrin ? "" : mechanikAnwendungsbereichAuswahlHtml(z.refs);
       return `<div class="pruefumfang-position pruefumfang-position-vorschlag" style="align-items:flex-start;flex-direction:column;gap:0.3rem">
         <span>${escapeHtml(bezeichnung)} <span class="muted">(${kostenText})</span> <span class="badge ja">Vorschlag</span></span>
         ${mechanikKostenBearbeitenHtml(mechanikEintragId(gewaehlt), z.feld, z.refs)}
         <div class="toolbar-zeile" style="width:100%">
+          ${anwendungsbereichAuswahlHtml}
           ${schonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="mechanik-position-hinzufuegen" data-kategorie="${escapeHtml(z.kategorie)}" data-bezeichnung="${escapeHtml(bezeichnung)}" data-kosten="${hatKosten ? z.kosten : 0}" data-kuerzel="${escapeHtml(z.kuerzel)}" data-sapcode="${escapeHtml(z.sapCode)}">+ hinzufügen</button>`}
         </div>
       </div>`;
@@ -2865,8 +2892,12 @@ function initialisiereMechanikEmpfehlungKarte(panel, kv) {
   });
   panel.querySelectorAll('[data-action="mechanik-position-hinzufuegen"]').forEach((btn) => {
     btn.addEventListener("click", () => {
+      const feld = btn.closest(".pruefumfang-position");
+      const bereichSelect = feld ? feld.querySelector(".mechanik-anwendungsbereich-auswahl") : null;
+      const bereichName = bereichSelect && bereichSelect.value ? bereichSelect.selectedOptions[0].textContent : "";
+      const bezeichnung = btn.dataset.bezeichnung + (bereichName ? ` [${bereichName}]` : "");
       kv.positionen.push({
-        id: neueId(), kategorie: btn.dataset.kategorie, bezeichnung: btn.dataset.bezeichnung, kuerzel: btn.dataset.kuerzel,
+        id: neueId(), kategorie: btn.dataset.kategorie, bezeichnung, kuerzel: btn.dataset.kuerzel,
         sapCode: btn.dataset.sapcode, kosten: Number(btn.dataset.kosten) || 0, anzahl: 1, aktiv: true
       });
       speichereInLocalStorage();
@@ -2878,10 +2909,12 @@ function initialisiereMechanikEmpfehlungKarte(panel, kv) {
       const feld = btn.closest(".mechanik-komponente");
       const stilSelect = feld ? feld.querySelector(".mechanik-komponente-stil") : null;
       const stil = stilSelect ? stilSelect.value : "";
-      const bezeichnung = btn.dataset.bezeichnungBasis + (stil ? ` (${stil})` : "");
+      const bereichSelect = feld ? feld.querySelector(".mechanik-anwendungsbereich-auswahl") : null;
+      const bereichName = bereichSelect && bereichSelect.value ? bereichSelect.selectedOptions[0].textContent : "";
+      const bezeichnung = btn.dataset.bezeichnungBasis + (stil ? ` (${stil})` : "") + (bereichName ? ` [${bereichName}]` : "");
       const kategorie = "Sicherheit & Norm / Sonder- & Funktionsparameter";
       const schonDrin = kv.positionen.some((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere(kategorie) && normalisiere(p.bezeichnung) === normalisiere(bezeichnung));
-      if (schonDrin) { zeigeStatus("Bereits im KV vorhanden (mit dieser Style-Zuordnung) · " + jetzt(), ""); return; }
+      if (schonDrin) { zeigeStatus("Bereits im KV vorhanden (mit dieser Style-/Anwendungsbereich-Zuordnung) · " + jetzt(), ""); return; }
       kv.positionen.push({
         id: neueId(), kategorie, bezeichnung,
         kuerzel: "MS", sapCode: btn.dataset.sapcode || "MECH_SICHERHEIT_TS", kosten: Number(btn.dataset.kosten) || 0, anzahl: 1, aktiv: true
@@ -3812,7 +3845,13 @@ function aktualisiereNormenSumme(container, feldName, refs) {
    Referenz - Bearbeiten hier schreibt daher sofort in die gemeinsame Normendatenbank (wie das
    Anlegen einer neuen Norm über "+ Neue Norm anlegen" auch schon sofort persistiert), nicht erst
    beim Speichern der Prüfgrundlage. Dadurch bleibt die Bemerkung konsistent, wenn dieselbe Norm in
-   mehreren Prüfgrundlagen verwendet wird. */
+   mehreren Prüfgrundlagen verwendet wird.
+   Bewusst KEINE Anwendungsbereich-Auswahl hier: eine Prüfgrundlage ist eine allgemeine, über viele
+   KVs hinweg wiederverwendete Warengruppe→Produkt-Zuordnung, zum Zeitpunkt der Referenzierung
+   steht also noch kein konkretes Projekt fest, für das ein bestimmter Anwendungsbereich gelten
+   würde. Die Auswahl passiert deshalb erst, wenn die Norm tatsächlich in einem KV verwendet wird
+   (siehe mechanikAnwendungsbereichAuswahlHtml in renderMechanikEmpfehlungKarte) - dort projekt-
+   spezifisch (nur für diesen einen KV), nicht mehr an der geteilten Prüfgrundlage/Norm-Referenz. */
 function renderNormenChips(container, entwurf, feldName) {
   const liste = container.querySelector(".norm-ref-liste");
   const refs = entwurf[feldName] || [];
@@ -3829,12 +3868,6 @@ function renderNormenChips(container, entwurf, feldName) {
             <label>Kosten €<input type="number" step="1" data-idx="${i}" data-rolle="kosten" value="${r.kosten === null || r.kosten === undefined ? "" : r.kosten}" placeholder="Anfrage"></label>
             <label><input type="checkbox" data-idx="${i}" data-rolle="anlehnung" ${r.inAnlehnungAn ? "checked" : ""}> in Anlehnung an</label>
           </div>
-          ${norm && (norm.anwendungsbereiche || []).length ? `<div class="norm-ref-zeile">
-            <label>Anwendungsbereich<select data-idx="${i}" data-rolle="anwendungsbereich">
-              <option value="">— kein bestimmter Bereich —</option>
-              ${norm.anwendungsbereiche.map((b) => `<option value="${escapeHtml(b.id)}" ${r.anwendungsbereichId === b.id ? "selected" : ""}>${escapeHtml(b.name || "(ohne Namen)")}</option>`).join("")}
-            </select></label>
-          </div>` : ""}
           <textarea data-normid="${escapeHtml(r.normId)}" data-rolle="bemerkung" rows="2" placeholder="Bemerkung zu dieser Norm/PPM (z. B. Anforderungen, Prüfhinweise)… - wird in der Normendatenbank gespeichert" ${norm ? "" : "disabled"}>${escapeHtml(norm ? norm.bemerkung || "" : "")}</textarea>
         </div>`;
       }).join("")
@@ -3850,9 +3883,6 @@ function renderNormenChips(container, entwurf, feldName) {
       refs[Number(inp.dataset.idx)].kosten = inp.value === "" ? null : Number(inp.value);
       aktualisiereNormenSumme(container, feldName, refs);
     });
-  });
-  liste.querySelectorAll('[data-rolle="anwendungsbereich"]').forEach((sel) => {
-    sel.addEventListener("change", () => { refs[Number(sel.dataset.idx)].anwendungsbereichId = sel.value || null; });
   });
   liste.querySelectorAll('[data-rolle="bemerkung"]').forEach((ta) => {
     ta.addEventListener("input", () => {
@@ -4086,7 +4116,8 @@ function anwendungsbereichZeileHtml(b) {
    Prüfblöcke referenzieren, inkl. der dort je Produkt hinterlegten Kosten - so ist auf einen Blick
    sichtbar, in welchen Produkten die Norm verwendet wird und was sie dort jeweils kostet (Kosten
    sind pro Prüfgrundlage/Produkt hinterlegt, nicht an der Norm selbst - siehe "Kosten je Norm" in
-   den Prüfgrundlagen). */
+   den Prüfgrundlagen). Kein Anwendungsbereich hier - der wird erst projektspezifisch beim
+   tatsächlichen Hinzufügen zu einem KV gewählt (siehe mechanikAnwendungsbereichAuswahlHtml). */
 function normVerwendungInPruefgrundlagen(norm) {
   const bloecke = [["normen", "Sicherheit & Norm"], ["ffuNormen", "FFU/Fitting"], ["stiwaNormen", "NGO/StiWa"]];
   const treffer = [];
@@ -4094,11 +4125,7 @@ function normVerwendungInPruefgrundlagen(norm) {
     bloecke.forEach(([feld, label]) => {
       (e[feld] || []).forEach((r) => {
         if (r.normId === norm.id) {
-          const bereich = (norm.anwendungsbereiche || []).find((b) => b.id === r.anwendungsbereichId);
-          treffer.push({
-            pgId: e.id, produkt: e.produkt, warengruppeName: e.warengruppeName, block: label,
-            kosten: r.kosten, inAnlehnungAn: r.inAnlehnungAn, anwendungsbereichName: bereich ? bereich.name : ""
-          });
+          treffer.push({ pgId: e.id, produkt: e.produkt, warengruppeName: e.warengruppeName, block: label, kosten: r.kosten, inAnlehnungAn: r.inAnlehnungAn });
         }
       });
     });
@@ -4108,16 +4135,14 @@ function normVerwendungInPruefgrundlagen(norm) {
 
 function normVerwendungHtml(norm) {
   const treffer = normVerwendungInPruefgrundlagen(norm);
-  const zeigeAnwendungsbereich = (norm.anwendungsbereiche || []).length > 0;
   return `<div class="card">
     <h2 style="margin:0 0 0.6rem 0">Verwendet in Prüfgrundlagen${treffer.length ? " (" + treffer.length + ")" : ""}</h2>
     ${treffer.length
-      ? `<table class="tabelle readonly"><thead><tr><th>Produkt</th><th>Warengruppe</th><th>Block</th>${zeigeAnwendungsbereich ? "<th>Anwendungsbereich</th>" : ""}<th>Kosten</th></tr></thead><tbody>
+      ? `<table class="tabelle readonly"><thead><tr><th>Produkt</th><th>Warengruppe</th><th>Block</th><th>Kosten</th></tr></thead><tbody>
           ${treffer.map((t) => `<tr class="klickbar" data-action="norm-pg-oeffnen" data-id="${escapeHtml(t.pgId)}">
             <td>${escapeHtml(t.produkt || "(ohne Produktnamen)")}</td>
             <td>${escapeHtml(t.warengruppeName || "")}</td>
             <td>${escapeHtml(t.block)}${t.inAnlehnungAn ? ` <span class="muted">(in Anlehnung an)</span>` : ""}</td>
-            ${zeigeAnwendungsbereich ? `<td>${t.anwendungsbereichName ? escapeHtml(t.anwendungsbereichName) : "–"}</td>` : ""}
             <td>${t.kosten === null || t.kosten === undefined ? "Anfrage" : Number(t.kosten).toFixed(2) + " €"}</td>
           </tr>`).join("")}
         </tbody></table>`
