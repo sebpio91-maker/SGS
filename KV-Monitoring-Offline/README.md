@@ -436,14 +436,15 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
 - **Prüfgrundlagen** – die Datenquelle der Warengruppen-Empfehlung im KV
   (siehe oben) ist **direkt in der Oberfläche bearbeitbar und neu anlegbar**,
   nicht mehr nur fest eingebettet. **Zwei umschaltbare Ansichten** (Pillen
-  oben im Reiter): **„Nach Warengruppe (LIDL)"** (Standard) gruppiert zuerst
-  nach **Warengruppe**, darunter nach **Produkt** sortiert — die
-  LIDL-spezifische Sicht, wie bisher. **„Nach Bereich (andere Kunden)"**
-  gruppiert stattdessen zuerst nach **Bereich** (siehe Reiter „Verwaltung" →
-  Warengruppen → Feld „Bereich"), darunter verschachtelt nach Warengruppe —
-  gedacht für Kunden, bei denen die Zuordnung nach Warengruppen-Code keine
-  Rolle spielt, aber die übergeordnete Produktkategorie schon. Einträge ohne
-  zugeordneten Bereich landen in „(ohne Bereich)". Die Übersichtszeile je
+  oben im Reiter): **„Nach Warengruppe (LIDL)"** (Standard) gruppiert nach
+  **Warengruppe** — die LIDL-spezifische Sicht, wie bisher. **„Nach Bereich
+  (andere Kunden)"** gruppiert stattdessen ausschließlich nach **Bereich**
+  (siehe Reiter „Verwaltung" → Warengruppen → Feld „Bereich"), ohne weitere
+  Unterteilung nach Warengruppe — gedacht für Kunden, bei denen die
+  Zuordnung nach Warengruppen-Code keine Rolle spielt, aber die
+  übergeordnete Produktkategorie schon. Einträge ohne zugeordneten Bereich
+  landen in „(ohne Bereich)". Innerhalb jeder Gruppe (in beiden Ansichten)
+  sind die Produkte alphabetisch (A–Z) sortiert. Die Übersichtszeile je
   Produkt zeigt nur das Nötigste (Produkt, Normen, Kosten Sicherheit & Norm,
   Anzahl Muster, KEZ-Badge, ob FFU/StiWa hinterlegt sind) — der
   Warengruppen-Code selbst wird hier bewusst **nicht** als eigene Spalte
@@ -652,9 +653,13 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   erscheint dort „(gelöschte Norm)" statt der Bezeichnung — die Referenz
   bleibt technisch bestehen, sollte aber in der Prüfgrundlage entfernt oder
   ersetzt werden.
-- **Verwaltung** – Pflege von zwei Stammdaten-Listen, beide bei mehr als
-  einer Bildschirmseite an Einträgen paginiert (Standardgröße 25 Bereiche
-  bzw. 50 Warengruppen pro Seite, „‹ Zurück"/„Weiter ›" darunter):
+- **Verwaltung** – **drei umschaltbare Ansichten** (Pillen oben im Reiter:
+  „Bereiche" / „Warengruppen" / „Gefahrenzone"), von denen jeweils nur eine
+  gleichzeitig sichtbar ist — analog zum Ansicht-Umschalter im Reiter
+  „Prüfgrundlagen" (siehe oben), statt einer langen Scroll-Seite mit allen
+  Blöcken untereinander. Die beiden Stammdaten-Listen sind zusätzlich bei
+  mehr als einer Bildschirmseite an Einträgen paginiert (Standardgröße 25
+  Bereiche bzw. 50 Warengruppen pro Seite, „‹ Zurück"/„Weiter ›" darunter):
   - **Bereiche** – Dropdown-Quelle im Reiter „Prüfgrundlagen". Neue Werte
     anlegen, bestehende umbenennen (aktualisiert automatisch alle
     Prüfgrundlagen, die den bisherigen Wert verwenden) oder löschen (mit

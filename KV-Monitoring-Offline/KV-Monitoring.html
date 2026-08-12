@@ -142,10 +142,7 @@ tr#arbeitsvorrat-filter-zeile select, tr#arbeitsvorrat-filter-zeile input[type=t
 .pruefgrundlagen-gruppe summary::before { content:"▸"; display:inline-block; transition:transform 0.15s; }
 .pruefgrundlagen-gruppe[open] summary::before { transform:rotate(90deg); }
 .pruefgrundlagen-gruppe .tabellen-wrapper { border:none; border-radius:0; border-top:1px solid var(--border); max-height:none; }
-.pruefgrundlagen-untergruppen { padding:0.6rem; border-top:1px solid var(--border); background:#f7f9f8; }
-.pruefgrundlagen-untergruppen .pruefgrundlagen-untergruppe { margin-bottom:0.5rem; }
-.pruefgrundlagen-untergruppen .pruefgrundlagen-untergruppe:last-child { margin-bottom:0; }
-.pruefgrundlagen-untergruppen .pruefgrundlagen-untergruppe summary { background:#e4eae8; font-size:0.86rem; }
+.pruefgrundlagen-bereichsgruppe summary { background:#e4eae8; }
 tr.klickbar { cursor:pointer; }
 tr.klickbar:hover td { background:#faf9f6; }
 
@@ -324,13 +321,13 @@ input[type=file] { display:none; }
       <button type="button" data-ansicht="bereich">Nach Bereich (andere Kunden)</button>
     </div>
     <p class="hinweis">Referenzdaten für die Warengruppen-Empfehlung im Kostenvoranschlag (Norm, Anzahl
-      Muster, Kosten Sicherheit &amp; Norm / FFU / NGO-StiWa). In der Ansicht „Nach Warengruppe" zuerst nach
-      Warengruppe gruppiert, darunter nach Produkt sortiert; in der Ansicht „Nach Bereich" zuerst nach Bereich
-      (Reiter „Verwaltung" → Warengruppen → Feld „Bereich"), darunter nach Warengruppe. Gruppen lassen sich
-      auf-/zuklappen. Alle Felder direkt in der Zeile bearbeitbar, Änderungen werden wie überall automatisch
-      gespeichert. Über die Suche oben (aktueller Bereich) lässt sich nach Warengruppe, Produkt, Norm oder
-      Bemerkung filtern. Wird der Warengruppen-Code eines Eintrags geändert, wandert die Zeile nach dem
-      Verlassen des Feldes in die passende Gruppe.</p>
+      Muster, Kosten Sicherheit &amp; Norm / FFU / NGO-StiWa). In der Ansicht „Nach Warengruppe" nach
+      Warengruppe gruppiert; in der Ansicht „Nach Bereich" stattdessen nach Bereich (Reiter „Verwaltung" →
+      Warengruppen → Feld „Bereich") gruppiert. Innerhalb jeder Gruppe sind die Produkte alphabetisch (A–Z)
+      sortiert. Gruppen lassen sich auf-/zuklappen. Alle Felder direkt in der Zeile bearbeitbar, Änderungen
+      werden wie überall automatisch gespeichert. Über die Suche oben (aktueller Bereich) lässt sich nach
+      Warengruppe, Produkt, Norm oder Bemerkung filtern. Wird der Warengruppen-Code eines Eintrags geändert,
+      wandert die Zeile nach dem Verlassen des Feldes in die passende Gruppe.</p>
     <div id="pruefgrundlagen-gruppen"></div>
   </div>
 </section>
@@ -366,7 +363,12 @@ input[type=file] { display:none; }
 </section>
 
 <section class="seite" id="seite-verwaltung" hidden>
-  <div class="card" style="max-width:520px">
+  <div class="pill-toggle" id="verwaltung-ansicht-toggle">
+    <button type="button" data-ansicht="bereiche" class="aktiv">Bereiche</button>
+    <button type="button" data-ansicht="warengruppen">Warengruppen</button>
+    <button type="button" data-ansicht="gefahrenzone">Gefahrenzone</button>
+  </div>
+  <div class="card" id="verwaltung-block-bereiche" style="max-width:520px">
     <h2 style="margin-top:0">Bereiche</h2>
     <p class="hinweis">Diese Liste speist das Bereich-Dropdown im Reiter „Prüfgrundlagen" — hier
       anlegen, umbenennen oder löschen. Umbenennen aktualisiert automatisch alle Prüfgrundlagen, die
@@ -378,7 +380,7 @@ input[type=file] { display:none; }
       <button type="button" id="bereich-hinzufuegen-btn">+ Hinzufügen</button>
     </div>
   </div>
-  <div class="card" style="max-width:1000px">
+  <div class="card" id="verwaltung-block-warengruppen" style="max-width:1000px">
     <h2 style="margin-top:0">Warengruppen</h2>
     <p class="hinweis">Code und Bezeichnung speisen das Warengruppen-Dropdown in den Reitern
       „Prüfgrundlagen" und „Kostenvoranschläge" (dort als „Warengruppe (neu)") — hier anlegen,
@@ -400,7 +402,7 @@ input[type=file] { display:none; }
       <button type="button" id="warengruppe-hinzufuegen-btn">+ Hinzufügen</button>
     </div>
   </div>
-  <div class="card" style="max-width:720px;border-color:#d98a8a">
+  <div class="card" id="verwaltung-block-gefahrenzone" style="max-width:720px;border-color:#d98a8a">
     <h2 style="margin-top:0">Gefahrenzone</h2>
     <p class="hinweis">Löscht <strong>Arbeitsvorrat, Prüfaufträge und Kostenvoranschläge</strong>
       unwiderruflich — z. B. um nach dem Testen mit echten Daten neu zu starten.
@@ -2105,6 +2107,10 @@ const VERWALTUNG_SEITENGROESSE = { bereiche: 25, warengruppen: 50 };
    neue, kundenübergreifende Gruppierung anhand des Bereichs der jeweiligen Warengruppe (siehe
    Reiter "Verwaltung" -> Warengruppen -> Feld "Bereich"). */
 let pruefgrundlagenAnsicht = "warengruppe";
+/* Welcher der drei Blöcke im Reiter "Verwaltung" aktuell sichtbar ist ("bereiche" | "warengruppen"
+   | "gefahrenzone") - wie bei pruefgrundlagenAnsicht ein reiner Anzeige-Umschalter statt einer
+   langen Scroll-Seite. */
+let verwaltungAnsicht = "bereiche";
 
 function ladeAusLocalStorage() {
   try {
@@ -4846,10 +4852,12 @@ function bereichFuerWarengruppe(warengruppeCode) {
   return eintrag ? (eintrag.bereich || "") : "";
 }
 
-/* Rendert eine Warengruppen-Untergruppe (Produkttabelle) - gemeinsam genutzt von beiden Ansichten
-   des Prüfgrundlagen-Tabs (flach nach Warengruppe, bzw. verschachtelt innerhalb eines Bereichs). */
-function warengruppenGruppeHtml(gruppenKey, anzeigeKey, zeilen, offen, klasse) {
-  const wgName = zeilen.find((z) => z.warengruppeName)?.warengruppeName || "";
+/* Rendert eine Gruppe (Produkttabelle, Produkte alphabetisch A-Z sortiert) - gemeinsam genutzt von
+   beiden Ansichten des Prüfgrundlagen-Tabs (Warengruppe bzw. Bereich). Der Warengruppen-Name als
+   Zusatz im Gruppenkopf ergibt nur in der Warengruppen-Ansicht Sinn (eine Bereichsgruppe bündelt
+   mehrere unterschiedliche Warengruppen). */
+function pruefgrundlagenGruppeHtml(gruppenKey, anzeigeKey, zeilen, offen, klasse, zeigeWgName) {
+  const wgName = zeigeWgName ? (zeilen.find((z) => z.warengruppeName)?.warengruppeName || "") : "";
   return `<details class="pruefgrundlagen-gruppe ${klasse || ""}" data-gruppe="${escapeHtml(gruppenKey)}" ${offen ? "open" : ""}>
     <summary><strong>${escapeHtml(anzeigeKey)}</strong> ${wgName ? "– " + escapeHtml(wgName) : ""} <span class="muted">(${zeilen.length} Produkt${zeilen.length === 1 ? "" : "e"})</span></summary>
     <div class="tabellen-wrapper">
@@ -4884,25 +4892,9 @@ function renderPruefgrundlagenTab() {
 
     container.innerHTML = bereichKeys.map((bereichKey) => {
       const bereichGruppenKey = "bereich:" + bereichKey;
-      const bereichZeilen = bereichGruppen.get(bereichKey);
-      const wgGruppen = new Map();
-      bereichZeilen.forEach((e) => {
-        const wgKey = normalisiereWarengruppe(e.warengruppeCode) || "(ohne Warengruppe)";
-        if (!wgGruppen.has(wgKey)) wgGruppen.set(wgKey, []);
-        wgGruppen.get(wgKey).push(e);
-      });
-      const wgKeys = [...wgGruppen.keys()].sort((a, b) => a.localeCompare(b, "de"));
-      const bereichOffen = ersteRuntergerendet || offeneGruppen.has(bereichGruppenKey) || bereichKeys.length === 1;
-      const untergruppenHtml = wgKeys.map((wgKey) => {
-        const wgGruppenKey = bereichGruppenKey + ":wg:" + wgKey;
-        const wgZeilen = wgGruppen.get(wgKey).slice().sort((a, b) => (a.produkt || "").localeCompare(b.produkt || "", "de"));
-        const wgOffen = offeneGruppen.has(wgGruppenKey) || wgKeys.length === 1;
-        return warengruppenGruppeHtml(wgGruppenKey, wgKey, wgZeilen, wgOffen, "pruefgrundlagen-untergruppe");
-      }).join("");
-      return `<details class="pruefgrundlagen-gruppe pruefgrundlagen-bereichsgruppe" data-gruppe="${escapeHtml(bereichGruppenKey)}" ${bereichOffen ? "open" : ""}>
-        <summary><strong>${escapeHtml(bereichKey)}</strong> <span class="muted">(${bereichZeilen.length} Produkt${bereichZeilen.length === 1 ? "" : "e"} in ${wgKeys.length} Warengruppe${wgKeys.length === 1 ? "" : "n"})</span></summary>
-        <div class="pruefgrundlagen-untergruppen">${untergruppenHtml}</div>
-      </details>`;
+      const bereichZeilen = bereichGruppen.get(bereichKey).slice().sort((a, b) => (a.produkt || "").localeCompare(b.produkt || "", "de"));
+      const offen = ersteRuntergerendet || offeneGruppen.has(bereichGruppenKey) || bereichKeys.length === 1;
+      return pruefgrundlagenGruppeHtml(bereichGruppenKey, bereichKey, bereichZeilen, offen, "pruefgrundlagen-bereichsgruppe", false);
     }).join("");
   } else {
     const gruppen = new Map();
@@ -4916,7 +4908,7 @@ function renderPruefgrundlagenTab() {
     container.innerHTML = keys.map((key) => {
       const zeilen = gruppen.get(key).slice().sort((a, b) => (a.produkt || "").localeCompare(b.produkt || "", "de"));
       const offen = ersteRuntergerendet || offeneGruppen.has(key) || keys.length === 1 || key === "(ohne Warengruppe)";
-      return warengruppenGruppeHtml(key, key, zeilen, offen);
+      return pruefgrundlagenGruppeHtml(key, key, zeilen, offen, "", true);
     }).join("");
   }
   container.dataset.gerendert = "1";
@@ -5549,9 +5541,21 @@ function renderNormenTab() { renderNormenListe(); renderNormDetail(); }
    Referenz nicht stillschweigend veraltet (Bereich hat - anders als Warengruppe - keinen
    separaten stabilen Code, nur den Anzeigetext selbst). */
 function renderVerwaltungTab() {
+  document.getElementById("verwaltung-block-bereiche").hidden = verwaltungAnsicht !== "bereiche";
+  document.getElementById("verwaltung-block-warengruppen").hidden = verwaltungAnsicht !== "warengruppen";
+  document.getElementById("verwaltung-block-gefahrenzone").hidden = verwaltungAnsicht !== "gefahrenzone";
   renderBereicheVerwaltung();
   renderWarengruppenVerwaltung();
 }
+
+document.getElementById("verwaltung-ansicht-toggle").querySelectorAll("button[data-ansicht]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    if (btn.dataset.ansicht === verwaltungAnsicht) return;
+    verwaltungAnsicht = btn.dataset.ansicht;
+    document.querySelectorAll("#verwaltung-ansicht-toggle button").forEach((b) => b.classList.toggle("aktiv", b === btn));
+    renderVerwaltungTab();
+  });
+});
 
 /* Schneidet liste auf die aktuelle Seite (verwaltungSeite[schluessel]) zu VERWALTUNG_SEITENGROESSE
    Einträgen zurecht - klemmt eine ungültig gewordene Seitennummer (z. B. nach Löschen des letzten
