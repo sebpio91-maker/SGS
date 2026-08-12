@@ -225,13 +225,14 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   Anzahl der im PA erkannten „Style_X"-Blöcke übernommen (fällt kein Style
   auf, wird von einem einzigen ausgegangen).
 
-  **Warengruppe (alt)** bleibt vorerst ein Freitextfeld, wird aber
-  automatisch befüllt, sobald in der Neu-↔-Alt-Zuordnungstabelle (Reiter
-  „Verwaltung", siehe unten) ein passender Eintrag zur gewählten Warengruppe
-  (neu) existiert — auch das nur, wenn das Feld noch leer ist. Die
-  Zuordnungsliste selbst startet leer, bis die offizielle Zuordnung
-  (ADMIN-Blatt) vorliegt; bis dahin bleibt „Warengruppe (alt)" manuell
-  pflegbar.
+  **Warengruppe (alt)** bleibt ein Freitextfeld, wird aber automatisch
+  befüllt, sobald in der Neu-↔-Alt-Zuordnungstabelle (Reiter „Verwaltung",
+  siehe unten) ein passender Eintrag zur gewählten Warengruppe (neu)
+  existiert — auch das nur, wenn das Feld noch leer ist. Die Zuordnungsliste
+  ist mit der vollständigen offiziellen ADMIN-Blatt-Liste (341 Einträge)
+  vorbelegt; einzelne Zeilen lassen sich im Reiter „Verwaltung" jederzeit von
+  Hand korrigieren oder ergänzen, „Warengruppe (alt)" bleibt daneben weiter
+  manuell pflegbar.
 
   Im Abschnitt **(Physikalische-) Produktspezifikationen** wird zusätzlich
   die aus dem PA ausgelesene **„Qualität"** informativ angezeigt (analog zur
@@ -665,18 +666,23 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   - **Warengruppen-Zuordnung (Neu → Alt)** – ordnet einer neuen Warengruppe
     (Code) den passenden Alt-Wert zu; sobald hier ein Eintrag existiert,
     befüllt er automatisch „Warengruppe (alt)" im Kostenvoranschlag (nur
-    wenn dort noch leer). Startet leer — die vollständige, offizielle
-    Zuordnungstabelle (ADMIN-Blatt, 347 Zeilen) lässt sich hier nach und
-    nach eintragen, sobald sie vorliegt (siehe auch unten).
-  - **Gefahrenzone** – löscht **Arbeitsvorrat, Prüfaufträge, Kostenvoranschläge
-    und Warengruppen-Zuordnung** unwiderruflich (zwei Sicherheitsabfragen),
-    z. B. um nach dem Testen sauber mit echten Daten neu zu starten.
+    wenn dort noch leer). Ist mit der vollständigen offiziellen
+    ADMIN-Blatt-Zuordnungstabelle vorbelegt (341 eindeutige Neu-Codes; eine
+    Handvoll Codes kam in der Rohliste mit mehreren unterschiedlichen
+    Alt-Codes vor — dort zählt der jeweils zuerst genannte, von Hand hier
+    korrigierbar; ein Eintrag ohne gültigen Alt-Code wurde beim Einlesen
+    übersprungen). Einzelne Zeilen lassen sich jederzeit von Hand anlegen,
+    bearbeiten oder löschen.
+  - **Gefahrenzone** – löscht **Arbeitsvorrat, Prüfaufträge und
+    Kostenvoranschläge** unwiderruflich (zwei Sicherheitsabfragen), z. B. um
+    nach dem Testen sauber mit echten Daten neu zu starten.
     **Prüfgrundlagen und Normen sowie die Bereiche-/Warengruppen-Stammdaten
-    bleiben dabei erhalten** — die mühsam gepflegte Referenzdatenbank geht
-    also nicht verloren. Vorher empfiehlt sich ein „⬇ Sichern (JSON)" oben.
-    Da alle Daten ausschließlich lokal im Browser (Local Storage) liegen,
-    lässt sich dieser Schritt nur über diesen Button hier im Tool selbst
-    auslösen — von außen kann niemand auf diese Daten zugreifen.
+    und die Warengruppen-Zuordnung bleiben dabei erhalten** — die mühsam
+    gepflegte Referenzdatenbank geht also nicht verloren. Vorher empfiehlt
+    sich ein „⬇ Sichern (JSON)" oben. Da alle Daten ausschließlich lokal im
+    Browser (Local Storage) liegen, lässt sich dieser Schritt nur über
+    diesen Button hier im Tool selbst auslösen — von außen kann niemand auf
+    diese Daten zugreifen.
 
 ## Datenquelle der Warengruppen-Empfehlung und SAP-Codes
 
@@ -727,21 +733,17 @@ bleibt `Preisliste_Mechanik_v2.xlsm`. Noch nicht übernommen: eine Lockerung
 der Prüfumfang-Schlüsselwort-Erkennung auf das dort verwendete, einfachere
 Teilstring-Prinzip.
 
-Die Neue-↔-Alte-Warengruppe-Zuordnungstabelle vom ADMIN-Blatt (347 Zeilen)
-wäre die naheliegende Quelle für die vollständige, offizielle
-Warengruppen-Liste im Dropdown bei Prüfgrundlagen/Kostenvoranschlag (aktuell
-ein 64-Einträge-Startbestand aus den bereits genutzten Warengruppen) —
-bislang aber noch nicht dafür verwendet, da unklar war, welche der beiden
-Spalten (Neu/Alt) als Code+Name-Paar für die Auswahl taugt. Anders als
-früher braucht das aber keine neue Tool-Version mehr: die Warengruppen-Liste
-selbst lässt sich direkt im Reiter „Verwaltung" pflegen (siehe oben) — die
-offizielle Liste könnte dort bei Bedarf auch komplett von Hand nachgetragen
-werden. Für die reine **Neu→Alt-Zuordnung** (unabhängig von der
-Warengruppen-Liste) gibt es dort inzwischen eine eigene, noch leere Tabelle
-(„Warengruppen-Zuordnung (Neu → Alt)"), die „Warengruppe (alt)" im
-Kostenvoranschlag automatisch befüllt, sobald ein passender Eintrag vorliegt
-— auch hier wartet die vollständige ADMIN-Blatt-Liste noch auf manuelles
-Eintragen.
+Die Neue-↔-Alte-Warengruppe-Zuordnungstabelle vom ADMIN-Blatt liefert nur
+Code-Paare (Neu/Alt), keine Namen, und taugt daher nicht direkt als Quelle
+für die vollständige, offizielle **Warengruppen-Liste** im Dropdown bei
+Prüfgrundlagen/Kostenvoranschlag (aktuell ein 64-Einträge-Startbestand aus
+den bereits genutzten Warengruppen). Die Warengruppen-Liste selbst lässt
+sich direkt im Reiter „Verwaltung" pflegen (siehe oben) — die offizielle
+Liste könnte dort bei Bedarf auch komplett von Hand nachgetragen werden. Für
+die reine **Neu→Alt-Zuordnung** (unabhängig von der Warengruppen-Liste,
+Tabelle „Warengruppen-Zuordnung (Neu → Alt)") liegt die vollständige
+ADMIN-Blatt-Liste dagegen bereits als Startbestand vor (siehe oben) und
+befüllt „Warengruppe (alt)" im Kostenvoranschlag automatisch.
 
 ## SharePoint-Suche nach IAN
 
