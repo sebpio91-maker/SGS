@@ -653,13 +653,14 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   erscheint dort „(gelöschte Norm)" statt der Bezeichnung — die Referenz
   bleibt technisch bestehen, sollte aber in der Prüfgrundlage entfernt oder
   ersetzt werden.
-- **Verwaltung** – **drei umschaltbare Ansichten** (Pillen oben im Reiter:
-  „Bereiche" / „Warengruppen" / „Gefahrenzone"), von denen jeweils nur eine
-  gleichzeitig sichtbar ist — analog zum Ansicht-Umschalter im Reiter
-  „Prüfgrundlagen" (siehe oben), statt einer langen Scroll-Seite mit allen
-  Blöcken untereinander. Die beiden Stammdaten-Listen sind zusätzlich bei
-  mehr als einer Bildschirmseite an Einträgen paginiert (Standardgröße 25
-  Bereiche bzw. 50 Warengruppen pro Seite, „‹ Zurück"/„Weiter ›" darunter):
+- **Verwaltung** – **vier umschaltbare Ansichten** (Pillen oben im Reiter:
+  „Bereiche" / „Warengruppen" / „Trivialartikel-Preisliste" / „Gefahrenzone"),
+  von denen jeweils nur eine gleichzeitig sichtbar ist — analog zum
+  Ansicht-Umschalter im Reiter „Prüfgrundlagen" (siehe oben), statt einer
+  langen Scroll-Seite mit allen Blöcken untereinander. Die Stammdaten-Listen
+  sind zusätzlich bei mehr als einer Bildschirmseite an Einträgen paginiert
+  (Standardgröße 25 Bereiche bzw. 50 Warengruppen/Trivialartikel-Zeilen pro
+  Seite, „‹ Zurück"/„Weiter ›" darunter):
   - **Bereiche** – Dropdown-Quelle im Reiter „Prüfgrundlagen". Neue Werte
     anlegen, bestehende umbenennen (aktualisiert automatisch alle
     Prüfgrundlagen, die den bisherigen Wert verwenden) oder löschen (mit
@@ -716,16 +717,26 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     Stammdaten-Codes, 341 Zuordnungs-Codes) überschneiden sich
     größtenteils, aber nicht vollständig, daher zeigt die vereinigte Liste
     geringfügig mehr als 730 Zeilen.
+  - **Trivialartikel-Preisliste** – Preisliste für triviale Artikel je
+    **alter** Warengruppe (Code wie im Feld „Warengruppe (alt)" im
+    Kostenvoranschlag), mit der offiziellen Preisliste (69 Zeilen) als
+    Startbestand: Bezeichnung (DE/EN), Preis „Chemie ≥4 Risikoparameter",
+    Preis „VP & Kennzeichnung", Preis „LFGB Stichprobe" (nur bei relevanten
+    Warengruppen befüllt), Gesamtpreis (inkl. 3 Sortierungen/Varianten) und
+    Preis „Add Sortierung/Variante (ab der 4.)" — alle Felder direkt in der
+    Zeile editierbar, neue Zeilen über das Formular darunter anlegen. Wie
+    diese Preise konkret auf den Kostenvoranschlag angewendet werden, ist
+    noch offen (Stand: Tabelle ist übernommen, Anwendungslogik folgt).
   - **Gefahrenzone** – löscht **Arbeitsvorrat, Prüfaufträge und
     Kostenvoranschläge** unwiderruflich (zwei Sicherheitsabfragen), z. B. um
     nach dem Testen sauber mit echten Daten neu zu starten.
-    **Prüfgrundlagen und Normen sowie die Bereiche-/Warengruppen-Stammdaten
-    und die Warengruppen-Zuordnung bleiben dabei erhalten** — die mühsam
-    gepflegte Referenzdatenbank geht also nicht verloren. Vorher empfiehlt
-    sich ein „⬇ Sichern (JSON)" oben. Da alle Daten ausschließlich lokal im
-    Browser (Local Storage) liegen, lässt sich dieser Schritt nur über
-    diesen Button hier im Tool selbst auslösen — von außen kann niemand auf
-    diese Daten zugreifen.
+    **Prüfgrundlagen und Normen sowie die Bereiche-/Warengruppen-Stammdaten,
+    die Warengruppen-Zuordnung und die Trivialartikel-Preisliste bleiben
+    dabei erhalten** — die mühsam gepflegte Referenzdatenbank geht also
+    nicht verloren. Vorher empfiehlt sich ein „⬇ Sichern (JSON)" oben. Da
+    alle Daten ausschließlich lokal im Browser (Local Storage) liegen, lässt
+    sich dieser Schritt nur über diesen Button hier im Tool selbst auslösen
+    — von außen kann niemand auf diese Daten zugreifen.
 
 ## Datenquelle der Warengruppen-Empfehlung und SAP-Codes
 
