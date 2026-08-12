@@ -2666,26 +2666,31 @@ function mechanikKostenBearbeitenHtml(pgId, feld, refs) {
   return `<button type="button" class="ghost small" data-action="mechanik-kosten-in-pg-bearbeiten" data-pg-id="${escapeHtml(pgId)}">→ Kosten in der Prüfgrundlage bearbeiten</button>`;
 }
 
-/* Anwendungsbereich-Auswahl (z. B. Camping-/Wohn-/Objektbereich bei DIN EN 581-2) passiert bewusst
-   erst hier, beim tatsächlichen Hinzufügen einer Norm-Position zu einem konkreten KV - nicht mehr
-   an der (über viele Projekte geteilten) Prüfgrundlage/Norm-Referenz, wo zum Zeitpunkt der
-   Referenzierung noch kein konkretes Projekt feststeht. Die Auswahl gilt dadurch automatisch nur
-   für diesen einen KV: sie fließt direkt in die Bezeichnung der neu angelegten Position ein (analog
-   zur Style-Zuordnung), nicht in eine geteilte Datenstruktur. Bei mehreren referenzierten Normen
-   zählt - wie bei SAP-Code/Kosten - die erste mit hinterlegten Anwendungsbereichen. */
-function mechanikNormMitAnwendungsbereichen(refs) {
+/* Anwendungsbereich-Auswahl (z. B. Camping-/Wohn-/Objektbereich bei DIN EN 581-2): an der
+   Prüfgrundlage/Norm-Referenz lässt sich optional schon ein Standard-Anwendungsbereich hinterlegen
+   (Vorbelegung für alle KVs mit dieser Prüfgrundlage, siehe renderNormenChips) - hier beim
+   tatsächlichen Hinzufügen zu einem konkreten KV erscheint dieser als Startwert vorausgewählt,
+   lässt sich aber je Projekt frei überschreiben (gilt dann nur für diesen einen KV, unabhängig von
+   der geteilten Prüfgrundlage). Wurde an der Prüfgrundlage GAR kein Bereich vorbelegt, startet die
+   Auswahl hier bei "kein bestimmter Bereich" und MUSS dann - falls einer gebraucht wird - hier
+   projektspezifisch getroffen werden, da es sonst keinen anderen Ort mehr dafür gibt. Bei mehreren
+   referenzierten Normen zählt - wie bei SAP-Code/Kosten - die erste mit hinterlegten
+   Anwendungsbereichen. Die Auswahl fließt direkt in die Bezeichnung der neu angelegten Position ein
+   (analog zur Style-Zuordnung), nicht in eine geteilte Datenstruktur. */
+function mechanikRefMitAnwendungsbereichen(refs) {
   for (const r of (refs || [])) {
     const norm = data.normen.find((n) => n.id === r.normId);
-    if (norm && (norm.anwendungsbereiche || []).length) return norm;
+    if (norm && (norm.anwendungsbereiche || []).length) return { ref: r, norm };
   }
   return null;
 }
 function mechanikAnwendungsbereichAuswahlHtml(refs) {
-  const norm = mechanikNormMitAnwendungsbereichen(refs);
-  if (!norm) return "";
-  return `<select class="mechanik-anwendungsbereich-auswahl" title="Anwendungsbereich (gilt nur für diesen KV)" style="font-family:inherit;font-size:0.82rem;padding:0.3rem 0.4rem;border:1px solid var(--border);border-radius:6px">
+  const treffer = mechanikRefMitAnwendungsbereichen(refs);
+  if (!treffer) return "";
+  const { ref, norm } = treffer;
+  return `<select class="mechanik-anwendungsbereich-auswahl" title="Anwendungsbereich (Vorbelegung aus der Prüfgrundlage, hier je Projekt änderbar)" style="font-family:inherit;font-size:0.82rem;padding:0.3rem 0.4rem;border:1px solid var(--border);border-radius:6px">
       <option value="">— kein bestimmter Bereich —</option>
-      ${norm.anwendungsbereiche.map((b) => `<option value="${escapeHtml(b.id)}">${escapeHtml(b.name || "(ohne Namen)")}</option>`).join("")}
+      ${norm.anwendungsbereiche.map((b) => `<option value="${escapeHtml(b.id)}" ${ref.anwendungsbereichId === b.id ? "selected" : ""}>${escapeHtml(b.name || "(ohne Namen)")}</option>`).join("")}
     </select>`;
 }
 
@@ -3846,12 +3851,14 @@ function aktualisiereNormenSumme(container, feldName, refs) {
    Anlegen einer neuen Norm über "+ Neue Norm anlegen" auch schon sofort persistiert), nicht erst
    beim Speichern der Prüfgrundlage. Dadurch bleibt die Bemerkung konsistent, wenn dieselbe Norm in
    mehreren Prüfgrundlagen verwendet wird.
-   Bewusst KEINE Anwendungsbereich-Auswahl hier: eine Prüfgrundlage ist eine allgemeine, über viele
-   KVs hinweg wiederverwendete Warengruppe→Produkt-Zuordnung, zum Zeitpunkt der Referenzierung
-   steht also noch kein konkretes Projekt fest, für das ein bestimmter Anwendungsbereich gelten
-   würde. Die Auswahl passiert deshalb erst, wenn die Norm tatsächlich in einem KV verwendet wird
-   (siehe mechanikAnwendungsbereichAuswahlHtml in renderMechanikEmpfehlungKarte) - dort projekt-
-   spezifisch (nur für diesen einen KV), nicht mehr an der geteilten Prüfgrundlage/Norm-Referenz. */
+   Anwendungsbereich-Auswahl HIER ist optional/ein Vorbelegungs-Standard, keine Pflicht: eine
+   Prüfgrundlage ist eine allgemeine, über viele KVs hinweg wiederverwendete Warengruppe→Produkt-
+   Zuordnung - lässt sich der Anwendungsbereich für alle/die meisten Projekte pauschal festlegen,
+   spart das bei der KV-Erstellung wiederholtes Auswählen. Bleibt er hier auf "kein bestimmter
+   Bereich", MUSS die Auswahl spätestens beim tatsächlichen Hinzufügen der Norm-Position zu einem
+   KV projektspezifisch getroffen werden (siehe mechanikAnwendungsbereichAuswahlHtml in
+   renderMechanikEmpfehlungKarte) - dort mit dieser Vorbelegung als Startwert, dort aber je Projekt
+   frei überschreibbar. */
 function renderNormenChips(container, entwurf, feldName) {
   const liste = container.querySelector(".norm-ref-liste");
   const refs = entwurf[feldName] || [];
@@ -3868,6 +3875,12 @@ function renderNormenChips(container, entwurf, feldName) {
             <label>Kosten €<input type="number" step="1" data-idx="${i}" data-rolle="kosten" value="${r.kosten === null || r.kosten === undefined ? "" : r.kosten}" placeholder="Anfrage"></label>
             <label><input type="checkbox" data-idx="${i}" data-rolle="anlehnung" ${r.inAnlehnungAn ? "checked" : ""}> in Anlehnung an</label>
           </div>
+          ${norm && (norm.anwendungsbereiche || []).length ? `<div class="norm-ref-zeile">
+            <label>Anwendungsbereich (Vorbelegung für neue KVs)<select data-idx="${i}" data-rolle="anwendungsbereich">
+              <option value="">— kein bestimmter Bereich —</option>
+              ${norm.anwendungsbereiche.map((b) => `<option value="${escapeHtml(b.id)}" ${r.anwendungsbereichId === b.id ? "selected" : ""}>${escapeHtml(b.name || "(ohne Namen)")}</option>`).join("")}
+            </select></label>
+          </div>` : ""}
           <textarea data-normid="${escapeHtml(r.normId)}" data-rolle="bemerkung" rows="2" placeholder="Bemerkung zu dieser Norm/PPM (z. B. Anforderungen, Prüfhinweise)… - wird in der Normendatenbank gespeichert" ${norm ? "" : "disabled"}>${escapeHtml(norm ? norm.bemerkung || "" : "")}</textarea>
         </div>`;
       }).join("")
@@ -3883,6 +3896,9 @@ function renderNormenChips(container, entwurf, feldName) {
       refs[Number(inp.dataset.idx)].kosten = inp.value === "" ? null : Number(inp.value);
       aktualisiereNormenSumme(container, feldName, refs);
     });
+  });
+  liste.querySelectorAll('[data-rolle="anwendungsbereich"]').forEach((sel) => {
+    sel.addEventListener("change", () => { refs[Number(sel.dataset.idx)].anwendungsbereichId = sel.value || null; });
   });
   liste.querySelectorAll('[data-rolle="bemerkung"]').forEach((ta) => {
     ta.addEventListener("input", () => {
@@ -4057,13 +4073,24 @@ async function verarbeiteNormDatei(datei) {
 
 let normenTypFilter = "";
 
+/* Sortierschlüssel für die Normen-Liste: alphabetisch, aber Bezeichnungen, die mit einem
+   Buchstaben beginnen (A-Z), immer vor solchen, die mit einer Ziffer beginnen (0-9) - eine reine
+   locale-Sortierung würde Ziffern meist VOR Buchstaben einordnen, was hier explizit nicht gewünscht
+   ist. Nur das erste Zeichen entscheidet über die Gruppe, danach normale alphabetische/numerische
+   Sortierung innerhalb der Gruppe (z. B. "102_PPM" vor "163_PPM" vor "2_PPM" dank {numeric:true}). */
+function normenSortierSchluessel(bezeichnung) {
+  const b = String(bezeichnung || "").trim();
+  const gruppe = /^[0-9]/.test(b) ? "1" : "0";
+  return gruppe + normalisiere(b);
+}
+
 function gefiltereNormen() {
   const q = normalisiere(suchbegriffe.normen);
   return data.normen.filter((n) => {
     if (normenTypFilter && (n.typ || "norm") !== normenTypFilter) return false;
     if (!q) return true;
     return normalisiere([n.bezeichnung, n.titel, n.dateiname, n.bemerkung, ...(n.anwendungsbereiche || []).map((b) => b.name + " " + b.text)].join(" ")).includes(q);
-  });
+  }).sort((a, b) => normenSortierSchluessel(a.bezeichnung).localeCompare(normenSortierSchluessel(b.bezeichnung), "de", { numeric: true }));
 }
 
 function renderNormenListe() {
@@ -4113,11 +4140,12 @@ function anwendungsbereichZeileHtml(b) {
 }
 
 /* Für die Detailansicht einer Norm: alle Prüfgrundlagen, die diese Norm in einem ihrer drei
-   Prüfblöcke referenzieren, inkl. der dort je Produkt hinterlegten Kosten - so ist auf einen Blick
-   sichtbar, in welchen Produkten die Norm verwendet wird und was sie dort jeweils kostet (Kosten
-   sind pro Prüfgrundlage/Produkt hinterlegt, nicht an der Norm selbst - siehe "Kosten je Norm" in
-   den Prüfgrundlagen). Kein Anwendungsbereich hier - der wird erst projektspezifisch beim
-   tatsächlichen Hinzufügen zu einem KV gewählt (siehe mechanikAnwendungsbereichAuswahlHtml). */
+   Prüfblöcke referenzieren, inkl. der dort je Produkt hinterlegten Kosten und des dort optional
+   vorbelegten Anwendungsbereichs (Standard für neue KVs, siehe renderNormenChips - der tatsächlich
+   je Projekt verwendete Bereich kann davon abweichen, falls beim Hinzufügen zum KV überschrieben) -
+   so ist auf einen Blick sichtbar, in welchen Produkten die Norm verwendet wird und was sie dort
+   jeweils kostet (Kosten sind pro Prüfgrundlage/Produkt hinterlegt, nicht an der Norm selbst - siehe
+   "Kosten je Norm" in den Prüfgrundlagen). */
 function normVerwendungInPruefgrundlagen(norm) {
   const bloecke = [["normen", "Sicherheit & Norm"], ["ffuNormen", "FFU/Fitting"], ["stiwaNormen", "NGO/StiWa"]];
   const treffer = [];
@@ -4125,7 +4153,11 @@ function normVerwendungInPruefgrundlagen(norm) {
     bloecke.forEach(([feld, label]) => {
       (e[feld] || []).forEach((r) => {
         if (r.normId === norm.id) {
-          treffer.push({ pgId: e.id, produkt: e.produkt, warengruppeName: e.warengruppeName, block: label, kosten: r.kosten, inAnlehnungAn: r.inAnlehnungAn });
+          const bereich = (norm.anwendungsbereiche || []).find((b) => b.id === r.anwendungsbereichId);
+          treffer.push({
+            pgId: e.id, produkt: e.produkt, warengruppeName: e.warengruppeName, block: label,
+            kosten: r.kosten, inAnlehnungAn: r.inAnlehnungAn, anwendungsbereichName: bereich ? bereich.name : ""
+          });
         }
       });
     });
@@ -4135,14 +4167,16 @@ function normVerwendungInPruefgrundlagen(norm) {
 
 function normVerwendungHtml(norm) {
   const treffer = normVerwendungInPruefgrundlagen(norm);
+  const zeigeAnwendungsbereich = (norm.anwendungsbereiche || []).length > 0;
   return `<div class="card">
     <h2 style="margin:0 0 0.6rem 0">Verwendet in Prüfgrundlagen${treffer.length ? " (" + treffer.length + ")" : ""}</h2>
     ${treffer.length
-      ? `<table class="tabelle readonly"><thead><tr><th>Produkt</th><th>Warengruppe</th><th>Block</th><th>Kosten</th></tr></thead><tbody>
+      ? `<table class="tabelle readonly"><thead><tr><th>Produkt</th><th>Warengruppe</th><th>Block</th>${zeigeAnwendungsbereich ? "<th>Anwendungsbereich (Vorbelegung)</th>" : ""}<th>Kosten</th></tr></thead><tbody>
           ${treffer.map((t) => `<tr class="klickbar" data-action="norm-pg-oeffnen" data-id="${escapeHtml(t.pgId)}">
             <td>${escapeHtml(t.produkt || "(ohne Produktnamen)")}</td>
             <td>${escapeHtml(t.warengruppeName || "")}</td>
             <td>${escapeHtml(t.block)}${t.inAnlehnungAn ? ` <span class="muted">(in Anlehnung an)</span>` : ""}</td>
+            ${zeigeAnwendungsbereich ? `<td>${t.anwendungsbereichName ? escapeHtml(t.anwendungsbereichName) : "–"}</td>` : ""}
             <td>${t.kosten === null || t.kosten === undefined ? "Anfrage" : Number(t.kosten).toFixed(2) + " €"}</td>
           </tr>`).join("")}
         </tbody></table>`

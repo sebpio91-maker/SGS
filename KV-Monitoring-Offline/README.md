@@ -588,29 +588,40 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   solcher Bereiche anlegen (freier Name, z. B. „Campingbereich", plus
   Freitext für die dort geltenden Anforderungen) — frei bearbeitbar,
   zusammenführbar, löschbar, unabhängig von einer festen Klausel-Nummerierung
-  der Norm. **Die Auswahl, welcher Anwendungsbereich gilt, passiert bewusst
-  nicht schon beim Referenzieren der Norm in den Prüfgrundlagen** (dort gibt
-  es dafür kein Dropdown mehr) — eine Prüfgrundlage ist eine allgemeine, über
-  viele Kostenvoranschläge hinweg wiederverwendete Warengruppe→Produkt-
-  Zuordnung, zum Zeitpunkt der Referenzierung steht also noch kein konkretes
-  Projekt fest. Stattdessen erscheint das Anwendungsbereich-Dropdown erst
-  **direkt im Kostenvoranschlag, beim tatsächlichen Hinzufügen** der
-  Norm-Position (Warengruppen-Empfehlung, neben „+ hinzufügen" — analog zur
-  Style-Zuordnung) und gilt dann **ausschließlich für diesen einen KV**: die
-  Auswahl fließt direkt in die Bezeichnung der neu angelegten Position ein
-  (z. B. „…DIN EN 581-2 [Campingbereich]"), zwei KVs mit derselben
-  Prüfgrundlage können also unabhängig voneinander unterschiedliche
-  Anwendungsbereiche wählen. Normen ohne Anwendungsbereiche zeigen kein
-  Dropdown.
+  der Norm. **Welcher Anwendungsbereich gilt, lässt sich an zwei Stellen
+  wählen**: optional schon **beim Referenzieren der Norm in einer
+  Prüfgrundlage** (dort als Vorbelegung für alle KVs mit dieser
+  Prüfgrundlage gedacht — praktisch, wenn derselbe Bereich für die meisten
+  Projekte passt) und **spätestens beim tatsächlichen Hinzufügen der
+  Norm-Position zu einem konkreten Kostenvoranschlag** (Warengruppen-
+  Empfehlung, neben „+ hinzufügen" — analog zur Style-Zuordnung): das
+  Dropdown dort startet mit der Vorbelegung aus der Prüfgrundlage (falls
+  gesetzt), lässt sich aber **projektspezifisch überschreiben** — zwei KVs
+  mit derselben Prüfgrundlage können also trotzdem unterschiedliche
+  Anwendungsbereiche wählen, ohne die gemeinsame Prüfgrundlage zu verändern.
+  Wurde an der Prüfgrundlage gar kein Bereich vorbelegt, startet die Auswahl
+  im KV bei „kein bestimmter Bereich" und muss dort bei Bedarf getroffen
+  werden, da es sonst keinen anderen Ort mehr dafür gibt. Die Auswahl im KV
+  fließt direkt in die Bezeichnung der neu angelegten Position ein (z. B.
+  „…DIN EN 581-2 [Campingbereich]"). Normen ohne Anwendungsbereiche zeigen
+  kein Dropdown.
 
   Die Detailansicht einer Norm zeigt außerdem eine schreibgeschützte
   **„Verwendet in Prüfgrundlagen"-Übersicht**: für jede Prüfgrundlage, die
   diese Norm in einem ihrer drei Prüfblöcke referenziert, eine Zeile mit
-  Produkt, Warengruppe, Block (Sicherheit & Norm/FFU/StiWa) und den dort
-  **je Produkt hinterlegten Kosten** — Kosten hängen ja an der jeweiligen
-  Prüfgrundlage, nicht an der Norm selbst (siehe „Kosten je Norm" oben).
-  Klick auf eine Zeile springt direkt zur Detailansicht der jeweiligen
-  Prüfgrundlage.
+  Produkt, Warengruppe, Block (Sicherheit & Norm/FFU/StiWa), dem dort
+  **vorbelegten Anwendungsbereich** (Spalte erscheint nur, wenn die Norm
+  welche definiert hat) und den dort **je Produkt hinterlegten Kosten** —
+  Kosten hängen ja an der jeweiligen Prüfgrundlage, nicht an der Norm selbst
+  (siehe „Kosten je Norm" oben). Klick auf eine Zeile springt direkt zur
+  Detailansicht der jeweiligen Prüfgrundlage.
+
+  **Sortierung der Normen-Liste**: alphabetisch, aber Bezeichnungen, die mit
+  einem Buchstaben beginnen, immer vor solchen, die mit einer Ziffer beginnen
+  (z. B. „DIN EN 581-2" vor „102_PPM") — eine reine Sprach-Sortierung würde
+  Ziffern meist vor Buchstaben einordnen, was hier bewusst umgangen wird.
+  Innerhalb der beiden Gruppen gilt normale alphabetische bzw. numerische
+  Sortierung (z. B. „102_PPM" vor „163_PPM" vor „2_PPM").
 
   Jede Norm hat einen **Typ** — „Norm (extern)" für echte Regelwerke
   (DIN/EN/ISO) oder eine von drei internen Kategorien: **Prüfprogramm
