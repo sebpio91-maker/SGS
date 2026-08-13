@@ -4,14 +4,20 @@ rules_version = '2';
 // (ersetzt den Standard-Regelinhalt komplett).
 //
 // Prinzip: Nur angemeldete Nutzer:innen (auch anonym) dürfen Bilder hoch- und
-// runterladen. Maximal 8 MB pro Datei, nur Bild-Dateien.
+// runterladen. Maximal 8 MB pro Datei, nur Bild-Dateien. "list" wird
+// gebraucht, damit beim Löschen eines Threads dessen Bilder gefunden und
+// mitgelöscht werden können.
 service firebase.storage {
   match /b/{bucket}/o {
+    match /thread-images/{threadId} {
+      allow list: if request.auth != null;
+    }
     match /thread-images/{threadId}/{fileName} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null
+      allow create: if request.auth != null
         && request.resource.size < 8 * 1024 * 1024
         && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null;
     }
   }
 }

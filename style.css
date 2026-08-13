@@ -661,6 +661,10 @@ body {
   text-decoration: underline;
 }
 
+.chat-link-btn-danger {
+  color: #e0696c;
+}
+
 .chat-new-thread {
   display: flex;
   flex-direction: column;
@@ -704,18 +708,43 @@ body {
 
 .chat-thread-item {
   display: flex;
-  flex-direction: column;
-  gap: 3px;
-  text-align: left;
+  align-items: stretch;
   background: #262b36;
   border: 1px solid #3a4150;
   border-radius: 10px;
-  padding: 10px 12px;
-  cursor: pointer;
+  overflow: hidden;
 }
 
 .chat-thread-item:hover {
   border-color: #545c6e;
+}
+
+.chat-thread-item-open {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 10px 12px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.chat-thread-item-delete {
+  background: transparent;
+  border: none;
+  border-left: 1px solid #3a4150;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 0 14px;
+  font-size: 1rem;
+}
+
+.chat-thread-item-delete:hover {
+  color: #e0696c;
 }
 
 .chat-thread-item-title {

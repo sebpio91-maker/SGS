@@ -78,13 +78,29 @@ function renderThreadList(snapshot) {
   }
   snapshot.forEach((docSnap) => {
     const data = docSnap.data();
-    const item = document.createElement('button');
-    item.type = 'button';
+    const item = document.createElement('div');
     item.className = 'chat-thread-item';
-    item.innerHTML =
+
+    const openBtn = document.createElement('button');
+    openBtn.type = 'button';
+    openBtn.className = 'chat-thread-item-open';
+    openBtn.innerHTML =
       `<span class="chat-thread-item-title">${escapeHtml(data.title || 'Ohne Titel')}</span>` +
       `<span class="chat-thread-item-meta">von ${escapeHtml(data.author || 'Anonym')} · ${formatTimestamp(data.createdAt)}</span>`;
-    item.addEventListener('click', () => openThread(docSnap.id, data.title));
+    openBtn.addEventListener('click', () => openThread(docSnap.id, data.title));
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
+    deleteBtn.className = 'chat-thread-item-delete';
+    deleteBtn.title = 'Thread löschen';
+    deleteBtn.textContent = '🗑';
+    deleteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteThread(docSnap.id, data.title);
+    });
+
+    item.appendChild(openBtn);
+    item.appendChild(deleteBtn);
     listEl.appendChild(item);
   });
 }
@@ -142,6 +158,28 @@ async function saveTitle() {
   await fb.updateDoc(fb.doc(db, 'threads', currentThreadId), { title: newTitle });
   document.getElementById('chatThreadTitle').textContent = newTitle;
   hideEditTitle();
+}
+
+async function deleteThread(id, title) {
+  const ok = confirm(`Thread "${title || 'Ohne Titel'}" wirklich löschen? Das betrifft alle Nachrichten und Bilder darin und kann nicht rückgängig gemacht werden.`);
+  if (!ok) return;
+
+  const messagesSnap = await fb.getDocs(fb.collection(db, 'threads', id, 'messages'));
+  await Promise.all(messagesSnap.docs.map((d) => fb.deleteDoc(d.ref)));
+
+  try {
+    const folderRef = fb.ref(storage, `thread-images/${id}`);
+    const listing = await fb.listAll(folderRef);
+    await Promise.all(listing.items.map((item) => fb.deleteObject(item)));
+  } catch (err) {
+    // Bild-Löschung ist best-effort (z.B. falls die Storage-Regeln noch die
+    // alte Version ohne "list"/"delete" haben) -- der Thread wird trotzdem
+    // gelöscht, es blieben dann höchstens verwaiste Bilddateien liegen.
+  }
+
+  await fb.deleteDoc(fb.doc(db, 'threads', id));
+
+  if (currentThreadId === id) backToList();
 }
 
 async function createSingleThread(title, text, file, author) {
@@ -220,6 +258,10 @@ function initChatUi() {
   document.getElementById('chatEditTitleBtn').addEventListener('click', showEditTitle);
   document.getElementById('chatCancelTitleBtn').addEventListener('click', hideEditTitle);
   document.getElementById('chatSaveTitleBtn').addEventListener('click', saveTitle);
+  document.getElementById('chatDeleteThreadBtn').addEventListener('click', () => {
+    if (!currentThreadId) return;
+    deleteThread(currentThreadId, document.getElementById('chatThreadTitle').textContent);
+  });
 
   const q = fb.query(fb.collection(db, 'threads'), fb.orderBy('createdAt', 'desc'));
   fb.onSnapshot(q, renderThreadList);
@@ -243,6 +285,8 @@ async function loadFirebaseSdk() {
     addDoc: storeMod.addDoc,
     doc: storeMod.doc,
     updateDoc: storeMod.updateDoc,
+    deleteDoc: storeMod.deleteDoc,
+    getDocs: storeMod.getDocs,
     query: storeMod.query,
     orderBy: storeMod.orderBy,
     onSnapshot: storeMod.onSnapshot,
@@ -251,6 +295,8 @@ async function loadFirebaseSdk() {
     ref: storageMod.ref,
     uploadBytes: storageMod.uploadBytes,
     getDownloadURL: storageMod.getDownloadURL,
+    listAll: storageMod.listAll,
+    deleteObject: storageMod.deleteObject,
   });
 }
 
