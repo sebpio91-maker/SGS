@@ -24,6 +24,7 @@
     <div class="section-toolbar">
       <div class="stack-selector" id="stackSelector"></div>
       <button class="mode-btn" id="compareToggle" type="button">Ranges vergleichen</button>
+      <button class="mode-btn" id="spotToggle" type="button">Spot analysieren</button>
     </div>
 
     <div id="singleView">
@@ -91,6 +92,40 @@
       </div>
       <p class="compare-stats" id="compareStats"></p>
     </div>
+
+    <div id="spotView" class="spot-view">
+      <p class="spot-intro">Beschreibe kurz, was passiert ist – Position, Stack, deine Hand und ob/wer schon geraised hat. Die Auswertung läuft komplett lokal im Browser gegen deine Range-Daten, ohne KI-Aufruf und ohne Kosten.</p>
+      <textarea id="spotInput" class="spot-input" rows="3" placeholder="z.B. „UTG, 100bb, ich habe AKo, alle folden zu mir“ oder „SB, 40bb, BTN raised, ich habe A5s“"></textarea>
+      <button class="mode-btn spot-analyze-btn" id="spotAnalyzeBtn" type="button">Analysieren</button>
+
+      <div id="spotParsed" class="spot-parsed">
+        <h3>Erkannt – bitte prüfen und ggf. korrigieren:</h3>
+        <div class="spot-field-grid">
+          <label for="spotScenario">Spot-Typ
+            <select id="spotScenario" class="compare-select">
+              <option value="rfi">Unopened (Open-Raise-Entscheidung)</option>
+              <option value="vs_open">Gegen einen Open (Call/3-Bet-Entscheidung)</option>
+              <option value="other">Anderes (3-Bet-Pot, Squeeze, 4-Bet, Rejam, Postflop, ...)</option>
+            </select>
+          </label>
+          <label for="spotStack">Stack
+            <select id="spotStack" class="compare-select"></select>
+          </label>
+          <label for="spotHeroPos">Deine Position
+            <select id="spotHeroPos" class="compare-select"></select>
+          </label>
+          <label for="spotOpenerPos" id="spotOpenerRow" class="spot-opener-row">Eröffner-Position
+            <select id="spotOpenerPos" class="compare-select"></select>
+          </label>
+          <label for="spotHand">Deine Hand
+            <input type="text" id="spotHand" class="compare-select" placeholder="z.B. AKo, T9s, 77">
+          </label>
+        </div>
+        <button class="mode-btn active" id="spotConfirmBtn" type="button">Auswertung anzeigen</button>
+      </div>
+
+      <div id="spotResult" class="spot-result"></div>
+    </div>
   </section>
 </main>
 
@@ -100,6 +135,7 @@
 
 <script src="ranges.js"></script>
 <script src="myranges.js"></script>
+<script src="spotparser.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

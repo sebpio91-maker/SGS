@@ -30,6 +30,26 @@ Nicht übernommen wurde das Blatt "Gametree" (Postflop-Bet-Sizing-Frequenzen fü
 Boardtypen) – das ist inhaltlich ein anderes Thema als Preflop-Positionsranges und würde eine
 eigene Ansicht brauchen.
 
+## Ranges vergleichen
+
+Über "Ranges vergleichen" lassen sich zwei Ranges nebeneinander im Grid darstellen – entweder
+zwei Positionen beim gleichen Stack, oder eine Position bei zwei unterschiedlichen Stacktiefen.
+Die verglichenen Sitze werden am Tisch farblich markiert.
+
+## Spot analysieren
+
+Über "Spot analysieren" lässt sich ein Spot als Freitext beschreiben (z.B. "UTG, 100bb, ich habe
+AKo, alle folden zu mir"). Ein lokaler Parser (`spotparser.js`) erkennt daraus Position, Stack,
+Hand und Situation – **ohne KI-Aufruf, ohne Internetverbindung, ohne Kosten**. Die erkannten
+Felder werden vor der Auswertung angezeigt und lassen sich korrigieren.
+
+Ausgewertet wird nur, wofür echte Daten aus der Excel-Tabelle vorliegen:
+- **Unopened-Spots** bei UTG–BTN: hand-genaue Ja/Nein-Antwort aus dem Open-Raise-Grid.
+- **Spots gegen einen Open**: aggregierter Continue-Prozentsatz (keine Hand-für-Hand-Antwort,
+  da die Tabelle das nicht hergibt).
+- **Alles andere** (3-Bet-Pots, Squeeze, 4-Bet, Rejam, Postflop): explizite Meldung, dass dafür
+  keine Daten vorliegen, statt einer erfundenen Antwort.
+
 ## Starten
 
 Kein Build-Schritt nötig, reines HTML/CSS/JS:
@@ -49,3 +69,5 @@ Dann im Browser `http://localhost:8000` öffnen. Alternativ `index.html` direkt 
 - `myranges.js` – aus der Excel-Datei generierte Range-Daten (Open-Raise-Grid je Stacktiefe,
   Continue-Statistiken); bei einer neuen Datei neu generieren, nicht von Hand pflegen
 - `app.js` – Rendering des Tisches, der Range-Grid bzw. Continue-Stats, Klick-Interaktion
+- `spotparser.js` – Freitext-Parser für die Spot-Analyse (Position/Stack/Hand/Situation
+  erkennen), rein lokal, keine externen Aufrufe

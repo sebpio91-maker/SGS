@@ -25,6 +25,7 @@ let activePositionId = 'BTN';
 let activeStack = 100;
 let compareMode = false;
 let compareAxis = 'position'; // 'position' = gleicher Stack, unterschiedliche Positionen; 'stack' = gleiche Position, unterschiedliche Stacktiefen
+let spotMode = false;
 
 function renderTable() {
   const table = document.getElementById('pokerTable');
@@ -77,6 +78,7 @@ function updateStackButtons() {
 
 function selectPosition(posId) {
   if (compareMode) setCompareMode(false);
+  if (spotMode) setSpotMode(false);
   activePositionId = posId;
   updateSeatActiveClasses();
   renderRange(posId);
@@ -84,7 +86,7 @@ function selectPosition(posId) {
 
 function updateSeatActiveClasses() {
   document.querySelectorAll('.seat').forEach((seat) => {
-    const isActive = !compareMode && seat.dataset.position === activePositionId;
+    const isActive = !compareMode && !spotMode && seat.dataset.position === activePositionId;
     seat.classList.toggle('active', isActive);
     seat.style.setProperty('--seat-accent', RANGE_DATA[seat.dataset.position].accent);
   });
@@ -304,10 +306,11 @@ function getCompareSelection() {
 }
 
 function setCompareMode(on) {
+  if (on && spotMode) setSpotMode(false);
   compareMode = on;
   document.getElementById('singleView').style.display = on ? 'none' : '';
   document.getElementById('compareView').style.display = on ? 'block' : 'none';
-  document.getElementById('stackSelector').style.display = on ? 'none' : '';
+  document.getElementById('stackSelector').style.display = on || spotMode ? 'none' : '';
   document.getElementById('compareToggle').textContent = on ? 'Zurück zur Einzelansicht' : 'Ranges vergleichen';
   document.getElementById('compareToggle').classList.toggle('active', on);
   updateSeatActiveClasses();
@@ -315,6 +318,17 @@ function setCompareMode(on) {
     renderCompare();
   }
   updateCompareSeatHighlight();
+}
+
+function setSpotMode(on) {
+  if (on && compareMode) setCompareMode(false);
+  spotMode = on;
+  document.getElementById('singleView').style.display = on ? 'none' : '';
+  document.getElementById('spotView').style.display = on ? 'block' : 'none';
+  document.getElementById('stackSelector').style.display = on || compareMode ? 'none' : '';
+  document.getElementById('spotToggle').textContent = on ? 'Zurück zur Einzelansicht' : 'Spot analysieren';
+  document.getElementById('spotToggle').classList.toggle('active', on);
+  updateSeatActiveClasses();
 }
 
 function renderCompare() {
@@ -368,7 +382,117 @@ function renderCompare() {
     `Beide: ${bothCombos} Kombos (${pct(bothCombos)} %)`;
 }
 
+function setupSpotControls() {
+  const stackSel = document.getElementById('spotStack');
+  const heroSel = document.getElementById('spotHeroPos');
+  const openerSel = document.getElementById('spotOpenerPos');
+  const scenarioSel = document.getElementById('spotScenario');
+
+  fillSelect(stackSel, STACK_DEPTHS, (d) => d + ' BB');
+  fillSelect(heroSel, POSITIONS.map((p) => p.id), (id) => POSITIONS.find((p) => p.id === id).label);
+  fillSelect(openerSel, POSITIONS.map((p) => p.id), (id) => POSITIONS.find((p) => p.id === id).label);
+  stackSel.value = 100;
+  heroSel.value = 'BTN';
+  openerSel.value = 'UTG';
+
+  document.getElementById('spotToggle').addEventListener('click', () => {
+    setSpotMode(!spotMode);
+  });
+
+  scenarioSel.addEventListener('change', updateSpotOpenerVisibility);
+  updateSpotOpenerVisibility();
+
+  document.getElementById('spotAnalyzeBtn').addEventListener('click', () => {
+    const text = document.getElementById('spotInput').value;
+    const parsed = parseSpotText(text);
+
+    scenarioSel.value = parsed.scenario;
+    stackSel.value = parsed.stack || 100;
+    if (parsed.heroPos) heroSel.value = parsed.heroPos;
+    if (parsed.openerPos) openerSel.value = parsed.openerPos;
+    document.getElementById('spotHand').value = parsed.hand || '';
+    updateSpotOpenerVisibility();
+
+    document.getElementById('spotParsed').classList.add('visible');
+    renderSpotResult(null);
+  });
+
+  document.getElementById('spotConfirmBtn').addEventListener('click', () => {
+    renderSpotResult({
+      scenario: scenarioSel.value,
+      stack: Number(stackSel.value),
+      heroPos: heroSel.value,
+      openerPos: openerSel.value,
+      hand: document.getElementById('spotHand').value,
+    });
+  });
+}
+
+function updateSpotOpenerVisibility() {
+  const scenario = document.getElementById('spotScenario').value;
+  document.getElementById('spotOpenerRow').style.display = scenario === 'vs_open' ? 'flex' : 'none';
+}
+
+function renderSpotResult(input) {
+  const resultEl = document.getElementById('spotResult');
+  if (!input) {
+    resultEl.innerHTML = '';
+    resultEl.classList.remove('visible');
+    return;
+  }
+
+  const heroLabel = POSITIONS.find((p) => p.id === input.heroPos).label;
+  let html = '';
+
+  if (input.scenario === 'other') {
+    html = `<p class="spot-verdict spot-verdict-unknown">Für diesen Spot-Typ liegen in deiner Tabelle keine Daten vor (nur Open-Raise-Ranges und aggregierte Continue-Werte gegen Opens sind hinterlegt). Ich kann dazu keine verlässliche Aussage aus deinen Daten treffen.</p>`;
+  } else if (input.scenario === 'rfi') {
+    const data = RANGE_DATA[input.heroPos];
+    if (data.kind !== 'open') {
+      html = `<p class="spot-verdict spot-verdict-unknown">Für ${heroLabel} enthält deine Tabelle keine Hand-für-Hand-Open-Range (nur Continue-Werte gegen andere Positionen). Wähle oben ggf. den Spot-Typ „Gegen einen Open“.</p>`;
+    } else {
+      const cell = handToCell(input.hand);
+      if (!cell) {
+        html = `<p class="spot-verdict spot-verdict-unknown">„${escapeHtml(input.hand || '')}“ ist keine gültige Hand-Notation. Bitte im Format AKo, T9s oder 77 angeben.</p>`;
+      } else {
+        const { cells, totalCombos } = buildOpenRaiseGrid(input.stack, data.group);
+        const key = `${cell.row}-${cell.col}`;
+        const inRange = cells.has(key);
+        const pct = ((totalCombos / TOTAL_COMBOS) * 100).toFixed(1);
+        const handLabel = handCodeAt(cell.row, cell.col);
+        html =
+          `<p class="spot-verdict ${inRange ? 'spot-verdict-yes' : 'spot-verdict-no'}">` +
+          `${inRange ? '✅ Raise' : '❌ Fold'} – ${handLabel} ist bei ${heroLabel} (${input.stack} BB) laut deiner Tabelle ` +
+          `${inRange ? '' : 'NICHT '}in der Open-Range.</p>` +
+          `<p class="spot-detail">${heroLabel} eröffnet bei ${input.stack} BB insgesamt ${totalCombos} von ${TOTAL_COMBOS} Kombinationen (${pct} %).</p>`;
+      }
+    }
+  } else if (input.scenario === 'vs_open') {
+    const openerLabel = POSITIONS.find((p) => p.id === input.openerPos).label;
+    const openerGroup = toContinueGroup(input.openerPos);
+    const heroGroup = toContinueGroup(input.heroPos);
+    const stats = CONTINUE_STATS[input.stack] || {};
+    const value = stats[openerGroup] && stats[openerGroup][heroGroup];
+    if (value === undefined) {
+      html = `<p class="spot-verdict spot-verdict-unknown">Für „${openerLabel} eröffnet, ${heroLabel} reagiert“ liegen bei ${input.stack} BB keine Daten in deiner Tabelle vor.</p>`;
+    } else {
+      const pct = (value * 100).toFixed(1);
+      html =
+        `<p class="spot-verdict spot-verdict-info">📊 Laut deiner Tabelle spielt ${heroLabel} bei ${input.stack} BB gegen einen ${openerLabel}-Open im Schnitt <strong>${pct} %</strong> der Hände weiter (Call oder 3-Bet zusammen).</p>` +
+        `<p class="spot-detail">Deine Tabelle enthält dafür keine Hand-für-Hand-Aufschlüsselung – ob ${escapeHtml(input.hand || 'diese Hand')} konkret dazugehört, ist daraus nicht ablesbar. Nutze die Einzelansicht von ${heroLabel}, um die aggregierten Werte für alle Eröffner zu vergleichen.</p>`;
+    }
+  }
+
+  resultEl.innerHTML = html;
+  resultEl.classList.add('visible');
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 renderTable();
 renderStackSelector();
 setupCompareControls();
+setupSpotControls();
 selectPosition(activePositionId);

@@ -509,6 +509,118 @@ body {
   background: var(--cmp-both);
 }
 
+.spot-view {
+  display: none;
+}
+
+.spot-intro {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+
+.spot-input {
+  width: 100%;
+  background: #262b36;
+  border: 1px solid #3a4150;
+  color: var(--text);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  margin-bottom: 10px;
+}
+
+.spot-analyze-btn {
+  margin-bottom: 18px;
+}
+
+.spot-parsed {
+  display: none;
+  padding-top: 16px;
+  border-top: 1px dashed var(--fold-cell-border);
+}
+
+.spot-parsed.visible {
+  display: block;
+}
+
+.spot-parsed h3 {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+}
+
+.spot-field-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px 12px;
+  margin-bottom: 14px;
+}
+
+.spot-field-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.spot-field-grid select,
+.spot-field-grid input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.spot-opener-row {
+  display: none;
+}
+
+.spot-result {
+  display: none;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--fold-cell-border);
+}
+
+.spot-result.visible {
+  display: block;
+}
+
+.spot-verdict {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.spot-verdict-yes {
+  color: #3f9b5e;
+}
+
+.spot-verdict-no {
+  color: #e2703a;
+}
+
+.spot-verdict-info {
+  color: var(--text);
+}
+
+.spot-verdict-unknown {
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+.spot-detail {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
 .app-footer {
   max-width: 900px;
   margin: 10px auto 30px;
