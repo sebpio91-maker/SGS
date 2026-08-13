@@ -45,17 +45,21 @@ function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-async function uploadImageIfAny(fileInput, pathPrefix) {
-  const file = fileInput.files && fileInput.files[0];
+async function uploadImage(file, pathPrefix) {
   if (!file) return null;
   if (file.size > MAX_IMAGE_BYTES) {
-    alert('Das Bild ist größer als 8 MB. Bitte ein kleineres Bild wählen.');
+    alert(`Das Bild "${file.name}" ist größer als 8 MB und wird übersprungen.`);
     return null;
   }
   const path = `${pathPrefix}/${Date.now()}_${file.name}`;
   const storageRef = fb.ref(storage, path);
   await fb.uploadBytes(storageRef, file);
-  const url = await fb.getDownloadURL(storageRef);
+  return fb.getDownloadURL(storageRef);
+}
+
+async function uploadImageIfAny(fileInput, pathPrefix) {
+  const file = fileInput.files && fileInput.files[0];
+  const url = await uploadImage(file, pathPrefix);
   fileInput.value = '';
   return url;
 }
@@ -114,23 +118,14 @@ function backToList() {
   document.getElementById('chatThreadDetailPane').classList.remove('visible');
 }
 
-async function createThread() {
-  const title = document.getElementById('chatNewTitle').value.trim();
-  if (!title) {
-    alert('Bitte einen Titel für den Thread eingeben.');
-    return;
-  }
-  const text = document.getElementById('chatNewText').value.trim();
-  const imageInput = document.getElementById('chatNewImage');
-  const author = ensureDisplayName();
-
+async function createSingleThread(title, text, file, author) {
   const threadRef = await fb.addDoc(fb.collection(db, 'threads'), {
     title,
     author,
     createdAt: fb.serverTimestamp(),
   });
 
-  const imageUrl = await uploadImageIfAny(imageInput, `thread-images/${threadRef.id}`);
+  const imageUrl = await uploadImage(file, `thread-images/${threadRef.id}`);
   if (text || imageUrl) {
     await fb.addDoc(fb.collection(db, 'threads', threadRef.id, 'messages'), {
       author,
@@ -140,9 +135,33 @@ async function createThread() {
     });
   }
 
+  return threadRef.id;
+}
+
+async function createThread() {
+  const title = document.getElementById('chatNewTitle').value.trim();
+  if (!title) {
+    alert('Bitte einen Titel für den Thread eingeben.');
+    return;
+  }
+  const text = document.getElementById('chatNewText').value.trim();
+  const imageInput = document.getElementById('chatNewImage');
+  const files = Array.from(imageInput.files || []);
+  const author = ensureDisplayName();
+
   document.getElementById('chatNewTitle').value = '';
   document.getElementById('chatNewText').value = '';
-  openThread(threadRef.id, title);
+  imageInput.value = '';
+
+  if (files.length > 1) {
+    for (let i = 0; i < files.length; i++) {
+      await createSingleThread(`${title} (${i + 1}/${files.length})`, text, files[i], author);
+    }
+    backToList();
+  } else {
+    const threadId = await createSingleThread(title, text, files[0] || null, author);
+    openThread(threadId, title);
+  }
 }
 
 async function sendMessage() {

@@ -696,6 +696,12 @@ body {
   font-size: 0.85rem;
 }
 
+.chat-hint {
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  margin: -2px 0 0;
+}
+
 .chat-thread-item {
   display: flex;
   flex-direction: column;
