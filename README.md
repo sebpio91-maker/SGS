@@ -50,6 +50,48 @@ Ausgewertet wird nur, wofür echte Daten aus der Excel-Tabelle vorliegen:
 - **Alles andere** (3-Bet-Pots, Squeeze, 4-Bet, Rejam, Postflop): explizite Meldung, dass dafür
   keine Daten vorliegen, statt einer erfundenen Antwort.
 
+## Hand-Chat
+
+Über "Hand-Chat" lässt sich pro Hand ein Thread eröffnen, in dem du dich mit Freunden austauschen
+kannst – inklusive Bild-Upload (z.B. Screenshots der Hand). Das ist die einzige Funktion dieser
+App, die **nicht** rein lokal im Browser läuft: Damit mehrere Personen dieselben Threads und
+Nachrichten sehen, braucht es einen gemeinsamen Speicherort im Internet.
+
+**Ohne Einrichtung zeigt die App automatisch einen Hinweis** statt kaputt zu sein oder Fehler zu
+werfen – der Rest der App (Ranges, Vergleich, Spot-Analyse) funktioniert davon komplett
+unabhängig weiter.
+
+### Hand-Chat einrichten
+
+Genutzt wird [Firebase](https://firebase.google.com) (Google) – kostenlos im Rahmen des
+Gratis-Kontingents ("Spark-Plan"), reicht für einen Freundeskreis locker aus, kein eigener Server
+nötig. Einmalige Einrichtung (ca. 10 Minuten):
+
+1. Auf [console.firebase.google.com](https://console.firebase.google.com) mit einem
+   Google-Konto ein neues Projekt anlegen.
+2. Im Projekt unter **Build → Firestore Database** eine Datenbank anlegen (Produktionsmodus,
+   beliebige Region).
+3. Unter **Build → Storage** einen Storage-Bucket aktivieren (für die hochgeladenen Bilder).
+4. Unter **Build → Authentication → Sign-in method** den Anbieter **"Anonym"** aktivieren
+   (dadurch gibt es für deine Freunde *keinen* Login-Bildschirm – im Hintergrund bekommt jeder
+   Browser trotzdem eine anonyme, eindeutige Kennung, damit die Sicherheitsregeln greifen können).
+5. In der Firebase-Konsole unter **Projekteinstellungen → Meine Apps** eine **Web-App**
+   hinzufügen. Die angezeigten Konfigurationswerte (`apiKey`, `authDomain`, `projectId`, ...) in
+   `firebase-config.js` eintragen.
+6. Unter **Firestore Database → Regeln** den Inhalt von [`firestore.rules`](./firestore.rules)
+   einfügen und veröffentlichen.
+7. Unter **Storage → Regeln** den Inhalt von [`storage.rules`](./storage.rules) einfügen und
+   veröffentlichen.
+
+Die Werte in `firebase-config.js` sind kein Geheimnis – Firebase-Web-Konfiguration ist zur
+öffentlichen Verwendung im Browser-Code gedacht. Die eigentliche Sicherheit kommt aus den beiden
+Regel-Dateien (nur angemeldete – auch anonym – Nutzer:innen dürfen lesen/schreiben, Nachrichten
+sind unveränderlich, Bilder auf 8 MB begrenzt).
+
+Danach: Anzeigename einmal festlegen (wird lokal im Browser gespeichert), Thread eröffnen, Link
+zur App an Freunde schicken – sie sehen dieselben Threads live, sobald sie ebenfalls einen
+Anzeigenamen gewählt haben.
+
 ## Starten
 
 Kein Build-Schritt nötig, reines HTML/CSS/JS:
@@ -71,3 +113,7 @@ Dann im Browser `http://localhost:8000` öffnen. Alternativ `index.html` direkt 
 - `app.js` – Rendering des Tisches, der Range-Grid bzw. Continue-Stats, Klick-Interaktion
 - `spotparser.js` – Freitext-Parser für die Spot-Analyse (Position/Stack/Hand/Situation
   erkennen), rein lokal, keine externen Aufrufe
+- `chat.js` – Hand-Chat-Logik (Firebase Firestore + Storage), lädt das Firebase-SDK erst bei
+  Bedarf per dynamic import
+- `firebase-config.js` – Firebase-Projekt-Zugangsdaten; hier deine eigenen Werte eintragen
+- `firestore.rules` / `storage.rules` – Sicherheitsregeln zum Einfügen in die Firebase-Konsole

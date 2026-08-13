@@ -26,6 +26,7 @@ let activeStack = 100;
 let compareMode = false;
 let compareAxis = 'position'; // 'position' = gleicher Stack, unterschiedliche Positionen; 'stack' = gleiche Position, unterschiedliche Stacktiefen
 let spotMode = false;
+let chatMode = false;
 
 function renderTable() {
   const table = document.getElementById('pokerTable');
@@ -79,6 +80,7 @@ function updateStackButtons() {
 function selectPosition(posId) {
   if (compareMode) setCompareMode(false);
   if (spotMode) setSpotMode(false);
+  if (chatMode) setChatMode(false);
   activePositionId = posId;
   updateSeatActiveClasses();
   renderRange(posId);
@@ -86,7 +88,7 @@ function selectPosition(posId) {
 
 function updateSeatActiveClasses() {
   document.querySelectorAll('.seat').forEach((seat) => {
-    const isActive = !compareMode && !spotMode && seat.dataset.position === activePositionId;
+    const isActive = !compareMode && !spotMode && !chatMode && seat.dataset.position === activePositionId;
     seat.classList.toggle('active', isActive);
     seat.style.setProperty('--seat-accent', RANGE_DATA[seat.dataset.position].accent);
   });
@@ -305,12 +307,17 @@ function getCompareSelection() {
   };
 }
 
+function anyAltModeActive() {
+  return compareMode || spotMode || chatMode;
+}
+
 function setCompareMode(on) {
   if (on && spotMode) setSpotMode(false);
+  if (on && chatMode) setChatMode(false);
   compareMode = on;
   document.getElementById('singleView').style.display = on ? 'none' : '';
   document.getElementById('compareView').style.display = on ? 'block' : 'none';
-  document.getElementById('stackSelector').style.display = on || spotMode ? 'none' : '';
+  document.getElementById('stackSelector').style.display = anyAltModeActive() ? 'none' : '';
   document.getElementById('compareToggle').textContent = on ? 'Zurück zur Einzelansicht' : 'Ranges vergleichen';
   document.getElementById('compareToggle').classList.toggle('active', on);
   updateSeatActiveClasses();
@@ -322,12 +329,25 @@ function setCompareMode(on) {
 
 function setSpotMode(on) {
   if (on && compareMode) setCompareMode(false);
+  if (on && chatMode) setChatMode(false);
   spotMode = on;
   document.getElementById('singleView').style.display = on ? 'none' : '';
   document.getElementById('spotView').style.display = on ? 'block' : 'none';
-  document.getElementById('stackSelector').style.display = on || compareMode ? 'none' : '';
+  document.getElementById('stackSelector').style.display = anyAltModeActive() ? 'none' : '';
   document.getElementById('spotToggle').textContent = on ? 'Zurück zur Einzelansicht' : 'Spot analysieren';
   document.getElementById('spotToggle').classList.toggle('active', on);
+  updateSeatActiveClasses();
+}
+
+function setChatMode(on) {
+  if (on && compareMode) setCompareMode(false);
+  if (on && spotMode) setSpotMode(false);
+  chatMode = on;
+  document.getElementById('singleView').style.display = on ? 'none' : '';
+  document.getElementById('chatView').style.display = on ? 'block' : 'none';
+  document.getElementById('stackSelector').style.display = anyAltModeActive() ? 'none' : '';
+  document.getElementById('chatToggle').textContent = on ? 'Zurück zur Einzelansicht' : 'Hand-Chat';
+  document.getElementById('chatToggle').classList.toggle('active', on);
   updateSeatActiveClasses();
 }
 
@@ -490,6 +510,10 @@ function renderSpotResult(input) {
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
+
+document.getElementById('chatToggle').addEventListener('click', () => {
+  setChatMode(!chatMode);
+});
 
 renderTable();
 renderStackSelector();

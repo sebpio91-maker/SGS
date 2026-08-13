@@ -1,0 +1,17 @@
+rules_version = '2';
+
+// Diese Regeln in der Firebase-Konsole unter Storage -> Regeln einfügen
+// (ersetzt den Standard-Regelinhalt komplett).
+//
+// Prinzip: Nur angemeldete Nutzer:innen (auch anonym) dürfen Bilder hoch- und
+// runterladen. Maximal 8 MB pro Datei, nur Bild-Dateien.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /thread-images/{threadId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && request.resource.size < 8 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+  }
+}
