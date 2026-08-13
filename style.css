@@ -737,7 +737,37 @@ body {
 }
 
 .chat-thread-detail h3 {
-  margin: 10px 0 14px;
+  margin: 10px 0;
+}
+
+.chat-thread-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.chat-edit-title-form {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.chat-edit-title-form.visible {
+  display: flex;
+}
+
+.chat-edit-title-form input[type='text'] {
+  flex: 1;
+  min-width: 160px;
+  background: #262b36;
+  border: 1px solid #3a4150;
+  color: var(--text);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.85rem;
 }
 
 .chat-messages {

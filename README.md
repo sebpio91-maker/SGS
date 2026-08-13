@@ -53,11 +53,13 @@ Ausgewertet wird nur, wofür echte Daten aus der Excel-Tabelle vorliegen:
 ## Hand-Chat
 
 Über "Hand-Chat" lässt sich pro Hand ein Thread eröffnen, in dem du dich mit Freunden austauschen
-kannst – inklusive Bild-Upload (z.B. Screenshots der Hand). Beim Eröffnen eines neuen Threads
+kannst – inklusive Bild-Upload (z.B. Screenshots der Hand). Ein Titel wird beim Eröffnen nicht
+verlangt – ein neuer Thread bekommt automatisch einen Titel mit Datum/Uhrzeit und lässt sich direkt
+im Thread selbst umbenennen ("Titel bearbeiten"), sobald du siehst, worum es geht. Beim Eröffnen
 können auch mehrere Bilder auf einmal ausgewählt werden – dann wird für **jedes Bild automatisch
-ein eigener Thread** erstellt (Titel durchnummeriert, z.B. "KK vs. 3-Bet (1/3)"). Das ist die einzige Funktion dieser
-App, die **nicht** rein lokal im Browser läuft: Damit mehrere Personen dieselben Threads und
-Nachrichten sehen, braucht es einen gemeinsamen Speicherort im Internet.
+ein eigener Thread** erstellt. Das ist die einzige Funktion dieser App, die **nicht** rein lokal im
+Browser läuft: Damit mehrere Personen dieselben Threads und Nachrichten sehen, braucht es einen
+gemeinsamen Speicherort im Internet.
 
 **Ohne Einrichtung zeigt die App automatisch einen Hinweis** statt kaputt zu sein oder Fehler zu
 werfen – der Rest der App (Ranges, Vergleich, Spot-Analyse) funktioniert davon komplett

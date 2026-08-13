@@ -145,10 +145,10 @@
 
         <div id="chatThreadListPane">
           <div class="chat-new-thread">
-            <input type="text" id="chatNewTitle" class="compare-select" placeholder="Titel, z.B. „KK vs. 3-Bet auf dem Button“">
             <textarea id="chatNewText" class="spot-input" rows="2" placeholder="Kurzbeschreibung (optional)"></textarea>
             <input type="file" id="chatNewImage" accept="image/*" multiple>
-            <p class="chat-hint">Mehrere Bilder ausgewählt? Für jedes Bild wird automatisch ein eigener Thread eröffnet (Titel wird durchnummeriert).</p>
+            <p class="chat-hint">Ein Titel wird nicht vorab benötigt – den kannst du im Thread selbst vergeben, sobald das Bild
+            sichtbar ist. Mehrere Bilder ausgewählt? Dann wird für jedes Bild automatisch ein eigener Thread eröffnet.</p>
             <button class="mode-btn active" id="chatCreateThreadBtn" type="button">Neuen Thread eröffnen</button>
           </div>
           <div id="chatThreadList" class="chat-thread-list"></div>
@@ -156,7 +156,15 @@
 
         <div id="chatThreadDetailPane" class="chat-thread-detail">
           <button class="chat-link-btn" id="chatBackToList" type="button">← Zur Übersicht</button>
-          <h3 id="chatThreadTitle"></h3>
+          <div class="chat-thread-title-row">
+            <h3 id="chatThreadTitle"></h3>
+            <button class="chat-link-btn" id="chatEditTitleBtn" type="button">Titel bearbeiten</button>
+          </div>
+          <div id="chatEditTitleForm" class="chat-edit-title-form">
+            <input type="text" id="chatEditTitleInput" class="compare-select" placeholder="Titel eingeben">
+            <button class="mode-btn active" id="chatSaveTitleBtn" type="button">Speichern</button>
+            <button class="chat-link-btn" id="chatCancelTitleBtn" type="button">Abbrechen</button>
+          </div>
           <div id="chatMessages" class="chat-messages"></div>
           <div class="chat-composer">
             <textarea id="chatMessageText" class="spot-input" rows="2" placeholder="Nachricht schreiben..."></textarea>

@@ -41,6 +41,11 @@ function formatTimestamp(ts) {
   return ts.toDate().toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
+function defaultTitle(suffix) {
+  const stamp = new Date().toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  return suffix ? `Hand vom ${stamp} (${suffix})` : `Hand vom ${stamp}`;
+}
+
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
@@ -105,6 +110,7 @@ function openThread(id, title) {
   document.getElementById('chatThreadTitle').textContent = title || '';
   document.getElementById('chatThreadListPane').style.display = 'none';
   document.getElementById('chatThreadDetailPane').classList.add('visible');
+  hideEditTitle();
 
   if (unsubscribeMessages) unsubscribeMessages();
   const q = fb.query(fb.collection(db, 'threads', id, 'messages'), fb.orderBy('createdAt', 'asc'));
@@ -116,6 +122,26 @@ function backToList() {
   if (unsubscribeMessages) unsubscribeMessages();
   document.getElementById('chatThreadListPane').style.display = '';
   document.getElementById('chatThreadDetailPane').classList.remove('visible');
+  hideEditTitle();
+}
+
+function showEditTitle() {
+  const currentTitle = document.getElementById('chatThreadTitle').textContent;
+  document.getElementById('chatEditTitleInput').value = currentTitle;
+  document.getElementById('chatEditTitleForm').classList.add('visible');
+  document.getElementById('chatEditTitleInput').focus();
+}
+
+function hideEditTitle() {
+  document.getElementById('chatEditTitleForm').classList.remove('visible');
+}
+
+async function saveTitle() {
+  const newTitle = document.getElementById('chatEditTitleInput').value.trim();
+  if (!newTitle || !currentThreadId) return;
+  await fb.updateDoc(fb.doc(db, 'threads', currentThreadId), { title: newTitle });
+  document.getElementById('chatThreadTitle').textContent = newTitle;
+  hideEditTitle();
 }
 
 async function createSingleThread(title, text, file, author) {
@@ -139,26 +165,26 @@ async function createSingleThread(title, text, file, author) {
 }
 
 async function createThread() {
-  const title = document.getElementById('chatNewTitle').value.trim();
-  if (!title) {
-    alert('Bitte einen Titel für den Thread eingeben.');
-    return;
-  }
   const text = document.getElementById('chatNewText').value.trim();
   const imageInput = document.getElementById('chatNewImage');
   const files = Array.from(imageInput.files || []);
   const author = ensureDisplayName();
 
-  document.getElementById('chatNewTitle').value = '';
+  if (!text && files.length === 0) {
+    alert('Bitte einen Text eingeben oder mindestens ein Bild auswählen.');
+    return;
+  }
+
   document.getElementById('chatNewText').value = '';
   imageInput.value = '';
 
   if (files.length > 1) {
     for (let i = 0; i < files.length; i++) {
-      await createSingleThread(`${title} (${i + 1}/${files.length})`, text, files[i], author);
+      await createSingleThread(defaultTitle(`${i + 1}/${files.length}`), text, files[i], author);
     }
     backToList();
   } else {
+    const title = defaultTitle();
     const threadId = await createSingleThread(title, text, files[0] || null, author);
     openThread(threadId, title);
   }
@@ -191,6 +217,9 @@ function initChatUi() {
   document.getElementById('chatCreateThreadBtn').addEventListener('click', createThread);
   document.getElementById('chatSendBtn').addEventListener('click', sendMessage);
   document.getElementById('chatBackToList').addEventListener('click', backToList);
+  document.getElementById('chatEditTitleBtn').addEventListener('click', showEditTitle);
+  document.getElementById('chatCancelTitleBtn').addEventListener('click', hideEditTitle);
+  document.getElementById('chatSaveTitleBtn').addEventListener('click', saveTitle);
 
   const q = fb.query(fb.collection(db, 'threads'), fb.orderBy('createdAt', 'desc'));
   fb.onSnapshot(q, renderThreadList);
@@ -212,6 +241,8 @@ async function loadFirebaseSdk() {
     getFirestore: storeMod.getFirestore,
     collection: storeMod.collection,
     addDoc: storeMod.addDoc,
+    doc: storeMod.doc,
+    updateDoc: storeMod.updateDoc,
     query: storeMod.query,
     orderBy: storeMod.orderBy,
     onSnapshot: storeMod.onSnapshot,

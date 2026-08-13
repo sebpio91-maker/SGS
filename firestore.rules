@@ -4,8 +4,10 @@ rules_version = '2';
 // einfügen (ersetzt den Standard-Regelinhalt komplett).
 //
 // Prinzip: Nur angemeldete Nutzer:innen (auch anonym) dürfen lesen/schreiben.
-// Threads und Nachrichten können nur erstellt, nie bearbeitet oder gelöscht
-// werden (einfacher, unveränderlicher Chat-Verlauf).
+// Threads und Nachrichten können nur erstellt und nie gelöscht werden
+// (unveränderlicher Chat-Verlauf) -- Ausnahme: der Titel eines Threads darf
+// nachträglich geändert werden (z.B. nachdem das Bild sichtbar ist), alle
+// anderen Felder bleiben fix.
 service cloud.firestore {
   match /databases/{database}/documents {
     match /threads/{threadId} {
@@ -16,7 +18,12 @@ service cloud.firestore {
         && request.resource.data.title.size() < 200
         && request.resource.data.author is string
         && request.resource.data.author.size() < 100;
-      allow update, delete: if false;
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title'])
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() < 200;
+      allow delete: if false;
 
       match /messages/{messageId} {
         allow read: if request.auth != null;
