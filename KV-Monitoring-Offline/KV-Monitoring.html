@@ -643,14 +643,20 @@ function fixPositionenFuerKategorie(katalogKategorie) {
    gleichnamige Norm an (Typ PPM, SAP-Code = bisheriger fest hinterlegter Wert als Startwert) -
    dadurch ist der SAP-Code dieser Positionen im Reiter "Normen" auffindbar und editierbar, genau
    wie bei den über Prüfgrundlagen referenzierten Normen. Bereits vorhandene Normen mit exakt
-   passender Bezeichnung werden nicht doppelt angelegt. */
+   passender Bezeichnung werden nicht doppelt angelegt. Läuft (wie warengruppenStammdatenV3 u.a.)
+   nur EINMALIG pro Datenbestand (data.fixPositionenAlsNormenMigriert-Flag) - andernfalls würde
+   diese Migration bei jedem Neuladen der Seite erneut prüfen, ob die fünf Normen "vorhanden" sind,
+   und eine zwischenzeitlich vom Nutzer gelöschte oder umbenannte Norm (Bezeichnung stimmt dann
+   nicht mehr) beim nächsten Laden ungefragt wieder anlegen. */
 function migriereFixPositionenAlsNormen() {
+  if (data.fixPositionenAlsNormenMigriert) return;
   FIXPOSITIONEN_MIT_NORM.forEach((p) => {
     const vorhanden = data.normen.some((n) => normalisiere(n.bezeichnung) === normalisiere(p.bezeichnung));
     if (!vorhanden) {
       data.normen.push({ id: neueId(), bezeichnung: p.bezeichnung, titel: "", typ: "ppm", dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "", sapCode: p.sapCode, kennzeichnung: false, bedienungsanleitung: false, pruefungsart: "" });
     }
   });
+  data.fixPositionenAlsNormenMigriert = true;
 }
 
 /* Die Kennzeichnung-Positionen des KV-Blocks "Kennzeichnung" (siehe renderKennzeichnungKarte)
@@ -658,12 +664,17 @@ function migriereFixPositionenAlsNormen() {
    "Kennzeichnung" gespeist - die fünf per migriereFixPositionenAlsNormen erzeugten Normen (vier
    Kennzeichnung-GER-Varianten + Bedienungsanleitung E&E) bekommen deshalb einmalig automatisch
    genau diese Prüfungsart zugewiesen, sofern noch keine gesetzt ist (nur beim ersten Start bzw.
-   bei alten Dateien - eine bereits manuell gewählte Prüfungsart wird nie überschrieben). */
+   bei alten Dateien - eine bereits manuell gewählte Prüfungsart wird nie überschrieben). Läuft
+   ebenfalls nur EINMALIG (data.kennzeichnungFixPositionenPruefungsartMigriert-Flag, siehe
+   migriereFixPositionenAlsNormen) - sonst würde ein vom Nutzer bewusst wieder auf "" gesetzter
+   Wert bei jedem Laden erneut auf "Kennzeichnung" zurückgesetzt. */
 function migriereKennzeichnungFixPositionenPruefungsart() {
+  if (data.kennzeichnungFixPositionenPruefungsartMigriert) return;
   SICHERHEIT_NORM_FIXPOSITIONEN.filter((p) => KENNZEICHNUNG_FIXPOSITION_ID(p.id)).forEach((p) => {
     const norm = data.normen.find((n) => normalisiere(n.bezeichnung) === normalisiere(p.bezeichnung));
     if (norm && !norm.pruefungsart) norm.pruefungsart = "Kennzeichnung";
   });
+  data.kennzeichnungFixPositionenPruefungsartMigriert = true;
 }
 
 /* Aktueller SAP-Code einer festen Position: sofern im Reiter "Normen" eine gleichnamige Norm mit
@@ -2528,7 +2539,9 @@ function init() {
     warengruppenStammdatenV3: !!(geladen && geladen.warengruppenStammdatenV3),
     trivialPreisliste: (geladen && geladen.trivialPreisliste && geladen.trivialPreisliste.length) ? geladen.trivialPreisliste : offizielleTrivialPreisliste(),
     mak: (geladen && geladen.mak && geladen.mak.length) ? geladen.mak : seedMak(),
-    pruefungsarten: (geladen && geladen.pruefungsarten && geladen.pruefungsarten.length) ? geladen.pruefungsarten : seedPruefungsarten()
+    pruefungsarten: (geladen && geladen.pruefungsarten && geladen.pruefungsarten.length) ? geladen.pruefungsarten : seedPruefungsarten(),
+    fixPositionenAlsNormenMigriert: !!(geladen && geladen.fixPositionenAlsNormenMigriert),
+    kennzeichnungFixPositionenPruefungsartMigriert: !!(geladen && geladen.kennzeichnungFixPositionenPruefungsartMigriert)
   };
   data.normen.forEach(migriereNorm);
   data.pruefgrundlagen.forEach(migrierePruefgrundlage);
@@ -7053,7 +7066,9 @@ document.getElementById("datei-laden-input").addEventListener("change", async (e
       warengruppenStammdatenV3: !!geparst.warengruppenStammdatenV3,
       trivialPreisliste: (geparst.trivialPreisliste && geparst.trivialPreisliste.length) ? geparst.trivialPreisliste : offizielleTrivialPreisliste(),
       mak: (geparst.mak && geparst.mak.length) ? geparst.mak : seedMak(),
-      pruefungsarten: (geparst.pruefungsarten && geparst.pruefungsarten.length) ? geparst.pruefungsarten : seedPruefungsarten()
+      pruefungsarten: (geparst.pruefungsarten && geparst.pruefungsarten.length) ? geparst.pruefungsarten : seedPruefungsarten(),
+      fixPositionenAlsNormenMigriert: !!geparst.fixPositionenAlsNormenMigriert,
+      kennzeichnungFixPositionenPruefungsartMigriert: !!geparst.kennzeichnungFixPositionenPruefungsartMigriert
     };
     data.normen.forEach(migriereNorm);
     data.pruefgrundlagen.forEach(migrierePruefgrundlage);
