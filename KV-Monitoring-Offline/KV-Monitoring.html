@@ -2228,6 +2228,12 @@ function migrierePruefgrundlage(e) {
   migriereBlockKosten(e, "stiwaNormen", "kostenStiwa");
   migriereBemerkungen(e);
 
+  /* Prüfgrundlage-spezifische Kommentare je Block (siehe mechanikKommentarBearbeitenHtml) - anders
+     als die geteilte Norm-Bemerkung nur für diese eine Prüfgrundlage gültig. */
+  if (typeof e.normenKommentar !== "string") e.normenKommentar = "";
+  if (typeof e.ffuNormenKommentar !== "string") e.ffuNormenKommentar = "";
+  if (typeof e.stiwaNormenKommentar !== "string") e.stiwaNormenKommentar = "";
+
   delete e.materialienNorm; delete e.materialienFfu; delete e.materialienStiwa; delete e.dokumente;
   return e;
 }
@@ -2238,7 +2244,8 @@ function pruefgrundlageEntwurfNeu() {
   return {
     id: neueId(), bereich: "", warengruppeCode: "", warengruppeName: "", produkt: "",
     anzahlMuster: "", trivial: false,
-    normen: [], ffuNormen: [], stiwaNormen: []
+    normen: [], ffuNormen: [], stiwaNormen: [],
+    normenKommentar: "", ffuNormenKommentar: "", stiwaNormenKommentar: ""
   };
 }
 
@@ -4425,6 +4432,24 @@ function mechanikKostenBearbeitenHtml(pgId, feld, refs) {
   return `<button type="button" class="ghost small" data-action="mechanik-kosten-in-pg-bearbeiten" data-pg-id="${escapeHtml(pgId)}">→ Kosten in der Prüfgrundlage bearbeiten</button>`;
 }
 
+/* Prüfgrundlage-spezifischer Kommentar je Block (Sicherheit & Norm / FFU/Fitting / NGO-StiWa) -
+   anders als die "Bemerkung" an der Norm selbst (normRefBemerkungenListe, wird überall geteilt, wo
+   diese Norm referenziert wird) gilt dieser Kommentar NUR für diese eine Prüfgrundlage/dieses eine
+   Produkt, wird also NICHT in der Normdatenbank gespeichert. Direkt hier im KV-Vorschlag bearbeitbar
+   (wie "Kosten (Prüfgrundlage) €" oben), schreibt aber ebenso direkt in die Prüfgrundlage zurück -
+   wirkt sich also auch auf künftige KVs mit demselben Produkt aus, siehe pruefgrundlageKommentarFeld. */
+function pruefgrundlageKommentarFeld(feldName) {
+  return feldName + "Kommentar";
+}
+function mechanikKommentarBearbeitenHtml(pgId, feldName) {
+  const eintrag = data.pruefgrundlagen.find((e) => e.id === pgId);
+  const wert = eintrag ? (eintrag[pruefgrundlageKommentarFeld(feldName)] || "") : "";
+  return `<label style="display:flex;flex-direction:column;gap:0.15rem;font-size:0.78rem;font-weight:400;color:var(--muted);width:100%;max-width:420px">Kommentar (nur diese Prüfgrundlage, nicht in der Norm gespeichert)
+    <textarea rows="2" style="font-family:inherit;font-size:0.82rem;padding:0.3rem 0.4rem;border:1px solid var(--border);border-radius:6px;font-weight:400;color:var(--text)"
+      data-action="mechanik-kommentar-bearbeiten" data-pg-id="${escapeHtml(pgId)}" data-feld="${pruefgrundlageKommentarFeld(feldName)}"
+      placeholder="z. B. Besonderheiten für dieses Produkt…">${escapeHtml(wert)}</textarea></label>`;
+}
+
 /* Anwendungsbereich-Auswahl (z. B. Camping-/Wohn-/Objektbereich bei DIN EN 581-2): an der
    Prüfgrundlage/Norm-Referenz lässt sich optional schon ein Standard-Anwendungsbereich hinterlegen
    (Vorbelegung für alle KVs mit dieser Prüfgrundlage, siehe renderNormenChips) - hier beim
@@ -4501,6 +4526,7 @@ function mechanikKomponentenHtml(kontext, pa, feldName, kategorie, kuerzel, sapC
     return `<div class="pruefumfang-position pruefumfang-position-vorschlag mechanik-komponente" style="align-items:flex-start;flex-direction:column;gap:0.3rem">
       <span>${escapeHtml(bezeichnungBasis)} <span class="muted">(${kostenText})</span> <span class="badge ja">Vorschlag</span></span>
       ${mechanikKostenBearbeitenHtml(k.pgId, feldName, k.refs)}
+      ${mechanikKommentarBearbeitenHtml(k.pgId, feldName)}
       <div class="toolbar-zeile" style="width:100%">
         ${styleAuswahlHtml}
         ${anwendungsbereichAuswahlHtml}
@@ -4961,6 +4987,16 @@ function initialisiereMechanikEmpfehlungKarte(panel, kv) {
       if (!eintrag) return;
       wechsleTab("pruefgrundlagen");
       pruefgrundlageBearbeiten(eintrag);
+    });
+  });
+  /* "change" statt "input" - selbes Verhalten/Begründung wie bei mechanik-kosten-bearbeiten oben. */
+  panel.querySelectorAll('[data-action="mechanik-kommentar-bearbeiten"]').forEach((textarea) => {
+    textarea.addEventListener("change", () => {
+      const eintrag = data.pruefgrundlagen.find((e) => e.id === textarea.dataset.pgId);
+      if (!eintrag) return;
+      eintrag[textarea.dataset.feld] = textarea.value;
+      speichereInLocalStorage();
+      zeigeStatus("Kommentar in der Prüfgrundlage aktualisiert · " + jetzt(), "ok");
     });
   });
   /* Kategorie/Kürzel kommen aus data-Attributen (siehe mechanikKomponentenHtml) statt fest codiert
@@ -5918,6 +5954,15 @@ function normenFeldHtml(feldName, label) {
   </div>`;
 }
 
+/* Prüfgrundlage-spezifischer Kommentar je Block - siehe mechanikKommentarBearbeitenHtml (dasselbe
+   Feld, hier zusätzlich direkt in der Prüfgrundlage-Bearbeitung selbst editierbar, nicht nur aus
+   dem KV-Vorschlag heraus). Wird ganz normal über den "Speichern"-Button des Modals übernommen
+   (data-feld, siehe pg-speichern), kein eigenständiges Auto-Save. */
+function pruefblockKommentarFeldHtml(entwurf, feldName) {
+  return `<label style="display:flex;flex-direction:column;gap:0.2rem;margin-top:0.5rem">Kommentar <span class="muted" style="font-weight:400">– nur für diese Prüfgrundlage, wird nicht an der Norm selbst gespeichert</span>
+    <textarea data-feld="${feldName}" rows="2" placeholder="z. B. Besonderheiten für dieses Produkt…">${escapeHtml(entwurf[feldName] || "")}</textarea></label>`;
+}
+
 /* Summe der Kosten aller referenzierten Normen eines Prüfblocks - null, wenn keine einzige Norm
    eine Kostenangabe hat (dann zeigt der Block "Preis auf Anfrage"), sonst die Summe der bekannten
    Beträge (unbezifferte Normen daneben tragen 0 zur Summe bei, gehen also nicht "verloren"). */
@@ -6125,14 +6170,17 @@ function pruefgrundlageFormularHtml(entwurf) {
     <div class="pruefblock">
       <h3>Sicherheit &amp; Norm</h3>
       ${normenFeldHtml("normen", "Normen & PPM (Mehrfachauswahl)")}
+      ${pruefblockKommentarFeldHtml(entwurf, "normenKommentar")}
     </div>
     <div class="pruefblock">
       <h3>FFU/Fitting</h3>
       ${normenFeldHtml("ffuNormen", "PPM_FFU (Mehrfachauswahl)")}
+      ${pruefblockKommentarFeldHtml(entwurf, "ffuNormenKommentar")}
     </div>
     <div class="pruefblock">
       <h3>NGO/StiWa</h3>
       ${normenFeldHtml("stiwaNormen", "StiWa-Programme (Mehrfachauswahl)")}
+      ${pruefblockKommentarFeldHtml(entwurf, "stiwaNormenKommentar")}
     </div>
     ${pruefgrundlageVerwendungHtml(entwurf)}`;
 }

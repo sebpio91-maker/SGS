@@ -356,6 +356,17 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   erscheint dort stattdessen ein Link **„→ Kosten in der Prüfgrundlage
   bearbeiten"**, der direkt zur vollständigen Bearbeitung wechselt.
 
+  **Kommentar direkt bearbeiten**: direkt unter dem Kosten-Feld gibt es je
+  Block (Hauptprodukt, Set-Bestandteil, FFU, NGO/StiWa) zusätzlich ein Feld
+  **„Kommentar"** — anders als die „Bemerkung" an der Norm selbst (die
+  überall geteilt wird, wo diese Norm referenziert ist) gilt dieser Kommentar
+  **nur für diese eine Prüfgrundlage/dieses eine Produkt** und wird **nicht
+  in der Normdatenbank gespeichert**. Genau wie bei den Kosten wird die
+  Änderung direkt an der Prüfgrundlage gespeichert (wirkt sich also auch auf
+  künftige KVs mit demselben Produkt aus) und ist ebenso im Reiter
+  „Prüfgrundlagen" selbst editierbar (siehe dort) — beide Stellen zeigen
+  denselben Wert.
+
   **Artikelkategorie** – direkt oberhalb des Prüfumfangs zeigt eine eigene
   Karte die Artikelkategorie aus dem verknüpften Prüfauftrag (dieselbe, die
   auch den Rabattfaktor der Sicherheit & Norm-Position bestimmt, siehe
@@ -638,18 +649,31 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   Normen-Eintrag in einer Prüfgrundlage (schreibt sofort in die
   Normendatenbank, ohne dass die Prüfgrundlage gespeichert werden muss) oder
   im Reiter „Normen" selbst; beide zeigen denselben, gemeinsamen Text.
-  Projektspezifische Hinweise, die sich nicht auf die Norm im Allgemeinen,
-  sondern auf ein konkretes Projekt beziehen (z. B. „Der Artikel ist in Bezug
-  auf [Schnittleistung] mindestens gleichwertig mit [Vergleichsprodukt]" bei
-  einer StiWa-Prüfung), gehören dagegen ins bereits vorhandene freie
-  Notizfeld des jeweiligen Kostenvoranschlags, nicht in dieses
-  normübergreifend geteilte Feld. Dateien aus einer älteren Tool-Version
+  Hinweise, die sich nicht auf die Norm im Allgemeinen, sondern auf ein
+  konkretes Produkt/diese eine Prüfgrundlage beziehen (z. B. „Der Artikel ist
+  in Bezug auf [Schnittleistung] mindestens gleichwertig mit
+  [Vergleichsprodukt]" bei einer StiWa-Prüfung), gehören dagegen nicht in
+  dieses normübergreifend geteilte Feld, sondern in den separaten
+  **„Kommentar"** je Block (siehe direkt darunter). Dateien aus einer
+  älteren Tool-Version
   (eine einzelne Bemerkung pro Prüfgrundlage, zwischenzeitlich auch eine
   Bemerkung je Referenz) werden automatisch auf die Norm migriert: der Text
   landet auf der ersten referenzierten Norm (bevorzugt aus Sicherheit & Norm,
   sonst FFU, sonst StiWa); treffen für dieselbe Norm mehrere unterschiedliche
   Alttexte zusammen, werden sie durch „ | " getrennt zusammengeführt statt
   einander zu überschreiben.
+
+  **Kommentar je Block, Prüfgrundlage-spezifisch statt norm-übergreifend** —
+  unter jedem der drei Normen-Felder (Sicherheit & Norm, FFU/Fitting,
+  NGO/StiWa) gibt es ein zusätzliches, frei editierbares Textfeld
+  **„Kommentar"**. Anders als die Bemerkung oben (siehe dort) gilt dieser
+  Kommentar **nur für diese eine Prüfgrundlage** und wird **nicht in der
+  Normendatenbank gespeichert** — verschiedene Prüfgrundlagen, die dieselbe
+  Norm referenzieren, können also unterschiedliche Kommentare tragen, ohne
+  sich gegenseitig zu beeinflussen. Bearbeitbar sowohl hier im
+  Prüfgrundlage-Formular als auch direkt im KV-Vorschlag (Sicherheit-/
+  Normprüfung, FFU/Fitting, NGO — siehe oben „Kommentar direkt bearbeiten"),
+  beide Stellen zeigen und ändern denselben Wert.
 
   **Materialien sind aus den Prüfgrundlagen entfernt** — sie hängen vom
   jeweiligen Projekt ab und gehören nicht in diese produktübergreifende
