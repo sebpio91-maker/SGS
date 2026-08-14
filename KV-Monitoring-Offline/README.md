@@ -443,14 +443,20 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     hinzufügbar).
   - **Kennzeichnung** – eigener Block, erscheint sobald „Kennzeichnung
     (Verpackung & Produkt)" oder „Kennzeichnung (Bedienungsanleitung)"
-    angehakt ist. Enthält die vier Kennzeichnung-Varianten
-    (1001/1002/1003/1005_PPM) sowie „Bedienungsanleitung E&E (1000_PPM)" als
-    feste Positionen (aus dem Sicherheit & Norm-Abschnitt hierher verschoben)
-    und darunter zusätzlich eine schreibgeschützte Liste aller **Normen mit
-    Prüfungsart „Kennzeichnung"** (siehe Reiter „Normen"/„Verwaltung" →
-    Prüfungsarten), damit auf einen Blick sichtbar ist, welche Normen dafür
-    grundsätzlich infrage kommen. Trägt die im Sicherheit-/Normprüfung-Block
-    für dieses Produkt gewählte Norm selbst Kennzeichnungs- und/oder
+    angehakt ist. Die zum Hinzufügen angebotenen Positionen sind **direkt die
+    Normen mit Prüfungsart „Kennzeichnung"** (Reiter „Normen"/„Verwaltung" →
+    Prüfungsarten) statt eines separaten, festen Katalogs — jede Norm lässt
+    sich per „+ hinzufügen" direkt als Position in den KV übernehmen. Beim
+    ersten Start werden dafür automatisch die vier bisherigen
+    Kennzeichnung-Varianten (1001/1002/1003/1005_PPM) sowie
+    „Bedienungsanleitung E&E (1000_PPM)" mit dieser Prüfungsart vorbelegt (nur
+    beim ersten Mal, eine später manuell geänderte Prüfungsart wird nie
+    überschrieben) — die zum KV passende Variante (je VK Büro/LFGB, siehe
+    unten) ist weiterhin automatisch als „Vorschlag" markiert. Weitere echte
+    Kennzeichnung-Normen lassen sich jederzeit im Reiter „Normen" ergänzen
+    (Prüfungsart auf „Kennzeichnung" setzen) und erscheinen dann automatisch
+    mit in dieser Liste. Trägt die im Sicherheit-/Normprüfung-Block für
+    dieses Produkt gewählte Norm selbst Kennzeichnungs- und/oder
     Bedienungsanleitung-Anforderungen (siehe „Kennzeichnung/Bedienungsanleitung
     je Norm" unten), erscheint dazu oben im Block ein entsprechendes Badge.
   - **(Physikalische-) Produktspezifikationen**: enthält direkt
@@ -891,21 +897,22 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     Zeile editierbar, neue Zeilen über das Formular darunter anlegen.
     **Angewendet wird davon aktuell nur der Preis „VP & Kennzeichnung"** (die
     übrigen Preise betreffen den chemischen Teil der Prüfung und sind noch
-    nicht verdrahtet): Im Kostenvoranschlag erscheint im Abschnitt „Sicherheit
-    & Norm" ein Hinweis-Banner, sobald **Trivial = Ja** ODER die
-    **Artikelkategorie des verknüpften Prüfauftrags „Grün*" (mit Stern)**
-    ist — derselbe Artikelkreis, der auch von der Sicherheit-/Normprüfung-
-    Pflicht befreit ist. Findet sich zur „Warengruppe (alt)" des KVs ein
-    Eintrag in der Trivialartikel-Preisliste, zeigt das Banner den
-    VP&Kennzeichnung-Preis und einen Button **„Paketpreis übernehmen"**: er
-    legt bei Bedarf die beiden Positionen „Kennzeichnung (Verpackung &
-    Produkt)" und „Kennzeichnung (Bedienungsanleitung)" an und verteilt den
-    Preis gleichmäßig auf die aktiven der beiden (nur eine aktiv → volle
-    Summe dort) — der Preis gilt als **Summe für beide zusammen**, nicht je
-    Position. Stimmt die aktuelle Summe schon mit dem Paketpreis überein,
-    zeigt das Banner „✓ übernommen" statt des Buttons. Ohne passenden
-    Eintrag in der Preisliste erscheint stattdessen ein reiner Hinweis ohne
-    Button.
+    nicht verdrahtet): Im Kostenvoranschlag erscheint im Kennzeichnung-Block
+    ein Hinweis-Banner, sobald **Trivial = Ja** ODER die **Artikelkategorie
+    des verknüpften Prüfauftrags „Grün*" (mit Stern)** ist — derselbe
+    Artikelkreis, der auch von der Sicherheit-/Normprüfung-Pflicht befreit
+    ist. Findet sich zur „Warengruppe (alt)" des KVs ein Eintrag in der
+    Trivialartikel-Preisliste, zeigt das Banner den VP&Kennzeichnung-Preis
+    und wird **automatisch** gleichmäßig auf die im Kennzeichnung-Block
+    bereits hinzugefügten, aktiven Positionen verteilt (nur eine aktiv →
+    volle Summe dort) — der Preis gilt als **Summe für alle zusammen**, nicht
+    je Position, und die Verteilung läuft jedes Mal neu, sobald im
+    Kennzeichnung-Block eine weitere Norm hinzugefügt wird; ein manueller
+    Button ist dafür nicht mehr nötig. Stimmt die aktuelle Summe schon mit
+    dem Paketpreis überein, zeigt das Banner „✓ verteilt", bei einer später
+    manuell geänderten Summe „Summe weicht ab (manuell geändert?)". Ohne
+    passenden Eintrag in der Preisliste oder ohne bereits hinzugefügte
+    Kennzeichnung-Position erscheint stattdessen ein reiner Hinweis.
   - **Gefahrenzone** – löscht **Arbeitsvorrat, Prüfaufträge und
     Kostenvoranschläge** unwiderruflich (zwei Sicherheitsabfragen), z. B. um
     nach dem Testen sauber mit echten Daten neu zu starten.

@@ -653,6 +653,19 @@ function migriereFixPositionenAlsNormen() {
   });
 }
 
+/* Die Kennzeichnung-Positionen des KV-Blocks "Kennzeichnung" (siehe renderKennzeichnungKarte)
+   werden nicht mehr aus einem festen Katalog, sondern aus den Normen mit Prüfungsart
+   "Kennzeichnung" gespeist - die fünf per migriereFixPositionenAlsNormen erzeugten Normen (vier
+   Kennzeichnung-GER-Varianten + Bedienungsanleitung E&E) bekommen deshalb einmalig automatisch
+   genau diese Prüfungsart zugewiesen, sofern noch keine gesetzt ist (nur beim ersten Start bzw.
+   bei alten Dateien - eine bereits manuell gewählte Prüfungsart wird nie überschrieben). */
+function migriereKennzeichnungFixPositionenPruefungsart() {
+  SICHERHEIT_NORM_FIXPOSITIONEN.filter((p) => KENNZEICHNUNG_FIXPOSITION_ID(p.id)).forEach((p) => {
+    const norm = data.normen.find((n) => normalisiere(n.bezeichnung) === normalisiere(p.bezeichnung));
+    if (norm && !norm.pruefungsart) norm.pruefungsart = "Kennzeichnung";
+  });
+}
+
 /* Aktueller SAP-Code einer festen Position: sofern im Reiter "Normen" eine gleichnamige Norm mit
    gepflegtem SAP-Code existiert, zählt deren (jederzeit dort editierbarer) Wert - sonst der fest
    hinterlegte Startwert der Position als Fallback (z. B. bevor migriereFixPositionenAlsNormen()
@@ -2524,6 +2537,7 @@ function init() {
   migriereBereicheOhneZahlensuffix();
   migriereOffizielleWarengruppenStammdaten();
   migriereFixPositionenAlsNormen();
+  migriereKennzeichnungFixPositionenPruefungsart();
   migriereMak();
 
   document.querySelectorAll("nav.tabs button[data-tab]").forEach((btn) => {
@@ -4263,26 +4277,30 @@ function trivialPreislisteEintragFuerKv(kv) {
   return data.trivialPreisliste.find((e) => normalisiereWarengruppe(e.code) === norm) || null;
 }
 
-/* Übernimmt den Trivialartikel-Paketpreis "VP & Kennzeichnung" als SUMME für die beiden
-   Kennzeichnungsprüfungen (Verpackung & Produkt + Bedienungsanleitung) - legt beide Positionen bei
-   Bedarf an (der passenden Kennzeichnung-GER-Variante je VK-Büro/LFGB, siehe
-   kennzeichnungGerPpmCode) und verteilt den Gesamtpreis gleichmäßig auf die aktiven der beiden
-   Positionen (nur eine aktiv -> volle Summe dort). Alle übrigen Preisfelder der Preisliste
-   (Chemie, LFGB-Stichprobe, Gesamt, Add Sortierung) betreffen den chemischen Teil der Prüfung und
-   werden hier bewusst NICHT angewendet. */
-function wendeTrivialPaketpreisAn(kv) {
+/* Alle aktuell aktiven KV-Positionen, die zu einer Norm mit Prüfungsart "Kennzeichnung" gehören
+   (Abgleich über die Bezeichnung, da kv.positionen keine feste Normen-Referenz speichert, siehe
+   kvHatPosition) - das ist die Menge, auf die der Trivialartikel-Paketpreis verteilt wird. */
+function kennzeichnungAktivePositionen(kv) {
+  const normBezeichnungen = new Set(data.normen.filter((n) => n.pruefungsart === "Kennzeichnung").map((n) => normalisiere(n.bezeichnung)));
+  return kv.positionen.filter((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere(SICHERHEIT_NORM_KATEGORIE_NAME) && normBezeichnungen.has(normalisiere(p.bezeichnung)));
+}
+
+/* Verteilt den Trivialartikel-Paketpreis "VP & Kennzeichnung" (Reiter "Verwaltung" ->
+   Trivialartikel-Preisliste) automatisch als SUMME gleichmäßig auf alle aktuell aktiven
+   Kennzeichnung-Positionen dieses KVs (siehe kennzeichnungAktivePositionen) - anders als früher
+   werden dabei KEINE Positionen mehr automatisch angelegt, sondern nur die vom Nutzer im
+   Kennzeichnung-Block bereits hinzugefügten neu verteilt (nur eine aktiv -> volle Summe dort).
+   Alle übrigen Preisfelder der Preisliste (Chemie, LFGB-Stichprobe, Gesamt, Add Sortierung)
+   betreffen den chemischen Teil der Prüfung und werden hier bewusst NICHT angewendet. Wird nach
+   jedem Hinzufügen einer Kennzeichnung-Position automatisch aufgerufen (siehe
+   initialisierePruefumfangUebersicht). */
+function wendeKennzeichnungPaketpreisAn(kv, pa) {
+  if (!trivialPaketpreisAktiv(kv, pa)) return false;
   const eintrag = trivialPreislisteEintragFuerKv(kv);
   if (!eintrag || eintrag.preisVpKennzeichnung === "" || eintrag.preisVpKennzeichnung === null || eintrag.preisVpKennzeichnung === undefined) return false;
-  const gesamt = Number(eintrag.preisVpKennzeichnung);
-  const vpKatalog = SICHERHEIT_NORM_FIXPOSITIONEN.find((k) => k.bezeichnung.includes(kennzeichnungGerPpmCode(kv)));
-  const bdaKatalog = SICHERHEIT_NORM_FIXPOSITIONEN.find((k) => k.id === "fix-bda");
-  if (vpKatalog) fuegeKatalogPositionHinzu(kv, vpKatalog);
-  if (bdaKatalog) fuegeKatalogPositionHinzu(kv, bdaKatalog);
-  const aktivePositionen = [vpKatalog, bdaKatalog]
-    .filter(Boolean)
-    .map((katalogEintrag) => kv.positionen.find((p) => normalisiere(p.bezeichnung) === normalisiere(katalogEintrag.bezeichnung)))
-    .filter((p) => p && p.aktiv);
+  const aktivePositionen = kennzeichnungAktivePositionen(kv);
   if (!aktivePositionen.length) return false;
+  const gesamt = Number(eintrag.preisVpKennzeichnung);
   const anteil = Math.round((gesamt / aktivePositionen.length) * 100) / 100;
   aktivePositionen.forEach((p, idx) => {
     p.kosten = idx === aktivePositionen.length - 1 ? Math.round((gesamt - anteil * (aktivePositionen.length - 1)) * 100) / 100 : anteil;
@@ -4290,11 +4308,11 @@ function wendeTrivialPaketpreisAn(kv) {
   return true;
 }
 
-/* Banner im "Sicherheit & Norm"-Abschnitt der Prüfumfang-Details, sobald für diesen KV ein
-   Trivialartikel-Paketpreis infrage kommt (siehe trivialPaketpreisAktiv) - zeigt den anwendbaren
-   VP&Kennzeichnung-Preis und, falls die beiden Kennzeichnungspositionen bereits im KV stehen, ob
-   ihre aktuelle Summe schon damit übereinstimmt. */
-function trivialPaketpreisBannerHtml(kv, pa) {
+/* Hinweis im Kennzeichnung-Block, sobald für diesen KV ein Trivialartikel-Paketpreis infrage
+   kommt (siehe trivialPaketpreisAktiv) - der Preis wird automatisch verteilt (siehe
+   wendeKennzeichnungPaketpreisAn), hier gibt es dafür bewusst keinen manuellen Button mehr,
+   sondern nur noch den Status (verteilt / weicht ab / noch keine Position hinzugefügt). */
+function kennzeichnungPaketpreisHinweisHtml(kv, pa) {
   if (!trivialPaketpreisAktiv(kv, pa)) return "";
   const grund = jaNeinAnzeige(kv.trivial) === "Ja" ? "Trivial = Ja" : "Artikelkategorie Grün*";
   const eintrag = trivialPreislisteEintragFuerKv(kv);
@@ -4305,21 +4323,16 @@ function trivialPaketpreisBannerHtml(kv, pa) {
       in der Trivialartikel-Preisliste (Reiter „Verwaltung") vor.
     </div>`;
   }
-  const vpKatalog = SICHERHEIT_NORM_FIXPOSITIONEN.find((k) => k.bezeichnung.includes(kennzeichnungGerPpmCode(kv)));
-  const bdaKatalog = SICHERHEIT_NORM_FIXPOSITIONEN.find((k) => k.id === "fix-bda");
-  const aktuelleSumme = [vpKatalog, bdaKatalog]
-    .filter(Boolean)
-    .map((k) => kv.positionen.find((p) => p.aktiv && normalisiere(p.bezeichnung) === normalisiere(k.bezeichnung)))
-    .filter(Boolean)
-    .reduce((summe, p) => summe + (Number(p.kosten) || 0), 0);
-  const summeStimmt = Math.abs(aktuelleSumme - Number(eintrag.preisVpKennzeichnung)) < 0.01;
+  const aktivePositionen = kennzeichnungAktivePositionen(kv);
+  const aktuelleSumme = aktivePositionen.reduce((summe, p) => summe + (Number(p.kosten) || 0), 0);
+  const summeStimmt = aktivePositionen.length > 0 && Math.abs(aktuelleSumme - Number(eintrag.preisVpKennzeichnung)) < 0.01;
   return `<div class="trivial-paketpreis-hinweis">
     <strong>Trivialartikel-Paketpreis</strong> (${grund}, Warengruppe alt „${escapeHtml(eintrag.code)}"):
-    VP &amp; Kennzeichnung <strong>${Number(eintrag.preisVpKennzeichnung).toFixed(2)} €</strong> als Summe für
-    „Kennzeichnung (Verpackung &amp; Produkt)" + „Kennzeichnung (Bedienungsanleitung)". Weitere Preise der
-    Preisliste (Chemie, LFGB-Stichprobe, Gesamt, Add Sortierung) betreffen den chemischen Teil und sind
-    aktuell nicht relevant.
-    ${summeStimmt ? `<span class="badge ja">✓ übernommen</span>` : `<button type="button" class="ghost small" data-action="trivialpreis-anwenden">Paketpreis übernehmen</button>`}
+    VP &amp; Kennzeichnung <strong>${Number(eintrag.preisVpKennzeichnung).toFixed(2)} €</strong> wird automatisch
+    gleichmäßig auf die unten hinzugefügten Kennzeichnung-Positionen verteilt, sobald mindestens eine
+    davon aktiv im KV steht. Weitere Preise der Preisliste (Chemie, LFGB-Stichprobe, Gesamt, Add
+    Sortierung) betreffen den chemischen Teil und sind hier nicht relevant.
+    ${aktivePositionen.length ? (summeStimmt ? `<span class="badge ja">✓ verteilt</span>` : `<span class="badge nein">Summe weicht ab (manuell geändert?)</span>`) : `<span class="muted">Noch keine Kennzeichnung-Position hinzugefügt.</span>`}
   </div>`;
 }
 
@@ -4553,27 +4566,57 @@ function renderSicherheitNormKarte(kv, pa, kontext) {
   </div>`;
 }
 
-/* Alle Normen mit Prüfungsart "Kennzeichnung" (Reiter "Normen") als reine Referenzliste - rein
-   informativ zum Nachschlagen, keine Verknüpfung mit Kosten/Positionen (Normen haben keinen
-   eigenen Preis, siehe Reiter "Normen"). */
-function kennzeichnungNormenListeHtml() {
+/* Ist eine Kennzeichnung-Norm für diesen KV ein Vorschlag? Gilt nur für die vier per
+   migriereKennzeichnungFixPositionenPruefungsart automatisch getaggten Kennzeichnung-GER-Varianten
+   (die zum KV passende, je VK-Büro/LFGB - siehe kennzeichnungGerPpmCode) und die
+   Bedienungsanleitung E&E (sobald der zugehörige Prüfumfang-Unterpunkt angehakt ist); für alle
+   übrigen (z. B. später manuell mit Prüfungsart "Kennzeichnung" versehene echte) Normen gibt es
+   keine automatische Vorschlagsregel. */
+function kennzeichnungNormIstVorschlag(norm, kv) {
+  const auswahl = kv ? kv.pruefumfangAuswahl : {};
+  if (/^kennzeichnung ger/i.test(norm.bezeichnung)) {
+    return !!auswahl.kennzeichnungVerpackungProdukt && norm.bezeichnung.includes(kennzeichnungGerPpmCode(kv));
+  }
+  if (/bedienungsanleitung/i.test(norm.bezeichnung)) {
+    return !!auswahl.kennzeichnungBedienungsanleitung;
+  }
+  return false;
+}
+
+/* Positionen-Liste des Kennzeichnung-Blocks: statt eines festen Katalogs (siehe
+   fixPositionenListeHtml) jetzt direkt aus den Normen mit Prüfungsart "Kennzeichnung" (Reiter
+   "Normen") gespeist - jede Norm ist per "+ hinzufügen" direkt als KV-Position übernehmbar (ohne
+   eigenen Preis, siehe wendeKennzeichnungPaketpreisAn für die automatische Preisverteilung). */
+function kennzeichnungNormenAddableHtml(kv) {
   const normen = data.normen.filter((n) => n.pruefungsart === "Kennzeichnung").sort((a, b) => (a.bezeichnung || "").localeCompare(b.bezeichnung || "", "de"));
-  if (!normen.length) return `<p class="hinweis" style="margin:0">Noch keine Normen mit Prüfungsart „Kennzeichnung" hinterlegt (Reiter „Normen").</p>`;
-  return `<ul style="margin:0.3rem 0 0;padding-left:1.1rem">${normen.map((n) => `<li style="margin-bottom:0.3rem">
-    ${normTypBadgeHtml(n.typ)}${escapeHtml(n.bezeichnung)}${n.titel ? ` <span class="muted">– ${escapeHtml(n.titel)}</span>` : ""}
-    ${n.bemerkung ? `<div class="muted" style="font-size:0.8rem">${escapeHtml(n.bemerkung)}</div>` : ""}
-  </li>`).join("")}</ul>`;
+  if (!normen.length) {
+    return { positionenHtml: `<p class="hinweis" style="margin:0.3rem 0">Noch keine Normen mit Prüfungsart „Kennzeichnung" hinterlegt (Reiter „Normen").</p>`, alleVorschlaegeButton: "" };
+  }
+  const positionenHtml = normen.map((n) => {
+    const istVorschlag = kennzeichnungNormIstVorschlag(n, kv);
+    const schonDrin = kvHatPosition(kv, { kategorie: SICHERHEIT_NORM_KATEGORIE_NAME, bezeichnung: n.bezeichnung });
+    return `<div class="pruefumfang-position${istVorschlag ? " pruefumfang-position-vorschlag" : ""}">
+      <span>${normTypBadgeHtml(n.typ)}${escapeHtml(n.bezeichnung)}${n.titel ? ` <span class="muted">– ${escapeHtml(n.titel)}</span>` : ""}${istVorschlag ? ` <span class="badge ja">Vorschlag</span>` : ""}</span>
+      ${schonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="kennzeichnung-norm-hinzufuegen" data-norm-id="${escapeHtml(n.id)}">+ hinzufügen</button>`}
+    </div>`;
+  }).join("");
+  const vorschlagIds = normen
+    .filter((n) => kennzeichnungNormIstVorschlag(n, kv) && !kvHatPosition(kv, { kategorie: SICHERHEIT_NORM_KATEGORIE_NAME, bezeichnung: n.bezeichnung }))
+    .map((n) => n.id);
+  const alleVorschlaegeButton = vorschlagIds.length
+    ? `<button type="button" class="ghost small" data-action="kennzeichnung-normen-vorschlaege-uebernehmen" data-norm-ids="${vorschlagIds.join(",")}">Alle Vorschläge übernehmen</button>`
+    : "";
+  return { positionenHtml, alleVorschlaegeButton };
 }
 
 /* Neuer, eigenständiger Block "Kennzeichnung": zeigt, ob die für die Sicherheit-/Normprüfung
    gewählte Norm Kennzeichnungs- bzw. Bedienungsanleitung-Anforderungen hat (siehe
    pruefgrundlageKennzeichnungAktiv/-BedienungsanleitungAktiv), den Trivialartikel-Paketpreis-
-   Hinweis (betrifft ausschließlich VP&Kennzeichnung), die dafür vorgesehenen festen
-   Katalogpositionen (vormals Teil von "Sicherheit & Norm" in den Prüfumfang-Details) sowie zum
-   Nachschlagen alle Normen mit Prüfungsart "Kennzeichnung". */
+   Hinweis (betrifft ausschließlich VP&Kennzeichnung, wird automatisch verteilt) sowie die zum
+   Hinzufügen bereitstehenden Normen mit Prüfungsart "Kennzeichnung" (ersetzt den früheren festen
+   Katalog). */
 function renderKennzeichnungKarte(kv, pa, kontext) {
-  const kat = { id: "sicherheitNorm", katalogKategorie: SICHERHEIT_NORM_KATEGORIE_NAME };
-  const { positionenHtml, alleVorschlaegeButton } = fixPositionenListeHtml(kat, pa, kv, (k) => KENNZEICHNUNG_FIXPOSITION_ID(k.id));
+  const { positionenHtml, alleVorschlaegeButton } = kennzeichnungNormenAddableHtml(kv);
   const kennzAktiv = kontext.gewaehlt ? pruefgrundlageKennzeichnungAktiv(kontext.gewaehlt) : false;
   const bdaAktiv = kontext.gewaehlt ? pruefgrundlageBedienungsanleitungAktiv(kontext.gewaehlt) : false;
   const hinweisNorm = (kennzAktiv || bdaAktiv)
@@ -4585,11 +4628,9 @@ function renderKennzeichnungKarte(kv, pa, kontext) {
   return `<div class="card">
     <h2>Kennzeichnung</h2>
     ${hinweisNorm}
-    ${trivialPaketpreisBannerHtml(kv, pa)}
-    <div class="pruefumfang-kat-kopf" style="margin-top:0.4rem"><strong>Kennzeichnungspositionen</strong> ${alleVorschlaegeButton}</div>
+    ${kennzeichnungPaketpreisHinweisHtml(kv, pa)}
+    <div class="pruefumfang-kat-kopf" style="margin-top:0.4rem"><strong>Normen mit Prüfungsart „Kennzeichnung"</strong> ${alleVorschlaegeButton}</div>
     ${positionenHtml}
-    <h3 style="margin:0.8rem 0 0.3rem">Normen mit Prüfungsart „Kennzeichnung"</h3>
-    ${kennzeichnungNormenListeHtml()}
   </div>`;
 }
 
@@ -5031,15 +5072,32 @@ function initialisierePruefumfangUebersicht(panel, kv, pa) {
       zeigeStatus(hinzugefuegt ? `${hinzugefuegt} Position(en) übernommen · ${jetzt()}` : "Alle Vorschläge waren bereits im KV", "ok");
     });
   });
-  panel.querySelectorAll('[data-action="trivialpreis-anwenden"]').forEach((btn) => {
+  /* Kennzeichnung-Block: Normen mit Prüfungsart "Kennzeichnung" statt fester Katalogpositionen
+     (siehe kennzeichnungNormenAddableHtml) - nach jedem Hinzufügen wird der Trivialartikel-
+     Paketpreis automatisch neu auf die dann aktiven Kennzeichnung-Positionen verteilt (siehe
+     wendeKennzeichnungPaketpreisAn), ganz ohne manuellen Zwischenschritt. */
+  panel.querySelectorAll('[data-action="kennzeichnung-norm-hinzufuegen"]').forEach((btn) => {
     btn.addEventListener("click", () => {
-      if (wendeTrivialPaketpreisAn(kv)) {
-        speichereInLocalStorage();
-        renderKvDetail();
-        zeigeStatus("Trivialartikel-Paketpreis übernommen · " + jetzt(), "ok");
-      } else {
-        alert("Paketpreis konnte nicht übernommen werden.");
-      }
+      const norm = data.normen.find((n) => n.id === btn.dataset.normId);
+      if (!norm) return;
+      fuegeKatalogPositionHinzu(kv, { kategorie: SICHERHEIT_NORM_KATEGORIE_NAME, bezeichnung: norm.bezeichnung, kuerzel: "MS", sapCode: norm.sapCode, standardKosten: 0 });
+      wendeKennzeichnungPaketpreisAn(kv, pa);
+      speichereInLocalStorage();
+      renderKvDetail();
+      zeigeStatus("Position hinzugefügt · " + jetzt(), "ok");
+    });
+  });
+  panel.querySelectorAll('[data-action="kennzeichnung-normen-vorschlaege-uebernehmen"]').forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const normIds = new Set((btn.dataset.normIds || "").split(",").filter(Boolean));
+      let hinzugefuegt = 0;
+      data.normen.filter((n) => normIds.has(n.id)).forEach((n) => {
+        if (fuegeKatalogPositionHinzu(kv, { kategorie: SICHERHEIT_NORM_KATEGORIE_NAME, bezeichnung: n.bezeichnung, kuerzel: "MS", sapCode: n.sapCode, standardKosten: 0 })) hinzugefuegt++;
+      });
+      if (hinzugefuegt) wendeKennzeichnungPaketpreisAn(kv, pa);
+      speichereInLocalStorage();
+      renderKvDetail();
+      zeigeStatus(hinzugefuegt ? `${hinzugefuegt} Position(en) übernommen · ${jetzt()}` : "Alle Vorschläge waren bereits im KV", "ok");
     });
   });
   const produktspeziSuche = panel.querySelector("#produktspezi-suche");
@@ -6947,6 +7005,7 @@ document.getElementById("datei-laden-input").addEventListener("change", async (e
     migriereBereicheOhneZahlensuffix();
     migriereOffizielleWarengruppenStammdaten();
     migriereFixPositionenAlsNormen();
+    migriereKennzeichnungFixPositionenPruefungsart();
     migriereMak();
     aktivePaId = data.pruefauftraege.length ? data.pruefauftraege[0].id : null;
     aktiveKvId = data.kvs.length ? data.kvs[0].id : null;
