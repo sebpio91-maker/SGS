@@ -268,7 +268,8 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   → Feuerzeug, Grillbürsten, Anzündkamin, …), erscheint eine Auswahlliste;
   bei genau einem Treffer wird er direkt angezeigt (Hauptprodukt). Für das
   gewählte Produkt zeigt die Karte Norm, Anzahl Muster, Besonderheiten
-  (Bemerkungen, Trivial-/KEZ-Kennzeichnung) sowie – falls vorhanden – FFU
+  (Bemerkungen, Trivial-/Kennzeichnungs-/Bedienungsanleitung-Kennzeichnung)
+  sowie – falls vorhanden – FFU
   und NGO/StiWa mit den tatsächlich hinterlegten Kosten, jeweils mit
   „+ hinzufügen" direkt in die Prüfpositionen-Tabelle. Gibt es zur
   Warengruppe keine Referenzdaten, erscheint direkt in der Karte
@@ -466,7 +467,8 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   landen in „(ohne Bereich)". Innerhalb jeder Gruppe (in beiden Ansichten)
   sind die Produkte alphabetisch (A–Z) sortiert. Die Übersichtszeile je
   Produkt zeigt nur das Nötigste (Produkt, Normen, Kosten Sicherheit & Norm,
-  Anzahl Muster, KEZ-Badge, ob FFU/StiWa hinterlegt sind) — der
+  Anzahl Muster, Kennzeichnung-/Bedienungsanleitung-Badges, ob FFU/StiWa
+  hinterlegt sind) — der
   Warengruppen-Code selbst wird hier bewusst **nicht** als eigene Spalte
   angezeigt (steht ja schon im Gruppenkopf), ist aber weiterhin die Basis für
   die Zuordnung. **Auf eine Zeile klicken** (oder ✏️) öffnet die
@@ -510,10 +512,22 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   gelöschten Norm-Referenz fehlt der Button entsprechend.
   Diese Normen-Auswahl gibt es jetzt für alle drei Prüfblöcke — **Sicherheit
   & Norm, FFU/Fitting und NGO/StiWa** —, die vorherigen reinen
-  Freitext-Hinweise bei FFU/StiWa sind entsprechend entfallen. Das frühere,
-  separate „Kennzeichnung über GPSR hinaus"-Feld war inhaltlich dasselbe wie
-  **KEZ-Anforderungen** und wurde deshalb zu einem einzigen Kästchen
-  zusammengeführt (Tooltip erklärt die GPSR-Bedeutung).
+  Freitext-Hinweise bei FFU/StiWa sind entsprechend entfallen.
+
+  **Kennzeichnung/Bedienungsanleitung stehen nicht mehr an der Prüfgrundlage,
+  sondern an der jeweiligen Norm selbst** (Reiter „Normen", siehe unten) und
+  werden automatisch übernommen, sobald diese Norm hier referenziert wird —
+  die frühere manuelle „KEZ-Anforderungen"-Checkbox an der Prüfgrundlage
+  entfällt dadurch komplett. Referenziert eine Prüfgrundlage (in einem der
+  drei Blöcke) eine Norm, die an Kennzeichnung und/oder Bedienungsanleitung
+  hinterlegt hat, erscheint das in der Prüfgrundlagen-Liste als Badge
+  („Kennz."/„BDA") und in der Warengruppen-Empfehlung im KV als
+  „Kennzeichnung"/„Bedienungsanleitung" — ganz ohne manuelles Ankreuzen.
+  Ist die Referenz zusätzlich **„in Anlehnung an"** angekreuzt, entfällt die
+  automatische Übernahme zunächst (die Norm wird ja nicht vollständig
+  angewendet); je Norm-Referenz lässt sich dann aber pro Flag gezielt
+  **„… trotzdem übernehmen"** ankreuzen, falls die Kennzeichnungs- bzw.
+  Bedienungsanleitung-Anforderungen im Einzelfall trotzdem gelten sollen.
 
   Jedes der drei Dropdowns ist auf den jeweils passenden Normen-**Typ**
   eingeschränkt, damit man nicht versehentlich eine Norm im falschen Block
@@ -620,6 +634,14 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   Prüfposition ein (Hauptprodukt/Set-Bestandteile bei Sicherheit & Norm sowie
   FFU/NGO) — referenziert ein Block mehrere Normen, zählt der SAP-Code der
   ersten Norm mit hinterlegtem Wert.
+
+  Zwei weitere Checkboxen legen fest, ob die Norm **Kennzeichnungsanforderungen**
+  bzw. **Anforderungen an die Bedienungsanleitung** enthält — diese Angabe
+  wird nur noch hier an der Norm gepflegt, nicht mehr manuell an jeder
+  einzelnen Prüfgrundlage (siehe Reiter „Prüfgrundlagen" oben: die
+  Übernahme erfolgt automatisch, sobald die Norm dort referenziert wird,
+  außer bei „in Anlehnung an" — dort nur auf ausdrücklichen Wunsch je
+  Referenz).
 
   **Anwendungsbereiche**: manche Normen stellen je nach Verwendungszweck des
   Produkts unterschiedliche Anforderungen — z. B. hat DIN EN 581-2

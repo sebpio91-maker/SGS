@@ -635,7 +635,7 @@ function migriereFixPositionenAlsNormen() {
   FIXPOSITIONEN_MIT_NORM.forEach((p) => {
     const vorhanden = data.normen.some((n) => normalisiere(n.bezeichnung) === normalisiere(p.bezeichnung));
     if (!vorhanden) {
-      data.normen.push({ id: neueId(), bezeichnung: p.bezeichnung, titel: "", typ: "ppm", dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "", sapCode: p.sapCode });
+      data.normen.push({ id: neueId(), bezeichnung: p.bezeichnung, titel: "", typ: "ppm", dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "", sapCode: p.sapCode, kennzeichnung: false, bedienungsanleitung: false });
     }
   });
 }
@@ -2044,6 +2044,8 @@ function migriereNorm(n) {
   if (!n.typ) n.typ = normTypAusBezeichnung(n.bezeichnung);
   if (n.bemerkung === undefined) n.bemerkung = "";
   if (n.sapCode === undefined) n.sapCode = "";
+  if (n.kennzeichnung === undefined) n.kennzeichnung = false;
+  if (n.bedienungsanleitung === undefined) n.bedienungsanleitung = false;
   if (!Array.isArray(n.anwendungsbereiche)) n.anwendungsbereiche = [];
   if (Array.isArray(n.pruefpunkte) && n.pruefpunkte.length) {
     n.anwendungsbereiche = n.anwendungsbereiche.concat(n.pruefpunkte.map((p) => ({
@@ -2065,7 +2067,7 @@ function normFindOrCreate(bezeichnungRoh) {
   const key = normalisiere(bez);
   let norm = data.normen.find((n) => normalisiere(n.bezeichnung) === key);
   if (!norm) {
-    norm = { id: neueId(), bezeichnung: bez, titel: "", typ: normTypAusBezeichnung(bez), dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "", sapCode: "" };
+    norm = { id: neueId(), bezeichnung: bez, titel: "", typ: normTypAusBezeichnung(bez), dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "", sapCode: "", kennzeichnung: false, bedienungsanleitung: false };
     data.normen.push(norm);
   }
   return norm.id;
@@ -2143,8 +2145,10 @@ function migriereBemerkungen(e) {
    - "norm" (Einzeltext) -> "normen" (Liste) -> "normen" als Liste von {normId, inAnlehnungAn}-
      Referenzen auf echte Norm-Datensätze statt Freitext (find-or-create per Bezeichnung).
    - "ffuHinweis"/"stiwaHinweis" (Einzeltext) -> "ffuNormen"/"stiwaNormen", gleiche Referenzform.
-   - "kennzeichnung" (eigenes Flag) wurde inhaltlich als Dopplung von "kez" erkannt und in "kez"
-     zusammengeführt (kez = kez || kennzeichnung).
+   - "kennzeichnung"/"kez" (manuell gepflegte Flags an der Prüfgrundlage) entfernt: Kennzeichnungs-
+     und Bedienungsanleitung-Anforderungen stehen jetzt an der Norm selbst (Reiter "Normen", Felder
+     "kennzeichnung"/"bedienungsanleitung") und werden automatisch aus den referenzierten Normen
+     abgeleitet (siehe pruefgrundlageKennzeichnungAktiv/pruefgrundlageBedienungsanleitungAktiv).
    - "materialienNorm"/"materialienFfu"/"materialienStiwa" und "dokumente" entfernt: Materialien
      sind projektabhängig (gehören nicht in diese generelle Referenztabelle), Dokumente werden nur
      noch im Reiter "Normen" hochgeladen.
@@ -2159,10 +2163,8 @@ function migriereBemerkungen(e) {
      Vergleichsprodukte bei StiWa-Prüfungen) gehören ins freie Notizfeld des jeweiligen
      Kostenvoranschlags. */
 function migrierePruefgrundlage(e) {
-  if (typeof e.kennzeichnung === "boolean") {
-    e.kez = e.kez || e.kennzeichnung;
-    delete e.kennzeichnung;
-  }
+  delete e.kennzeichnung;
+  delete e.kez;
   if (!Array.isArray(e.normen)) e.normen = e.norm ? [e.norm] : [];
   delete e.norm;
   if (e.normen.length && typeof e.normen[0] === "string") e.normen = e.normen.flatMap(normRefListeAusText);
@@ -2187,7 +2189,7 @@ function seedPruefgrundlagen() {
 function pruefgrundlageEntwurfNeu() {
   return {
     id: neueId(), bereich: "", warengruppeCode: "", warengruppeName: "", produkt: "",
-    anzahlMuster: "", trivial: false, kez: false,
+    anzahlMuster: "", trivial: false,
     normen: [], ffuNormen: [], stiwaNormen: []
   };
 }
@@ -4372,7 +4374,8 @@ function renderMechanikEmpfehlungKarte(kv, pa) {
     const badges = [];
     if (gewaehlt.anzahlMuster) badges.push(`<span class="badge nein">Anzahl Muster: ${escapeHtml(String(gewaehlt.anzahlMuster))}</span>`);
     if (gewaehlt.trivial) badges.push(`<span class="badge ja">Trivial</span>`);
-    if (gewaehlt.kez) badges.push(`<span class="badge ja" title="Kennzeichnungsanforderungen in der Norm, die über die GPSR-Anforderungen hinausgehen">KEZ-Anforderungen</span>`);
+    if (pruefgrundlageKennzeichnungAktiv(gewaehlt)) badges.push(`<span class="badge ja" title="Mindestens eine referenzierte Norm hat Kennzeichnungsanforderungen">Kennzeichnung</span>`);
+    if (pruefgrundlageBedienungsanleitungAktiv(gewaehlt)) badges.push(`<span class="badge ja" title="Mindestens eine referenzierte Norm hat Anforderungen an die Bedienungsanleitung">Bedienungsanleitung</span>`);
 
     const gewaehltNorm = normRefListeText(gewaehlt.normen);
     const teilprodukte = kv.mechanikSetbestandteile
@@ -5174,7 +5177,7 @@ document.getElementById("btn-neuer-kv").addEventListener("click", () => {
    werden. Normen/FFU/StiWa sind jetzt Referenzlisten ({normId, inAnlehnungAn}) auf data.normen
    statt Freitext - der generische JSON.stringify-Vergleich in feldweiseGleich() funktioniert dafür
    unverändert. */
-const PRUEFGRUNDLAGE_FELDER = ["bereich", "warengruppeCode", "warengruppeName", "produkt", "normen", "anzahlMuster", "trivial", "kez", "ffuNormen", "stiwaNormen"];
+const PRUEFGRUNDLAGE_FELDER = ["bereich", "warengruppeCode", "warengruppeName", "produkt", "normen", "anzahlMuster", "trivial", "ffuNormen", "stiwaNormen"];
 
 /* ---------- Normen-/Prüfprogramm-Dokumente: Text auslesen, NICHT als Binärdatei speichern ----------
    Wird ausschließlich vom Reiter "Normen" genutzt (verarbeiteNormDatei). Eigener, minimaler
@@ -5274,6 +5277,32 @@ function normRefSapCode(refs) {
   return "";
 }
 
+/* Kennzeichnung/Bedienungsanleitung stehen jetzt an der Norm selbst (Reiter "Normen"), nicht mehr
+   manuell an der Prüfgrundlage - eine Referenz zählt automatisch mit, außer sie ist "in Anlehnung
+   an" UND wurde dort nicht explizit per "trotzdem übernehmen"-Checkbox (r.kennzeichnungUebernehmen/
+   r.bedienungsanleitungUebernehmen, siehe renderNormenChips) manuell wieder eingeschaltet. */
+function normRefKennzeichnungAktiv(r) {
+  const norm = data.normen.find((n) => n.id === r.normId);
+  if (!norm || !norm.kennzeichnung) return false;
+  return !r.inAnlehnungAn || !!r.kennzeichnungUebernehmen;
+}
+function normRefBedienungsanleitungAktiv(r) {
+  const norm = data.normen.find((n) => n.id === r.normId);
+  if (!norm || !norm.bedienungsanleitung) return false;
+  return !r.inAnlehnungAn || !!r.bedienungsanleitungUebernehmen;
+}
+/* Über alle drei Prüfblöcke (Sicherheit&Norm/FFU/StiWa) hinweg: gilt für die Prüfgrundlage
+   Kennzeichnung bzw. Bedienungsanleitung, sobald mindestens eine referenzierte Norm sie beisteuert. */
+function pruefgrundlageNormRefsAlle(e) {
+  return [...(e.normen || []), ...(e.ffuNormen || []), ...(e.stiwaNormen || [])];
+}
+function pruefgrundlageKennzeichnungAktiv(e) {
+  return pruefgrundlageNormRefsAlle(e).some(normRefKennzeichnungAktiv);
+}
+function pruefgrundlageBedienungsanleitungAktiv(e) {
+  return pruefgrundlageNormRefsAlle(e).some(normRefBedienungsanleitungAktiv);
+}
+
 function gefilterterPruefgrundlagen() {
   const q = normalisiere(suchbegriffe.pruefgrundlagen);
   if (!q) return data.pruefgrundlagen;
@@ -5289,7 +5318,8 @@ function gefilterterPruefgrundlagen() {
 function pruefgrundlageZeileKompaktHtml(e) {
   const badges = [];
   if (e.trivial) badges.push(`<span class="badge ja" title="Trivial">Triv.</span>`);
-  if (e.kez) badges.push(`<span class="badge ja" title="Kennzeichnungsanforderungen in der Norm, die über die GPSR-Anforderungen hinausgehen">KEZ</span>`);
+  if (pruefgrundlageKennzeichnungAktiv(e)) badges.push(`<span class="badge ja" title="Mindestens eine referenzierte Norm hat Kennzeichnungsanforderungen">Kennz.</span>`);
+  if (pruefgrundlageBedienungsanleitungAktiv(e)) badges.push(`<span class="badge ja" title="Mindestens eine referenzierte Norm hat Anforderungen an die Bedienungsanleitung">BDA</span>`);
   const normenText = (e.normen && e.normen.length) ? normRefListeText(e.normen) : "–";
   const summeSicherheitNorm = normenBlockSumme(e.normen);
   const kostenText = summeSicherheitNorm === null ? "Anfrage" : `${summeSicherheitNorm.toFixed(2)} €`;
@@ -5556,6 +5586,26 @@ function aktualisiereNormenSumme(container, feldName, refs) {
    KV projektspezifisch getroffen werden (siehe mechanikAnwendungsbereichAuswahlHtml in
    renderMechanikEmpfehlungKarte) - dort mit dieser Vorbelegung als Startwert, dort aber je Projekt
    frei überschreibbar. */
+/* Zeigt je Norm-Referenz, ob Kennzeichnung/Bedienungsanleitung automatisch übernommen werden -
+   als reiner Hinweis (Badge), solange die Referenz NICHT "in Anlehnung an" ist (dann ist die
+   Übernahme automatisch, nichts zu entscheiden). Ist die Referenz "in Anlehnung an", entfällt die
+   automatische Übernahme, es erscheint stattdessen je Flag eine "trotzdem übernehmen"-Checkbox
+   für den Einzelfall (siehe normRefKennzeichnungAktiv/normRefBedienungsanleitungAktiv). */
+function normRefKennzeichnungBedienungsanleitungHtml(norm, r, i) {
+  if (!norm || (!norm.kennzeichnung && !norm.bedienungsanleitung)) return "";
+  const zeile = (flag, rolle, label) => {
+    if (!flag) return "";
+    if (!r.inAnlehnungAn) return `<span class="badge ja" title="Automatisch aus der Norm übernommen">${escapeHtml(label)}</span>`;
+    const uebernommen = rolle === "kennzeichnung-trotzdem" ? r.kennzeichnungUebernehmen : r.bedienungsanleitungUebernehmen;
+    return `<label><input type="checkbox" data-idx="${i}" data-rolle="${rolle}" ${uebernommen ? "checked" : ""}> ${escapeHtml(label)} trotzdem übernehmen</label>`;
+  };
+  const inhalt = [
+    zeile(norm.kennzeichnung, "kennzeichnung-trotzdem", "Kennzeichnungsanforderungen"),
+    zeile(norm.bedienungsanleitung, "bedienungsanleitung-trotzdem", "Bedienungsanleitung-Anforderungen")
+  ].filter(Boolean).join(" ");
+  return inhalt ? `<div class="norm-ref-zeile">${inhalt}</div>` : "";
+}
+
 function renderNormenChips(container, entwurf, feldName) {
   const liste = container.querySelector(".norm-ref-liste");
   const refs = entwurf[feldName] || [];
@@ -5579,6 +5629,7 @@ function renderNormenChips(container, entwurf, feldName) {
               ${norm.anwendungsbereiche.map((b) => `<option value="${escapeHtml(b.id)}" ${r.anwendungsbereichId === b.id ? "selected" : ""}>${escapeHtml(b.name || "(ohne Namen)")}</option>`).join("")}
             </select></label>
           </div>` : ""}
+          ${normRefKennzeichnungBedienungsanleitungHtml(norm, r, i)}
           <textarea data-normid="${escapeHtml(r.normId)}" data-rolle="bemerkung" rows="2" placeholder="Bemerkung zu dieser Norm/PPM (z. B. Anforderungen, Prüfhinweise)… - wird in der Normendatenbank gespeichert" ${norm ? "" : "disabled"}>${escapeHtml(norm ? norm.bemerkung || "" : "")}</textarea>
         </div>`;
       }).join("")
@@ -5597,7 +5648,16 @@ function renderNormenChips(container, entwurf, feldName) {
     });
   });
   liste.querySelectorAll('[data-rolle="anlehnung"]').forEach((cb) => {
-    cb.addEventListener("change", () => { refs[Number(cb.dataset.idx)].inAnlehnungAn = cb.checked; });
+    cb.addEventListener("change", () => {
+      refs[Number(cb.dataset.idx)].inAnlehnungAn = cb.checked;
+      renderNormenChips(container, entwurf, feldName);
+    });
+  });
+  liste.querySelectorAll('[data-rolle="kennzeichnung-trotzdem"]').forEach((cb) => {
+    cb.addEventListener("change", () => { refs[Number(cb.dataset.idx)].kennzeichnungUebernehmen = cb.checked; });
+  });
+  liste.querySelectorAll('[data-rolle="bedienungsanleitung-trotzdem"]').forEach((cb) => {
+    cb.addEventListener("change", () => { refs[Number(cb.dataset.idx)].bedienungsanleitungUebernehmen = cb.checked; });
   });
   liste.querySelectorAll('[data-rolle="kosten"]').forEach((inp) => {
     inp.addEventListener("input", () => {
@@ -5640,7 +5700,7 @@ function baueNormenListe(container, entwurf, feldName, q, erlaubteTypen) {
   const neuBtn = liste.querySelector("[data-neu]");
   if (neuBtn) {
     neuBtn.addEventListener("click", () => {
-      const neu = { id: neueId(), bezeichnung: q.trim(), titel: "", typ: normTypFuerBlock(q.trim(), erlaubteTypen), dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "", sapCode: "" };
+      const neu = { id: neueId(), bezeichnung: q.trim(), titel: "", typ: normTypFuerBlock(q.trim(), erlaubteTypen), dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "", sapCode: "", kennzeichnung: false, bedienungsanleitung: false };
       data.normen.push(neu);
       speichereInLocalStorage();
       entwurf[feldName] = entwurf[feldName] || [];
@@ -5691,8 +5751,10 @@ function pruefgrundlageFormularHtml(entwurf) {
     ${bereichAuswahlHtml(entwurf)}
     <div class="formular-grid">
       <label class="checkbox-label">Trivial<input type="checkbox" data-feld="trivial" ${entwurf.trivial ? "checked" : ""}></label>
-      <label class="checkbox-label" title="Es gibt in der Norm Kennzeichnungsanforderungen, die über die Anforderungen der GPSR hinausgehen.">KEZ-Anforderungen (Kennzeichnung über GPSR hinaus)<input type="checkbox" data-feld="kez" ${entwurf.kez ? "checked" : ""}></label>
     </div>
+    <p class="hinweis">Kennzeichnungs- und Bedienungsanleitung-Anforderungen werden nicht mehr
+      hier, sondern an der jeweiligen Norm gepflegt (Reiter „Normen") und automatisch übernommen,
+      sobald diese Norm unten referenziert wird.</p>
     <div class="pruefblock">
       <h3>Sicherheit &amp; Norm</h3>
       ${normenFeldHtml("normen", "Normen & PPM (Mehrfachauswahl)")}
@@ -5775,7 +5837,7 @@ document.getElementById("pruefgrundlagen-ansicht-toggle").querySelectorAll("butt
    hochgeladen (nur Rohtext-Extraktion, siehe extrahiereDocxRohtext). Prüfpunkte werden in beiden
    Fällen ausschließlich von Hand gepflegt (keine automatische Erkennung mehr). */
 function normEntwurfNeu() {
-  return { id: neueId(), bezeichnung: "Neue Norm", titel: "", typ: "norm", dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "", sapCode: "" };
+  return { id: neueId(), bezeichnung: "Neue Norm", titel: "", typ: "norm", dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "", sapCode: "", kennzeichnung: false, bedienungsanleitung: false };
 }
 
 /* Liest eine Norm-.docx-Datei ein und liefert einen vollständigen Norm-Datensatz (noch nicht in
@@ -5919,6 +5981,8 @@ function renderNormDetail() {
         <label>Titel<input type="text" data-feld="titel" value="${escapeHtml(norm.titel)}"></label>
         <label>Typ<select data-feld="typ">${NORM_TYP_OPTIONEN.map((o) => `<option value="${o.wert}" ${(norm.typ || "norm") === o.wert ? "selected" : ""}>${escapeHtml(o.label)}</option>`).join("")}</select></label>
         <label>SAP-Code (SAP-Material)<input type="text" data-feld="sapCode" value="${escapeHtml(norm.sapCode || "")}" placeholder="z. B. KENNZEICHNNG_SF_TS"></label>
+        <label class="checkbox-label" title="Diese Norm enthält Kennzeichnungsanforderungen - wird beim Referenzieren in einer Prüfgrundlage automatisch übernommen (außer bei 'in Anlehnung an', dort nur auf Wunsch).">Kennzeichnungsanforderungen<input type="checkbox" data-feld="kennzeichnung" ${norm.kennzeichnung ? "checked" : ""}></label>
+        <label class="checkbox-label" title="Diese Norm enthält Anforderungen an die Bedienungsanleitung - wird beim Referenzieren in einer Prüfgrundlage automatisch übernommen (außer bei 'in Anlehnung an', dort nur auf Wunsch).">Anforderungen an Bedienungsanleitung<input type="checkbox" data-feld="bedienungsanleitung" ${norm.bedienungsanleitung ? "checked" : ""}></label>
         <label class="volle-breite">Bemerkung<textarea data-feld="bemerkung" rows="2" placeholder="z. B. Anforderungen, Prüfhinweise… - wird überall angezeigt, wo diese Norm/PPM referenziert wird">${escapeHtml(norm.bemerkung || "")}</textarea></label>
       </div>
       <p class="hinweis">${norm.dateiname ? `Hochgeladen aus „${escapeHtml(norm.dateiname)}" am ${escapeHtml(norm.hochgeladenAm)}.` : "Manuell angelegt, ohne Datei-Upload."}</p>
@@ -5956,7 +6020,7 @@ function renderNormDetail() {
 
   panel.querySelectorAll(".formular-grid [data-feld]").forEach((el) => {
     el.addEventListener("input", () => {
-      norm[el.dataset.feld] = el.value;
+      norm[el.dataset.feld] = el.type === "checkbox" ? el.checked : el.value;
       speichereInLocalStorage();
       renderNormenListe();
       if (el.dataset.feld === "bezeichnung") panel.querySelector("h2").textContent = norm.bezeichnung || "(ohne Bezeichnung)";
@@ -6659,10 +6723,10 @@ document.getElementById("btn-csv").addEventListener("click", () => {
     data.kvs.forEach((k) => k.positionen.forEach((p) => zeilen.push([k.ian, k.artikel, k.lieferant, k.sapNummer, p.kategorie, p.bezeichnung, p.kuerzel, p.sapCode, p.kosten, p.anzahl, (Number(p.kosten) || 0) * (Number(p.anzahl) || 0), p.aktiv ? "Ja" : "Nein"])));
     csvHerunterladen(zeilen, "kv_export.csv");
   } else if (aktiverTab === "pruefgrundlagen") {
-    const zeilen = [["Bereich", "Warengruppe-Code", "Warengruppe-Name", "Produkt", "Normen", "Kosten Sicherheit&Norm (Summe)", "Bemerkungen Sicherheit&Norm", "Anzahl Muster", "Trivial", "KEZ (Kennzeichnung > GPSR)", "FFU-Normen", "Kosten FFU (Summe)", "Bemerkungen FFU", "StiWa-Normen", "Kosten StiWa (Summe)", "Bemerkungen StiWa"]];
+    const zeilen = [["Bereich", "Warengruppe-Code", "Warengruppe-Name", "Produkt", "Normen", "Kosten Sicherheit&Norm (Summe)", "Bemerkungen Sicherheit&Norm", "Anzahl Muster", "Trivial", "Kennzeichnung", "Bedienungsanleitung", "FFU-Normen", "Kosten FFU (Summe)", "Bemerkungen FFU", "StiWa-Normen", "Kosten StiWa (Summe)", "Bemerkungen StiWa"]];
     data.pruefgrundlagen.forEach((e) => zeilen.push([
       e.bereich, e.warengruppeCode, e.warengruppeName, e.produkt, normRefListeText(e.normen), normenBlockSumme(e.normen), normRefBemerkungenText(e.normen), e.anzahlMuster,
-      e.trivial ? "Ja" : "Nein", e.kez ? "Ja" : "Nein",
+      e.trivial ? "Ja" : "Nein", pruefgrundlageKennzeichnungAktiv(e) ? "Ja" : "Nein", pruefgrundlageBedienungsanleitungAktiv(e) ? "Ja" : "Nein",
       normRefListeText(e.ffuNormen), normenBlockSumme(e.ffuNormen), normRefBemerkungenText(e.ffuNormen),
       normRefListeText(e.stiwaNormen), normenBlockSumme(e.stiwaNormen), normRefBemerkungenText(e.stiwaNormen)
     ]));
