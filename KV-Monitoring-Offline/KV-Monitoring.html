@@ -393,6 +393,7 @@ input[type=file] { display:none; }
   <div class="pill-toggle" id="verwaltung-ansicht-toggle">
     <button type="button" data-ansicht="bereiche" class="aktiv">Bereiche</button>
     <button type="button" data-ansicht="warengruppen">Warengruppen</button>
+    <button type="button" data-ansicht="pruefungsarten">Prüfungsarten</button>
     <button type="button" data-ansicht="trivialpreisliste">Trivialartikel-Preisliste</button>
     <button type="button" data-ansicht="gefahrenzone">Gefahrenzone</button>
   </div>
@@ -428,6 +429,18 @@ input[type=file] { display:none; }
       <input type="text" id="warengruppe-neu-alt-input" placeholder="Warengruppe alt (optional)" style="width:160px;font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px">
       <select id="warengruppe-neu-bereich-input" style="font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px"></select>
       <button type="button" id="warengruppe-hinzufuegen-btn">+ Hinzufügen</button>
+    </div>
+  </div>
+  <div class="card" id="verwaltung-block-pruefungsarten" style="max-width:520px">
+    <h2 style="margin-top:0">Prüfungsarten</h2>
+    <p class="hinweis">Diese Liste speist das Prüfungsart-Dropdown im Reiter „Normen" — hier
+      anlegen, umbenennen oder löschen. Umbenennen aktualisiert automatisch alle Normen, die den
+      bisherigen Wert verwenden.</p>
+    <div id="pruefungsarten-liste"></div>
+    <div class="verwaltung-paginierung" id="pruefungsarten-paginierung"></div>
+    <div class="toolbar-zeile" style="margin-top:0.6rem">
+      <input type="text" id="pruefungsart-neu-input" placeholder="Neue Prüfungsart…" style="flex:1;font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px">
+      <button type="button" id="pruefungsart-hinzufuegen-btn">+ Hinzufügen</button>
     </div>
   </div>
   <div class="card" id="verwaltung-block-trivialpreisliste" style="max-width:1200px">
@@ -635,7 +648,7 @@ function migriereFixPositionenAlsNormen() {
   FIXPOSITIONEN_MIT_NORM.forEach((p) => {
     const vorhanden = data.normen.some((n) => normalisiere(n.bezeichnung) === normalisiere(p.bezeichnung));
     if (!vorhanden) {
-      data.normen.push({ id: neueId(), bezeichnung: p.bezeichnung, titel: "", typ: "ppm", dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "", sapCode: p.sapCode, kennzeichnung: false, bedienungsanleitung: false });
+      data.normen.push({ id: neueId(), bezeichnung: p.bezeichnung, titel: "", typ: "ppm", dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "", sapCode: p.sapCode, kennzeichnung: false, bedienungsanleitung: false, pruefungsart: "" });
     }
   });
 }
@@ -683,6 +696,13 @@ function seedBereiche() {
   const eindeutig = new Set();
   seedPruefgrundlagenRoh().forEach((r) => { if (r.bereich && r.bereich.trim()) eindeutig.add(r.bereich.trim()); });
   return [...eindeutig].sort((a, b) => a.localeCompare(b, "de"));
+}
+
+/* ---------- Prüfungsart-Stammdaten (Dropdown-Auswahl je Norm im Reiter "Normen", Pflege im
+   Reiter "Verwaltung") ---------- Analog zu Bereiche: einfache Liste von Strings, keine feste
+   Kategorisierung im Code, frei erweiterbar. */
+function seedPruefungsarten() {
+  return ["Sicherheit-/Normprüfung", "Kennzeichnung", "Produktspezifikation"];
 }
 
 /* Ergänzt data.bereiche um Werte, die zwar in einer (ggf. älteren) Prüfgrundlage als Freitext
@@ -2046,6 +2066,7 @@ function migriereNorm(n) {
   if (n.sapCode === undefined) n.sapCode = "";
   if (n.kennzeichnung === undefined) n.kennzeichnung = false;
   if (n.bedienungsanleitung === undefined) n.bedienungsanleitung = false;
+  if (n.pruefungsart === undefined) n.pruefungsart = "";
   if (!Array.isArray(n.anwendungsbereiche)) n.anwendungsbereiche = [];
   if (Array.isArray(n.pruefpunkte) && n.pruefpunkte.length) {
     n.anwendungsbereiche = n.anwendungsbereiche.concat(n.pruefpunkte.map((p) => ({
@@ -2067,7 +2088,7 @@ function normFindOrCreate(bezeichnungRoh) {
   const key = normalisiere(bez);
   let norm = data.normen.find((n) => normalisiere(n.bezeichnung) === key);
   if (!norm) {
-    norm = { id: neueId(), bezeichnung: bez, titel: "", typ: normTypAusBezeichnung(bez), dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "", sapCode: "", kennzeichnung: false, bedienungsanleitung: false };
+    norm = { id: neueId(), bezeichnung: bez, titel: "", typ: normTypAusBezeichnung(bez), dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "", sapCode: "", kennzeichnung: false, bedienungsanleitung: false, pruefungsart: "" };
     data.normen.push(norm);
   }
   return norm.id;
@@ -2076,7 +2097,7 @@ function normRefListeAusText(text) {
   const bez = String(text || "").trim();
   if (!bez) return [];
   const id = normFindOrCreate(bez);
-  return id ? [{ normId: id, inAnlehnungAn: false, kosten: null, anwendungsbereichId: null }] : [];
+  return id ? [{ normId: id, inAnlehnungAn: false, kosten: null, kostenWeiteresProdukt: null, anwendungsbereichId: null }] : [];
 }
 
 /* Migriert die frühere blockweite Einzelkosten-Angabe (z. B. "kostenSicherheitNorm" als ein
@@ -2234,8 +2255,8 @@ let makIdFilter = "";
 let suchbegriffe = { arbeitsvorrat: "", pruefauftraege: "", kvs: "", pruefgrundlagen: "", normen: "", mak: "" };
 /* Aktuelle Seite je paginierter Liste im Reiter "Verwaltung" - bei sehr vielen Einträgen (z. B.
    730 Warengruppen) sonst zu viel Scrollen; 1-basiert wie in der UI angezeigt. */
-let verwaltungSeite = { bereiche: 1, warengruppen: 1, trivialpreisliste: 1 };
-const VERWALTUNG_SEITENGROESSE = { bereiche: 25, warengruppen: 50, trivialpreisliste: 50 };
+let verwaltungSeite = { bereiche: 1, warengruppen: 1, pruefungsarten: 1, trivialpreisliste: 1 };
+const VERWALTUNG_SEITENGROESSE = { bereiche: 25, warengruppen: 50, pruefungsarten: 25, trivialpreisliste: 50 };
 /* "warengruppe" = bisherige, LIDL-spezifische Gruppierung nach Warengruppen-Code; "bereich" =
    neue, kundenübergreifende Gruppierung anhand des Bereichs der jeweiligen Warengruppe (siehe
    Reiter "Verwaltung" -> Warengruppen -> Feld "Bereich"). */
@@ -2493,7 +2514,8 @@ function init() {
     warengruppenZuordnung: (geladen && geladen.warengruppenZuordnung && geladen.warengruppenZuordnung.length) ? geladen.warengruppenZuordnung : seedWarengruppenZuordnung(),
     warengruppenStammdatenV3: !!(geladen && geladen.warengruppenStammdatenV3),
     trivialPreisliste: (geladen && geladen.trivialPreisliste && geladen.trivialPreisliste.length) ? geladen.trivialPreisliste : offizielleTrivialPreisliste(),
-    mak: (geladen && geladen.mak && geladen.mak.length) ? geladen.mak : seedMak()
+    mak: (geladen && geladen.mak && geladen.mak.length) ? geladen.mak : seedMak(),
+    pruefungsarten: (geladen && geladen.pruefungsarten && geladen.pruefungsarten.length) ? geladen.pruefungsarten : seedPruefungsarten()
   };
   data.normen.forEach(migriereNorm);
   data.pruefgrundlagen.forEach(migrierePruefgrundlage);
@@ -5621,6 +5643,7 @@ function renderNormenChips(container, entwurf, feldName) {
           </div>
           <div class="norm-ref-zeile">
             <label>Kosten €<input type="number" step="1" data-idx="${i}" data-rolle="kosten" value="${r.kosten === null || r.kosten === undefined ? "" : r.kosten}" placeholder="Anfrage"></label>
+            <label title="Reduzierte Kosten für jedes weitere Produkt, das parallel unter dieser Norm geprüft wird - Rüstzeiten fallen dabei nur einmal an.">Kosten je weiterem Produkt €<input type="number" step="1" data-idx="${i}" data-rolle="kostenWeiteresProdukt" value="${r.kostenWeiteresProdukt === null || r.kostenWeiteresProdukt === undefined ? "" : r.kostenWeiteresProdukt}" placeholder="wie Kosten"></label>
             <label><input type="checkbox" data-idx="${i}" data-rolle="anlehnung" ${r.inAnlehnungAn ? "checked" : ""}> in Anlehnung an</label>
           </div>
           ${norm && (norm.anwendungsbereiche || []).length ? `<div class="norm-ref-zeile">
@@ -5665,6 +5688,11 @@ function renderNormenChips(container, entwurf, feldName) {
       aktualisiereNormenSumme(container, feldName, refs);
     });
   });
+  liste.querySelectorAll('[data-rolle="kostenWeiteresProdukt"]').forEach((inp) => {
+    inp.addEventListener("input", () => {
+      refs[Number(inp.dataset.idx)].kostenWeiteresProdukt = inp.value === "" ? null : Number(inp.value);
+    });
+  });
   liste.querySelectorAll('[data-rolle="anwendungsbereich"]').forEach((sel) => {
     sel.addEventListener("change", () => { refs[Number(sel.dataset.idx)].anwendungsbereichId = sel.value || null; });
   });
@@ -5692,7 +5720,7 @@ function baueNormenListe(container, entwurf, feldName, q, erlaubteTypen) {
   liste.querySelectorAll("[data-normid]").forEach((btn) => {
     btn.addEventListener("click", () => {
       entwurf[feldName] = entwurf[feldName] || [];
-      entwurf[feldName].push({ normId: btn.dataset.normid, inAnlehnungAn: false, kosten: null, anwendungsbereichId: null });
+      entwurf[feldName].push({ normId: btn.dataset.normid, inAnlehnungAn: false, kosten: null, kostenWeiteresProdukt: null, anwendungsbereichId: null });
       renderNormenChips(container, entwurf, feldName);
       baueNormenListe(container, entwurf, feldName, container.querySelector(".ms-suche").value, erlaubteTypen);
     });
@@ -5700,11 +5728,11 @@ function baueNormenListe(container, entwurf, feldName, q, erlaubteTypen) {
   const neuBtn = liste.querySelector("[data-neu]");
   if (neuBtn) {
     neuBtn.addEventListener("click", () => {
-      const neu = { id: neueId(), bezeichnung: q.trim(), titel: "", typ: normTypFuerBlock(q.trim(), erlaubteTypen), dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "", sapCode: "", kennzeichnung: false, bedienungsanleitung: false };
+      const neu = { id: neueId(), bezeichnung: q.trim(), titel: "", typ: normTypFuerBlock(q.trim(), erlaubteTypen), dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "", sapCode: "", kennzeichnung: false, bedienungsanleitung: false, pruefungsart: "" };
       data.normen.push(neu);
       speichereInLocalStorage();
       entwurf[feldName] = entwurf[feldName] || [];
-      entwurf[feldName].push({ normId: neu.id, inAnlehnungAn: false, kosten: null, anwendungsbereichId: null });
+      entwurf[feldName].push({ normId: neu.id, inAnlehnungAn: false, kosten: null, kostenWeiteresProdukt: null, anwendungsbereichId: null });
       renderNormenChips(container, entwurf, feldName);
       container.querySelector(".ms-suche").value = "";
       baueNormenListe(container, entwurf, feldName, "", erlaubteTypen);
@@ -5837,7 +5865,7 @@ document.getElementById("pruefgrundlagen-ansicht-toggle").querySelectorAll("butt
    hochgeladen (nur Rohtext-Extraktion, siehe extrahiereDocxRohtext). Prüfpunkte werden in beiden
    Fällen ausschließlich von Hand gepflegt (keine automatische Erkennung mehr). */
 function normEntwurfNeu() {
-  return { id: neueId(), bezeichnung: "Neue Norm", titel: "", typ: "norm", dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "", sapCode: "", kennzeichnung: false, bedienungsanleitung: false };
+  return { id: neueId(), bezeichnung: "Neue Norm", titel: "", typ: "norm", dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "", sapCode: "", kennzeichnung: false, bedienungsanleitung: false, pruefungsart: "" };
 }
 
 /* Liest eine Norm-.docx-Datei ein und liefert einen vollständigen Norm-Datensatz (noch nicht in
@@ -5869,7 +5897,7 @@ function gefiltereNormen() {
   return data.normen.filter((n) => {
     if (normenTypFilter && (n.typ || "norm") !== normenTypFilter) return false;
     if (!q) return true;
-    return normalisiere([n.bezeichnung, n.titel, n.dateiname, n.bemerkung, ...(n.anwendungsbereiche || []).map((b) => b.name + " " + b.text)].join(" ")).includes(q);
+    return normalisiere([n.bezeichnung, n.titel, n.dateiname, n.bemerkung, n.pruefungsart, ...(n.anwendungsbereiche || []).map((b) => b.name + " " + b.text)].join(" ")).includes(q);
   }).sort((a, b) => normenSortierSchluessel(a.bezeichnung).localeCompare(normenSortierSchluessel(b.bezeichnung), "de", { numeric: true }));
 }
 
@@ -5937,7 +5965,7 @@ function normVerwendungInPruefgrundlagen(norm) {
           const bereich = (norm.anwendungsbereiche || []).find((b) => b.id === r.anwendungsbereichId);
           treffer.push({
             pgId: e.id, produkt: e.produkt, warengruppeName: e.warengruppeName, block: label,
-            kosten: r.kosten, inAnlehnungAn: r.inAnlehnungAn, anwendungsbereichName: bereich ? bereich.name : ""
+            kosten: r.kosten, kostenWeiteresProdukt: r.kostenWeiteresProdukt, inAnlehnungAn: r.inAnlehnungAn, anwendungsbereichName: bereich ? bereich.name : ""
           });
         }
       });
@@ -5952,17 +5980,26 @@ function normVerwendungHtml(norm) {
   return `<div class="card">
     <h2 style="margin:0 0 0.6rem 0">Verwendet in Prüfgrundlagen${treffer.length ? " (" + treffer.length + ")" : ""}</h2>
     ${treffer.length
-      ? `<table class="tabelle readonly"><thead><tr><th>Produkt</th><th>Warengruppe</th><th>Block</th>${zeigeAnwendungsbereich ? "<th>Anwendungsbereich (Vorbelegung)</th>" : ""}<th>Kosten</th></tr></thead><tbody>
+      ? `<table class="tabelle readonly"><thead><tr><th>Produkt</th><th>Warengruppe</th><th>Block</th>${zeigeAnwendungsbereich ? "<th>Anwendungsbereich (Vorbelegung)</th>" : ""}<th>Kosten</th><th>Kosten je weiterem Produkt</th></tr></thead><tbody>
           ${treffer.map((t) => `<tr class="klickbar" data-action="norm-pg-oeffnen" data-id="${escapeHtml(t.pgId)}">
             <td>${escapeHtml(t.produkt || "(ohne Produktnamen)")}</td>
             <td>${escapeHtml(t.warengruppeName || "")}</td>
             <td>${escapeHtml(t.block)}${t.inAnlehnungAn ? ` <span class="muted">(in Anlehnung an)</span>` : ""}</td>
             ${zeigeAnwendungsbereich ? `<td>${t.anwendungsbereichName ? escapeHtml(t.anwendungsbereichName) : "–"}</td>` : ""}
             <td>${t.kosten === null || t.kosten === undefined ? "Anfrage" : Number(t.kosten).toFixed(2) + " €"}</td>
+            <td>${t.kostenWeiteresProdukt === null || t.kostenWeiteresProdukt === undefined ? "–" : Number(t.kostenWeiteresProdukt).toFixed(2) + " €"}</td>
           </tr>`).join("")}
         </tbody></table>`
       : `<p class="hinweis" style="margin:0">Noch in keiner Prüfgrundlage verwendet.</p>`}
   </div>`;
+}
+
+/* <option>-Liste für das Prüfungsart-Dropdown einer Norm - Stammdaten in data.pruefungsarten,
+   Pflege (anlegen/umbenennen/löschen) im Reiter "Verwaltung" (siehe renderPruefungsartenVerwaltung),
+   analog zu bereichOptionenHtml. */
+function pruefungsartOptionenHtml(ausgewaehlt) {
+  return `<option value="" ${ausgewaehlt ? "" : "selected"}>– keine –</option>`
+    + data.pruefungsarten.map((p) => `<option value="${escapeHtml(p)}" ${normalisiere(p) === normalisiere(ausgewaehlt) ? "selected" : ""}>${escapeHtml(p)}</option>`).join("");
 }
 
 function renderNormDetail() {
@@ -5980,6 +6017,7 @@ function renderNormDetail() {
         <label>Bezeichnung<input type="text" data-feld="bezeichnung" value="${escapeHtml(norm.bezeichnung)}"></label>
         <label>Titel<input type="text" data-feld="titel" value="${escapeHtml(norm.titel)}"></label>
         <label>Typ<select data-feld="typ">${NORM_TYP_OPTIONEN.map((o) => `<option value="${o.wert}" ${(norm.typ || "norm") === o.wert ? "selected" : ""}>${escapeHtml(o.label)}</option>`).join("")}</select></label>
+        <label>Prüfungsart<select data-feld="pruefungsart">${pruefungsartOptionenHtml(norm.pruefungsart)}</select></label>
         <label>SAP-Code (SAP-Material)<input type="text" data-feld="sapCode" value="${escapeHtml(norm.sapCode || "")}" placeholder="z. B. KENNZEICHNNG_SF_TS"></label>
         <label class="checkbox-label" title="Diese Norm enthält Kennzeichnungsanforderungen - wird beim Referenzieren in einer Prüfgrundlage automatisch übernommen (außer bei 'in Anlehnung an', dort nur auf Wunsch).">Kennzeichnungsanforderungen<input type="checkbox" data-feld="kennzeichnung" ${norm.kennzeichnung ? "checked" : ""}></label>
         <label class="checkbox-label" title="Diese Norm enthält Anforderungen an die Bedienungsanleitung - wird beim Referenzieren in einer Prüfgrundlage automatisch übernommen (außer bei 'in Anlehnung an', dort nur auf Wunsch).">Anforderungen an Bedienungsanleitung<input type="checkbox" data-feld="bedienungsanleitung" ${norm.bedienungsanleitung ? "checked" : ""}></label>
@@ -6195,10 +6233,12 @@ document.getElementById("mak-suche").addEventListener("input", (e) => {
 function renderVerwaltungTab() {
   document.getElementById("verwaltung-block-bereiche").hidden = verwaltungAnsicht !== "bereiche";
   document.getElementById("verwaltung-block-warengruppen").hidden = verwaltungAnsicht !== "warengruppen";
+  document.getElementById("verwaltung-block-pruefungsarten").hidden = verwaltungAnsicht !== "pruefungsarten";
   document.getElementById("verwaltung-block-trivialpreisliste").hidden = verwaltungAnsicht !== "trivialpreisliste";
   document.getElementById("verwaltung-block-gefahrenzone").hidden = verwaltungAnsicht !== "gefahrenzone";
   renderBereicheVerwaltung();
   renderWarengruppenVerwaltung();
+  renderPruefungsartenVerwaltung();
   renderTrivialpreislisteVerwaltung();
 }
 
@@ -6302,6 +6342,73 @@ document.getElementById("bereich-hinzufuegen-btn").addEventListener("click", () 
   speichereInLocalStorage();
   renderVerwaltungTab();
   zeigeStatus(`Bereich „${wert}" angelegt · ` + jetzt(), "ok");
+});
+
+/* Prüfungsarten (Dropdown-Auswahl je Norm im Reiter "Normen") - Pflege hier analog zu
+   renderBereicheVerwaltung: Umbenennen aktualisiert automatisch alle Normen, die den bisherigen
+   Wert verwenden; Löschen lässt den Wert an bereits zugeordneten Normen unangetastet stehen
+   (wie beim Bereich-Löschen auch), warnt aber vorher über die Nutzungsanzahl. */
+function renderPruefungsartenVerwaltung() {
+  const liste = document.getElementById("pruefungsarten-liste");
+  if (!liste) return;
+  const mitIndex = data.pruefungsarten.map((p, i) => ({ p, i }));
+  const { ausschnitt, seiten, seite, gesamt } = paginiereListe(mitIndex, "pruefungsarten");
+  liste.innerHTML = ausschnitt.length
+    ? ausschnitt.map(({ p, i }) => `
+      <div class="verwaltung-zeile" data-idx="${i}">
+        <input type="text" value="${escapeHtml(p)}" data-alt="${escapeHtml(p)}">
+        <button type="button" class="danger small" data-action="pruefungsart-loeschen">Löschen</button>
+      </div>`).join("")
+    : `<p class="muted">Noch keine Prüfungsarten angelegt.</p>`;
+  renderPaginierung("pruefungsarten-paginierung", "pruefungsarten", { seiten, seite, gesamt });
+
+  liste.querySelectorAll(".verwaltung-zeile input[type=\"text\"]").forEach((inp) => {
+    inp.addEventListener("change", () => {
+      const alt = inp.dataset.alt;
+      const neu = inp.value.trim();
+      if (!neu) { inp.value = alt; return; }
+      if (neu === alt) return;
+      if (data.pruefungsarten.some((p) => normalisiere(p) === normalisiere(neu))) {
+        alert(`Prüfungsart „${neu}" existiert bereits.`);
+        inp.value = alt;
+        return;
+      }
+      const idx = Number(inp.closest(".verwaltung-zeile").dataset.idx);
+      data.pruefungsarten[idx] = neu;
+      data.normen.forEach((n) => { if (n.pruefungsart === alt) n.pruefungsart = neu; });
+      speichereInLocalStorage();
+      renderVerwaltungTab();
+      zeigeStatus(`Prüfungsart „${alt}" umbenannt in „${neu}" · ` + jetzt(), "ok");
+    });
+  });
+  liste.querySelectorAll('[data-action="pruefungsart-loeschen"]').forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const idx = Number(btn.closest(".verwaltung-zeile").dataset.idx);
+      const wert = data.pruefungsarten[idx];
+      const anzahl = data.normen.filter((n) => n.pruefungsart === wert).length;
+      const hinweis = anzahl ? ` (aktuell von ${anzahl} Norm${anzahl === 1 ? "" : "en"} verwendet)` : "";
+      if (!confirm(`Prüfungsart „${wert}" wirklich löschen${hinweis}?`)) return;
+      data.pruefungsarten.splice(idx, 1);
+      speichereInLocalStorage();
+      renderVerwaltungTab();
+      zeigeStatus(`Prüfungsart „${wert}" gelöscht · ` + jetzt(), "ok");
+    });
+  });
+}
+
+document.getElementById("pruefungsart-hinzufuegen-btn").addEventListener("click", () => {
+  const inp = document.getElementById("pruefungsart-neu-input");
+  const wert = inp.value.trim();
+  if (!wert) return;
+  if (data.pruefungsarten.some((p) => normalisiere(p) === normalisiere(wert))) {
+    alert(`Prüfungsart „${wert}" existiert bereits.`);
+    return;
+  }
+  data.pruefungsarten.push(wert);
+  inp.value = "";
+  speichereInLocalStorage();
+  renderVerwaltungTab();
+  zeigeStatus(`Prüfungsart „${wert}" angelegt · ` + jetzt(), "ok");
 });
 
 /* Vereinigt Warengruppen-Stammdaten (Code+Bezeichnung, data.warengruppen) und die Neu->Alt-
@@ -6669,7 +6776,8 @@ document.getElementById("datei-laden-input").addEventListener("change", async (e
       warengruppenZuordnung: (geparst.warengruppenZuordnung && geparst.warengruppenZuordnung.length) ? geparst.warengruppenZuordnung : seedWarengruppenZuordnung(),
       warengruppenStammdatenV3: !!geparst.warengruppenStammdatenV3,
       trivialPreisliste: (geparst.trivialPreisliste && geparst.trivialPreisliste.length) ? geparst.trivialPreisliste : offizielleTrivialPreisliste(),
-      mak: (geparst.mak && geparst.mak.length) ? geparst.mak : seedMak()
+      mak: (geparst.mak && geparst.mak.length) ? geparst.mak : seedMak(),
+      pruefungsarten: (geparst.pruefungsarten && geparst.pruefungsarten.length) ? geparst.pruefungsarten : seedPruefungsarten()
     };
     data.normen.forEach(migriereNorm);
     data.pruefgrundlagen.forEach(migrierePruefgrundlage);
@@ -6732,11 +6840,12 @@ document.getElementById("btn-csv").addEventListener("click", () => {
     ]));
     csvHerunterladen(zeilen, "pruefgrundlagen_export.csv");
   } else if (aktiverTab === "normen") {
-    const zeilen = [["Norm", "Titel", "Typ", "SAP-Code", "Bemerkung", "Anwendungsbereich-Name", "Anwendungsbereich-Text"]];
+    const zeilen = [["Norm", "Titel", "Typ", "Prüfungsart", "SAP-Code", "Kennzeichnung", "Bedienungsanleitung", "Bemerkung", "Anwendungsbereich-Name", "Anwendungsbereich-Text"]];
     data.normen.forEach((n) => {
       const typLabel = normTypLabel(n.typ);
-      if (!(n.anwendungsbereiche || []).length) { zeilen.push([n.bezeichnung, n.titel, typLabel, n.sapCode || "", n.bemerkung, "", ""]); return; }
-      n.anwendungsbereiche.forEach((b) => zeilen.push([n.bezeichnung, n.titel, typLabel, n.sapCode || "", n.bemerkung, b.name, b.text]));
+      const basis = [n.bezeichnung, n.titel, typLabel, n.pruefungsart || "", n.sapCode || "", n.kennzeichnung ? "Ja" : "Nein", n.bedienungsanleitung ? "Ja" : "Nein", n.bemerkung];
+      if (!(n.anwendungsbereiche || []).length) { zeilen.push([...basis, "", ""]); return; }
+      n.anwendungsbereiche.forEach((b) => zeilen.push([...basis, b.name, b.text]));
     });
     csvHerunterladen(zeilen, "normen_export.csv");
   } else if (aktiverTab === "mak") {
@@ -6758,7 +6867,7 @@ function schluesselArbeitsvorrat(r) { return normalisiere(r.ian); }
 function schluesselPa(p) { return normalisiere(p.ian); }
 function schluesselPruefgrundlage(e) { return normalisiereWarengruppe(e.warengruppeCode) + "|" + normalisiere(e.produkt); }
 function schluesselNorm(n) { return normalisiere(n.bezeichnung); }
-const NORM_FELDER = ["bezeichnung", "titel", "typ", "dateiname", "rohtext", "anwendungsbereiche", "bemerkung", "sapCode"];
+const NORM_FELDER = ["bezeichnung", "titel", "typ", "dateiname", "rohtext", "anwendungsbereiche", "bemerkung", "sapCode", "kennzeichnung", "bedienungsanleitung", "pruefungsart"];
 
 /* JSON.stringify-Vergleich statt strikter Gleichheit, damit auch Feld-Werte, die Arrays sind
    (z. B. Normen/Materialien-Mehrfachauswahl), inhaltlich statt nach Objektreferenz verglichen

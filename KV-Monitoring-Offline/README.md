@@ -557,6 +557,16 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   Aufteilung auf mehrere Normen ist danach manuell in der Detailansicht
   möglich.
 
+  Neben „Kosten €" steht je Norm-Referenz jetzt auch **„Kosten je weiterem
+  Produkt €"** — gedacht für den Fall, dass mehrere Produkte parallel unter
+  derselben Norm geprüft werden und sich dabei Rüstzeiten einsparen lassen:
+  „Kosten €" bildet die Kosten für das erste Produkt ab, „Kosten je weiterem
+  Produkt €" die reduzierten Kosten für jedes zusätzliche, parallel geprüfte
+  Produkt (ohne erneute Rüstzeit). Das Feld ist aktuell reine Datenpflege —
+  wird schreibgeschützt auch in der „Verwendet in Prüfgrundlagen"-Übersicht
+  im Reiter „Normen" mit angezeigt (siehe unten), fließt aber noch nicht
+  automatisch in die KV-Kalkulation ein.
+
   **Bemerkungen hängen an der Norm/dem PPM selbst statt pauschal am ganzen
   Produkt.** Die Bemerkung ist ein Feld der Norm in der Normendatenbank
   (Reiter „Normen", siehe unten) — nicht der Prüfgrundlage und nicht der
@@ -642,6 +652,13 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   Übernahme erfolgt automatisch, sobald die Norm dort referenziert wird,
   außer bei „in Anlehnung an" — dort nur auf ausdrücklichen Wunsch je
   Referenz).
+
+  Jede Norm lässt sich außerdem einer **Prüfungsart** zuordnen (Dropdown,
+  Startbestand „Sicherheit-/Normprüfung", „Kennzeichnung",
+  „Produktspezifikation") — die Auswahlmöglichkeiten selbst sind frei
+  editierbar im Reiter „Verwaltung" → Ansicht „Prüfungsarten" (anlegen,
+  umbenennen, löschen; Umbenennen aktualisiert automatisch alle Normen, die
+  die bisherige Prüfungsart verwenden, analog zu „Bereiche").
 
   **Anwendungsbereiche**: manche Normen stellen je nach Verwendungszweck des
   Produkts unterschiedliche Anforderungen — z. B. hat DIN EN 581-2
@@ -747,14 +764,15 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   erfolgen. Schlagworte fließen bereits jetzt in die übergeordnete
   Textsuche mit ein und werden dauerhaft in der lokalen Datenablage
   gespeichert.
-- **Verwaltung** – **vier umschaltbare Ansichten** (Pillen oben im Reiter:
-  „Bereiche" / „Warengruppen" / „Trivialartikel-Preisliste" / „Gefahrenzone"),
-  von denen jeweils nur eine gleichzeitig sichtbar ist — analog zum
-  Ansicht-Umschalter im Reiter „Prüfgrundlagen" (siehe oben), statt einer
-  langen Scroll-Seite mit allen Blöcken untereinander. Die Stammdaten-Listen
-  sind zusätzlich bei mehr als einer Bildschirmseite an Einträgen paginiert
-  (Standardgröße 25 Bereiche bzw. 50 Warengruppen/Trivialartikel-Zeilen pro
-  Seite, „‹ Zurück"/„Weiter ›" darunter):
+- **Verwaltung** – **fünf umschaltbare Ansichten** (Pillen oben im Reiter:
+  „Bereiche" / „Warengruppen" / „Prüfungsarten" / „Trivialartikel-Preisliste" /
+  „Gefahrenzone"), von denen jeweils nur eine gleichzeitig sichtbar ist —
+  analog zum Ansicht-Umschalter im Reiter „Prüfgrundlagen" (siehe oben),
+  statt einer langen Scroll-Seite mit allen Blöcken untereinander. Die
+  Stammdaten-Listen sind zusätzlich bei mehr als einer Bildschirmseite an
+  Einträgen paginiert (Standardgröße 25 Bereiche/Prüfungsarten bzw. 50
+  Warengruppen/Trivialartikel-Zeilen pro Seite, „‹ Zurück"/„Weiter ›"
+  darunter):
   - **Bereiche** – Dropdown-Quelle im Reiter „Prüfgrundlagen". Neue Werte
     anlegen, bestehende umbenennen (aktualisiert automatisch alle
     Prüfgrundlagen, die den bisherigen Wert verwenden) oder löschen (mit
@@ -811,6 +829,13 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     Stammdaten-Codes, 341 Zuordnungs-Codes) überschneiden sich
     größtenteils, aber nicht vollständig, daher zeigt die vereinigte Liste
     geringfügig mehr als 730 Zeilen.
+  - **Prüfungsarten** – Dropdown-Quelle für das Prüfungsart-Feld je Norm im
+    Reiter „Normen" (siehe dort). Startbestand: „Sicherheit-/Normprüfung",
+    „Kennzeichnung", „Produktspezifikation" — neue Werte anlegen, bestehende
+    umbenennen (aktualisiert automatisch alle Normen, die die bisherige
+    Prüfungsart verwenden) oder löschen (mit Warnhinweis, falls der Wert
+    noch verwendet wird; bereits zugeordnete Normen behalten dabei den
+    alten Textwert, analog zum Löschen eines Bereichs).
   - **Trivialartikel-Preisliste** – Preisliste für triviale Artikel je
     **alter** Warengruppe (Code wie im Feld „Warengruppe (alt)" im
     Kostenvoranschlag), mit der offiziellen Preisliste (69 Zeilen) als
@@ -840,8 +865,9 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     Kostenvoranschläge** unwiderruflich (zwei Sicherheitsabfragen), z. B. um
     nach dem Testen sauber mit echten Daten neu zu starten.
     **Prüfgrundlagen und Normen sowie die Bereiche-/Warengruppen-Stammdaten,
-    die Warengruppen-Zuordnung und die Trivialartikel-Preisliste bleiben
-    dabei erhalten** — die mühsam gepflegte Referenzdatenbank geht also
+    die Warengruppen-Zuordnung, die Prüfungsarten und die
+    Trivialartikel-Preisliste bleiben dabei erhalten** — die mühsam gepflegte
+    Referenzdatenbank geht also
     nicht verloren. Vorher empfiehlt sich ein „⬇ Sichern (JSON)" oben. Da
     alle Daten ausschließlich lokal im Browser (Local Storage) liegen, lässt
     sich dieser Schritt nur über diesen Button hier im Tool selbst auslösen
