@@ -644,20 +644,10 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   werden, da es sonst keinen anderen Ort mehr dafür gibt. Die Auswahl im KV
   fließt direkt in die Bezeichnung der neu angelegten Position ein (z. B.
   „…DIN EN 581-2 [Campingbereich]"). Normen ohne Anwendungsbereiche zeigen
-  kein Dropdown.
-
-  **Preis**: jede Norm kann jetzt einen eigenen Preis hinterlegt bekommen —
-  **hat die Norm keine Anwendungsbereiche**, erscheint dafür ein einzelnes
-  „Preis €"-Feld direkt in den Kopfdaten der Norm. **Hat die Norm
-  Anwendungsbereiche**, verschwindet dieses zentrale Feld (mit entsprechendem
-  Hinweis) und stattdessen bekommt **jeder Anwendungsbereich sein eigenes
-  Preisfeld** — da die Anwendungsbereiche einer Norm oft unterschiedlich
-  aufwendig zu prüfen sind und daher unterschiedlich viel kosten können.
-  Diese Preise sind losgelöst von den **Kosten je Prüfgrundlage-Referenz**
-  (siehe „Kosten je Norm" oben, dort pro Produkt/Prüfgrundlage individuell
-  hinterlegt) — sie dienen aktuell als zentral gepflegte Referenzpreise in
-  der Normendatenbank selbst und fließen bereits in den JSON-Export/-Import
-  sowie CSV-Export mit ein.
+  kein Dropdown. Kosten werden bewusst **nicht** zentral an der Norm
+  hinterlegt, sondern wie gehabt individuell **je Prüfgrundlage-Referenz**
+  gepflegt (siehe „Kosten je Norm" oben, im Reiter Prüfgrundlagen) — dort
+  findet die Kostenangabe bereits statt.
 
   Die Detailansicht einer Norm zeigt außerdem eine schreibgeschützte
   **„Verwendet in Prüfgrundlagen"-Übersicht**: für jede Prüfgrundlage, die
