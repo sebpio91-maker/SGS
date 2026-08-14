@@ -467,9 +467,18 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     nachschlagen"**, das alle Einträge des Materialanforderungskatalogs
     (Reiter „MAK", siehe unten) nach Kategorie gruppiert zur Auswahl anbietet
     — nach Auswahl eines Parameters erscheinen darunter dessen Anforderung,
-    Norm/Standard EU, Norm/Standard US, Mindest-Prüfnachweis und Schlagworte
-    direkt zum Nachlesen, ohne in den MAK-Tab wechseln zu müssen. Danach
-    folgt die feste Position „Projektkosten (nicht einsteuern)" sowie eine
+    Norm/Standard EU, Norm/Standard US und Mindest-Prüfnachweis, ohne in den
+    MAK-Tab wechseln zu müssen. Der Parameter ist dabei **kein reines
+    Nachschlagewerk**: per **„+ hinzufügen"** lässt er sich direkt als
+    Position in den KV übernehmen (Kategorie Produktspezifikationen, ohne
+    eigenen Preis/SAP-Code, da MAK-Einträge keinen Preis führen — Preis/
+    SAP-Code lassen sich danach wie jede andere Position frei nachtragen).
+    Direkt darunter lassen sich außerdem die **Schlagworte** des gewählten
+    Parameters bearbeiten (Chips hinzufügen/entfernen, identisch zum Reiter
+    „MAK" selbst — beide Ansichten teilen sich dieselben Daten, eine
+    Änderung hier ist also sofort auch dort sichtbar), ohne dafür extra in
+    den MAK-Tab wechseln zu müssen. Danach folgt die feste Position
+    „Projektkosten (nicht einsteuern)" sowie eine
     durchsuchbare Liste aus dem echten, 62 Einträge umfassenden
     Parameterkatalog (Parameter, Material/Kontext, Laufzeit, Norm, SAP-Code,
     Preis) — Suchfeld oben, „+ hinzufügen" trägt die gewählte Zeile mit ihrem

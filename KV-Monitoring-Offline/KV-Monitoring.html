@@ -4645,19 +4645,76 @@ function makAuswahlOptionenHtml() {
         ${data.mak.filter((m) => m.kategorie === kat).sort((a, b) => (a.parameter || "").localeCompare(b.parameter || "", "de")).map((m) => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.parameter || "(ohne Parameter)")}</option>`).join("")}
       </optgroup>`).join("");
 }
-function renderKvMakDetail(makId) {
+/* MAK-Parameter-Detail im KV: kein reines Nachschlagewerk mehr - der Parameter lässt sich per
+   "+ hinzufügen" direkt als Position (Kategorie Produktspezifikationen, ohne eigenen Preis/
+   SAP-Code, da MAK-Einträge keinen Preis führen) in den KV übernehmen, und die Schlagworte lassen
+   sich hier direkt pflegen (identisches Editier-Muster wie im Reiter "MAK" selbst, siehe
+   renderMakDetail) statt nur angezeigt zu werden. */
+function kvMakBezeichnung(eintrag) {
+  return `${eintrag.parameter || "(ohne Parameter)"} (${eintrag.id})`;
+}
+function renderKvMakDetail(makId, kv) {
   const container = document.getElementById("kv-mak-detail");
   if (!container) return;
   const eintrag = data.mak.find((m) => m.id === makId);
   if (!eintrag) { container.innerHTML = ""; return; }
   const schlagworte = eintrag.schlagworte || [];
-  container.innerHTML = `<div class="mak-feld"><h3>${escapeHtml(eintrag.id)} — ${escapeHtml(eintrag.parameter || "(ohne Parameter)")}</h3>
-    <p class="muted" style="margin-top:-0.4rem">Kategorie: ${escapeHtml(eintrag.kategorie)} · Bereich: ${escapeHtml(eintrag.bereich)}</p></div>
+  const bezeichnung = kvMakBezeichnung(eintrag);
+  const schonDrin = kv.positionen.some((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere(PRODUKTSPEZI_KATEGORIE_NAME) && normalisiere(p.bezeichnung) === normalisiere(bezeichnung));
+  container.innerHTML = `<div class="mak-feld">
+      <div class="toolbar-zeile">
+        <h3 style="margin:0">${escapeHtml(eintrag.id)} — ${escapeHtml(eintrag.parameter || "(ohne Parameter)")}</h3>
+        ${schonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="mak-parameter-hinzufuegen">+ hinzufügen</button>`}
+      </div>
+      <p class="muted" style="margin-top:-0.4rem">Kategorie: ${escapeHtml(eintrag.kategorie)} · Bereich: ${escapeHtml(eintrag.bereich)}</p>
+    </div>
     <div class="mak-feld"><h3>Anforderung</h3><p>${escapeHtml(eintrag.anforderung) || "–"}</p></div>
     <div class="mak-feld"><h3>Norm/Standard EU</h3><p>${escapeHtml(eintrag.normEu) || "–"}</p></div>
     <div class="mak-feld"><h3>Norm/Standard US (AATCC/ASTM)</h3><p>${escapeHtml(eintrag.normUs) || "–"}</p></div>
     <div class="mak-feld"><h3>Mindest-Prüfnachweis</h3><p>${escapeHtml(eintrag.pruefnachweis) || "–"}</p></div>
-    ${schlagworte.length ? `<div class="mak-feld"><h3>Schlagworte</h3><div class="tag-chips">${schlagworte.map((t) => `<span class="tag-chip">${escapeHtml(t)}</span>`).join("")}</div></div>` : ""}`;
+    <div class="tag-feld">
+      <label>Schlagworte <span class="muted" style="font-weight:400">– Signalwörter, die in den Abschnitten „Qualität" oder „Material" stehen müssen, damit dieser Parameter relevant ist</span></label>
+      <div class="tag-chips" id="kv-mak-tag-chips">
+        ${schlagworte.length ? schlagworte.map((tag, i) => `<span class="tag-chip">${escapeHtml(tag)}<button type="button" data-idx="${i}" title="Schlagwort entfernen">×</button></span>`).join("") : '<span class="muted">Noch keine Schlagworte hinterlegt.</span>'}
+      </div>
+      <div class="tag-eingabe">
+        <input type="text" id="kv-mak-tag-input" placeholder="Schlagwort eingeben und Enter drücken…">
+        <button class="ghost small" id="kv-mak-tag-hinzufuegen" type="button">+ Hinzufügen</button>
+      </div>
+    </div>`;
+
+  const addBtn = container.querySelector('[data-action="mak-parameter-hinzufuegen"]');
+  if (addBtn) {
+    addBtn.addEventListener("click", () => {
+      kv.positionen.push({ id: neueId(), kategorie: PRODUKTSPEZI_KATEGORIE_NAME, bezeichnung, kuerzel: "PS", sapCode: "", kosten: 0, anzahl: 1, aktiv: true });
+      speichereInLocalStorage();
+      renderKvDetail();
+      zeigeStatus("Position hinzugefügt · " + jetzt(), "ok");
+    });
+  }
+  container.querySelectorAll("#kv-mak-tag-chips button[data-idx]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      schlagworte.splice(Number(btn.dataset.idx), 1);
+      eintrag.schlagworte = schlagworte;
+      speichereInLocalStorage();
+      renderKvMakDetail(makId, kv);
+    });
+  });
+  const tagEingabeHinzufuegen = () => {
+    const eingabe = document.getElementById("kv-mak-tag-input");
+    const wert = eingabe.value.trim();
+    if (!wert) return;
+    if (!schlagworte.some((t) => normalisiere(t) === normalisiere(wert))) {
+      schlagworte.push(wert);
+      eintrag.schlagworte = schlagworte;
+      speichereInLocalStorage();
+    }
+    renderKvMakDetail(makId, kv);
+  };
+  document.getElementById("kv-mak-tag-hinzufuegen").addEventListener("click", tagEingabeHinzufuegen);
+  document.getElementById("kv-mak-tag-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); tagEingabeHinzufuegen(); }
+  });
 }
 
 /* Produktspezifikationen: Qualität/Material aus dem PA (unverändert), MAK-Parameter-Nachschlagewerk
@@ -5107,7 +5164,7 @@ function initialisierePruefumfangUebersicht(panel, kv, pa) {
   }
   const makAuswahl = panel.querySelector("#kv-mak-auswahl");
   if (makAuswahl) {
-    makAuswahl.addEventListener("change", () => renderKvMakDetail(makAuswahl.value));
+    makAuswahl.addEventListener("change", () => renderKvMakDetail(makAuswahl.value, kv));
   }
 }
 
