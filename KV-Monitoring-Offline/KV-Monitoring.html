@@ -71,7 +71,6 @@ nav.tabs button.aktiv { background:var(--card); color:var(--accent-dark); font-w
 .sp-suche-link { display:inline-flex; align-items:center; vertical-align:middle; text-decoration:none; margin-left:0.3rem; color:var(--muted); }
 .sp-suche-link:hover { color:var(--accent); }
 .vergleich-abweichung td { background:#fff6e0; }
-.pruefumfang-kat { border:1px solid var(--border); border-radius:6px; padding:0.6rem 0.8rem; margin-bottom:0.6rem; }
 .pruefumfang-kat-kopf { display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; }
 .pruefumfang-position { display:flex; align-items:center; justify-content:space-between; gap:0.5rem; padding:0.5rem 0.6rem; border:1px solid var(--border); border-radius:6px; font-size:0.85rem; margin-top:0.4rem; }
 .pruefumfang-position-vorschlag { background:#f2f8f1; border-color:#cfe3cb; }
@@ -303,6 +302,7 @@ input[type=file] { display:none; }
 <section class="seite" id="seite-kvs" hidden>
   <div class="toolbar-zeile" style="margin-bottom:0.6rem">
     <button id="btn-neuer-kv">+ Neuer Kostenvoranschlag</button>
+    <input type="file" id="kv-pa-upload-input" accept="application/pdf">
   </div>
   <div class="layout">
     <div class="liste-panel">
@@ -2840,6 +2840,11 @@ document.getElementById("btn-arbeitsvorrat-filter-zuruecksetzen").addEventListen
 });
 
 let arbeitsvorratPaZielId = null;
+/* IAN, der der PA-PDF beim direkten Upload aus dem KV-Tab heraus zugeordnet wird (📄-Button in der
+   KV-Detailansicht, nur sichtbar solange noch kein Prüfauftrag zur IAN existiert) - analog zu
+   arbeitsvorratPaZielId, aber ohne den Umweg über einen Arbeitsvorrat-Eintrag, da eine KV-IAN schon
+   feststeht. */
+let kvPaUploadZielIan = null;
 
 function renderArbeitsvorratTab() {
   renderArbeitsvorratFilterZeile();
@@ -3917,6 +3922,28 @@ document.getElementById("arbeitsvorrat-pa-upload-input").addEventListener("chang
   }
 });
 
+/* PA-Upload direkt aus der KV-Detailansicht heraus (📄-Button, nur sichtbar ohne bereits
+   verknüpften Prüfauftrag) - die IAN des KVs steht schon fest, kein Arbeitsvorrat-Zwischenschritt
+   nötig (legePaAusFeldernAn legt bei Bedarf automatisch einen Arbeitsvorrat-Eintrag mit an). Nach
+   "Übernehmen" rendert zeigePaUploadReview über renderAlles() auch den KV-Tab neu, der neu
+   verknüpfte Prüfauftrag ist also sofort sichtbar. */
+document.getElementById("kv-pa-upload-input").addEventListener("change", async (e) => {
+  const datei = e.target.files[0];
+  const zielIan = kvPaUploadZielIan;
+  e.target.value = "";
+  kvPaUploadZielIan = null;
+  if (!datei || !zielIan) return;
+  zeigeStatus("PDF wird gelesen…", "");
+  try {
+    const { felder, rohtext, stand } = await extrahierePaAusDatei(datei);
+    zeigePaUploadReview(felder, rohtext, zielIan, stand);
+  } catch (err) {
+    alert("PDF konnte nicht gelesen werden: " + err.message);
+  } finally {
+    zeigeStatus("", "");
+  }
+});
+
 /* Mehrfach-Upload: mehrere PA-PDFs auf einmal einlesen, ohne Feld-für-Feld-Review je Datei -
    jede PDF wird automatisch per erkannter IAN mit dem passenden Arbeitsvorrat-Eintrag verknüpft.
    Am Ende gibt es eine Zusammenfassung; einzelne Prüfaufträge lassen sich danach wie gewohnt im
@@ -4364,26 +4391,126 @@ function mechanikAnwendungsbereichAuswahlHtml(refs) {
     </select>`;
 }
 
-function renderMechanikEmpfehlungKarte(kv, pa) {
+/* Einmal berechneter, gemeinsamer Kontext (welche Warengruppe/Prüfgrundlagen/Hauptprodukt/
+   Set-Bestandteile) für alle vier Prüfgrundlage-getriebenen Blöcke (Sicherheit-/Normprüfung,
+   Kennzeichnung, FFU/Fitting, NGO) - vermeidet mehrfache identische Nachschläge und stellt sicher,
+   dass alle Blöcke dasselbe ausgewählte Hauptprodukt (kv.mechanikProduktId) zeigen. */
+function mechanikKontext(kv) {
   kv.mechanikSetbestandteile = kv.mechanikSetbestandteile || [];
   const warengruppe = kv.warengruppeNeu || kv.warengruppeAlt;
+  const treffer = warengruppe ? mechanikTrefferFuerWarengruppe(warengruppe) : [];
+  const gewaehlt = treffer.find((e) => mechanikEintragId(e) === kv.mechanikProduktId) || (treffer.length === 1 ? treffer[0] : null);
+  const teilprodukte = gewaehlt
+    ? kv.mechanikSetbestandteile.map((sb) => ({ sb, eintrag: data.pruefgrundlagen.find((e) => mechanikEintragId(e) === sb.mechanikId) })).filter((x) => x.eintrag)
+    : [];
+  return { warengruppe, treffer, gewaehlt, teilprodukte };
+}
+
+/* Gemeinsame "Komponenten"-Darstellung (Hauptprodukt + jedes Set-Bestandteil als eigene, einzeln
+   hinzufügbare Position) - genutzt von Sicherheit-/Normprüfung, FFU/Fitting und NGO, jeweils mit
+   ihrem eigenen Normen-Feld der Prüfgrundlage (normen/ffuNormen/stiwaNormen). Der Rabattfaktor wird
+   je Komponente einzeln angewendet statt auf die Summe - mathematisch identisch zum Gesamtergebnis
+   (Faktor × Summe = Summe der Faktor × Einzelkosten). data-kategorie/-kuerzel steuern, mit welcher
+   Kategorie/welchem Kürzel "+ hinzufügen" die Position im KV anlegt (siehe
+   initialisiereMechanikEmpfehlungKarte). */
+function mechanikKomponentenHtml(kontext, pa, feldName, kategorie, kuerzel, sapCodeFallback) {
+  const { gewaehlt, teilprodukte } = kontext;
+  if (!gewaehlt) return "";
+  const { faktor, hinweisText } = artikelkategorieMultiplikator(pa);
+  const styleNamen = ermittleStyleNamen(pa);
+  const komponenten = [{ id: "haupt", produkt: gewaehlt.produkt, refs: gewaehlt[feldName], entfernbar: false, pgId: mechanikEintragId(gewaehlt) }]
+    .concat(teilprodukte.map((t) => ({ id: t.sb.id, produkt: t.eintrag.produkt, refs: t.eintrag[feldName], entfernbar: true, pgId: mechanikEintragId(t.eintrag) })));
+
+  const komponentenHtml = komponenten.map((k) => {
+    const norm = normRefListeText(k.refs);
+    const kosten = normenBlockSumme(k.refs);
+    const sapCode = normRefSapCode(k.refs) || sapCodeFallback;
+    const hatKosten = kosten !== null && kosten !== undefined;
+    const kostenRabattiert = hatKosten ? Math.round(Number(kosten) * faktor * 100) / 100 : null;
+    const bezeichnungBasis = norm ? `${k.produkt}: ${norm}` : k.produkt;
+    const kostenText = hatKosten ? `${kostenRabattiert} €` : "Preis auf Anfrage";
+    const styleAuswahlHtml = styleNamen.length > 1
+      ? `<select class="mechanik-komponente-stil" style="font-family:inherit;font-size:0.82rem;padding:0.3rem 0.4rem;border:1px solid var(--border);border-radius:6px">
+          <option value="">Alle Styles</option>
+          ${styleNamen.map((s) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("")}
+        </select>`
+      : "";
+    const anwendungsbereichAuswahlHtml = mechanikAnwendungsbereichAuswahlHtml(k.refs);
+    return `<div class="pruefumfang-position pruefumfang-position-vorschlag mechanik-komponente" style="align-items:flex-start;flex-direction:column;gap:0.3rem">
+      <span>${escapeHtml(bezeichnungBasis)} <span class="muted">(${kostenText})</span> <span class="badge ja">Vorschlag</span></span>
+      ${mechanikKostenBearbeitenHtml(k.pgId, feldName, k.refs)}
+      <div class="toolbar-zeile" style="width:100%">
+        ${styleAuswahlHtml}
+        ${anwendungsbereichAuswahlHtml}
+        <button type="button" class="ghost small" data-action="mechanik-komponente-hinzufuegen" data-kategorie="${escapeHtml(kategorie)}" data-kuerzel="${escapeHtml(kuerzel)}" data-bezeichnung-basis="${escapeHtml(bezeichnungBasis)}" data-kosten="${hatKosten ? kostenRabattiert : 0}" data-sapcode="${escapeHtml(sapCode || "")}">+ hinzufügen</button>
+        <div class="spacer"></div>
+        ${k.entfernbar ? `<button type="button" class="ghost small" data-action="setbestandteil-entfernen" data-id="${escapeHtml(k.id)}" title="Set-Bestandteil entfernen">✕ entfernen</button>` : ""}
+      </div>
+    </div>`;
+  }).join("");
+
+  return `<p class="hinweis" style="margin:0 0 0.3rem">${hinweisText}${teilprodukte.length ? ` · ${komponenten.length} Komponenten (Hauptprodukt + ${teilprodukte.length} Set-Bestandteil${teilprodukte.length === 1 ? "" : "e"})` : ""}</p>${komponentenHtml}`;
+}
+
+/* Liste der festen Katalogpositionen einer Kategorie (siehe fixPositionenFuerKategorie), optional
+   auf eine Teilmenge gefiltert (z. B. Kennzeichnung getrennt von den übrigen Sicherheit&Norm-
+   Positionen). "Alle Vorschläge übernehmen" wirkt dabei bewusst NUR auf die hier tatsächlich
+   angezeigte (gefilterte) Teilmenge, nicht auf die gesamte Kategorie - siehe data-positionen im
+   Klick-Handler. */
+function fixPositionenListeHtml(kat, pa, kv, filterFn) {
+  const alle = fixPositionenFuerKategorie(kat.katalogKategorie);
+  const positionen = filterFn ? alle.filter(filterFn) : alle;
+  const vorschlaege = new Set(ermittleVorschlagsPositionen(kat, pa, kv).map((k) => k.id));
+  const positionenHtml = positionen.map((k) => {
+    const istVorschlag = vorschlaege.has(k.id);
+    const schonDrin = kvHatPosition(kv, k);
+    return `<div class="pruefumfang-position${istVorschlag ? " pruefumfang-position-vorschlag" : ""}">
+      <span>${escapeHtml(k.bezeichnung)} <span class="muted">(${k.standardKosten} €)</span>${istVorschlag ? ` <span class="badge ja">Vorschlag</span>` : ""}</span>
+      ${schonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="kat-position-hinzufuegen" data-katalog-id="${k.id}">+ hinzufügen</button>`}
+    </div>`;
+  }).join("") || `<p class="muted" style="margin:0.3rem 0">Keine Positionen in dieser Kategorie hinterlegt.</p>`;
+  const vorschlagIdsHier = positionen.filter((p) => vorschlaege.has(p.id)).map((p) => p.id);
+  const alleVorschlaegeButton = vorschlagIdsHier.length
+    ? `<button type="button" class="ghost small" data-action="kat-vorschlaege-uebernehmen" data-kat="${kat.id}" data-positionen="${vorschlagIdsHier.join(",")}">Alle Vorschläge übernehmen</button>`
+    : "";
+  return { positionenHtml, alleVorschlaegeButton };
+}
+
+const KENNZEICHNUNG_FIXPOSITION_ID = (id) => id.startsWith("fix-kennz") || id === "fix-bda";
+
+/* Sicherheit-/Normprüfung (früher "Warengruppen-Empfehlung (Mechanik)") - funktional unverändert:
+   Hauptprodukt + Set-Bestandteile mit den in der zugehörigen Prüfgrundlage hinterlegten
+   Sicherheit&Norm-Kosten, plus die übrigen (nicht Kennzeichnung betreffenden) festen
+   Katalogpositionen der Kategorie (Akkusicherheitskurzcheck, Optischer Abgleich). Die
+   Kennzeichnungspositionen sowie die Kennzeichnung/Bedienungsanleitung-Anforderungshinweise stehen
+   jetzt in ihrem eigenen Block (siehe renderKennzeichnungKarte). */
+function renderSicherheitNormKarte(kv, pa, kontext) {
+  const { warengruppe, treffer, gewaehlt } = kontext;
+  const kat = { id: "sicherheitNorm", katalogKategorie: SICHERHEIT_NORM_KATEGORIE_NAME };
+  /* Die festen Katalogpositionen (Akkusicherheitskurzcheck, Optischer Abgleich) hängen NICHT von
+     einer gefundenen Prüfgrundlage/Warengruppe ab (anders als die Hauptprodukt/Set-Bestandteil-
+     Empfehlung) - sie müssen deshalb auch dann sichtbar bleiben, wenn noch keine Warengruppe
+     hinterlegt ist oder keine Referenzdaten dafür existieren. */
+  const fixpositionenSichtbar = kategorieIstAusgewaehlt(kv, kat);
+  const { positionenHtml, alleVorschlaegeButton } = fixPositionenListeHtml(kat, pa, kv, (k) => !KENNZEICHNUNG_FIXPOSITION_ID(k.id));
+  const fixpositionenHtml = fixpositionenSichtbar ? `<div class="pruefumfang-kat-kopf" style="margin-top:0.6rem"><strong>Weitere Positionen</strong> ${alleVorschlaegeButton}</div>${positionenHtml}` : "";
+
   if (!warengruppe) {
     return `<div class="card">
-      <h2>Warengruppen-Empfehlung (Mechanik)</h2>
+      <h2>Sicherheit-/Normprüfung</h2>
       <p class="hinweis">Noch keine Warengruppe hinterlegt — sobald „Warengruppe (neu)" gesetzt ist, werden hier passende Referenzdaten (Norm, Muster, Kosten) aus der Mechanik-Preisliste vorgeschlagen.</p>
+      ${fixpositionenHtml}
     </div>`;
   }
   const wgFormatiert = normalisiereWarengruppe(warengruppe);
-  const treffer = mechanikTrefferFuerWarengruppe(warengruppe);
   if (!treffer.length) {
     return `<div class="card">
-      <h2>Warengruppen-Empfehlung (Mechanik)</h2>
+      <h2>Sicherheit-/Normprüfung</h2>
       <p class="hinweis">Für Warengruppe <strong>${escapeHtml(wgFormatiert)}</strong> liegen keine Referenzdaten in der Mechanik-Preisliste (Reiter „Prüfgrundlagen") vor — Prüfpositionen unten manuell auswählen, oder direkt eine passende Prüfgrundlage anlegen:</p>
       <button type="button" class="ghost small" data-action="mechanik-neue-pruefgrundlage" data-warengruppe="${escapeHtml(wgFormatiert)}">+ Neue Prüfgrundlage für Warengruppe ${escapeHtml(wgFormatiert)} anlegen</button>
+      ${fixpositionenHtml}
     </div>`;
   }
-
-  const gewaehlt = treffer.find((e) => mechanikEintragId(e) === kv.mechanikProduktId) || (treffer.length === 1 ? treffer[0] : null);
   const auswahlHtml = treffer.length > 1
     ? `<label style="display:flex;flex-direction:column;gap:0.25rem;font-size:0.85rem;font-weight:600;max-width:420px;margin-bottom:0.4rem">Produkt (${treffer.length} in dieser Warengruppe)<select id="mechanik-produkt-auswahl" style="font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px;font-weight:400">
         <option value="">— Produkt wählen —</option>
@@ -4396,99 +4523,174 @@ function renderMechanikEmpfehlungKarte(kv, pa) {
     const badges = [];
     if (gewaehlt.anzahlMuster) badges.push(`<span class="badge nein">Anzahl Muster: ${escapeHtml(String(gewaehlt.anzahlMuster))}</span>`);
     if (gewaehlt.trivial) badges.push(`<span class="badge ja">Trivial</span>`);
-    if (pruefgrundlageKennzeichnungAktiv(gewaehlt)) badges.push(`<span class="badge ja" title="Mindestens eine referenzierte Norm hat Kennzeichnungsanforderungen">Kennzeichnung</span>`);
-    if (pruefgrundlageBedienungsanleitungAktiv(gewaehlt)) badges.push(`<span class="badge ja" title="Mindestens eine referenzierte Norm hat Anforderungen an die Bedienungsanleitung">Bedienungsanleitung</span>`);
 
-    const gewaehltNorm = normRefListeText(gewaehlt.normen);
-    const teilprodukte = kv.mechanikSetbestandteile
-      .map((sb) => ({ sb, eintrag: data.pruefgrundlagen.find((e) => mechanikEintragId(e) === sb.mechanikId) }))
-      .filter((x) => x.eintrag);
-
-    /* Hauptprodukt + jedes Set-Bestandteil sind jeweils eine eigene, klar abgetrennte Komponente
-       mit eigenem "+ hinzufügen" statt (wie zuvor) zu einer einzigen Summenposition
-       zusammengefasst - so lässt sich jede Komponente einzeln in die Prüfpositionen übernehmen
-       und bei mehrstiligen Artikeln optional gezielt einem einzelnen Style zuordnen. Der
-       Rabattfaktor wird je Komponente einzeln angewendet statt auf die Summe - mathematisch
-       identisch zum bisherigen Gesamtergebnis (Faktor × Summe = Summe der Faktor × Einzelkosten). */
-    const { faktor, hinweisText } = artikelkategorieMultiplikator(pa);
-    const styleNamen = ermittleStyleNamen(pa);
-    const komponenten = [{ id: "haupt", produkt: gewaehlt.produkt, norm: gewaehltNorm, kosten: normenBlockSumme(gewaehlt.normen), sapCode: normRefSapCode(gewaehlt.normen), entfernbar: false, pgId: mechanikEintragId(gewaehlt), refs: gewaehlt.normen }]
-      .concat(teilprodukte.map((t) => ({ id: t.sb.id, produkt: t.eintrag.produkt, norm: normRefListeText(t.eintrag.normen), kosten: normenBlockSumme(t.eintrag.normen), sapCode: normRefSapCode(t.eintrag.normen), entfernbar: true, pgId: mechanikEintragId(t.eintrag), refs: t.eintrag.normen })));
-
-    const komponentenHtml = komponenten.map((k) => {
-      const hatKosten = k.kosten !== null && k.kosten !== undefined;
-      const kostenRabattiert = hatKosten ? Math.round(Number(k.kosten) * faktor * 100) / 100 : null;
-      const bezeichnungBasis = k.norm ? `${k.produkt}: ${k.norm}` : k.produkt;
-      const kostenText = hatKosten ? `${kostenRabattiert} €` : "Preis auf Anfrage";
-      const styleAuswahlHtml = styleNamen.length > 1
-        ? `<select class="mechanik-komponente-stil" style="font-family:inherit;font-size:0.82rem;padding:0.3rem 0.4rem;border:1px solid var(--border);border-radius:6px">
-            <option value="">Alle Styles</option>
-            ${styleNamen.map((s) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("")}
-          </select>`
-        : "";
-      const anwendungsbereichAuswahlHtml = mechanikAnwendungsbereichAuswahlHtml(k.refs);
-      return `<div class="pruefumfang-position pruefumfang-position-vorschlag mechanik-komponente" style="align-items:flex-start;flex-direction:column;gap:0.3rem">
-        <span>${escapeHtml(bezeichnungBasis)} <span class="muted">(${kostenText})</span> <span class="badge ja">Vorschlag</span></span>
-        ${mechanikKostenBearbeitenHtml(k.pgId, "normen", k.refs)}
-        <div class="toolbar-zeile" style="width:100%">
-          ${styleAuswahlHtml}
-          ${anwendungsbereichAuswahlHtml}
-          <button type="button" class="ghost small" data-action="mechanik-komponente-hinzufuegen" data-bezeichnung-basis="${escapeHtml(bezeichnungBasis)}" data-kosten="${hatKosten ? kostenRabattiert : 0}" data-sapcode="${escapeHtml(k.sapCode || "")}">+ hinzufügen</button>
-          <div class="spacer"></div>
-          ${k.entfernbar ? `<button type="button" class="ghost small" data-action="setbestandteil-entfernen" data-id="${escapeHtml(k.id)}" title="Set-Bestandteil entfernen">✕ entfernen</button>` : ""}
-        </div>
-      </div>`;
-    }).join("");
-
+    const komponentenHtml = mechanikKomponentenHtml(kontext, pa, "normen", SICHERHEIT_NORM_KATEGORIE_NAME, "MS", "MECH_SICHERHEIT_TS");
     const weiterenSetbestandteilHtml = `<div class="pruefumfang-position" style="align-items:flex-start;flex-direction:column;gap:0.3rem">
-      <p class="hinweis" style="margin:0">${hinweisText}${teilprodukte.length ? ` · ${komponenten.length} Komponenten (Hauptprodukt + ${teilprodukte.length} Set-Bestandteil${teilprodukte.length === 1 ? "" : "e"})` : ""}</p>
       <label style="display:flex;flex-direction:column;gap:0.2rem;font-size:0.8rem;font-weight:600;width:100%;max-width:420px">Weiteren Set-Bestandteil hinzufügen
         <input type="text" id="setbestandteil-suche" placeholder="Produkt in der gesamten Mechanik-Referenz suchen…" style="font-family:inherit;font-size:0.85rem;padding:0.35rem 0.5rem;border:1px solid var(--border);border-radius:6px;font-weight:400">
       </label>
       <div id="setbestandteil-liste" style="width:100%"></div>
     </div>`;
 
-    const zeilenExtra = [];
-    if ((gewaehlt.ffuNormen || []).length) zeilenExtra.push({ label: "FFU", detail: normRefListeText(gewaehlt.ffuNormen), kosten: normenBlockSumme(gewaehlt.ffuNormen), kategorie: "FFU/Fitting", kuerzel: "FFU", sapCode: normRefSapCode(gewaehlt.ffuNormen) || fixPositionSapCodeAktuell(FFU_FITTING_FIXPOSITION), feld: "ffuNormen", refs: gewaehlt.ffuNormen });
-    if ((gewaehlt.stiwaNormen || []).length) zeilenExtra.push({ label: "NGO/StiWa", detail: normRefListeText(gewaehlt.stiwaNormen), kosten: normenBlockSumme(gewaehlt.stiwaNormen), kategorie: "NGO", kuerzel: "NGO", sapCode: normRefSapCode(gewaehlt.stiwaNormen) || fixPositionSapCodeAktuell(NGO_FIXPOSITION), feld: "stiwaNormen", refs: gewaehlt.stiwaNormen });
-    const extraHtml = zeilenExtra.map((z) => {
-      const bezeichnung = z.detail ? `${z.label}: ${z.detail}` : z.label;
-      const schonDrin = kv.positionen.some((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere(z.kategorie) && normalisiere(p.bezeichnung) === normalisiere(bezeichnung));
-      const hatKosten = z.kosten !== null && z.kosten !== undefined;
-      const kostenText = hatKosten ? `${z.kosten} €` : "Preis auf Anfrage";
-      const anwendungsbereichAuswahlHtml = schonDrin ? "" : mechanikAnwendungsbereichAuswahlHtml(z.refs);
-      return `<div class="pruefumfang-position pruefumfang-position-vorschlag" style="align-items:flex-start;flex-direction:column;gap:0.3rem">
-        <span>${escapeHtml(bezeichnung)} <span class="muted">(${kostenText})</span> <span class="badge ja">Vorschlag</span></span>
-        ${mechanikKostenBearbeitenHtml(mechanikEintragId(gewaehlt), z.feld, z.refs)}
-        <div class="toolbar-zeile" style="width:100%">
-          ${anwendungsbereichAuswahlHtml}
-          ${schonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="mechanik-position-hinzufuegen" data-kategorie="${escapeHtml(z.kategorie)}" data-bezeichnung="${escapeHtml(bezeichnung)}" data-kosten="${hatKosten ? z.kosten : 0}" data-kuerzel="${escapeHtml(z.kuerzel)}" data-sapcode="${escapeHtml(z.sapCode)}">+ hinzufügen</button>`}
-        </div>
-      </div>`;
-    }).join("");
-
     detailHtml = `
       <div class="toolbar-zeile" style="margin:0.4rem 0">${badges.join(" ")}</div>
       ${(() => {
-        const bemerkungen = [
-          ...normRefBemerkungenListe(gewaehlt.normen),
-          ...normRefBemerkungenListe(gewaehlt.ffuNormen),
-          ...normRefBemerkungenListe(gewaehlt.stiwaNormen)
-        ];
+        const bemerkungen = normRefBemerkungenListe(gewaehlt.normen);
         return bemerkungen.length ? `<p class="hinweis"><strong>Bemerkungen:</strong> ${escapeHtml(bemerkungen.join(" · "))}</p>` : "";
       })()}
       ${komponentenHtml}
-      ${weiterenSetbestandteilHtml}
-      ${extraHtml}`;
+      ${weiterenSetbestandteilHtml}`;
   }
 
   return `<div class="card">
     <div class="toolbar-zeile">
-      <h2 style="margin:0">Warengruppen-Empfehlung (Mechanik)</h2>
+      <h2 style="margin:0">Sicherheit-/Normprüfung</h2>
       <span class="muted">Warengruppe ${escapeHtml(wgFormatiert)} · ${treffer.length} Produkt${treffer.length === 1 ? "" : "e"} in der Referenz</span>
     </div>
     ${auswahlHtml}
     ${detailHtml}
+    ${fixpositionenHtml}
+  </div>`;
+}
+
+/* Alle Normen mit Prüfungsart "Kennzeichnung" (Reiter "Normen") als reine Referenzliste - rein
+   informativ zum Nachschlagen, keine Verknüpfung mit Kosten/Positionen (Normen haben keinen
+   eigenen Preis, siehe Reiter "Normen"). */
+function kennzeichnungNormenListeHtml() {
+  const normen = data.normen.filter((n) => n.pruefungsart === "Kennzeichnung").sort((a, b) => (a.bezeichnung || "").localeCompare(b.bezeichnung || "", "de"));
+  if (!normen.length) return `<p class="hinweis" style="margin:0">Noch keine Normen mit Prüfungsart „Kennzeichnung" hinterlegt (Reiter „Normen").</p>`;
+  return `<ul style="margin:0.3rem 0 0;padding-left:1.1rem">${normen.map((n) => `<li style="margin-bottom:0.3rem">
+    ${normTypBadgeHtml(n.typ)}${escapeHtml(n.bezeichnung)}${n.titel ? ` <span class="muted">– ${escapeHtml(n.titel)}</span>` : ""}
+    ${n.bemerkung ? `<div class="muted" style="font-size:0.8rem">${escapeHtml(n.bemerkung)}</div>` : ""}
+  </li>`).join("")}</ul>`;
+}
+
+/* Neuer, eigenständiger Block "Kennzeichnung": zeigt, ob die für die Sicherheit-/Normprüfung
+   gewählte Norm Kennzeichnungs- bzw. Bedienungsanleitung-Anforderungen hat (siehe
+   pruefgrundlageKennzeichnungAktiv/-BedienungsanleitungAktiv), den Trivialartikel-Paketpreis-
+   Hinweis (betrifft ausschließlich VP&Kennzeichnung), die dafür vorgesehenen festen
+   Katalogpositionen (vormals Teil von "Sicherheit & Norm" in den Prüfumfang-Details) sowie zum
+   Nachschlagen alle Normen mit Prüfungsart "Kennzeichnung". */
+function renderKennzeichnungKarte(kv, pa, kontext) {
+  const kat = { id: "sicherheitNorm", katalogKategorie: SICHERHEIT_NORM_KATEGORIE_NAME };
+  const { positionenHtml, alleVorschlaegeButton } = fixPositionenListeHtml(kat, pa, kv, (k) => KENNZEICHNUNG_FIXPOSITION_ID(k.id));
+  const kennzAktiv = kontext.gewaehlt ? pruefgrundlageKennzeichnungAktiv(kontext.gewaehlt) : false;
+  const bdaAktiv = kontext.gewaehlt ? pruefgrundlageBedienungsanleitungAktiv(kontext.gewaehlt) : false;
+  const hinweisNorm = (kennzAktiv || bdaAktiv)
+    ? `<div class="toolbar-zeile" style="margin-bottom:0.4rem">
+        ${kennzAktiv ? `<span class="badge ja" title="Die Norm der Sicherheit-/Normprüfung hat Kennzeichnungsanforderungen">Kennzeichnungsanforderungen (Sicherheit-/Normprüfung)</span>` : ""}
+        ${bdaAktiv ? `<span class="badge ja" title="Die Norm der Sicherheit-/Normprüfung hat Anforderungen an die Bedienungsanleitung">Bedienungsanleitung-Anforderungen (Sicherheit-/Normprüfung)</span>` : ""}
+      </div>`
+    : `<p class="hinweis" style="margin-top:0">Die für die Sicherheit-/Normprüfung gewählte Norm hat aktuell weder Kennzeichnungs- noch Bedienungsanleitung-Anforderungen hinterlegt.</p>`;
+  return `<div class="card">
+    <h2>Kennzeichnung</h2>
+    ${hinweisNorm}
+    ${trivialPaketpreisBannerHtml(kv, pa)}
+    <div class="pruefumfang-kat-kopf" style="margin-top:0.4rem"><strong>Kennzeichnungspositionen</strong> ${alleVorschlaegeButton}</div>
+    ${positionenHtml}
+    <h3 style="margin:0.8rem 0 0.3rem">Normen mit Prüfungsart „Kennzeichnung"</h3>
+    ${kennzeichnungNormenListeHtml()}
+  </div>`;
+}
+
+/* MAK-Parameter-Dropdown (Materialanforderungskatalog, Reiter "MAK") im Block
+   "Produktspezifikationen" - nach Kategorie gruppiert (optgroup), rein zum Nachschlagen (Anzeige
+   von Anforderung/Norm/Prüfnachweis/Schlagworten), keine Verknüpfung mit Kosten/Positionen (MAK-
+   Einträge haben keinen Preis). */
+function makAuswahlOptionenHtml() {
+  const kategorien = [...new Set(data.mak.map((m) => m.kategorie))].sort((a, b) => a.localeCompare(b, "de"));
+  return `<option value="">— MAK-Parameter wählen —</option>`
+    + kategorien.map((kat) => `<optgroup label="${escapeHtml(kat)}">
+        ${data.mak.filter((m) => m.kategorie === kat).sort((a, b) => (a.parameter || "").localeCompare(b.parameter || "", "de")).map((m) => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.parameter || "(ohne Parameter)")}</option>`).join("")}
+      </optgroup>`).join("");
+}
+function renderKvMakDetail(makId) {
+  const container = document.getElementById("kv-mak-detail");
+  if (!container) return;
+  const eintrag = data.mak.find((m) => m.id === makId);
+  if (!eintrag) { container.innerHTML = ""; return; }
+  const schlagworte = eintrag.schlagworte || [];
+  container.innerHTML = `<div class="mak-feld"><h3>${escapeHtml(eintrag.id)} — ${escapeHtml(eintrag.parameter || "(ohne Parameter)")}</h3>
+    <p class="muted" style="margin-top:-0.4rem">Kategorie: ${escapeHtml(eintrag.kategorie)} · Bereich: ${escapeHtml(eintrag.bereich)}</p></div>
+    <div class="mak-feld"><h3>Anforderung</h3><p>${escapeHtml(eintrag.anforderung) || "–"}</p></div>
+    <div class="mak-feld"><h3>Norm/Standard EU</h3><p>${escapeHtml(eintrag.normEu) || "–"}</p></div>
+    <div class="mak-feld"><h3>Norm/Standard US (AATCC/ASTM)</h3><p>${escapeHtml(eintrag.normUs) || "–"}</p></div>
+    <div class="mak-feld"><h3>Mindest-Prüfnachweis</h3><p>${escapeHtml(eintrag.pruefnachweis) || "–"}</p></div>
+    ${schlagworte.length ? `<div class="mak-feld"><h3>Schlagworte</h3><div class="tag-chips">${schlagworte.map((t) => `<span class="tag-chip">${escapeHtml(t)}</span>`).join("")}</div></div>` : ""}`;
+}
+
+/* Produktspezifikationen: Qualität/Material aus dem PA (unverändert), MAK-Parameter-Nachschlagewerk
+   (neu), Projektkosten-Pauschale und die durchsuchbare Katalog-Auswahl (PRODUKTSPEZI_KATALOG,
+   unverändert). */
+function renderProduktspezifikationenKarte(kv, pa, qualitaetBloeckeHtml, materialBloeckeHtml) {
+  const kat = PA_PRUEFUMFANG_KATEGORIEN.find((k) => k.id === "produktspezifikationen");
+  const erkannt = pa ? erkennePruefumfangKategorien(pa.pruefumfang).some((k) => k.id === "produktspezifikationen") : false;
+  const badge = pa ? (erkannt ? `<span class="badge ja">im Prüfumfang</span>` : `<span class="badge nein">nicht erkannt</span>`) : "";
+  const projektkosten = PRODUKTSPEZI_PROJEKTKOSTEN_FIXPOSITION;
+  const projektkostenSchonDrin = kvHatPosition(kv, projektkosten);
+  const projektkostenHtml = `<div class="pruefumfang-position">
+    <span>${escapeHtml(projektkosten.bezeichnung)} <span class="muted">(${projektkosten.standardKosten} €)</span></span>
+    ${projektkostenSchonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="kat-position-hinzufuegen" data-katalog-id="${projektkosten.id}">+ hinzufügen</button>`}
+  </div>`;
+  return `<div class="card">
+    <div class="pruefumfang-kat-kopf"><strong>${escapeHtml(kat.anzeigeName)}</strong> ${badge}</div>
+    <p class="hinweis">${escapeHtml(kat.beschreibung)}</p>
+    ${qualitaetBloeckeHtml ? `<div class="pa-block-feld"><h3>Qualität (aus PA)</h3>${qualitaetBloeckeHtml}</div>` : ""}
+    ${materialBloeckeHtml ? `<div class="pa-block-feld"><h3>Material (aus PA)</h3>${materialBloeckeHtml}</div>` : ""}
+    <div class="mak-feld">
+      <label style="display:flex;flex-direction:column;gap:0.2rem;font-size:0.8rem;font-weight:600;max-width:420px">MAK-Parameter nachschlagen (Materialanforderungskatalog)
+        <select id="kv-mak-auswahl" style="font-family:inherit;font-size:0.85rem;padding:0.35rem 0.5rem;border:1px solid var(--border);border-radius:6px;font-weight:400">${makAuswahlOptionenHtml()}</select>
+      </label>
+      <div id="kv-mak-detail"></div>
+    </div>
+    ${projektkostenHtml}
+    <input type="text" id="produktspezi-suche" placeholder="Parameter, Produkt oder Norm suchen…" style="width:100%;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px;margin-bottom:0.4rem;font-family:inherit">
+    <div id="produktspezi-liste"></div>
+  </div>`;
+}
+
+/* FFU/Fitting und NGO: eigene Blöcke, analog zur Sicherheit-/Normprüfung ("vergleiche Sicherheit-/
+   Normprüfung") - Hauptprodukt + Set-Bestandteile mit den in der Prüfgrundlage hinterlegten FFU-
+   bzw. NGO/StiWa-Kosten (mechanikKomponentenHtml), plus die feste Katalogposition der Kategorie.
+   Die Produktauswahl selbst (bei mehreren Treffern in der Warengruppe) erscheint nur einmal, im
+   Block "Sicherheit-/Normprüfung" - hier wird das aktuell gewählte Produkt nur angezeigt. */
+function renderFfuNgoKarte(kv, pa, kontext, kat, feldName, kuerzel, fixPosition) {
+  const { warengruppe, gewaehlt } = kontext;
+  const { positionenHtml, alleVorschlaegeButton } = fixPositionenListeHtml(kat, pa, kv, null);
+  const erkannt = pa ? erkennePruefumfangKategorien(pa.pruefumfang).some((k) => k.id === kat.id) : false;
+  const badge = pa ? (erkannt ? `<span class="badge ja">im Prüfumfang</span>` : `<span class="badge nein">nicht erkannt</span>`) : "";
+  const kopf = `<div class="pruefumfang-kat-kopf"><strong>${escapeHtml(kat.anzeigeName)}</strong> ${badge}</div><p class="hinweis">${escapeHtml(kat.beschreibung)}</p>`;
+  if (!gewaehlt) {
+    return `<div class="card">
+      ${kopf}
+      ${warengruppe ? `<p class="hinweis">Kein Produkt ausgewählt (siehe „Sicherheit-/Normprüfung" oben).</p>` : `<p class="hinweis">Noch keine Warengruppe hinterlegt.</p>`}
+      <div class="pruefumfang-kat-kopf" style="margin-top:0.4rem"><strong>Positionen</strong> ${alleVorschlaegeButton}</div>
+      ${positionenHtml}
+    </div>`;
+  }
+  const komponentenHtml = mechanikKomponentenHtml(kontext, pa, feldName, kat.katalogKategorie, kuerzel, fixPositionSapCodeAktuell(fixPosition));
+  return `<div class="card">
+    ${kopf}
+    <p class="hinweis" style="margin-top:-0.4rem">Produkt: <strong>${escapeHtml(gewaehlt.produkt)}</strong></p>
+    ${komponentenHtml || `<p class="hinweis">Für dieses Produkt (und ggf. Set-Bestandteile) sind keine ${escapeHtml(kat.anzeigeName)}-Normen in der Prüfgrundlage hinterlegt.</p>`}
+    <div class="pruefumfang-kat-kopf" style="margin-top:0.6rem"><strong>Weitere Positionen</strong> ${alleVorschlaegeButton}</div>
+    ${positionenHtml}
+  </div>`;
+}
+
+/* Referenzprüfung: unverändert (feste Katalogposition + Markenreferenz-Hinweis aus dem PA), jetzt
+   als eigener Block statt als Unterabschnitt der früheren Prüfumfang-Details-Sammelkarte. */
+function renderReferenzpruefungKarte(kv, pa) {
+  const kat = PA_PRUEFUMFANG_KATEGORIEN.find((k) => k.id === "referenzpruefung");
+  const markenreferenz = pa ? paFeldWertRoh(pa, "Markenreferenz") : "";
+  const erkannt = pa ? erkennePruefumfangKategorien(pa.pruefumfang).some((k) => k.id === "referenzpruefung") : false;
+  const badge = pa ? (erkannt ? `<span class="badge ja">im Prüfumfang</span>` : `<span class="badge nein">nicht erkannt</span>`) : "";
+  const { positionenHtml, alleVorschlaegeButton } = fixPositionenListeHtml(kat, pa, kv, null);
+  return `<div class="card">
+    <div class="pruefumfang-kat-kopf"><strong>${escapeHtml(kat.anzeigeName)}</strong> ${badge} ${alleVorschlaegeButton}</div>
+    <p class="hinweis">${escapeHtml(kat.beschreibung)}</p>
+    ${markenreferenz ? `<p class="hinweis"><strong>Markenreferenz (aus PA):</strong> ${escapeHtml(markenreferenz)}</p>` : ""}
+    ${positionenHtml}
   </div>`;
 }
 
@@ -4566,20 +4768,9 @@ function initialisiereMechanikEmpfehlungKarte(panel, kv) {
       pruefgrundlageBearbeiten(eintrag);
     });
   });
-  panel.querySelectorAll('[data-action="mechanik-position-hinzufuegen"]').forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const feld = btn.closest(".pruefumfang-position");
-      const bereichSelect = feld ? feld.querySelector(".mechanik-anwendungsbereich-auswahl") : null;
-      const bereichName = bereichSelect && bereichSelect.value ? bereichSelect.selectedOptions[0].textContent : "";
-      const bezeichnung = btn.dataset.bezeichnung + (bereichName ? ` [${bereichName}]` : "");
-      kv.positionen.push({
-        id: neueId(), kategorie: btn.dataset.kategorie, bezeichnung, kuerzel: btn.dataset.kuerzel,
-        sapCode: btn.dataset.sapcode, kosten: Number(btn.dataset.kosten) || 0, anzahl: 1, aktiv: true
-      });
-      speichereInLocalStorage();
-      renderKvDetail();
-    });
-  });
+  /* Kategorie/Kürzel kommen aus data-Attributen (siehe mechanikKomponentenHtml) statt fest codiert
+     zu sein, damit dieselbe Komponenten-Logik für Sicherheit-/Normprüfung, FFU/Fitting und NGO
+     gleichermaßen funktioniert. */
   panel.querySelectorAll('[data-action="mechanik-komponente-hinzufuegen"]').forEach((btn) => {
     btn.addEventListener("click", () => {
       const feld = btn.closest(".mechanik-komponente");
@@ -4588,12 +4779,12 @@ function initialisiereMechanikEmpfehlungKarte(panel, kv) {
       const bereichSelect = feld ? feld.querySelector(".mechanik-anwendungsbereich-auswahl") : null;
       const bereichName = bereichSelect && bereichSelect.value ? bereichSelect.selectedOptions[0].textContent : "";
       const bezeichnung = btn.dataset.bezeichnungBasis + (stil ? ` (${stil})` : "") + (bereichName ? ` [${bereichName}]` : "");
-      const kategorie = "Sicherheit & Norm / Sonder- & Funktionsparameter";
+      const kategorie = btn.dataset.kategorie || SICHERHEIT_NORM_KATEGORIE_NAME;
       const schonDrin = kv.positionen.some((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere(kategorie) && normalisiere(p.bezeichnung) === normalisiere(bezeichnung));
       if (schonDrin) { zeigeStatus("Bereits im KV vorhanden (mit dieser Style-/Anwendungsbereich-Zuordnung) · " + jetzt(), ""); return; }
       kv.positionen.push({
         id: neueId(), kategorie, bezeichnung,
-        kuerzel: "MS", sapCode: btn.dataset.sapcode || "MECH_SICHERHEIT_TS", kosten: Number(btn.dataset.kosten) || 0, anzahl: 1, aktiv: true
+        kuerzel: btn.dataset.kuerzel || "MS", sapCode: btn.dataset.sapcode || "MECH_SICHERHEIT_TS", kosten: Number(btn.dataset.kosten) || 0, anzahl: 1, aktiv: true
       });
       speichereInLocalStorage();
       renderKvDetail();
@@ -4786,74 +4977,28 @@ function kategorieIstAusgewaehlt(kv, kat) {
   return !!kv.pruefumfangAuswahl[kat.id];
 }
 
+/* Reihenfolge/Sichtbarkeit der Prüfumfang-Blöcke: Sicherheit-/Normprüfung ist (wie vormals die
+   Warengruppen-Empfehlung) immer sichtbar, sobald eine Warengruppe hinterlegt ist. Kennzeichnung,
+   Produktspezifikationen, FFU/Fitting, NGO und Referenzprüfung erscheinen jeweils nur, solange die
+   zugehörige(n) Prüfumfang-Checkbox(en) angehakt sind - Kennzeichnung dabei gezielt an den beiden
+   Kennzeichnung-Unterpunkten (nicht an "sicherheitNorm" insgesamt), da sie jetzt ein eigener,
+   unabhängiger Block ist. */
 function renderKvPruefumfangUebersicht(kv, pa) {
   pruefumfangAuswahlAktualisieren(kv, pa);
-  const markenreferenz = pa ? paFeldWertRoh(pa, "Markenreferenz") : "";
   const qualitaetBloeckeHtml = pa ? renderPaBlockFeldHtml(pa, "Qualität") : "";
   const materialBloeckeHtml = pa ? renderPaBlockFeldHtml(pa, "Material") : "";
-  const ausgewaehlteKategorien = PA_PRUEFUMFANG_KATEGORIEN.filter((kat) => kategorieIstAusgewaehlt(kv, kat));
-
-  const abschnitte = ausgewaehlteKategorien.map((kat) => {
-    const erkannt = pa ? erkennePruefumfangKategorien(pa.pruefumfang).some((k) => k.id === kat.id) : false;
-    const badge = pa ? (erkannt ? `<span class="badge ja">im Prüfumfang</span>` : `<span class="badge nein">nicht erkannt</span>`) : "";
-
-    if (kat.id === "produktspezifikationen") {
-      const projektkosten = PRODUKTSPEZI_PROJEKTKOSTEN_FIXPOSITION;
-      const projektkostenSchonDrin = kvHatPosition(kv, projektkosten);
-      const projektkostenHtml = `<div class="pruefumfang-position">
-        <span>${escapeHtml(projektkosten.bezeichnung)} <span class="muted">(${projektkosten.standardKosten} €)</span></span>
-        ${projektkostenSchonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="kat-position-hinzufuegen" data-katalog-id="${projektkosten.id}">+ hinzufügen</button>`}
-      </div>`;
-      return `<div class="pruefumfang-kat">
-        <div class="pruefumfang-kat-kopf"><strong>${escapeHtml(kat.anzeigeName)}</strong> ${badge}</div>
-        <p class="hinweis">${escapeHtml(kat.beschreibung)}</p>
-        ${qualitaetBloeckeHtml ? `<div class="pa-block-feld"><h3>Qualität (aus PA)</h3>${qualitaetBloeckeHtml}</div>` : ""}
-        ${materialBloeckeHtml ? `<div class="pa-block-feld"><h3>Material (aus PA)</h3>${materialBloeckeHtml}</div>` : ""}
-        ${projektkostenHtml}
-        <input type="text" id="produktspezi-suche" placeholder="Parameter, Produkt oder Norm suchen…" style="width:100%;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px;margin-bottom:0.4rem;font-family:inherit">
-        <div id="produktspezi-liste"></div>
-      </div>`;
-    }
-
-    const positionen = fixPositionenFuerKategorie(kat.katalogKategorie);
-    const vorschlaege = new Set(ermittleVorschlagsPositionen(kat, pa, kv).map((k) => k.id));
-    const positionenHtml = positionen.map((k) => {
-      const istVorschlag = vorschlaege.has(k.id);
-      const schonDrin = kvHatPosition(kv, k);
-      return `<div class="pruefumfang-position${istVorschlag ? " pruefumfang-position-vorschlag" : ""}">
-        <span>${escapeHtml(k.bezeichnung)} <span class="muted">(${k.standardKosten} €)</span>${istVorschlag ? ` <span class="badge ja">Vorschlag</span>` : ""}</span>
-        ${schonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="kat-position-hinzufuegen" data-katalog-id="${k.id}">+ hinzufügen</button>`}
-      </div>`;
-    }).join("") || `<p class="muted" style="margin:0.3rem 0">Keine Positionen in dieser Kategorie hinterlegt.</p>`;
-
-    const alleVorschlaegeButton = vorschlaege.size
-      ? `<button type="button" class="ghost small" data-action="kat-vorschlaege-uebernehmen" data-kat="${kat.id}">Alle Vorschläge übernehmen</button>`
-      : "";
-
-    const zusatzHinweis = kat.id === "referenzpruefung" && markenreferenz
-      ? `<p class="hinweis"><strong>Markenreferenz (aus PA):</strong> ${escapeHtml(markenreferenz)}</p>`
-      : "";
-
-    const trivialPaketpreisHtml = kat.id === "sicherheitNorm" ? trivialPaketpreisBannerHtml(kv, pa) : "";
-
-    return `<div class="pruefumfang-kat">
-      <div class="pruefumfang-kat-kopf"><strong>${escapeHtml(kat.anzeigeName)}</strong> ${badge} ${alleVorschlaegeButton}</div>
-      <p class="hinweis">${escapeHtml(kat.beschreibung)}</p>
-      ${zusatzHinweis}
-      ${trivialPaketpreisHtml}
-      ${positionenHtml}
-    </div>`;
-  }).join("");
+  const kontext = mechanikKontext(kv);
+  const kennzeichnungSichtbar = !!(kv.pruefumfangAuswahl.kennzeichnungVerpackungProdukt || kv.pruefumfangAuswahl.kennzeichnungBedienungsanleitung);
 
   return `${renderKvArtikelkategorieKarte(pa)}
   ${pa ? renderPaPruefumfangKarte(pa) : ""}
   ${renderKvPruefumfangCheckliste(kv, pa)}
-  ${renderMechanikEmpfehlungKarte(kv, pa)}
-  ${ausgewaehlteKategorien.length ? `<div class="card">
-    <h2>Prüfumfang-Details</h2>
-    <p class="hinweis">Für die oben angehakten Abschnitte: „Vorschlag" markiert Positionen, die dafür typischerweise anfallen — Klick auf „+ hinzufügen" bzw. „Alle Vorschläge übernehmen" trägt sie unten in die Prüfpositionen-Tabelle ein; danach dort wie gewohnt Kosten/Anzahl anpassen oder entfernen.</p>
-    ${abschnitte}
-  </div>` : ""}`;
+  ${renderSicherheitNormKarte(kv, pa, kontext)}
+  ${kennzeichnungSichtbar ? renderKennzeichnungKarte(kv, pa, kontext) : ""}
+  ${kategorieIstAusgewaehlt(kv, { id: "produktspezifikationen" }) ? renderProduktspezifikationenKarte(kv, pa, qualitaetBloeckeHtml, materialBloeckeHtml) : ""}
+  ${kategorieIstAusgewaehlt(kv, { id: "ffuFitting" }) ? renderFfuNgoKarte(kv, pa, kontext, PA_PRUEFUMFANG_KATEGORIEN.find((k) => k.id === "ffuFitting"), "ffuNormen", "FFU", FFU_FITTING_FIXPOSITION) : ""}
+  ${kategorieIstAusgewaehlt(kv, { id: "ngo" }) ? renderFfuNgoKarte(kv, pa, kontext, PA_PRUEFUMFANG_KATEGORIEN.find((k) => k.id === "ngo"), "stiwaNormen", "NGO", NGO_FIXPOSITION) : ""}
+  ${kategorieIstAusgewaehlt(kv, { id: "referenzpruefung" }) ? renderReferenzpruefungKarte(kv, pa) : ""}`;
 }
 
 function initialisierePruefumfangUebersicht(panel, kv, pa) {
@@ -4868,12 +5013,19 @@ function initialisierePruefumfangUebersicht(panel, kv, pa) {
       renderKvDetail();
     });
   });
+  /* data-positionen grenzt "Alle Vorschläge übernehmen" auf die im jeweiligen Block tatsächlich
+     angezeigte Teilmenge ein (siehe fixPositionenListeHtml) - wichtig, seit sich "sicherheitNorm"
+     jetzt auf zwei getrennte Blöcke (Sicherheit-/Normprüfung, Kennzeichnung) verteilt, die sonst
+     gegenseitig Positionen des jeweils anderen Blocks mit übernehmen würden. */
   panel.querySelectorAll('[data-action="kat-vorschlaege-uebernehmen"]').forEach((btn) => {
     btn.addEventListener("click", () => {
       const kat = PA_PRUEFUMFANG_KATEGORIEN.find((k) => k.id === btn.dataset.kat);
       if (!kat) return;
+      const erlaubteIds = btn.dataset.positionen ? new Set(btn.dataset.positionen.split(",")) : null;
       let hinzugefuegt = 0;
-      ermittleVorschlagsPositionen(kat, pa, kv).forEach((eintrag) => { if (fuegeKatalogPositionHinzu(kv, eintrag)) hinzugefuegt++; });
+      ermittleVorschlagsPositionen(kat, pa, kv)
+        .filter((eintrag) => !erlaubteIds || erlaubteIds.has(eintrag.id))
+        .forEach((eintrag) => { if (fuegeKatalogPositionHinzu(kv, eintrag)) hinzugefuegt++; });
       speichereInLocalStorage();
       renderKvDetail();
       zeigeStatus(hinzugefuegt ? `${hinzugefuegt} Position(en) übernommen · ${jetzt()}` : "Alle Vorschläge waren bereits im KV", "ok");
@@ -4894,6 +5046,10 @@ function initialisierePruefumfangUebersicht(panel, kv, pa) {
   if (produktspeziSuche) {
     renderProduktspeziListe(kv, "");
     produktspeziSuche.addEventListener("input", () => renderProduktspeziListe(kv, produktspeziSuche.value));
+  }
+  const makAuswahl = panel.querySelector("#kv-mak-auswahl");
+  if (makAuswahl) {
+    makAuswahl.addEventListener("change", () => renderKvMakDetail(makAuswahl.value));
   }
 }
 
@@ -5024,7 +5180,7 @@ function renderKvDetail() {
       <div class="toolbar-zeile" style="margin-top:0.8rem">
         <button class="ghost small" id="kv-duplizieren">⧉ Als Vorlage für neuen KV duplizieren</button>
         ${verknuepftePa ? `<button class="ghost small" id="kv-zur-pa">→ Verknüpften Prüfauftrag anzeigen</button>
-        <button class="ghost small" id="kv-aus-pa-uebernehmen">↺ Warengruppe/Styleanzahl aus PA übernehmen</button>` : `<span class="muted">Kein Prüfauftrag mit dieser IAN gefunden.</span>`}
+        <button class="ghost small" id="kv-aus-pa-uebernehmen">↺ Warengruppe/Styleanzahl aus PA übernehmen</button>` : `<button class="ghost small" id="kv-pa-upload">📄 PA-PDF für dieses Projekt hochladen</button>`}
         <button class="danger small" id="kv-loeschen" style="margin-left:auto">KV löschen</button>
       </div>
     </div>
@@ -5109,6 +5265,11 @@ function renderKvDetail() {
       fuelleKvAusPa(kv, verknuepftePa, true);
       renderKvDetail();
       zeigeStatus("Warengruppe/Styleanzahl aus PA übernommen · " + jetzt(), "ok");
+    });
+  } else {
+    document.getElementById("kv-pa-upload").addEventListener("click", () => {
+      kvPaUploadZielIan = kv.ian;
+      document.getElementById("kv-pa-upload-input").click();
     });
   }
   initialisiereKvWarengruppeNeuAuswahl(panel, kv);

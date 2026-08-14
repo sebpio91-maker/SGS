@@ -162,6 +162,15 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   Prüfauftrag** (aussagekräftiger als die bloße IAN) — ohne verknüpften PA
   fällt sie auf das freie „Artikel"-Feld des KVs zurück, erst danach auf
   „KV <IAN>"; die IAN selbst bleibt daneben immer als Badge sichtbar.
+  **Ist zur IAN des KVs noch kein Prüfauftrag vorhanden**, erscheint statt der
+  Sprung-Buttons stattdessen **„📄 PA-PDF für dieses Projekt hochladen"** —
+  öffnet dieselbe PDF-Auswertung/Review-Ansicht wie beim Hochladen im Reiter
+  „Prüfaufträge" (siehe oben), landet aber nach dem Übernehmen direkt wieder
+  auf der KV-Detailseite, die sich daraufhin automatisch mit dem neu
+  verknüpften Prüfauftrag auffrischt (inkl. automatisch angelegtem
+  Arbeitsvorrat-Eintrag, falls noch keiner existierte) — praktisch, wenn zu
+  einem bereits angelegten KV der zugehörige PA erst nachträglich vorliegt,
+  ohne extra in den Reiter „Prüfaufträge" wechseln zu müssen.
   **Zwischen KV und Prüfauftrag lässt sich in beide Richtungen direkt
   springen**: „→ Verknüpften Prüfauftrag anzeigen" im KV wechselt zum
   passenden Prüfauftrag, „→ Verknüpften Kostenvoranschlag anzeigen" auf der
@@ -207,8 +216,14 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   fällt sofort auf, wenn zur IAN ein Vorgänger existiert, bevor man sich in
   die weitere Prüfumfang-Auswahl vertieft. Danach folgen Artikelkategorie,
   die beiden Prüfumfang-Karten (roher Prüfumfang-Text + Checkliste, siehe
-  unten), die Warengruppen-Empfehlung (Mechanik), Prüfumfang-Details und
-  zuletzt die Prüfpositionen-Tabelle.
+  unten) und schließlich **je Prüfung im Prüfumfang ein eigener,
+  in sich abgeschlossener Block**: **Sicherheit-/Normprüfung** (immer
+  sichtbar), **Kennzeichnung**, **(Physikalische-) Produktspezifikationen**,
+  **FFU/Fitting**, **NGO** und **Referenzprüfung** (die letzten fünf jeweils
+  nur, solange die zugehörige Prüfumfang-Checkbox angehakt ist — siehe
+  unten), zuletzt die Prüfpositionen-Tabelle. Die frühere, alle Kategorien in
+  einer einzigen Karte zusammenfassende „Prüfumfang-Details"-Karte gibt es
+  nicht mehr — jede Prüfung hat jetzt ihren eigenen Block.
 
   Sofern der verknüpfte Prüfauftrag eine „IAN-Vorgänger"
   enthält, erscheint dieselbe Vorgänger-Artikel-Karte wie bei den Prüfaufträgen
@@ -260,8 +275,10 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   entsprechendes Feld enthält) — praktisch als schneller Blick auf die
   Material-/Qualitätsangaben, ohne extra zum Prüfauftrag wechseln zu müssen.
 
-  **Warengruppen-Empfehlung (Mechanik)** – die primäre Vorschlagsquelle,
-  wie besprochen **zuerst nach Warengruppe, dann nach Produkt**: sobald
+  **Sicherheit-/Normprüfung** (bis vor kurzem „Warengruppen-Empfehlung
+  (Mechanik)" genannt, funktional unverändert) – die primäre Vorschlagsquelle
+  für diesen Prüfumfang-Abschnitt, wie besprochen **zuerst nach Warengruppe,
+  dann nach Produkt**: sobald
   „Warengruppe (neu)" gesetzt ist, wird in einer echten, vom Team gepflegten
   Referenztabelle (185 Zeilen aus der Mechanik-Preisliste) nachgeschlagen.
   Gibt es zu der Warengruppe mehrere Produkte (z. B. „370.030 Grillzubehör"
@@ -318,9 +335,14 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     normalisiert verglichen (ohne Sonderzeichen, Groß-/Kleinschreibung
     egal), damit der Rabatt auch bei solchen Varianten korrekt greift.
 
-  FFU- und NGO/StiWa-Kosten sind vom Rabattfaktor **nicht** betroffen (im
-  Original eigenständige Positionen ohne Set-Bestandteile/Rabatt) und waren
-  schon zuvor jeweils eigene Blöcke.
+  Dieselbe Hauptprodukt-/Set-Bestandteil-/Style-/Rabattfaktor-Mechanik dient
+  seit der Aufteilung in eigene Blöcke auch den **FFU/Fitting**- und
+  **NGO**-Blöcken (siehe unten) — dort jeweils bezogen auf die für FFU bzw.
+  NGO/StiWa hinterlegten Normen der Prüfgrundlage statt auf die Sicherheit &
+  Norm-Normen, aber mit demselben Rabattfaktor je Artikelkategorie. Die
+  zusätzlich vorhandenen **festen** FFU/Fitting- und NGO-Positionen (siehe
+  „Innerhalb der Blöcke" weiter unten) sind davon unabhängig und bleiben ohne
+  Set-Bestandteile/Rabatt.
 
   **Kosten direkt anpassen**: unter jedem Block (Hauptprodukt, Set-Bestandteil,
   FFU, NGO/StiWa) gibt es ein Feld **„Kosten (Prüfgrundlage) €"**, mit dem
@@ -372,8 +394,8 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     unbedenklich** — ein einfaches „Grün" ohne Stern befreit bewusst
     **nicht**, da dort eine Prüfung ggf. trotzdem notwendig sein kann, und
     bleibt daher ganz normal Pflicht wie jede andere Artikelkategorie auch.
-    Für den tatsächlichen Wert (Norm + Kosten) siehe die
-    Warengruppen-Empfehlung weiter unten.
+    Für den tatsächlichen Wert (Norm + Kosten) siehe den
+    Sicherheit-/Normprüfung-Block weiter oben.
   - **Kennzeichnung (Verpackung & Produkt)** – **immer Pflicht**, unabhängig
     von Prüfumfang, Artikelkategorie oder Trivial, und deshalb immer
     vorbelegt. Es gibt dafür vier feste Positionen mit demselben Zweck,
@@ -381,7 +403,7 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     wird genau die zum KV passende: **1001_PPM** (Standard/VK Büro 0070),
     **1002_PPM** (VK Büro 0049), **1003_PPM** (VK Büro 0072), **1005_PPM**
     (sobald LFGB="Ja" — hat Vorrang vor der VK-Büro-Zuordnung). Die übrigen
-    drei Varianten bleiben in der Detail-Karte sichtbar und bei Bedarf
+    drei Varianten bleiben im Kennzeichnung-Block sichtbar und bei Bedarf
     manuell hinzufügbar.
   - **Kennzeichnung (Bedienungsanleitung)** – folgt weiterhin der
     Prüfumfang-Text-Erkennung wie bisher. Entspricht immer der festen
@@ -394,57 +416,76 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   unabhängig von ihrer jeweiligen Vorbelegungs-Regel — z. B. wenn im
   Einzelfall nur der optische Abgleich, nicht aber die Kennzeichnungsprüfung
   benötigt wird. Jeder Unterpunkt steuert direkt, ob die zugehörige feste
-  Position in der Detail-Karte unten als „Vorschlag" markiert ist. Dateien
+  Position weiter unten als „Vorschlag" markiert ist. Dateien
   aus einer älteren Tool-Version (ein einzelnes Häkchen für den ganzen
   Abschnitt bzw. nur die eine „1001_PPM"-Kennzeichnungs-Position) werden
   beim Laden automatisch migriert/ergänzt, damit kein bereits gepflegter KV
   plötzlich Positionen verliert.
 
-  **Erst für angehakte Abschnitte/Unterpunkte erscheinen darunter die
-  einzelnen Prüfpositionen** zur Auswahl (Karte „Prüfumfang-Details") — ist
-  nichts angehakt, bleibt nur die Checkliste sichtbar. Ohne verknüpften
-  Prüfauftrag startet die Checkliste komplett unangehakt, lässt sich aber
-  jederzeit manuell aktivieren (z. B. um Positionen schon vor dem
-  PA-Upload grob vorzubereiten). Jede einzelne Position steht dabei in einer
-  eigenen, klar umrandeten Zeile statt nur durch eine dünne Trennlinie
-  abgesetzt zu sein — Vorschläge zusätzlich grün hinterlegt. Innerhalb der
-  Detail-Karten:
-  - **Sicherheit & Norm / Sonder- & Funktionsparameter**: die festen
-    Positionen zu den drei Unterpunkten Kennzeichnung (Verpackung & Produkt),
-    Kennzeichnung (Bedienungsanleitung) und Optischer Abgleich werden hier
-    automatisch als „Vorschlag" markiert. Für **Sicherheit-/Normprüfung**
-    steht hier bewusst **keine** feste Position mehr — ein fester Preis war
-    fachlich nicht korrekt; stattdessen liefert die weiter unten stehende
-    Warengruppen-Empfehlung (Mechanik) für diesen Unterpunkt die tatsächlich
-    zutreffende Norm samt Kosten und SAP-Code als eigenen Block. Der
-    **Akkusicherheitskurzcheck** wird unabhängig von den vier Unterpunkten
-    nur vorgeschlagen, wenn das aus dem Prüfauftrag ausgelesene Feld
-    „Batterietyp" auf eine tatsächlich vorhandene Batterie/einen Akku
-    hindeutet (nicht „keine"/„nein"/leer). **Mustereinlagerung** wird im
-    Prüfumfang nicht mehr angezeigt (weder als Vorschlag noch manuell
+  **Erst für angehakte Abschnitte/Unterpunkte erscheint darunter der
+  jeweils zugehörige, eigenständige Block** — ist nichts angehakt, bleibt nur
+  die Checkliste sichtbar. Ohne verknüpften Prüfauftrag startet die
+  Checkliste komplett unangehakt (mit Ausnahme der immer aktiven
+  Sicherheit-/Normprüfung- und Kennzeichnung(Verpackung & Produkt)-Regel,
+  siehe oben), lässt sich aber jederzeit manuell aktivieren (z. B. um
+  Positionen schon vor dem PA-Upload grob vorzubereiten). Jede einzelne
+  Position steht dabei in einer eigenen, klar umrandeten Zeile statt nur
+  durch eine dünne Trennlinie abgesetzt zu sein — Vorschläge zusätzlich grün
+  hinterlegt. Die einzelnen Blöcke:
+  - **Sicherheit-/Normprüfung** (siehe oben, immer sichtbar sobald eine
+    Warengruppe hinterlegt ist) — enthält zusätzlich zur
+    Prüfgrundlagen-Empfehlung noch die beiden verbliebenen festen Positionen
+    dieses Abschnitts: **Akkusicherheitskurzcheck** (nur vorgeschlagen, wenn
+    das aus dem Prüfauftrag ausgelesene Feld „Batterietyp" auf eine
+    tatsächlich vorhandene Batterie/einen Akku hindeutet, nicht
+    „keine"/„nein"/leer) und **Optischer Abgleich**. **Mustereinlagerung**
+    wird im Prüfumfang nicht mehr angezeigt (weder als Vorschlag noch manuell
     hinzufügbar).
-  - **(Physikalische-) Produktspezifikationen**: die feste Position
-    „Projektkosten (nicht einsteuern)" steht immer oben in der Kategorie zur
-    Verfügung; darunter eine durchsuchbare Liste aus dem echten, 62 Einträge
-    umfassenden Parameterkatalog (Parameter, Material/Kontext, Laufzeit,
-    Norm, SAP-Code, Preis) — Suchfeld oben, „+ hinzufügen" trägt die
-    gewählte Zeile mit ihrem tatsächlichen Preis und SAP-Code ein. Eine
-    automatische Zuordnung nach Auslobungen ist noch nicht hinterlegt. Bei
-    Mehrfachauswahl (mehrere aktive Positionen zu einer Kategorie) erscheint
-    jede als eigener Block untereinander statt in einer zusammengefügten
-    Zeile. Die **Qualität** aus dem Prüfauftrag wird hier direkt darüber
-    angezeigt — genauso als eigene Style-Blöcke aufgeteilt wie auf der
-    Prüfauftrags-Detailseite (siehe unten), statt als ein zusammenhängender
-    Text.
-  - **FFU/Fitting** und **NGO**: die festen Positionen werden vorgeschlagen,
-    sobald im Prüfumfang erkannt — produktspezifische Kosten und SAP-Codes
-    dafür liefert, wenn vorhanden, die Warengruppen-Empfehlung oben (aus der
-    jeweils referenzierten Norm, siehe „Datenquelle der Warengruppen-
-    Empfehlung und SAP-Codes" unten).
-  - **Referenzprüfung**: zeigt zusätzlich die „Markenreferenz" aus dem
-    Prüfauftrag an (das Referenzprodukt, gegen das verglichen wird).
+  - **Kennzeichnung** – eigener Block, erscheint sobald „Kennzeichnung
+    (Verpackung & Produkt)" oder „Kennzeichnung (Bedienungsanleitung)"
+    angehakt ist. Enthält die vier Kennzeichnung-Varianten
+    (1001/1002/1003/1005_PPM) sowie „Bedienungsanleitung E&E (1000_PPM)" als
+    feste Positionen (aus dem Sicherheit & Norm-Abschnitt hierher verschoben)
+    und darunter zusätzlich eine schreibgeschützte Liste aller **Normen mit
+    Prüfungsart „Kennzeichnung"** (siehe Reiter „Normen"/„Verwaltung" →
+    Prüfungsarten), damit auf einen Blick sichtbar ist, welche Normen dafür
+    grundsätzlich infrage kommen. Trägt die im Sicherheit-/Normprüfung-Block
+    für dieses Produkt gewählte Norm selbst Kennzeichnungs- und/oder
+    Bedienungsanleitung-Anforderungen (siehe „Kennzeichnung/Bedienungsanleitung
+    je Norm" unten), erscheint dazu oben im Block ein entsprechendes Badge.
+  - **(Physikalische-) Produktspezifikationen**: enthält direkt
+    übereinander die aus dem Prüfauftrag ausgelesenen **„Qualität"** und
+    **„Material"** (jeweils als eigene Style-Blöcke aufgeteilt wie auf der
+    Prüfauftrags-Detailseite; „Material" erscheint nur, wenn der PA ein
+    entsprechendes Feld enthält). Darunter ein **Dropdown „MAK-Parameter
+    nachschlagen"**, das alle Einträge des Materialanforderungskatalogs
+    (Reiter „MAK", siehe unten) nach Kategorie gruppiert zur Auswahl anbietet
+    — nach Auswahl eines Parameters erscheinen darunter dessen Anforderung,
+    Norm/Standard EU, Norm/Standard US, Mindest-Prüfnachweis und Schlagworte
+    direkt zum Nachlesen, ohne in den MAK-Tab wechseln zu müssen. Danach
+    folgt die feste Position „Projektkosten (nicht einsteuern)" sowie eine
+    durchsuchbare Liste aus dem echten, 62 Einträge umfassenden
+    Parameterkatalog (Parameter, Material/Kontext, Laufzeit, Norm, SAP-Code,
+    Preis) — Suchfeld oben, „+ hinzufügen" trägt die gewählte Zeile mit ihrem
+    tatsächlichen Preis und SAP-Code ein. Eine automatische Zuordnung nach
+    Auslobungen ist noch nicht hinterlegt. Bei Mehrfachauswahl (mehrere
+    aktive Positionen zu einer Kategorie) erscheint jede als eigener Block
+    untereinander statt in einer zusammengefügten Zeile.
+  - **FFU/Fitting** und **NGO**: je ein eigener Block, funktional analog zu
+    Sicherheit-/Normprüfung — dasselbe im Sicherheit-/Normprüfung-Block
+    gewählte Hauptprodukt (Warengruppe → Produkt) wird hier übernommen (zum
+    Ändern zurück in den Sicherheit-/Normprüfung-Block wechseln, es gibt nur
+    eine Produktauswahl), die Prüfgrundlage liefert aber die für **FFU**
+    bzw. **NGO/StiWa** hinterlegten Normen samt Kosten (inkl.
+    Set-Bestandteile, Style-Zuordnung, Artikelkategorie-Rabattfaktor und
+    „Kosten (Prüfgrundlage) €"-Bearbeitung — siehe oben) statt der
+    Sicherheit & Norm-Normen. Darunter die jeweils feste Position
+    („FFU/Fitting" bzw. „NGO"), sobald im Prüfumfang erkannt.
+  - **Referenzprüfung**: eigener Block mit der festen Position
+    „Referenzprüfung" sowie zusätzlich der „Markenreferenz" aus dem
+    Prüfauftrag (das Referenzprodukt, gegen das verglichen wird).
 
-  Bei jeder Detail-Karte lässt sich per **„+ hinzufügen"** eine
+  Bei jedem Block lässt sich per **„+ hinzufügen"** eine
   einzelne Position oder per **„Alle Vorschläge übernehmen"** alle markierten
   Positionen auf einmal in die Prüfpositionen-Tabelle unten eintragen — dort
   dann wie gewohnt Kosten/Anzahl anpassen, deaktivieren oder entfernen.
@@ -521,8 +562,10 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   entfällt dadurch komplett. Referenziert eine Prüfgrundlage (in einem der
   drei Blöcke) eine Norm, die an Kennzeichnung und/oder Bedienungsanleitung
   hinterlegt hat, erscheint das in der Prüfgrundlagen-Liste als Badge
-  („Kennz."/„BDA") und in der Warengruppen-Empfehlung im KV als
-  „Kennzeichnung"/„Bedienungsanleitung" — ganz ohne manuelles Ankreuzen.
+  („Kennz."/„BDA") und — sofern diese Norm im KV für Sicherheit-/Normprüfung
+  gewählt ist — im Kennzeichnung-Block als eigenes Badge
+  („Kennzeichnungsanforderungen"/„Bedienungsanleitung-Anforderungen") —
+  ganz ohne manuelles Ankreuzen.
   Ist die Referenz zusätzlich **„in Anlehnung an"** angekreuzt, entfällt die
   automatische Übernahme zunächst (die Norm wird ja nicht vollständig
   angewendet); je Norm-Referenz lässt sich dann aber pro Flag gezielt
@@ -658,7 +701,9 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   „Produktspezifikation") — die Auswahlmöglichkeiten selbst sind frei
   editierbar im Reiter „Verwaltung" → Ansicht „Prüfungsarten" (anlegen,
   umbenennen, löschen; Umbenennen aktualisiert automatisch alle Normen, die
-  die bisherige Prüfungsart verwenden, analog zu „Bereiche").
+  die bisherige Prüfungsart verwenden, analog zu „Bereiche"). Alle Normen mit
+  Prüfungsart „Kennzeichnung" werden im KV-Reiter direkt im
+  Kennzeichnung-Block aufgelistet (siehe oben).
 
   **Anwendungsbereiche**: manche Normen stellen je nach Verwendungszweck des
   Produkts unterschiedliche Anforderungen — z. B. hat DIN EN 581-2
