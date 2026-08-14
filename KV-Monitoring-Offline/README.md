@@ -669,14 +669,20 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   erscheint dort „(gelöschte Norm)" statt der Bezeichnung — die Referenz
   bleibt technisch bestehen, sollte aber in der Prüfgrundlage entfernt oder
   ersetzt werden.
-- **MAK (Materialanforderungskatalog)** – schreibgeschützte Referenzliste
-  (193 Zeilen, Spalten ID/Kategorie/Bereich/Parameter/Anforderung/Norm-EU/
-  Norm-US/Mindest-Prüfnachweis aus der offiziellen Vorlage), im gleichen
-  Listen-/Detail-Layout wie der Reiter „Normen". Die Detailansicht zeigt je
-  Eintrag Anforderung, Norm/Standard EU, Norm/Standard US (AATCC/ASTM) und
-  Mindest-Prüfnachweis vollständig (mehrzeilig, mit Zeilenumbrüchen wie in
-  der Originaltabelle). Eine **übergeordnete Textsuche** (durchsucht alle
-  Felder, synchron mit der allgemeinen Suche oben im Header wie beim
+- **MAK (Materialanforderungskatalog)** – Referenzliste (193 Zeilen, Spalten
+  ID/Kategorie/Bereich/Parameter/Anforderung/Norm-EU/Norm-US/Mindest-
+  Prüfnachweis aus der offiziellen Vorlage), im gleichen Listen-/
+  Detail-Layout wie der Reiter „Normen". Die **Parameter-Bezeichnung ist das
+  Hauptattribut**: sie steht fett in der Liste und als Überschrift in der
+  Detailansicht, die ID erscheint nur noch als Zusatzangabe darunter
+  (zusammen mit Kategorie/Bereich); die Liste ist entsprechend primär nach
+  Parameter alphabetisch sortiert (a-z), nicht mehr nach ID. Die
+  Detailansicht zeigt je Eintrag Anforderung, Norm/Standard EU,
+  Norm/Standard US (AATCC/ASTM) und Mindest-Prüfnachweis vollständig
+  (mehrzeilig, mit Zeilenumbrüchen wie in der Originaltabelle) – diese
+  Referenzspalten aus der offiziellen Vorlage bleiben schreibgeschützt.
+  Eine **übergeordnete Textsuche** (durchsucht alle Felder inkl.
+  Schlagworte, synchron mit der allgemeinen Suche oben im Header wie beim
   Normen-Tab) lässt sich mit zwei weiteren Filtern kombinieren: einem
   **Kategorie-Dropdown** (die acht Kategorien der Liste, z. B. „Akku",
   „Textilphysik") und einem **ID-Textfilter** (Teilstring-Suche, z. B. „TX00"
@@ -686,7 +692,20 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   auch regulärer Bestandteil des deutschen Texts bzw. Trennzeichen zwischen
   mehreren Normen/Werten (z. B. „2100 mAh / 2400 mAh", „DIN EN ISO 105/X12")
   und bleibt daher unverändert. CSV-Export wie bei den anderen Reitern
-  verfügbar (exportiert die aktuell gefilterte Liste).
+  verfügbar (exportiert die aktuell gefilterte Liste, inkl. Schlagworte-Spalte).
+
+  **Schlagworte je Eintrag** – einziges frei editierbares Feld der Liste:
+  in der Detailansicht lassen sich beliebig viele Schlagworte als Chips
+  hinzufügen (Eingabefeld + „+ Hinzufügen" oder Enter-Taste) und über das
+  „×" am jeweiligen Chip wieder entfernen; Duplikate (unabhängig von Groß-/
+  Kleinschreibung) werden automatisch abgefangen. Gedacht sind sie dafür,
+  händisch die Signalwörter einzutragen, die im Abschnitt „Qualität" eines
+  Prüfauftrags stehen müssen, damit dieser Parameter relevant ist – aktuell
+  rein informativ/vorbereitend, perspektivisch soll darüber die passende
+  Auswahl von MAK-Parametern im KV automatisch anhand der Prüfauftrags-Texte
+  erfolgen. Schlagworte fließen bereits jetzt in die übergeordnete
+  Textsuche mit ein und werden dauerhaft in der lokalen Datenablage
+  gespeichert.
 - **Verwaltung** – **vier umschaltbare Ansichten** (Pillen oben im Reiter:
   „Bereiche" / „Warengruppen" / „Trivialartikel-Preisliste" / „Gefahrenzone"),
   von denen jeweils nur eine gleichzeitig sichtbar ist — analog zum

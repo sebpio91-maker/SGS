@@ -2468,7 +2468,14 @@ function seedMak() {
     { id: "TX044", kategorie: "Textilphysik", bereich: "TX", parameter: "Flächengewicht", anforderung: "Bei Bekleidung:                 \n ± 5 %                 \nBei Strumpfwaren:        \n+ 10 % / - 5 %        \n        \nNur bei Schaumstoff-Füllung (Matratzen, Matratzentopper und -auflagen, Nackenstützkissen, Venenkissen, Stützkissen, Boden- und Palettenkissen)", normEu: "DIN EN 12127", normUs: "ASTM D3887 \n(Strick / Knits) \n(cross references D3776)\n \nASTM D3776\n(Webware / Wovens)", pruefnachweis: "Selbsterklärung" },
     { id: "TX045", kategorie: "Textilphysik", bereich: "TX", parameter: "Materialzertifizierung bei Fasern und Ausrüstung", anforderung: "Materialzertifizierung bei Fasern und Ausrüstung (z.B. kühlend, anti-odor, etc.)\nz.B. Bio Baumwolle, Lenzing EcoVero, S-Café, HeiQ etc. \nDokumentennachweis zum EUG oder späteren Zeitpunkt", normEu: "Hausmethode des Markenherstellers", normUs: "-", pruefnachweis: "Prüfbericht eines akkreditierten Labors" },
     { id: "TX046", kategorie: "Textilphysik", bereich: "TX", parameter: "Antimykotische Aktivität", anforderung: "Im Berdarfsfall z.B. Produktauslobung\ndie Anforderung ist kein Wachstum", normEu: "-", normUs: "AATCC 30 (2017) Test III", pruefnachweis: "Prüfbericht eines akkreditierten Labors" }
-  ];
+  ].map((m) => ({ ...m, schlagworte: [] }));
+}
+
+/* Stellt sicher, dass jeder MAK-Eintrag ein schlagworte-Array besitzt - additiv/idempotent,
+   damit auch aus localStorage geladene Altbestände (vor Einführung der Schlagworte) nachgerüstet
+   werden, ohne bereits gepflegte Schlagworte zu berühren. */
+function migriereMak() {
+  data.mak.forEach((m) => { if (!Array.isArray(m.schlagworte)) m.schlagworte = []; });
 }
 
 function init() {
@@ -2493,6 +2500,7 @@ function init() {
   migriereBereicheOhneZahlensuffix();
   migriereOffizielleWarengruppenStammdaten();
   migriereFixPositionenAlsNormen();
+  migriereMak();
 
   document.querySelectorAll("nav.tabs button[data-tab]").forEach((btn) => {
     btn.addEventListener("click", () => wechsleTab(btn.dataset.tab));
@@ -5990,9 +5998,11 @@ function renderNormDetail() {
 
 function renderNormenTab() { renderNormenListe(); renderNormDetail(); }
 
-/* ---------- Reiter "MAK" (Materialanforderungskatalog) - schreibgeschützte Referenzliste ----------
-   Übergeordnete Textsuche (durchsucht alle Felder) plus zwei zusätzliche, miteinander kombinierbare
-   Filter (Kategorie-Dropdown, ID-Textfilter) - alle drei gleichzeitig aktiv möglich. */
+/* ---------- Reiter "MAK" (Materialanforderungskatalog) - die Referenzspalten aus der offiziellen
+   Vorlage sind schreibgeschützt, einzig die Schlagworte je Eintrag sind frei editierbar (siehe
+   renderMakDetail). Übergeordnete Textsuche (durchsucht alle Felder inkl. Schlagworte) plus zwei
+   zusätzliche, miteinander kombinierbare Filter (Kategorie-Dropdown, ID-Textfilter) - alle drei
+   gleichzeitig aktiv möglich. ---------- */
 function gefiltereMak() {
   const q = normalisiere(suchbegriffe.mak);
   const idFilter = normalisiere(makIdFilter);
@@ -6000,8 +6010,8 @@ function gefiltereMak() {
     if (makKategorieFilter && m.kategorie !== makKategorieFilter) return false;
     if (idFilter && !normalisiere(m.id).includes(idFilter)) return false;
     if (!q) return true;
-    return normalisiere([m.id, m.kategorie, m.bereich, m.parameter, m.anforderung, m.normEu, m.normUs, m.pruefnachweis].join(" ")).includes(q);
-  }).sort((a, b) => a.id.localeCompare(b.id, "de", { numeric: true }));
+    return normalisiere([m.id, m.kategorie, m.bereich, m.parameter, m.anforderung, m.normEu, m.normUs, m.pruefnachweis, (m.schlagworte || []).join(" ")].join(" ")).includes(q);
+  }).sort((a, b) => (a.parameter || "").localeCompare(b.parameter || "", "de") || a.id.localeCompare(b.id, "de", { numeric: true }));
 }
 
 function renderMakListe() {
@@ -6019,8 +6029,8 @@ function renderMakListe() {
   if (!liste.length) { ul.innerHTML = '<li class="leer">Keine Einträge gefunden.</li>'; return; }
   ul.innerHTML = liste.map((m) => `
     <li class="${m.id === aktiveMakId ? "aktiv" : ""}" data-id="${escapeHtml(m.id)}">
-      <strong>${escapeHtml(m.id)}</strong> <span class="muted">${escapeHtml(m.kategorie)}</span>
-      <div class="muted">${escapeHtml(m.parameter || "(ohne Parameter)")}</div>
+      <strong>${escapeHtml(m.parameter || "(ohne Parameter)")}</strong> <span class="muted">${escapeHtml(m.kategorie)}</span>
+      <div class="muted">${escapeHtml(m.id)}${m.bereich ? " · " + escapeHtml(m.bereich) : ""}</div>
     </li>`).join("");
   ul.querySelectorAll("li[data-id]").forEach((li) => li.addEventListener("click", () => { aktiveMakId = li.dataset.id; renderMakDetail(); renderMakListeAktivMarkieren(); }));
 }
@@ -6035,15 +6045,49 @@ function renderMakDetail() {
   const panel = document.getElementById("detail-panel-mak");
   const eintrag = data.mak.find((m) => m.id === aktiveMakId);
   if (!eintrag) { panel.innerHTML = '<div class="card leerzustand">Kein Eintrag ausgewählt.</div>'; return; }
+  const schlagworte = eintrag.schlagworte || [];
   panel.innerHTML = `
     <div class="card">
-      <h2 style="margin-top:0">${escapeHtml(eintrag.id)} — ${escapeHtml(eintrag.parameter || "(ohne Parameter)")}</h2>
-      <p class="muted" style="margin-top:-0.4rem">Kategorie: ${escapeHtml(eintrag.kategorie)} · Bereich: ${escapeHtml(eintrag.bereich)}</p>
+      <h2 style="margin-top:0">${escapeHtml(eintrag.parameter || "(ohne Parameter)")}</h2>
+      <p class="muted" style="margin-top:-0.4rem">ID: ${escapeHtml(eintrag.id)} · Kategorie: ${escapeHtml(eintrag.kategorie)} · Bereich: ${escapeHtml(eintrag.bereich)}</p>
+      <div class="tag-feld">
+        <label>Schlagworte <span class="muted" style="font-weight:400">– Signalwörter, die im Abschnitt „Qualität" stehen müssen, damit dieser Parameter relevant ist (perspektivisch für die automatische Auswahl im KV)</span></label>
+        <div class="tag-chips" id="mak-tag-chips">
+          ${schlagworte.length ? schlagworte.map((tag, i) => `<span class="tag-chip">${escapeHtml(tag)}<button type="button" data-idx="${i}" title="Schlagwort entfernen">×</button></span>`).join("") : '<span class="muted">Noch keine Schlagworte hinterlegt.</span>'}
+        </div>
+        <div class="tag-eingabe">
+          <input type="text" id="mak-tag-input" placeholder="Schlagwort eingeben und Enter drücken…">
+          <button class="ghost small" id="mak-tag-hinzufuegen" type="button">+ Hinzufügen</button>
+        </div>
+      </div>
       <div class="mak-feld"><h3>Anforderung</h3><p>${escapeHtml(eintrag.anforderung) || "–"}</p></div>
       <div class="mak-feld"><h3>Norm/Standard EU</h3><p>${escapeHtml(eintrag.normEu) || "–"}</p></div>
       <div class="mak-feld"><h3>Norm/Standard US (AATCC/ASTM)</h3><p>${escapeHtml(eintrag.normUs) || "–"}</p></div>
       <div class="mak-feld"><h3>Mindest-Prüfnachweis</h3><p>${escapeHtml(eintrag.pruefnachweis) || "–"}</p></div>
     </div>`;
+  panel.querySelectorAll("#mak-tag-chips button[data-idx]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      schlagworte.splice(Number(btn.dataset.idx), 1);
+      speichereInLocalStorage();
+      renderMakDetail();
+    });
+  });
+  const tagEingabeHinzufuegen = () => {
+    const eingabe = document.getElementById("mak-tag-input");
+    const wert = eingabe.value.trim();
+    if (!wert) return;
+    if (!schlagworte.some((t) => normalisiere(t) === normalisiere(wert))) {
+      schlagworte.push(wert);
+      eintrag.schlagworte = schlagworte;
+      speichereInLocalStorage();
+    }
+    renderMakDetail();
+    document.getElementById("mak-tag-input").focus();
+  };
+  document.getElementById("mak-tag-hinzufuegen").addEventListener("click", tagEingabeHinzufuegen);
+  document.getElementById("mak-tag-input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); tagEingabeHinzufuegen(); }
+  });
 }
 
 function renderMakTab() { renderMakListe(); renderMakDetail(); }
@@ -6554,6 +6598,7 @@ document.getElementById("datei-laden-input").addEventListener("change", async (e
     migriereBereicheOhneZahlensuffix();
     migriereOffizielleWarengruppenStammdaten();
     migriereFixPositionenAlsNormen();
+    migriereMak();
     aktivePaId = data.pruefauftraege.length ? data.pruefauftraege[0].id : null;
     aktiveKvId = data.kvs.length ? data.kvs[0].id : null;
     aktiveNormId = data.normen.length ? data.normen[0].id : null;
@@ -6615,8 +6660,8 @@ document.getElementById("btn-csv").addEventListener("click", () => {
     });
     csvHerunterladen(zeilen, "normen_export.csv");
   } else if (aktiverTab === "mak") {
-    const zeilen = [["ID", "Kategorie", "Bereich", "Parameter", "Anforderung", "Norm/Standard EU", "Norm/Standard US (AATCC/ASTM)", "Mindest-Prüfnachweis"]];
-    gefiltereMak().forEach((m) => zeilen.push([m.id, m.kategorie, m.bereich, m.parameter, m.anforderung, m.normEu, m.normUs, m.pruefnachweis]));
+    const zeilen = [["ID", "Kategorie", "Bereich", "Parameter", "Anforderung", "Norm/Standard EU", "Norm/Standard US (AATCC/ASTM)", "Mindest-Prüfnachweis", "Schlagworte"]];
+    gefiltereMak().forEach((m) => zeilen.push([m.id, m.kategorie, m.bereich, m.parameter, m.anforderung, m.normEu, m.normUs, m.pruefnachweis, (m.schlagworte || []).join("; ")]));
     csvHerunterladen(zeilen, "mak_export.csv");
   } else if (aktiverTab === "verwaltung") {
     const zeilen = [["Typ", "Code", "Wert", "Verwendungen"]];
