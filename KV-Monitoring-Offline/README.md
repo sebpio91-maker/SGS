@@ -61,6 +61,16 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   nicht aus genau 6 Ziffern bestehen, werden unverändert gelassen statt
   geraten.
 
+  **Warengruppen-Filter zeigt/durchsucht auch die Bezeichnung**: die
+  durchsuchbare Mehrfachauswahl für „Warengruppe" schlägt zu jedem Code (sofern
+  in den Warengruppen-Stammdaten, siehe Reiter „Verwaltung", bekannt) zusätzlich
+  die zugehörige Bezeichnung auf und zeigt sie direkt neben dem Code in der
+  Options-Liste an (z. B. „385.030 – Grillbürsten"); die Suche im Filter-Panel
+  matcht ebenfalls auf Code **und** Bezeichnung, sodass sich eine Warengruppe
+  auch über ihren Namen statt nur über die reine Codenummer finden lässt. Die
+  Arbeitsvorrat-**Tabelle selbst** zeigt weiterhin nur den Code, ohne eigene
+  Bezeichnungs-Spalte.
+
   **Datenherkunft je Feld:** Bezeichnung, Lieferant, Angelegt am und
   Sachbearbeiter kommen aus dem SAP-Export. Warengruppe und Anzahl Styles
   kommen bewusst **nicht** aus SAP, sondern — wenn im verknüpften
@@ -578,8 +588,12 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   geht.
 - **Normen** – eigenständige Verwaltung einzelner Normen, im Listen-/
   Detail-Layout wie bei Prüfaufträgen/KVs, und jetzt direkt mit den
-  Prüfgrundlagen verknüpft (siehe oben). Über der Liste steht ein eigenes
-  **Suchfeld** (Bezeichnung, Titel, Dateiname, Bemerkung, Anwendungsbereiche) —
+  Prüfgrundlagen verknüpft (siehe oben). Die **Auswahlleiste (Liste) zeigt
+  neben der Bezeichnung jetzt auch den Titel** der Norm (sofern hinterlegt) —
+  praktisch, um Normen mit kryptischer Bezeichnung (z. B. reine Normnummern)
+  auf einen Blick zu erkennen, ohne jede einzeln öffnen zu müssen. Über der
+  Liste steht ein eigenes **Suchfeld** (Bezeichnung, Titel, Dateiname,
+  Bemerkung, Anwendungsbereiche) —
   synchron mit der allgemeinen Suche oben im Header, beide filtern dieselbe
   Liste, welches der beiden Felder benutzt wird ist egal. Darunter der
   **Typ-Filter** (Alle/Normen/PPM/PPM_FFU/StiWa) als eigenständige, frei
@@ -630,6 +644,19 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   fließt direkt in die Bezeichnung der neu angelegten Position ein (z. B.
   „…DIN EN 581-2 [Campingbereich]"). Normen ohne Anwendungsbereiche zeigen
   kein Dropdown.
+
+  **Preis**: jede Norm kann jetzt einen eigenen Preis hinterlegt bekommen —
+  **hat die Norm keine Anwendungsbereiche**, erscheint dafür ein einzelnes
+  „Preis €"-Feld direkt in den Kopfdaten der Norm. **Hat die Norm
+  Anwendungsbereiche**, verschwindet dieses zentrale Feld (mit entsprechendem
+  Hinweis) und stattdessen bekommt **jeder Anwendungsbereich sein eigenes
+  Preisfeld** — da die Anwendungsbereiche einer Norm oft unterschiedlich
+  aufwendig zu prüfen sind und daher unterschiedlich viel kosten können.
+  Diese Preise sind losgelöst von den **Kosten je Prüfgrundlage-Referenz**
+  (siehe „Kosten je Norm" oben, dort pro Produkt/Prüfgrundlage individuell
+  hinterlegt) — sie dienen aktuell als zentral gepflegte Referenzpreise in
+  der Normendatenbank selbst und fließen bereits in den JSON-Export/-Import
+  sowie CSV-Export mit ein.
 
   Die Detailansicht einer Norm zeigt außerdem eine schreibgeschützte
   **„Verwendet in Prüfgrundlagen"-Übersicht**: für jede Prüfgrundlage, die
