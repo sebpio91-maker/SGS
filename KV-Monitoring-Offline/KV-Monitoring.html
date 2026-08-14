@@ -3470,9 +3470,9 @@ function renderPaPruefumfangKarte(pa) {
 
 /* Ein PA_BLOCKFELDER-Feld (Maße, Gewicht, Qualität, Material, Markenreferenz, Garantie) als
    Style-Blöcke gerendert - gemeinsam genutzt von der Prüfauftrag-Detailseite (alle Blockfelder)
-   und der Produktspezifikationen-Karte im KV (nur Qualität), damit dieselbe übersichtliche
-   Blockdarstellung an beiden Stellen identisch aussieht. Liefert nur die Block-Divs, ohne
-   umgebende Feld-Überschrift. */
+   und der Produktspezifikationen-Karte im KV (Qualität und Material), damit dieselbe
+   übersichtliche Blockdarstellung an beiden Stellen identisch aussieht. Liefert nur die
+   Block-Divs, ohne umgebende Feld-Überschrift. */
 function renderPaBlockFeldHtml(pa, feldname) {
   const eintraege = (pa.felder || []).filter((f) => normalisiere(f.schluessel) === normalisiere(feldname));
   if (!eintraege.length) return "";
@@ -4770,6 +4770,7 @@ function renderKvPruefumfangUebersicht(kv, pa) {
   pruefumfangAuswahlAktualisieren(kv, pa);
   const markenreferenz = pa ? paFeldWertRoh(pa, "Markenreferenz") : "";
   const qualitaetBloeckeHtml = pa ? renderPaBlockFeldHtml(pa, "Qualität") : "";
+  const materialBloeckeHtml = pa ? renderPaBlockFeldHtml(pa, "Material") : "";
   const ausgewaehlteKategorien = PA_PRUEFUMFANG_KATEGORIEN.filter((kat) => kategorieIstAusgewaehlt(kv, kat));
 
   const abschnitte = ausgewaehlteKategorien.map((kat) => {
@@ -4787,6 +4788,7 @@ function renderKvPruefumfangUebersicht(kv, pa) {
         <div class="pruefumfang-kat-kopf"><strong>${escapeHtml(kat.anzeigeName)}</strong> ${badge}</div>
         <p class="hinweis">${escapeHtml(kat.beschreibung)}</p>
         ${qualitaetBloeckeHtml ? `<div class="pa-block-feld"><h3>Qualität (aus PA)</h3>${qualitaetBloeckeHtml}</div>` : ""}
+        ${materialBloeckeHtml ? `<div class="pa-block-feld"><h3>Material (aus PA)</h3>${materialBloeckeHtml}</div>` : ""}
         ${projektkostenHtml}
         <input type="text" id="produktspezi-suche" placeholder="Parameter, Produkt oder Norm suchen…" style="width:100%;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px;margin-bottom:0.4rem;font-family:inherit">
         <div id="produktspezi-liste"></div>
@@ -6078,7 +6080,7 @@ function renderMakDetail() {
       <h2 style="margin-top:0">${escapeHtml(eintrag.parameter || "(ohne Parameter)")}</h2>
       <p class="muted" style="margin-top:-0.4rem">ID: ${escapeHtml(eintrag.id)} · Kategorie: ${escapeHtml(eintrag.kategorie)} · Bereich: ${escapeHtml(eintrag.bereich)}</p>
       <div class="tag-feld">
-        <label>Schlagworte <span class="muted" style="font-weight:400">– Signalwörter, die im Abschnitt „Qualität" stehen müssen, damit dieser Parameter relevant ist (perspektivisch für die automatische Auswahl im KV)</span></label>
+        <label>Schlagworte <span class="muted" style="font-weight:400">– Signalwörter, die in den Abschnitten „Qualität" oder „Material" stehen müssen, damit dieser Parameter relevant ist (perspektivisch für die automatische Auswahl im KV)</span></label>
         <div class="tag-chips" id="mak-tag-chips">
           ${schlagworte.length ? schlagworte.map((tag, i) => `<span class="tag-chip">${escapeHtml(tag)}<button type="button" data-idx="${i}" title="Schlagwort entfernen">×</button></span>`).join("") : '<span class="muted">Noch keine Schlagworte hinterlegt.</span>'}
         </div>

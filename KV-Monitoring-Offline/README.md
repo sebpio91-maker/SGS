@@ -253,11 +253,12 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   Hand korrigieren oder ergänzen, „Warengruppe (alt)" bleibt daneben weiter
   manuell pflegbar.
 
-  Im Abschnitt **(Physikalische-) Produktspezifikationen** wird zusätzlich
-  die aus dem PA ausgelesene **„Qualität"** informativ angezeigt (analog zur
-  bereits vorhandenen Markenreferenz-Anzeige) — praktisch als schneller
-  Blick auf die Materialangaben, ohne extra zum Prüfauftrag wechseln zu
-  müssen.
+  Im Abschnitt **(Physikalische-) Produktspezifikationen** werden zusätzlich
+  die aus dem PA ausgelesenen **„Qualität"** und darunter **„Material"**
+  informativ angezeigt (analog zur bereits vorhandenen
+  Markenreferenz-Anzeige; „Material" erscheint nur, wenn der PA ein
+  entsprechendes Feld enthält) — praktisch als schneller Blick auf die
+  Material-/Qualitätsangaben, ohne extra zum Prüfauftrag wechseln zu müssen.
 
   **Warengruppen-Empfehlung (Mechanik)** – die primäre Vorschlagsquelle,
   wie besprochen **zuerst nach Warengruppe, dann nach Produkt**: sobald
@@ -726,10 +727,11 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   hinzufügen (Eingabefeld + „+ Hinzufügen" oder Enter-Taste) und über das
   „×" am jeweiligen Chip wieder entfernen; Duplikate (unabhängig von Groß-/
   Kleinschreibung) werden automatisch abgefangen. Gedacht sind sie dafür,
-  händisch die Signalwörter einzutragen, die im Abschnitt „Qualität" eines
-  Prüfauftrags stehen müssen, damit dieser Parameter relevant ist – aktuell
-  rein informativ/vorbereitend, perspektivisch soll darüber die passende
-  Auswahl von MAK-Parametern im KV automatisch anhand der Prüfauftrags-Texte
+  händisch die Signalwörter einzutragen, die in den Abschnitten „Qualität"
+  oder „Material" eines Prüfauftrags stehen müssen, damit dieser Parameter
+  relevant ist – aktuell rein informativ/vorbereitend, perspektivisch soll
+  darüber die passende Auswahl von MAK-Parametern im KV automatisch anhand
+  der Prüfauftrags-Texte
   erfolgen. Schlagworte fließen bereits jetzt in die übergeordnete
   Textsuche mit ein und werden dauerhaft in der lokalen Datenablage
   gespeichert.
