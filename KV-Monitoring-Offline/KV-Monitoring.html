@@ -368,9 +368,13 @@ input[type=file] { display:none; }
 </section>
 
 <section class="seite" id="seite-mak" hidden>
-  <p class="hinweis">Materialanforderungskatalog (MAK) — offizielle Referenzliste (193 Zeilen),
-    schreibgeschützt. Übergeordnete Textsuche durchsucht alle Felder; die Filter für Kategorie und
-    ID lassen sich zusätzlich und miteinander kombinieren.</p>
+  <div class="toolbar-zeile" style="margin-bottom:0.6rem">
+    <button id="btn-neue-mak">+ Neue MAK-Position (manuell)</button>
+  </div>
+  <p class="hinweis">Materialanforderungskatalog (MAK) — Referenzliste, beginnend mit den 193
+    offiziellen Einträgen, aber frei bearbeitbar und um eigene Positionen erweiterbar. Übergeordnete
+    Textsuche durchsucht alle Felder; die Filter für Kategorie und ID lassen sich zusätzlich und
+    miteinander kombinieren.</p>
   <div class="layout">
     <div class="liste-panel">
       <h2>MAK</h2>
@@ -608,9 +612,10 @@ function seedArbeitsvorrat() {
    gegen die reale SAP-Bestellzeilen-Liste (Preisliste_Mechanik_v2.xlsm, Blatt "SAP") geprüft. Für
    Positionen, die tatsächlich an einer Norm hängen (Hauptprodukt/Set-Bestandteile, FFU, NGO/StiWa),
    kommt der SAP-Code stattdessen aus der jeweils referenzierten Norm (Reiter "Normen", Feld
-   SAP-Code) - siehe normRefSapCode() und renderMechanikEmpfehlungKarte(). Die frühere flache
-   Produktspezifikations-Liste wurde durch den deutlich umfangreicheren, echten Parameter-Katalog
-   (PRODUKTSPEZI_KATALOG) ersetzt - "Projektkosten" bleibt als einzige feste Zusatzposition. */
+   SAP-Code) - siehe normRefSapCode() und renderMechanikEmpfehlungKarte(). Produktspezifikationen
+   haben keine eigene feste Position mehr - stattdessen liefert der Materialanforderungskatalog
+   (Reiter "MAK") die auswählbaren Positionen samt LIDL-spezifischen Preisvarianten, siehe
+   MAK_VARIANTEN_MIGRATION/migriereMakVarianten(). */
 const SICHERHEIT_NORM_FIXPOSITIONEN = [
   { id: "fix-akku", kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Akkusicherheitskurzcheck (163_PPM)", kuerzel: "MS", sapCode: "163_PPM_TS", standardKosten: 950 },
   { id: "fix-kennz-1001", kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Kennzeichnung GER, Verpackung & Produkt (1001_PPM)", kuerzel: "MS", sapCode: "KENNZEICHNNG_SF_TS", standardKosten: 360 },
@@ -623,8 +628,7 @@ const SICHERHEIT_NORM_FIXPOSITIONEN = [
 const FFU_FITTING_FIXPOSITION = { id: "fix-ffu", kategorie: "FFU/Fitting", bezeichnung: "FFU/Fitting", kuerzel: "FFU", sapCode: "FFU_TS", standardKosten: 0 };
 const NGO_FIXPOSITION = { id: "fix-ngo", kategorie: "NGO", bezeichnung: "NGO", kuerzel: "NGO", sapCode: "FFU_TS", standardKosten: 0 };
 const REFERENZPRUEFUNG_FIXPOSITION = { id: "fix-referenz", kategorie: "Referenzprüfung", bezeichnung: "Referenzprüfung", kuerzel: "REF", sapCode: "FFU_TS", standardKosten: 0 };
-const PRODUKTSPEZI_PROJEKTKOSTEN_FIXPOSITION = { id: "fix-projektkosten", kategorie: "(physikalische-) Produktspezifikation", bezeichnung: "Projektkosten (nicht einsteuern)", kuerzel: "PS", sapCode: "", standardKosten: 330 };
-const ALLE_FIXPOSITIONEN = [...SICHERHEIT_NORM_FIXPOSITIONEN, FFU_FITTING_FIXPOSITION, NGO_FIXPOSITION, REFERENZPRUEFUNG_FIXPOSITION, PRODUKTSPEZI_PROJEKTKOSTEN_FIXPOSITION];
+const ALLE_FIXPOSITIONEN = [...SICHERHEIT_NORM_FIXPOSITIONEN, FFU_FITTING_FIXPOSITION, NGO_FIXPOSITION, REFERENZPRUEFUNG_FIXPOSITION];
 /* Diese festen Positionen haben (anders als "Projektkosten") einen echten SAP-Code - jede
    bekommt beim ersten Start eine gleichnamige Norm im Reiter "Normen" (Typ PPM), damit ihr
    SAP-Code dort zentral pflegbar ist (siehe migriereFixPositionenAlsNormen/fixPositionSapCodeAktuell). */
@@ -635,7 +639,6 @@ function fixPositionenFuerKategorie(katalogKategorie) {
   if (katalogKategorie === "FFU/Fitting") return [FFU_FITTING_FIXPOSITION];
   if (katalogKategorie === "NGO") return [NGO_FIXPOSITION];
   if (katalogKategorie === "Referenzprüfung") return [REFERENZPRUEFUNG_FIXPOSITION];
-  if (katalogKategorie === "(physikalische-) Produktspezifikation") return [PRODUKTSPEZI_PROJEKTKOSTEN_FIXPOSITION];
   return [];
 }
 
@@ -2251,17 +2254,30 @@ function mechanikTrefferFuerWarengruppe(warengruppe) {
   return data.pruefgrundlagen.filter((e) => normalisiereWarengruppe(e.warengruppeCode) === code);
 }
 
-/* ---------- Produktspezifikationen-Parameterkatalog (aus Preisliste_Mechanik_v2.xlsm, Blatt "Produktspezifikationen") ----------
-   Deutlich umfangreicherer, realer Parameterkatalog (Parameter/Material/Laufzeit -> Norm, SAP-Code,
-   VK-Preis) als die vorherige Kurzliste. Ebenfalls feste Referenzdaten außerhalb von "data". */
-const PRODUKTSPEZI_KATALOG = [{"parameter": "Korrosionsbeständigkeit", "produkt": "1m³ Kammer", "mak": "", "norm": "DIN EN ISO 9227 (NSS)", "sapCode": "ISO_9227_NSS_HE", "laufzeit": 24, "bewertung": "siehe Tab Bewertung", "labor": "Herten", "bemerkung": "DIN EN ISO 4628-3 (Ri 2) entspricht DIN EN ISO 10289 (Rp 7)", "beschreibung": "Korrosionsbeständigkeit / 1m³ Kammer / Laufzeit (h): 24 / Bewertung nach: siehe Tab Bewertung", "standardKosten": 288.24}, {"parameter": "Korrosionsbeständigkeit", "produkt": "1m³ Kammer", "mak": "B1 Paketpreis 1", "norm": "DIN EN ISO 9227 (NSS)", "sapCode": "ISO_9227_NSS_HE", "laufzeit": 24, "bewertung": "siehe Tab Bewertung", "labor": "Herten", "bemerkung": "DIN EN ISO 4628-3 (Ri 2) entspricht DIN EN ISO 10289 (Rp 7)", "beschreibung": "Korrosionsbeständigkeit / 1m³ Kammer / Laufzeit (h): 24 / Bewertung nach: siehe Tab Bewertung", "standardKosten": 480.0}, {"parameter": "Korrosionsbeständigkeit", "produkt": "1m³ Kammer", "mak": "B1 Paketpreis 1", "norm": "DIN EN ISO 9227 (NSS)", "sapCode": "ISO_9227_NSS_HE", "laufzeit": 48, "bewertung": "siehe Tab Bewertung", "labor": "Herten", "bemerkung": "DIN EN ISO 4628-3 (Ri 2) entspricht DIN EN ISO 10289 (Rp 7)", "beschreibung": "Korrosionsbeständigkeit / 1m³ Kammer / Laufzeit (h): 48 / Bewertung nach: siehe Tab Bewertung", "standardKosten": 480.0}, {"parameter": "Korrosionsbeständigkeit", "produkt": "1m³ Kammer", "mak": "B1 Paketpreis 2", "norm": "DIN EN ISO 9227 (NSS)", "sapCode": "ISO_9227_NSS_HE", "laufzeit": 72, "bewertung": "siehe Tab Bewertung", "labor": "Herten", "bemerkung": "DIN EN ISO 4628-3 (Ri 2) entspricht DIN EN ISO 10289 (Rp 7)", "beschreibung": "Korrosionsbeständigkeit / 1m³ Kammer / Laufzeit (h): 72 / Bewertung nach: siehe Tab Bewertung", "standardKosten": 565.0}, {"parameter": "Korrosionsbeständigkeit", "produkt": "1m³ Kammer", "mak": "B1 Paketpreis 2", "norm": "DIN EN ISO 9227 (NSS)", "sapCode": "ISO_9227_NSS_HE", "laufzeit": 96, "bewertung": "siehe Tab Bewertung", "labor": "Herten", "bemerkung": "DIN EN ISO 4628-3 (Ri 2) entspricht DIN EN ISO 10289 (Rp 7)", "beschreibung": "Korrosionsbeständigkeit / 1m³ Kammer / Laufzeit (h): 96 / Bewertung nach: siehe Tab Bewertung", "standardKosten": 565.0}, {"parameter": "Korrosionsbeständigkeit", "produkt": "1m³ Kammer", "mak": "B1 Paketpreis 3", "norm": "DIN EN ISO 9227 (NSS)", "sapCode": "ISO_9227_NSS_HE", "laufzeit": 120, "bewertung": "siehe Tab Bewertung", "labor": "Herten", "bemerkung": "DIN EN ISO 4628-3 (Ri 2) entspricht DIN EN ISO 10289 (Rp 7)", "beschreibung": "Korrosionsbeständigkeit / 1m³ Kammer / Laufzeit (h): 120 / Bewertung nach: siehe Tab Bewertung", "standardKosten": 890.0}, {"parameter": "Korrosionsbeständigkeit", "produkt": "1m³ Kammer", "mak": "B1 Paketpreis 3", "norm": "DIN EN ISO 9227 (NSS)", "sapCode": "ISO_9227_NSS_HE", "laufzeit": 240, "bewertung": "siehe Tab Bewertung", "labor": "Herten", "bemerkung": "DIN EN ISO 4628-3 (Ri 2) entspricht DIN EN ISO 10289 (Rp 7)", "beschreibung": "Korrosionsbeständigkeit / 1m³ Kammer / Laufzeit (h): 240 / Bewertung nach: siehe Tab Bewertung", "standardKosten": 890.0}, {"parameter": "Korrosionsbeständigkeit", "produkt": "3m³ Kammer", "mak": "", "norm": "DIN EN ISO 9227 (NSS)", "sapCode": "ISO_9227_NSS_HE", "laufzeit": 24, "bewertung": "siehe Tab Bewertung", "labor": "Herten", "bemerkung": "DIN EN ISO 4628-3 (Ri 2) entspricht DIN EN ISO 10289 (Rp 7)", "beschreibung": "Korrosionsbeständigkeit / 3m³ Kammer / Laufzeit (h): 24 / Bewertung nach: siehe Tab Bewertung", "standardKosten": 403.2}, {"parameter": "Korrosionsbeständigkeit", "produkt": "Besteck", "mak": "B1 Paketpreis 1", "norm": "DIN EN ISO 8442-2 Punkt 7.1", "sapCode": "PRODUKTSPEZI_SF_TS", "laufzeit": "", "bewertung": "", "labor": "Taunusstein", "bemerkung": "", "beschreibung": "Korrosionsbeständigkeit / Besteck / DIN EN ISO 8442-2 Punkt 7.1", "standardKosten": 200.0}, {"parameter": "Korrosionsbeständigkeit", "produkt": "Badmöbel / 0,4m³ Kammer", "mak": "B1 Paketpreis 1", "norm": "DIN EN ISO 6270-2 (CH)", "sapCode": "", "laufzeit": 24, "bewertung": "siehe Tab Bewertung", "labor": "Herten", "bemerkung": "", "beschreibung": "Korrosionsbeständigkeit / Badmöbel / 0,4m³ Kammer / Laufzeit (h): 24 / Bewertung nach: siehe Tab Bewertung", "standardKosten": 480.0}, {"parameter": "Korrosionsbeständigkeit", "produkt": "Badmöbel / 1m³ Kammer", "mak": "B1 Paketpreis 1", "norm": "DIN EN ISO 6270-2 (CH)", "sapCode": "", "laufzeit": 24, "bewertung": "siehe Tab Bewertung", "labor": "Herten", "bemerkung": "", "beschreibung": "Korrosionsbeständigkeit / Badmöbel / 1m³ Kammer / Laufzeit (h): 24 / Bewertung nach: siehe Tab Bewertung", "standardKosten": 480.0}, {"parameter": "UV-Beständigkeit", "produkt": "Kunststoffe", "mak": "B2.1 Paketpreis 1", "norm": "DIN EN ISO 4892-3 (Zyklus 1)", "sapCode": "SON_TSTXP", "laufzeit": 300, "bewertung": "siehe Tab Bewertung", "labor": "Taunusstein", "bemerkung": "", "beschreibung": "UV-Beständigkeit / Kunststoffe / Laufzeit (h): 300 / Bewertung nach: siehe Tab Bewertung", "standardKosten": 1500.0}, {"parameter": "UV-Beständigkeit", "produkt": "Kunststoffe", "mak": "B2.1 Paketpreis 2", "norm": "DIN EN ISO 4892-3 (Zyklus 1)", "sapCode": "SON_TSTXP", "laufzeit": 500, "bewertung": "siehe Tab Bewertung", "labor": "Taunusstein", "bemerkung": "", "beschreibung": "UV-Beständigkeit / Kunststoffe / Laufzeit (h): 500 / Bewertung nach: siehe Tab Bewertung", "standardKosten": 1800.0}, {"parameter": "UV-Beständigkeit", "produkt": "Kunststoffe", "mak": "B2.1 Paketpreis 3", "norm": "DIN EN ISO 4892-3 (Zyklus 1)", "sapCode": "SON_TSTXP", "laufzeit": 700, "bewertung": "siehe Tab Bewertung", "labor": "Taunusstein", "bemerkung": "", "beschreibung": "UV-Beständigkeit / Kunststoffe / Laufzeit (h): 700 / Bewertung nach: siehe Tab Bewertung", "standardKosten": 2000.0}, {"parameter": "UV-Beständigkeit", "produkt": "Indoor-Textilien (<Grad 4)", "mak": "B2.2 Paketpreis 1", "norm": "EN ISO 105-B02 (< Grad 4)", "sapCode": "CF_LICHTECHT_TX_TS", "laufzeit": "", "bewertung": "", "labor": "Taunusstein", "bemerkung": "Konfigurieren: Lichtechtheitsgrad <4", "beschreibung": "UV-Beständigkeit / Indoor-Textilien (<Grad 4) / Laufzeit (h):  / Bewertung nach: ", "standardKosten": 37.0}, {"parameter": "UV-Beständigkeit", "produkt": "Indoor-Textilien (Grad 5)", "mak": "B2.2 Paketpreis 1", "norm": "EN ISO 105-B02 (Grad 5)", "sapCode": "CF_LICHTECHT_TX_TS", "laufzeit": "", "bewertung": "", "labor": "Taunusstein", "bemerkung": "Konfigurieren: Lichtechtheitsgrad 5", "beschreibung": "UV-Beständigkeit / Indoor-Textilien (Grad 5) / Laufzeit (h):  / Bewertung nach: ", "standardKosten": 49.0}, {"parameter": "UV-Beständigkeit", "produkt": "Indoor-Textilien (Grad 6)", "mak": "B2.2 Paketpreis 1", "norm": "EN ISO 105-B02 (Grad 6)", "sapCode": "CF_LICHTECHT_TX_TS", "laufzeit": "", "bewertung": "", "labor": "Taunusstein", "bemerkung": "Konfigurieren: Lichtechtheitsgrad 6", "beschreibung": "UV-Beständigkeit / Indoor-Textilien (Grad 6) / Laufzeit (h):  / Bewertung nach: ", "standardKosten": 59.0}, {"parameter": "UV-Beständigkeit", "produkt": "Outdoor-Textilien", "mak": "B2.2 Paketpreis 1", "norm": "EN ISO 105-B04", "sapCode": "", "laufzeit": "", "bewertung": "", "labor": "Herten", "bemerkung": "", "beschreibung": "UV-Beständigkeit / Outdoor-Textilien / Laufzeit (h):  / Bewertung nach: ", "standardKosten": 37.0}, {"parameter": "Witterungsbeständigkeit", "produkt": "Kunststoffe", "mak": "B2.1 Paketpreis 1", "norm": "DIN EN ISO 4892-3 (Zyklus 2)", "sapCode": "SON_TSTXP", "laufzeit": 300, "bewertung": "siehe Tab Bewertung", "labor": "Taunusstein", "bemerkung": "", "beschreibung": "Witterungsbeständigkeit / Kunststoffe / Laufzeit (h): 300 / Bewertung nach: siehe Tab Bewertung", "standardKosten": 1700.0}, {"parameter": "Witterungsbeständigkeit", "produkt": "Kunststoffe", "mak": "B2.1 Paketpreis 1", "norm": "DIN EN ISO 4892-3 (Zyklus 2)", "sapCode": "SON_TSTXP", "laufzeit": 500, "bewertung": "siehe Tab Bewertung", "labor": "Taunusstein", "bemerkung": "", "beschreibung": "Witterungsbeständigkeit / Kunststoffe / Laufzeit (h): 500 / Bewertung nach: siehe Tab Bewertung", "standardKosten": 1900.0}, {"parameter": "Witterungsbeständigkeit", "produkt": "Kunststoffe", "mak": "B2.1 Paketpreis 1", "norm": "DIN EN ISO 4892-3 (Zyklus 2)", "sapCode": "SON_TSTXP", "laufzeit": 700, "bewertung": "siehe Tab Bewertung", "labor": "Taunusstein", "bemerkung": "", "beschreibung": "Witterungsbeständigkeit / Kunststoffe / Laufzeit (h): 700 / Bewertung nach: siehe Tab Bewertung", "standardKosten": 2300.0}, {"parameter": "UV Schutz (UV Standard 801)", "produkt": "", "mak": "B3", "norm": "UV Standard 801", "sapCode": "CRSNF_FREMD_DIREKT", "laufzeit": "", "bewertung": "", "labor": "Hohenstein", "bemerkung": "UV STANDARD 801-1 komplettprüfung für 1-3 Farben einer Qualität ", "beschreibung": "UV Schutz (UV Standard 801)", "standardKosten": 600.0}, {"parameter": "Frostbeständigkeit, Temperaturbeständigkeit", "produkt": "Outdoor-Artikel", "mak": "B4", "norm": "DIN EN 60068-2-38", "sapCode": "D8465_KWT_AKLV_HE", "laufzeit": 240, "bewertung": "anschließende Funktionsprüfung/ Prüfung der Mechanischen Sicherheit (bsp. Belastung) oder optische Bewertung", "labor": "Herten", "bemerkung": "", "beschreibung": "Frostbeständigkeit, Temperaturbeständigkeit / Outdoor-Artikel / Laufzeit (h): 240 / Bewertung nach: anschließende Funktionsprüfung/ Prüfung der Mechanischen Sicherheit (bsp. Belastung) oder optische Bewertung --> Optische Bewertung des Rostgrades kann nach 4628-3:2025-02. Wenn nicht anders angegeben: min. Rp7 => Ri2 (ohne Angabe von S-Klasse im Bericht", "standardKosten": 2800.0}, {"parameter": "Hitzebeständigkeit", "produkt": "Kunststoffe", "mak": "B5.1", "norm": "DIN EN ISO 75-1/-2", "sapCode": "", "laufzeit": "", "bewertung": "", "labor": "Herten", "bemerkung": "", "beschreibung": "Hitzebeständigkeit / Kunststoffe / Laufzeit (h):  / Bewertung nach: ", "standardKosten": 330.0}, {"parameter": "Hitzebeständigkeit", "produkt": "Kunststoffe", "mak": "B5.2", "norm": "DIN EN ISO 306", "sapCode": "", "laufzeit": "", "bewertung": "", "labor": "Herten", "bemerkung": "Methode und Aufheizrate müssen vorgegeben werden", "beschreibung": "Hitzebeständigkeit / Kunststoffe / Laufzeit (h):  / Bewertung nach: ", "standardKosten": 250.0}, {"parameter": "Hitzebeständigkeit", "produkt": "Ofengeschirr", "mak": "B5.3", "norm": "DIN EN 13834 Punkt 6.1.9", "sapCode": "PRODUKTSPEZI_SF_TS", "laufzeit": "", "bewertung": "keine Beschädigungen", "labor": "Taunusstein", "bemerkung": "", "beschreibung": "Hitzebeständigkeit / Ofengeschirr / DIN EN 13834 Punk 6.1.9", "standardKosten": 230.0}, {"parameter": "Hitzebeständigkeit", "produkt": "Kochgeschirr", "mak": "B5.4", "norm": "DIN EN 12983-1", "sapCode": "PRODUKTSPEZI_SF_TS", "laufzeit": "", "bewertung": "Alle Beschlagteile, die zur Anbringung am Hauptkörper eines Produktes bestimmt sind, dürfen keine Risse und Blasen aufweisen", "labor": "Taunusstein", "bemerkung": "", "beschreibung": "Hitzebeständigkeit / Kochgeschirr / DIN EN 12983-1 Punkt 7.7", "standardKosten": 230.0}, {"parameter": "Kältebeständigkeit", "produkt": "Küchenartikel", "mak": "B7", "norm": "Lagerung bei ausgelobter Temperatur für 8h, anschließender Droptest aus 1m", "sapCode": "PRODUKTSPEZI_SF_TS", "laufzeit": "", "bewertung": "keine Beschädigungen", "labor": "Taunusstein", "bemerkung": "", "beschreibung": "Kältebeständigkeit / Küchenartikel / Lagerung bei ausgelobter Temperatur für 8h, anschließender Droptest aus 1m / Bewertung: keine Beschädigungen", "standardKosten": 125.0}, {"parameter": "Kältebeständigkeit", "produkt": "Outdoor-Artikel", "mak": "B7", "norm": "EN 60068-2-1", "sapCode": "", "laufzeit": 24, "bewertung": "", "labor": "", "bemerkung": "", "beschreibung": "Kältebeständigkeit / Outdoor-Artikel / Laufzeit (h): 24 / Bewertung nach: ", "standardKosten": 283.0}, {"parameter": "Wasserabweisung", "produkt": "Outdoor-Textilien", "mak": "B8", "norm": "DIN EN ISO 4920", "sapCode": "SPRAYTEST_TX_TS", "laufzeit": "", "bewertung": "mind. 4 im Neuzustand\nmind. 3 nach der Wäsche", "labor": "Taunusstein", "bemerkung": "", "beschreibung": "Wasserabweisung / Outdoor-Textilien / Laufzeit (h):  / Bewertung nach: mind. 4 im Neuzustand\nmind. 3 nach der Wäsche", "standardKosten": 29.0}, {"parameter": "Wasserdurchlässigkeit, Wassersäule, Wasserdichtheit", "produkt": "Outdoor-Textilien", "mak": "B10", "norm": "EN 20811", "sapCode": "WASSERSAEULE_TX_TS", "laufzeit": "", "bewertung": "Angabe zur Wassersäule", "labor": "Taunusstein", "bemerkung": "", "beschreibung": "Wasserdurchlässigkeit, Wassersäule, Wasserdichtheit / Outdoor-Textilien / Laufzeit (h):  / Bewertung nach: Angabe zur Wassersäule", "standardKosten": 75.0}, {"parameter": "Mikrowellengeeignet", "produkt": "Küchenartikel", "mak": "B12", "norm": "DIN EN 15284", "sapCode": "PRODUKTSPEZI_SF_TS", "laufzeit": "", "bewertung": "DIN EN 15284", "labor": "Taunusstein", "bemerkung": "", "beschreibung": "Mikrowellengeeignet / Küchenartikel / Bewertung nach: DIN EN 15284", "standardKosten": 210.0}, {"parameter": "Spülmaschinengeeignet", "produkt": "Küchenartikel", "mak": "B13.1", "norm": "DIN 12875-1", "sapCode": "SON_TSWPRHL", "laufzeit": 50, "bewertung": "DIN EN 12875-2 (< 2)", "labor": "Taunusstein", "bemerkung": "Kontakt: Lisa Bolbrock\nReiniger D, Klarspüler C", "beschreibung": "Spülmaschinengeeignet / Küchenartikel / Laufzeit (h): 50 / Bewertung nach: DIN EN 12875-2 (< 2)", "standardKosten": 300.0}, {"parameter": "Spülmaschinenfest", "produkt": "Küchenartikel", "mak": "B13.2", "norm": "DIN 12875-1", "sapCode": "SON_TSWPRHL", "laufzeit": 125, "bewertung": "DIN EN 12875-2 (< 2)", "labor": "Taunusstein", "bemerkung": "Kontakt: Lisa Bolbrock\nReiniger D, Klarspüler C", "beschreibung": "Spülmaschinenfest / Küchenartikel / Laufzeit (h): 125 / Bewertung nach: DIN EN 12875-2 (< 2)", "standardKosten": 500.0}, {"parameter": "Isolationsprüfung Kühlfunktion", "produkt": "Isolierbehälter", "mak": "B14", "norm": "DIN EN 12546-2 Punkt 4.2", "sapCode": "PRODUKTSPEZI_SF_TS", "laufzeit": "", "bewertung": "gemäß PA\nAngabe zu Temperatur/Zeit", "labor": "Taunusstein", "bemerkung": "", "beschreibung": "Isolationsprüfung Kühlfunktion / Isolierbehälter / DIN EN 12546-2 Punkt 4.2 / Bewertung: gemäß PA\nAngabe zu Temperatur/Zeit", "standardKosten": 200.0}, {"parameter": "Isolationsprüfung Warmhaltung", "produkt": "Isolierbehälter", "mak": "B15", "norm": "DIN EN 12546-1 Punkt 5.4", "sapCode": "PRODUKTSPEZI_SF_TS", "laufzeit": "", "bewertung": "gemäß PA\nAngabe zu Temperatur/Zeit", "labor": "Taunusstein", "bemerkung": "", "beschreibung": "Isolationsprüfung Warmhaltung / Isolierbehälter / DIN EN 12546-1 Punkt 5.4 / Bewertung: gemäß PA\nAngabe zu Temperatur/Zeit", "standardKosten": 200.0}, {"parameter": "Berstdruck ", "produkt": "", "mak": "LD3", "norm": "EN ISO 1402", "sapCode": "", "laufzeit": "", "bewertung": "", "labor": "", "bemerkung": "No Scope!", "beschreibung": "Berstdruck ", "standardKosten": 0}, {"parameter": "Vergrößerungsfaktoren", "produkt": "", "mak": "LD24", "norm": "Anlehnung an EN ISO 15253,\nAutokollimationsmethode ", "sapCode": "", "laufzeit": "", "bewertung": "", "labor": "", "bemerkung": "No Scope!", "beschreibung": "Vergrößerungsfaktoren", "standardKosten": 0}, {"parameter": "Volumenangaben", "produkt": "", "mak": "LD26", "norm": "Auslitern mit Wasser (bei Küchenartikel) oder Kunststoffkugeln", "sapCode": "PRODUKTSPEZI_SF_TS", "laufzeit": "", "bewertung": "gemäß PA", "labor": "Taunusstein", "bemerkung": "", "beschreibung": "Volumenangaben / Auslitern mit Wasser (bei Küchenartikel) oder Kunststoffkugeln", "standardKosten": 60.0}, {"parameter": "Traglast (wenn nicht sicherheitsrelevant)", "produkt": "", "mak": "LD32", "norm": "", "sapCode": "PRODUKTSPEZI_SF_TS", "laufzeit": "", "bewertung": "gemäß PA", "labor": "Taunusstein", "bemerkung": "", "beschreibung": "Traglast (wenn nicht sicherheitsrelevant) / Bewertung: gemäß PA", "standardKosten": 180.0}, {"parameter": "Härteangaben", "produkt": "Rockwell", "mak": "M4", "norm": "DIN EN ISO 6508-1", "sapCode": "PRODUKTSPEZI_SF_TS", "laufzeit": "", "bewertung": "gemäß PA", "labor": "Taunusstein", "bemerkung": "", "beschreibung": "Härteangaben / Rockwell / Bewertung: gemäß PA", "standardKosten": 170.0}, {"parameter": "Härteangaben", "produkt": "Vickers", "mak": "M4", "norm": "DIN EN ISO 6507-1", "sapCode": "HÄRTE_HE", "laufzeit": "", "bewertung": "gemäß PA", "labor": "Herten", "bemerkung": "in der Lieferantenprüfung Härteprüfung teurer anbieten!!!", "beschreibung": "Härteangaben / Vickers / Bewertung: gemäß PA", "standardKosten": 170.0}, {"parameter": "Härteangaben", "produkt": "Shore", "mak": "M4", "norm": "DIN ISO 48-4", "sapCode": "PRODUKTSPEZI_SF_TS", "laufzeit": "", "bewertung": "gemäß PA", "labor": "Taunusstein", "bemerkung": "", "beschreibung": "Härteangaben / Shore / Bewertung: gemäß PA", "standardKosten": 170.0}, {"parameter": "Härteangaben", "produkt": "Brinell", "mak": "M4", "norm": "DIN EN ISO 6506-1", "sapCode": "HÄRTE_HE", "laufzeit": "", "bewertung": "gemäß PA", "labor": "Herne", "bemerkung": "", "beschreibung": "Härteangaben / Brinell / Bewertung: gemäß PA", "standardKosten": 170.0}, {"parameter": "Materialangaben", "produkt": "Carbon", "mak": "M5.1", "norm": "Thermogravimetrie (TGA): DIN 51006", "sapCode": "CHEMIE", "laufzeit": "", "bewertung": "", "labor": "CHEMIE", "bemerkung": "", "beschreibung": "Materialangaben / Carbon", "standardKosten": 490.0}, {"parameter": "Materialangaben", "produkt": "Edelstahl", "mak": "M5.2", "norm": "Optisches-Emissions-Spektrometer\nVerzeichnis der nichtrostenden Stähle \nDIN EN 10088-1 (bitte Verweise auf andere Normen beachten)\nGold, Silber, Platin\nDIN EN ISO 9202 (Schmucknorm)", "sapCode": "CHEMIE", "laufzeit": "", "bewertung": "", "labor": "CHEMIE", "bemerkung": "", "beschreibung": "Materialangaben / Edelstahl", "standardKosten": 225.0}, {"parameter": "Materialangaben", "produkt": "Stahl / Messer", "mak": "M5.3", "norm": "Optisches-Emissions-Spektrometer\nVerzeichnis GB T 699 (1999)  für Quality carbon structural steels", "sapCode": "CHEMIE", "laufzeit": "", "bewertung": "", "labor": "CHEMIE", "bemerkung": "", "beschreibung": "Materialangaben / Stahl / Messer", "standardKosten": 225.0}, {"parameter": "Reibechtheit", "produkt": "Textilien", "mak": "M8.1", "norm": "ISO 105-X12", "sapCode": "CF_REIBECHT_TX_TS", "laufzeit": "", "bewertung": "Trocken: Note 4\nNass: Note 2 - 3", "labor": "Taunusstein", "bemerkung": "", "beschreibung": "Reibechtheit / Textilien / Laufzeit (h):  / Bewertung nach: Trocken: Note 4\nNass: Note 2 - 3", "standardKosten": 23.0}, {"parameter": "Wasserechtheit", "produkt": "Textilien", "mak": "M8.2", "norm": "ISO 105-E01", "sapCode": "CF_WASSER_TX_TS", "laufzeit": "", "bewertung": "Note: 3-4", "labor": "Taunusstein", "bemerkung": "Teilproben für zu prüfendes Material", "beschreibung": "Wasserechtheit / Textilien / Laufzeit (h):  / Bewertung nach: Note: 3-4", "standardKosten": 23.0}, {"parameter": "Schweißechtheit", "produkt": "Textilien", "mak": "M8.3", "norm": "ISO 105-E04", "sapCode": "CF_SCHWEISS_TX_TS", "laufzeit": "", "bewertung": "Note: 3-4", "labor": "Taunusstein", "bemerkung": "Teilproben für zu prüfendes Material", "beschreibung": "Schweißechtheit / Textilien / Laufzeit (h):  / Bewertung nach: Note: 3-4", "standardKosten": 23.0}, {"parameter": "Waschechtheit", "produkt": "Textilien", "mak": "M8.4", "norm": "ISO 105-C06", "sapCode": "CF_WASCH_TX_TS", "laufzeit": "", "bewertung": "Note: 3-4", "labor": "Taunusstein", "bemerkung": "Konfigurieren: Waschtemperatur\nTeilproben für zu prüfendes Material", "beschreibung": "Waschechtheit / Textilien / Laufzeit (h):  / Bewertung nach: Note: 3-4", "standardKosten": 23.0}, {"parameter": "Lichtechtheit", "produkt": "Textilien", "mak": "M8.5", "norm": "ISO 105-B02", "sapCode": "CF_LICHTECHT_TX_TS", "laufzeit": "", "bewertung": "Note: 3-4", "labor": "Taunusstein", "bemerkung": "Konfigurieren: Grad\nTeilproben für zu prüfendes Material", "beschreibung": "Lichtechtheit / Textilien / Laufzeit (h):  / Bewertung nach: Note: 3-4", "standardKosten": 35.0}, {"parameter": "Meerwasser", "produkt": "Textilien", "mak": "M8.6", "norm": "ISO 105-E02", "sapCode": "CF_MEERWASSR_TX_TS", "laufzeit": "", "bewertung": "Note: 3-4", "labor": "Taunusstein", "bemerkung": "Teilproben für zu prüfendes Material", "beschreibung": "Meerwasser / Textilien / Laufzeit (h):  / Bewertung nach: Note: 3-4", "standardKosten": 23.0}, {"parameter": "Bügelechtheit", "produkt": "Textilien", "mak": "M8.7", "norm": "ISO 105-X11", "sapCode": "BUEGELECHT_TX_TS", "laufzeit": "", "bewertung": "Note: 3-4", "labor": "Taunusstein", "bemerkung": "Teilproben für zu prüfendes Material", "beschreibung": "Bügelechtheit / Textilien / Laufzeit (h):  / Bewertung nach: Note: 3-4", "standardKosten": 23.0}, {"parameter": "Echtheit gegen Chlorwasser", "produkt": "Textilien", "mak": "M8.8", "norm": "ISO 105-E03", "sapCode": "CF_CHLORWASS_TX_TS", "laufzeit": "", "bewertung": "Note: 3-4", "labor": "Taunusstein", "bemerkung": "Konfigurieren: Konzentration 20, 50 oder 100 mg/l \nTeilproben für zu prüfendes Material", "beschreibung": "Echtheit gegen Chlorwasser / Textilien / Laufzeit (h):  / Bewertung nach: Note: 3-4", "standardKosten": 23.0}, {"parameter": "Faserzusammensetzung", "produkt": "Textilien", "mak": "M9", "norm": "Verordnung (EU) Nr. 1007/2001\nISO 1833 (Prüfmethode)", "sapCode": "FIBRECOMP_TX_TX", "laufzeit": "", "bewertung": "gemäß PA", "labor": "Taunusstein", "bemerkung": "", "beschreibung": "Faserzusammensetzung / Textilien / Laufzeit (h):  / Bewertung nach: gemäß PA", "standardKosten": 46.0}, {"parameter": "Waschbarkeit", "produkt": "Textilien", "mak": "M10", "norm": "ISO 5077;\nISO 6330", "sapCode": "WASCHKRUMPF_TX_TS;\nWASCHOPTIK_TX_TS", "laufzeit": "", "bewertung": "3 Wäschen 3 Trocknungen                    alle waschbaren Textilien\nAussehen nach der Wäsche: In Anlehnung an EN ISO 6330\n\nMaßänderung nach der Wäsche: In Anlehnung an ISO 5077 - Bestimmung der Maßänderung beim Waschen und Trocknen \n\nBewertungsmaßstab:\nGewebe +/- 3%\nMaschenware +2/- 5%", "labor": "Taunusstein", "bemerkung": "Krumpf, Optik\nProbenbezeichnung mit \"after 3 washes\"\nKonfigurieren: Waschbedingungen gem. Care label", "beschreibung": "Waschbarkeit / Textilien / Bewertung nach: 3 Wäschen 3 Trocknungen                    alle waschbaren Textilien\nAussehen nach der Wäsche: In Anlehnung an EN ISO 6330\n\nMaßänderung nach der Wäsche: In Anlehnung an ISO 5077 - Bestimmung der Maßänderung beim Waschen und Trocknen \n\nBewertungsmaßstab:\nGewebe +/- 3%\nMaschenware +2/- 5%", "standardKosten": 81.0}, {"parameter": "Reißfestigkeit", "produkt": "Textilien", "mak": "M11", "norm": "DIN EN ISO 13934-1", "sapCode": "SON_TSTXP", "laufzeit": "", "bewertung": "Angabe Werkstoffkennwert N/mm²\n≥ 100N    Kulturtasche                         \n≥ 150N    Handtasche\n≥ 250N    Aktentasche, Rucksäcke \nGewebe/ Folien, \n\n Autovollgarage\n≥ 120N  Neuzustand Textil  \n≥ 90N    Nach Konditionierung Textil  \n\n≥ 75N  Neuzustand Folie  \n≥ 55N  Nach Konditionierung Folie  ", "labor": "Taunusstein", "bemerkung": "1m² Probe\nNorm mit angeben.\nTeilproben für zu prüfendes Material", "beschreibung": "Reißfestigkeit / Textilien / Bewertung nach: Angabe Werkstoffkennwert N/mm²\n≥ 100N    Kulturtasche                         \n≥ 150N    Handtasche\n≥ 250N    Aktentasche, Rucksäcke \nGewebe/ Folien, \n\n Autovollgarage\n≥ 120N  Neuzustand Textil  \n≥ 90N    Nach Konditionierung Textil  \n\n≥ 75N  Neuzustand Folie  \n≥ 55N  Nach Konditionierung Folie  ", "standardKosten": 46.0}, {"parameter": "Scheuerbeständigkeit", "produkt": "Textilien (bis 20.000 Touren)", "mak": "M12", "norm": "ISO 12947-2", "sapCode": "SCHEUER_MEND_TX_TS", "laufzeit": "", "bewertung": "", "labor": "Taunusstein", "bemerkung": "Konfigurieren: Tourenzahl\nTeilproben für zu prüfendes Material", "beschreibung": "Scheuerbeständigkeit / Textilien (bis 20.000 Touren)", "standardKosten": 46.0}, {"parameter": "Scheuerbeständigkeit", "produkt": "Textilien (bis 50.000 Touren)", "mak": "M12", "norm": "ISO 12947-2", "sapCode": "SCHEUER_MEND_TX_TS", "laufzeit": "", "bewertung": "", "labor": "Taunusstein", "bemerkung": "Konfigurieren: Tourenzahl\nTeilproben für zu prüfendes Material", "beschreibung": "Scheuerbeständigkeit / Textilien (bis 50.000 Touren)", "standardKosten": 75.0}, {"parameter": "Borstenabrundung", "produkt": "Zahnbürstenkopf, Zahnbürste", "mak": "", "norm": "in Anlehnung an Öko-Test\nSOP M 446:2021-03", "sapCode": "CTSNF_RECHNUNG", "laufzeit": "", "bewertung": "", "labor": "Dresden", "bemerkung": "Link zu Referenzangebot", "beschreibung": "Borstenabrundung / Zahnbürstenkopf, Zahnbürste / Laufzeit (h):  / Bewertung nach: ", "standardKosten": 3860.0}, {"parameter": "Klebkraft", "produkt": "Packband / Klebeband", "mak": "LD16", "norm": "DIN EN ISO 29862 - Verfahren 1", "sapCode": "D5471_4_8_1_1_HE", "laufzeit": "", "bewertung": "", "labor": "Herten", "bemerkung": "", "beschreibung": "Klebkraft / Packband / Klebeband / Laufzeit (h):  / Bewertung nach: ", "standardKosten": 352.0}];
+/* ---------- MAK-Preisvarianten (abgelöster Produktspezifikationen-Parameterkatalog) ----------
+   Der frühere, eigenständige Parameterkatalog (Preisliste_Mechanik_v2.xlsm, Blatt
+   "Produktspezifikationen") ist als Preisquelle im KV entfallen - stattdessen bekommen die
+   passenden MAK-Einträge (Reiter "MAK") je ein "varianten"-Array (Produkt/Laufzeit/Paketpreis-
+   Gruppe -> LIDL-spezifischer Preis + SAP-Code, siehe renderKvMakDetail). Nur die Katalog-Zeilen,
+   deren Parameter sich eindeutig einem bestehenden MAK-Eintrag zuordnen ließen (38 von 62 Zeilen,
+   per Norm-/Produkt-Textabgleich aufgelöst wo mehrere MAK-Einträge denselben Parameternamen
+   tragen, z. B. Korrosionsbeständigkeit -> DU001), wurden so übernommen; die übrigen 24 Zeilen zu
+   13 Parametern ganz ohne MAK-Entsprechung (u. a. UV-/Hitze-/Kältebeständigkeit) sind bewusst NICHT
+   migriert - dafür existiert noch kein MAK-Eintrag, an den sie sich anhängen ließen. */
+const MAK_VARIANTEN_MIGRATION = {"DU001": [{"bezeichnung": "1m³ Kammer (24h)", "kosten": 288.24, "sapCode": "ISO_9227_NSS_HE", "hinweis": "DIN EN ISO 9227 (NSS) · siehe Tab Bewertung · Herten"}, {"bezeichnung": "1m³ Kammer (24h) – B1 Paketpreis 1", "kosten": 480.0, "sapCode": "ISO_9227_NSS_HE", "hinweis": "DIN EN ISO 9227 (NSS) · siehe Tab Bewertung · Herten"}, {"bezeichnung": "1m³ Kammer (48h) – B1 Paketpreis 1", "kosten": 480.0, "sapCode": "ISO_9227_NSS_HE", "hinweis": "DIN EN ISO 9227 (NSS) · siehe Tab Bewertung · Herten"}, {"bezeichnung": "1m³ Kammer (72h) – B1 Paketpreis 2", "kosten": 565.0, "sapCode": "ISO_9227_NSS_HE", "hinweis": "DIN EN ISO 9227 (NSS) · siehe Tab Bewertung · Herten"}, {"bezeichnung": "1m³ Kammer (96h) – B1 Paketpreis 2", "kosten": 565.0, "sapCode": "ISO_9227_NSS_HE", "hinweis": "DIN EN ISO 9227 (NSS) · siehe Tab Bewertung · Herten"}, {"bezeichnung": "1m³ Kammer (120h) – B1 Paketpreis 3", "kosten": 890.0, "sapCode": "ISO_9227_NSS_HE", "hinweis": "DIN EN ISO 9227 (NSS) · siehe Tab Bewertung · Herten"}, {"bezeichnung": "1m³ Kammer (240h) – B1 Paketpreis 3", "kosten": 890.0, "sapCode": "ISO_9227_NSS_HE", "hinweis": "DIN EN ISO 9227 (NSS) · siehe Tab Bewertung · Herten"}, {"bezeichnung": "3m³ Kammer (24h)", "kosten": 403.2, "sapCode": "ISO_9227_NSS_HE", "hinweis": "DIN EN ISO 9227 (NSS) · siehe Tab Bewertung · Herten"}, {"bezeichnung": "Besteck – B1 Paketpreis 1", "kosten": 200.0, "sapCode": "PRODUKTSPEZI_SF_TS", "hinweis": "DIN EN ISO 8442-2 Punkt 7.1 · Taunusstein"}, {"bezeichnung": "Badmöbel / 0,4m³ Kammer (24h) – B1 Paketpreis 1", "kosten": 480.0, "sapCode": "", "hinweis": "DIN EN ISO 6270-2 (CH) · siehe Tab Bewertung · Herten"}, {"bezeichnung": "Badmöbel / 1m³ Kammer (24h) – B1 Paketpreis 1", "kosten": 480.0, "sapCode": "", "hinweis": "DIN EN ISO 6270-2 (CH) · siehe Tab Bewertung · Herten"}], "DU009": [{"bezeichnung": " – B3", "kosten": 600.0, "sapCode": "CRSNF_FREMD_DIREKT", "hinweis": "UV Standard 801 · Hohenstein"}], "DU014": [{"bezeichnung": "Outdoor-Textilien – B8", "kosten": 29.0, "sapCode": "SPRAYTEST_TX_TS", "hinweis": "DIN EN ISO 4920 · mind. 4 im Neuzustand\nmind. 3 nach der Wäsche · Taunusstein"}], "DU016": [{"bezeichnung": "Outdoor-Textilien – B10", "kosten": 75.0, "sapCode": "WASSERSAEULE_TX_TS", "hinweis": "EN 20811 · Angabe zur Wassersäule · Taunusstein"}], "DU018": [{"bezeichnung": "Küchenartikel – B12", "kosten": 210.0, "sapCode": "PRODUKTSPEZI_SF_TS", "hinweis": "DIN EN 15284 · DIN EN 15284 · Taunusstein"}], "DU020": [{"bezeichnung": "Isolierbehälter – B14", "kosten": 200.0, "sapCode": "PRODUKTSPEZI_SF_TS", "hinweis": "DIN EN 12546-2 Punkt 4.2 · gemäß PA\nAngabe zu Temperatur/Zeit · Taunusstein"}], "DU021": [{"bezeichnung": "Isolierbehälter – B15", "kosten": 200.0, "sapCode": "PRODUKTSPEZI_SF_TS", "hinweis": "DIN EN 12546-1 Punkt 5.4 · gemäß PA\nAngabe zu Temperatur/Zeit · Taunusstein"}], "PD003": [{"bezeichnung": " – LD3", "kosten": 0, "sapCode": "", "hinweis": "EN ISO 1402"}], "PD024": [{"bezeichnung": " – LD24", "kosten": 0, "sapCode": "", "hinweis": "Anlehnung an EN ISO 15253,\nAutokollimationsmethode "}], "PD026": [{"bezeichnung": " – LD26", "kosten": 60.0, "sapCode": "PRODUKTSPEZI_SF_TS", "hinweis": "Auslitern mit Wasser (bei Küchenartikel) oder Kunststoffkugeln · gemäß PA · Taunusstein"}], "PD032": [{"bezeichnung": " – LD32", "kosten": 180.0, "sapCode": "PRODUKTSPEZI_SF_TS", "hinweis": "gemäß PA · Taunusstein"}], "MP004": [{"bezeichnung": "Rockwell – M4", "kosten": 170.0, "sapCode": "PRODUKTSPEZI_SF_TS", "hinweis": "DIN EN ISO 6508-1 · gemäß PA · Taunusstein"}, {"bezeichnung": "Vickers – M4", "kosten": 170.0, "sapCode": "HÄRTE_HE", "hinweis": "DIN EN ISO 6507-1 · gemäß PA · Herten"}, {"bezeichnung": "Shore – M4", "kosten": 170.0, "sapCode": "PRODUKTSPEZI_SF_TS", "hinweis": "DIN ISO 48-4 · gemäß PA · Taunusstein"}, {"bezeichnung": "Brinell – M4", "kosten": 170.0, "sapCode": "HÄRTE_HE", "hinweis": "DIN EN ISO 6506-1 · gemäß PA · Herne"}], "MP005": [{"bezeichnung": "Carbon – M5.1", "kosten": 490.0, "sapCode": "CHEMIE", "hinweis": "Thermogravimetrie (TGA): DIN 51006 · CHEMIE"}], "MP006": [{"bezeichnung": "Edelstahl – M5.2", "kosten": 225.0, "sapCode": "CHEMIE", "hinweis": "Optisches-Emissions-Spektrometer\nVerzeichnis der nichtrostenden Stähle \nDIN EN 10088-1 (bitte Verweise auf andere Normen beachten)\nGold, Silber, Platin\nDIN EN ISO 9202 (Schmucknorm) · CHEMIE"}], "MP007": [{"bezeichnung": "Stahl / Messer – M5.3", "kosten": 225.0, "sapCode": "CHEMIE", "hinweis": "Optisches-Emissions-Spektrometer\nVerzeichnis GB T 699 (1999)  für Quality carbon structural steels · CHEMIE"}], "GL002": [{"bezeichnung": "Textilien – M8.1", "kosten": 23.0, "sapCode": "CF_REIBECHT_TX_TS", "hinweis": "ISO 105-X12 · Trocken: Note 4\nNass: Note 2 - 3 · Taunusstein"}], "MP015": [{"bezeichnung": "Textilien – M8.2", "kosten": 23.0, "sapCode": "CF_WASSER_TX_TS", "hinweis": "ISO 105-E01 · Note: 3-4 · Taunusstein"}], "MP017": [{"bezeichnung": "Textilien – M8.3", "kosten": 23.0, "sapCode": "CF_SCHWEISS_TX_TS", "hinweis": "ISO 105-E04 · Note: 3-4 · Taunusstein"}], "MP016": [{"bezeichnung": "Textilien – M8.4", "kosten": 23.0, "sapCode": "CF_WASCH_TX_TS", "hinweis": "ISO 105-C06 · Note: 3-4 · Taunusstein"}], "MP022": [{"bezeichnung": "Textilien – M8.5", "kosten": 35.0, "sapCode": "CF_LICHTECHT_TX_TS", "hinweis": "ISO 105-B02 · Note: 3-4 · Taunusstein"}], "MP012": [{"bezeichnung": "Textilien – M8.7", "kosten": 23.0, "sapCode": "BUEGELECHT_TX_TS", "hinweis": "ISO 105-X11 · Note: 3-4 · Taunusstein"}], "MP027": [{"bezeichnung": "Textilien – M10", "kosten": 81.0, "sapCode": "WASCHKRUMPF_TX_TS;\nWASCHOPTIK_TX_TS", "hinweis": "ISO 5077;\nISO 6330 · 3 Wäschen 3 Trocknungen                    alle waschbaren Textilien\nAussehen nach der Wäsche: In Anlehnung an EN ISO 6330\n\nMaßänderung nach der Wäsche: In Anlehnung an ISO 5077 - Bestimmung der Maßänderung beim Waschen und Trocknen \n\nBewertungsmaßstab:\nGewebe +/- 3%\nMaschenware +2/- 5% · Taunusstein"}], "MP030": [{"bezeichnung": "Textilien (bis 20.000 Touren) – M12", "kosten": 46.0, "sapCode": "SCHEUER_MEND_TX_TS", "hinweis": "ISO 12947-2 · Taunusstein"}, {"bezeichnung": "Textilien (bis 50.000 Touren) – M12", "kosten": 75.0, "sapCode": "SCHEUER_MEND_TX_TS", "hinweis": "ISO 12947-2 · Taunusstein"}], "PD016": [{"bezeichnung": "Packband / Klebeband – LD16", "kosten": 352.0, "sapCode": "D5471_4_8_1_1_HE", "hinweis": "DIN EN ISO 29862 - Verfahren 1 · Herten"}]};
 
-function produktspeziLabel(p) {
-  let label = p.parameter;
-  if (p.produkt) label += " / " + p.produkt;
-  if (p.laufzeit) label += " (" + p.laufzeit + "h)";
-  if (p.mak) label += " – " + p.mak;
-  return label;
+/* Hängt die LIDL-Preisvarianten (siehe MAK_VARIANTEN_MIGRATION) einmalig an die passenden
+   MAK-Einträge an - wie migriereFixPositionenAlsNormen/migriereKennzeichnungFixPositionenPruefungsart
+   läuft das nur beim ERSTEN Mal (data.makVariantenMigriert-Flag), damit vom Nutzer später gelöschte
+   oder bearbeitete Varianten nach einem Neuladen nicht wieder auftauchen. */
+function migriereMakVarianten() {
+  if (data.makVariantenMigriert) return;
+  Object.keys(MAK_VARIANTEN_MIGRATION).forEach((makId) => {
+    const eintrag = data.mak.find((m) => m.id === makId);
+    if (!eintrag) return;
+    eintrag.varianten = MAK_VARIANTEN_MIGRATION[makId].map((v) => ({ id: neueId(), ...v }));
+  });
+  data.makVariantenMigriert = true;
 }
 
 const SPEICHER_SCHLUESSEL = "kv_monitoring_v3";
@@ -2522,7 +2538,10 @@ function seedMak() {
    damit auch aus localStorage geladene Altbestände (vor Einführung der Schlagworte) nachgerüstet
    werden, ohne bereits gepflegte Schlagworte zu berühren. */
 function migriereMak() {
-  data.mak.forEach((m) => { if (!Array.isArray(m.schlagworte)) m.schlagworte = []; });
+  data.mak.forEach((m) => {
+    if (!Array.isArray(m.schlagworte)) m.schlagworte = [];
+    if (!Array.isArray(m.varianten)) m.varianten = [];
+  });
 }
 
 function init() {
@@ -2541,7 +2560,8 @@ function init() {
     mak: (geladen && geladen.mak && geladen.mak.length) ? geladen.mak : seedMak(),
     pruefungsarten: (geladen && geladen.pruefungsarten && geladen.pruefungsarten.length) ? geladen.pruefungsarten : seedPruefungsarten(),
     fixPositionenAlsNormenMigriert: !!(geladen && geladen.fixPositionenAlsNormenMigriert),
-    kennzeichnungFixPositionenPruefungsartMigriert: !!(geladen && geladen.kennzeichnungFixPositionenPruefungsartMigriert)
+    kennzeichnungFixPositionenPruefungsartMigriert: !!(geladen && geladen.kennzeichnungFixPositionenPruefungsartMigriert),
+    makVariantenMigriert: !!(geladen && geladen.makVariantenMigriert)
   };
   data.normen.forEach(migriereNorm);
   data.pruefgrundlagen.forEach(migrierePruefgrundlage);
@@ -2552,6 +2572,7 @@ function init() {
   migriereFixPositionenAlsNormen();
   migriereKennzeichnungFixPositionenPruefungsart();
   migriereMak();
+  migriereMakVarianten();
 
   document.querySelectorAll("nav.tabs button[data-tab]").forEach((btn) => {
     btn.addEventListener("click", () => wechsleTab(btn.dataset.tab));
@@ -3519,12 +3540,27 @@ function renderPaPruefumfangKarte(pa) {
   return `<div class="card"><h2>Prüfumfang</h2>${zeilenHtml}</div>`;
 }
 
+/* Hebt Fundstellen von hervorzuhebendenWoertern (z. B. MAK-Schlagworte) in einem Freitext fett
+   hervor - arbeitet auf dem bereits escapeHtml-behandelten Text (ein einziger Regex-Alternation-
+   Durchlauf über alle Wörter zugleich, damit keine bereits eingefügten <strong>-Tags versehentlich
+   ein zweites Mal getroffen werden). Längere Wörter zuerst, damit z. B. "Edelstahl gebürstet" vor
+   dem kürzeren "Edelstahl" greift, falls beide als Schlagwort hinterlegt sind. */
+function hebeWoerterHervor(text, woerter) {
+  const escaped = escapeHtml(text);
+  const liste = [...new Set((woerter || []).map((w) => String(w).trim()).filter(Boolean))].sort((a, b) => b.length - a.length);
+  if (!liste.length) return escaped;
+  const alternation = liste.map((w) => escapeHtml(w).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+  return escaped.replace(new RegExp(`(${alternation})`, "gi"), "<strong>$1</strong>");
+}
+
 /* Ein PA_BLOCKFELDER-Feld (Maße, Gewicht, Qualität, Material, Markenreferenz, Garantie) als
    Style-Blöcke gerendert - gemeinsam genutzt von der Prüfauftrag-Detailseite (alle Blockfelder)
    und der Produktspezifikationen-Karte im KV (Qualität und Material), damit dieselbe
    übersichtliche Blockdarstellung an beiden Stellen identisch aussieht. Liefert nur die
-   Block-Divs, ohne umgebende Feld-Überschrift. */
-function renderPaBlockFeldHtml(pa, feldname) {
+   Block-Divs, ohne umgebende Feld-Überschrift. hervorzuhebendeWoerter (optional, nur von der
+   KV-Produktspezifikationen-Karte für Qualität/Material genutzt) hebt darin enthaltene MAK-
+   Schlagworte fett hervor - ohne diesen Parameter unverändertes Verhalten wie bisher. */
+function renderPaBlockFeldHtml(pa, feldname, hervorzuhebendeWoerter) {
   const eintraege = (pa.felder || []).filter((f) => normalisiere(f.schluessel) === normalisiere(feldname));
   if (!eintraege.length) return "";
   return eintraege.map((e) => {
@@ -3532,7 +3568,7 @@ function renderPaBlockFeldHtml(pa, feldname) {
     return bloecke.map((b) => `
       <div class="stil-block">
         ${b.style ? `<div class="stil-name">${escapeHtml(b.style)}</div>` : ""}
-        <div class="stil-inhalt">${b.inhalt ? escapeHtml(b.inhalt) : '<span class="muted">–</span>'}</div>
+        <div class="stil-inhalt">${b.inhalt ? (hervorzuhebendeWoerter ? hebeWoerterHervor(b.inhalt, hervorzuhebendeWoerter) : escapeHtml(b.inhalt)) : '<span class="muted">–</span>'}</div>
       </div>`).join("");
   }).join("");
 }
@@ -4658,13 +4694,19 @@ function makAuswahlOptionenHtml() {
         ${data.mak.filter((m) => m.kategorie === kat).sort((a, b) => (a.parameter || "").localeCompare(b.parameter || "", "de")).map((m) => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.parameter || "(ohne Parameter)")}</option>`).join("")}
       </optgroup>`).join("");
 }
-/* MAK-Parameter-Detail im KV: kein reines Nachschlagewerk mehr - der Parameter lässt sich per
-   "+ hinzufügen" direkt als Position (Kategorie Produktspezifikationen, ohne eigenen Preis/
-   SAP-Code, da MAK-Einträge keinen Preis führen) in den KV übernehmen, und die Schlagworte lassen
-   sich hier direkt pflegen (identisches Editier-Muster wie im Reiter "MAK" selbst, siehe
-   renderMakDetail) statt nur angezeigt zu werden. */
+/* MAK-Parameter-Detail im KV: kein reines Nachschlagewerk mehr. Führt der Parameter LIDL-
+   spezifische Preisvarianten (siehe MAK_VARIANTEN_MIGRATION/migriereMakVarianten - z. B.
+   Korrosionsbeständigkeit nach Laufzeit/Paketpreis-Gruppe), erscheint statt eines einzelnen
+   "+ hinzufügen" je Variante eine eigene Zeile mit ihrem tatsächlichen Preis/SAP-Code; ohne
+   Varianten bleibt es beim einzelnen "+ hinzufügen" für den Parameter selbst (ohne Preis/SAP-Code,
+   da MAK-Einträge sonst keinen Preis führen). Die Schlagworte lassen sich hier direkt pflegen
+   (identisches Editier-Muster wie im Reiter "MAK" selbst, siehe renderMakDetail) statt nur
+   angezeigt zu werden. */
 function kvMakBezeichnung(eintrag) {
   return `${eintrag.parameter || "(ohne Parameter)"} (${eintrag.id})`;
+}
+function kvMakVarianteBezeichnung(eintrag, variante) {
+  return `${eintrag.parameter || "(ohne Parameter)"} / ${variante.bezeichnung}`;
 }
 function renderKvMakDetail(makId, kv) {
   const container = document.getElementById("kv-mak-detail");
@@ -4672,12 +4714,25 @@ function renderKvMakDetail(makId, kv) {
   const eintrag = data.mak.find((m) => m.id === makId);
   if (!eintrag) { container.innerHTML = ""; return; }
   const schlagworte = eintrag.schlagworte || [];
+  const varianten = eintrag.varianten || [];
   const bezeichnung = kvMakBezeichnung(eintrag);
   const schonDrin = kv.positionen.some((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere(PRODUKTSPEZI_KATEGORIE_NAME) && normalisiere(p.bezeichnung) === normalisiere(bezeichnung));
+  const varianteHinzufuegenBtn = varianten.length ? "" : (schonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="mak-parameter-hinzufuegen">+ hinzufügen</button>`);
+  const variantenHtml = varianten.length ? `<div class="mak-feld">
+      <h3>Preisvarianten <span class="muted" style="font-weight:400">– LIDL-spezifisch</span></h3>
+      ${varianten.map((v) => {
+        const varBezeichnung = kvMakVarianteBezeichnung(eintrag, v);
+        const varSchonDrin = kv.positionen.some((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere(PRODUKTSPEZI_KATEGORIE_NAME) && normalisiere(p.bezeichnung) === normalisiere(varBezeichnung));
+        return `<div class="pruefumfang-position">
+          <span title="${escapeHtml(v.hinweis || "")}">${escapeHtml(v.bezeichnung)} <span class="muted">(${v.kosten} €)</span></span>
+          ${varSchonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="mak-variante-hinzufuegen" data-varianten-id="${escapeHtml(v.id)}">+ hinzufügen</button>`}
+        </div>`;
+      }).join("")}
+    </div>` : "";
   container.innerHTML = `<div class="mak-feld">
       <div class="toolbar-zeile">
         <h3 style="margin:0">${escapeHtml(eintrag.id)} — ${escapeHtml(eintrag.parameter || "(ohne Parameter)")}</h3>
-        ${schonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="mak-parameter-hinzufuegen">+ hinzufügen</button>`}
+        ${varianteHinzufuegenBtn}
       </div>
       <p class="muted" style="margin-top:-0.4rem">Kategorie: ${escapeHtml(eintrag.kategorie)} · Bereich: ${escapeHtml(eintrag.bereich)}</p>
     </div>
@@ -4685,6 +4740,7 @@ function renderKvMakDetail(makId, kv) {
     <div class="mak-feld"><h3>Norm/Standard EU</h3><p>${escapeHtml(eintrag.normEu) || "–"}</p></div>
     <div class="mak-feld"><h3>Norm/Standard US (AATCC/ASTM)</h3><p>${escapeHtml(eintrag.normUs) || "–"}</p></div>
     <div class="mak-feld"><h3>Mindest-Prüfnachweis</h3><p>${escapeHtml(eintrag.pruefnachweis) || "–"}</p></div>
+    ${variantenHtml}
     <div class="tag-feld">
       <label>Schlagworte <span class="muted" style="font-weight:400">– Signalwörter, die in den Abschnitten „Qualität" oder „Material" stehen müssen, damit dieser Parameter relevant ist</span></label>
       <div class="tag-chips" id="kv-mak-tag-chips">
@@ -4705,6 +4761,16 @@ function renderKvMakDetail(makId, kv) {
       zeigeStatus("Position hinzugefügt · " + jetzt(), "ok");
     });
   }
+  container.querySelectorAll('[data-action="mak-variante-hinzufuegen"]').forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const variante = varianten.find((v) => v.id === btn.dataset.variantenId);
+      if (!variante) return;
+      kv.positionen.push({ id: neueId(), kategorie: PRODUKTSPEZI_KATEGORIE_NAME, bezeichnung: kvMakVarianteBezeichnung(eintrag, variante), kuerzel: "PS", sapCode: variante.sapCode || "", kosten: Number(variante.kosten) || 0, anzahl: 1, aktiv: true });
+      speichereInLocalStorage();
+      renderKvDetail();
+      zeigeStatus("Position hinzugefügt · " + jetzt(), "ok");
+    });
+  });
   container.querySelectorAll("#kv-mak-tag-chips button[data-idx]").forEach((btn) => {
     btn.addEventListener("click", () => {
       schlagworte.splice(Number(btn.dataset.idx), 1);
@@ -4730,19 +4796,39 @@ function renderKvMakDetail(makId, kv) {
   });
 }
 
-/* Produktspezifikationen: Qualität/Material aus dem PA (unverändert), MAK-Parameter-Nachschlagewerk
-   (neu), Projektkosten-Pauschale und die durchsuchbare Katalog-Auswahl (PRODUKTSPEZI_KATALOG,
-   unverändert). */
+/* Welche MAK-Einträge kommen anhand ihrer Schlagworte im Qualität- oder Material-Text des PA vor -
+   je Eintrag nur das erste passende Schlagwort (reicht als Beleg, mehrere gleichzeitig treffende
+   Schlagworte desselben Eintrags müssen hier nicht einzeln aufgeführt werden). Case-insensitiver
+   Teilstring-Vergleich (normalisiere), keine Wortgrenzen-Prüfung - bewusst großzügig, da Schlagworte
+   ohnehin frei von Hand gepflegt werden. */
+function makSchlagwortVorschlaege(pa) {
+  if (!pa) return [];
+  const text = normalisiere(`${paFeldWertRoh(pa, "Qualität")} ${paFeldWertRoh(pa, "Material")}`);
+  if (!text.trim()) return [];
+  const treffer = [];
+  data.mak.forEach((m) => {
+    const schlagwort = (m.schlagworte || []).find((w) => w.trim() && text.includes(normalisiere(w)));
+    if (schlagwort) treffer.push({ mak: m, schlagwort });
+  });
+  return treffer;
+}
+
+/* Produktspezifikationen: Qualität/Material aus dem PA (Schlagwort-Treffer fett hervorgehoben,
+   siehe hebeWoerterHervor) sowie das MAK-Parameter-Dropdown (Materialanforderungskatalog) als
+   einzige Positionsquelle - der frühere, separate Parameterkatalog (feste "Projektkosten"-
+   Pauschale + durchsuchbare Katalog-Liste) ist entfallen, seine LIDL-Preise stecken jetzt (soweit
+   zuordenbar) direkt an den passenden MAK-Einträgen, siehe MAK_VARIANTEN_MIGRATION/
+   renderKvMakDetail. Anhand der Schlagworte im Qualität-/Material-Text erkannte MAK-Parameter
+   erscheinen zusätzlich als klickbare Vorschläge direkt über dem Dropdown. */
 function renderProduktspezifikationenKarte(kv, pa, qualitaetBloeckeHtml, materialBloeckeHtml) {
   const kat = PA_PRUEFUMFANG_KATEGORIEN.find((k) => k.id === "produktspezifikationen");
   const erkannt = pa ? erkennePruefumfangKategorien(pa.pruefumfang).some((k) => k.id === "produktspezifikationen") : false;
   const badge = pa ? (erkannt ? `<span class="badge ja">im Prüfumfang</span>` : `<span class="badge nein">nicht erkannt</span>`) : "";
-  const projektkosten = PRODUKTSPEZI_PROJEKTKOSTEN_FIXPOSITION;
-  const projektkostenSchonDrin = kvHatPosition(kv, projektkosten);
-  const projektkostenHtml = `<div class="pruefumfang-position">
-    <span>${escapeHtml(projektkosten.bezeichnung)} <span class="muted">(${projektkosten.standardKosten} €)</span></span>
-    ${projektkostenSchonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="kat-position-hinzufuegen" data-katalog-id="${projektkosten.id}">+ hinzufügen</button>`}
-  </div>`;
+  const vorschlaege = makSchlagwortVorschlaege(pa);
+  const vorschlaegeHtml = vorschlaege.length ? `<p class="hinweis" style="margin:0 0 0.3rem"><strong>Vorschläge anhand Schlagworte in Qualität/Material:</strong></p>
+    <div class="toolbar-zeile" style="margin-bottom:0.5rem">
+      ${vorschlaege.map((t) => `<button type="button" class="ghost small" data-action="mak-vorschlag-waehlen" data-mak-id="${escapeHtml(t.mak.id)}">${escapeHtml(t.mak.parameter || t.mak.id)} <span class="muted">(»${escapeHtml(t.schlagwort)}«)</span></button>`).join("")}
+    </div>` : "";
   return `<div class="card">
     <div class="pruefumfang-kat-kopf"><strong>${escapeHtml(kat.anzeigeName)}</strong> ${badge}</div>
     <p class="hinweis">${escapeHtml(kat.beschreibung)}</p>
@@ -4752,11 +4838,9 @@ function renderProduktspezifikationenKarte(kv, pa, qualitaetBloeckeHtml, materia
       <label style="display:flex;flex-direction:column;gap:0.2rem;font-size:0.8rem;font-weight:600;max-width:420px">MAK-Parameter nachschlagen (Materialanforderungskatalog)
         <select id="kv-mak-auswahl" style="font-family:inherit;font-size:0.85rem;padding:0.35rem 0.5rem;border:1px solid var(--border);border-radius:6px;font-weight:400">${makAuswahlOptionenHtml()}</select>
       </label>
+      ${vorschlaegeHtml}
       <div id="kv-mak-detail"></div>
     </div>
-    ${projektkostenHtml}
-    <input type="text" id="produktspezi-suche" placeholder="Parameter, Produkt oder Norm suchen…" style="width:100%;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px;margin-bottom:0.4rem;font-family:inherit">
-    <div id="produktspezi-liste"></div>
   </div>`;
 }
 
@@ -4807,7 +4891,7 @@ function renderReferenzpruefungKarte(kv, pa) {
 
 /* Set-Bestandteil-Suche über die GESAMTE Mechanik-Referenz (nicht auf die Warengruppe des KVs
    beschränkt) - baut nur die Ergebnisliste neu auf, nie das Suchfeld selbst (Fokus-Erhalt beim
-   Tippen, analog renderProduktspeziListe). */
+   Tippen). */
 function renderSetbestandteilListe(kv, filterText) {
   const container = document.getElementById("setbestandteil-liste");
   if (!container) return;
@@ -4916,42 +5000,6 @@ function initialisiereMechanikEmpfehlungKarte(panel, kv) {
 }
 
 const PRODUKTSPEZI_KATEGORIE_NAME = "(physikalische-) Produktspezifikation";
-
-/* Durchsuchbare Liste aus dem realen 62-Parameter-Katalog (PRODUKTSPEZI_KATALOG) - baut nur die
-   Ergebnisliste neu auf, nie das Suchfeld selbst, damit der Fokus beim Tippen erhalten bleibt. */
-function renderProduktspeziListe(kv, filterText) {
-  const container = document.getElementById("produktspezi-liste");
-  if (!container) return;
-  const q = normalisiere(filterText);
-  const gefiltert = PRODUKTSPEZI_KATALOG.filter((p, idx) => {
-    p.__idx = idx;
-    return !q || normalisiere(produktspeziLabel(p) + " " + p.norm).includes(q);
-  });
-  const GRENZE = 40;
-  const anzeige = gefiltert.slice(0, GRENZE);
-  container.innerHTML = (anzeige.length
-    ? anzeige.map((p) => {
-        const bezeichnung = produktspeziLabel(p);
-        const schonDrin = kv.positionen.some((pos) => pos.aktiv && normalisiere(pos.kategorie) === normalisiere(PRODUKTSPEZI_KATEGORIE_NAME) && normalisiere(pos.bezeichnung) === normalisiere(bezeichnung));
-        const titel = [p.norm, p.bewertung ? "Bewertung: " + p.bewertung : ""].filter(Boolean).join(" · ");
-        return `<div class="pruefumfang-position">
-          <span title="${escapeHtml(titel)}">${escapeHtml(bezeichnung)} <span class="muted">(${p.standardKosten} €)</span></span>
-          ${schonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="produktspezi-hinzufuegen" data-idx="${p.__idx}">+ hinzufügen</button>`}
-        </div>`;
-      }).join("")
-    : `<p class="muted" style="margin:0.3rem 0">Keine Treffer.</p>`)
-    + (gefiltert.length > GRENZE ? `<p class="hinweis">… und ${gefiltert.length - GRENZE} weitere — Suche eingrenzen.</p>` : "");
-
-  container.querySelectorAll('[data-action="produktspezi-hinzufuegen"]').forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const p = PRODUKTSPEZI_KATALOG[Number(btn.dataset.idx)];
-      if (!p) return;
-      kv.positionen.push({ id: neueId(), kategorie: PRODUKTSPEZI_KATEGORIE_NAME, bezeichnung: produktspeziLabel(p), kuerzel: "PS", sapCode: p.sapCode, kosten: p.standardKosten, anzahl: 1, aktiv: true });
-      speichereInLocalStorage();
-      renderKvDetail();
-    });
-  });
-}
 
 /* Die neue Prüfumfang-Checkliste steht über den Detail-Karten: pro Abschnitt eine Checkbox,
    initial aus dem erkannten Prüfumfang vorbelegt (siehe pruefumfangAuswahlAktualisieren), danach
@@ -5096,8 +5144,9 @@ function kategorieIstAusgewaehlt(kv, kat) {
    unabhängiger Block ist. */
 function renderKvPruefumfangUebersicht(kv, pa) {
   pruefumfangAuswahlAktualisieren(kv, pa);
-  const qualitaetBloeckeHtml = pa ? renderPaBlockFeldHtml(pa, "Qualität") : "";
-  const materialBloeckeHtml = pa ? renderPaBlockFeldHtml(pa, "Material") : "";
+  const alleMakSchlagworte = data.mak.flatMap((m) => m.schlagworte || []);
+  const qualitaetBloeckeHtml = pa ? renderPaBlockFeldHtml(pa, "Qualität", alleMakSchlagworte) : "";
+  const materialBloeckeHtml = pa ? renderPaBlockFeldHtml(pa, "Material", alleMakSchlagworte) : "";
   const kontext = mechanikKontext(kv);
   const kennzeichnungSichtbar = !!(kv.pruefumfangAuswahl.kennzeichnungVerpackungProdukt || kv.pruefumfangAuswahl.kennzeichnungBedienungsanleitung);
 
@@ -5170,15 +5219,16 @@ function initialisierePruefumfangUebersicht(panel, kv, pa) {
       zeigeStatus(hinzugefuegt ? `${hinzugefuegt} Position(en) übernommen · ${jetzt()}` : "Alle Vorschläge waren bereits im KV", "ok");
     });
   });
-  const produktspeziSuche = panel.querySelector("#produktspezi-suche");
-  if (produktspeziSuche) {
-    renderProduktspeziListe(kv, "");
-    produktspeziSuche.addEventListener("input", () => renderProduktspeziListe(kv, produktspeziSuche.value));
-  }
   const makAuswahl = panel.querySelector("#kv-mak-auswahl");
   if (makAuswahl) {
     makAuswahl.addEventListener("change", () => renderKvMakDetail(makAuswahl.value, kv));
   }
+  panel.querySelectorAll('[data-action="mak-vorschlag-waehlen"]').forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (makAuswahl) makAuswahl.value = btn.dataset.makId;
+      renderKvMakDetail(btn.dataset.makId, kv);
+    });
+  });
 }
 
 /* ================= KOSTENVORANSCHLÄGE (KV) ================= */
@@ -6448,17 +6498,35 @@ function renderMakListeAktivMarkieren() {
   document.querySelectorAll("#mak-liste li[data-id]").forEach((li) => li.classList.toggle("aktiv", li.dataset.id === aktiveMakId));
 }
 
+/* Neuer, leerer MAK-Entwurf für "+ Neue MAK-Position" - die ID ist bewusst schon mit einem
+   eindeutigen (aber offensichtlich provisorischen) Platzhalter vorbelegt, statt leer zu bleiben,
+   damit sie sofort in Listen/Dropdowns eindeutig auffindbar ist, bis der Nutzer sie durch eine
+   "echte" ID (z. B. im Stil "DU023") ersetzt. */
+function makEntwurfNeu() {
+  return { id: "NEU-" + neueId().slice(0, 6).toUpperCase(), kategorie: "", bereich: "", parameter: "Neue MAK-Position", anforderung: "", normEu: "", normUs: "", pruefnachweis: "", schlagworte: [], varianten: [] };
+}
+
 function renderMakDetail() {
   const panel = document.getElementById("detail-panel-mak");
   const eintrag = data.mak.find((m) => m.id === aktiveMakId);
   if (!eintrag) { panel.innerHTML = '<div class="card leerzustand">Kein Eintrag ausgewählt.</div>'; return; }
   const schlagworte = eintrag.schlagworte || [];
+  const varianten = eintrag.varianten || [];
   panel.innerHTML = `
     <div class="card">
       <h2 style="margin-top:0">${escapeHtml(eintrag.parameter || "(ohne Parameter)")}</h2>
-      <p class="muted" style="margin-top:-0.4rem">ID: ${escapeHtml(eintrag.id)} · Kategorie: ${escapeHtml(eintrag.kategorie)} · Bereich: ${escapeHtml(eintrag.bereich)}</p>
+      <div class="formular-grid">
+        <label>ID<input type="text" id="mak-id-input" value="${escapeHtml(eintrag.id)}"></label>
+        <label>Parameter<input type="text" data-feld="parameter" value="${escapeHtml(eintrag.parameter)}"></label>
+        <label>Kategorie<input type="text" data-feld="kategorie" value="${escapeHtml(eintrag.kategorie)}"></label>
+        <label>Bereich<input type="text" data-feld="bereich" value="${escapeHtml(eintrag.bereich)}"></label>
+        <label class="volle-breite">Anforderung<textarea data-feld="anforderung" rows="3">${escapeHtml(eintrag.anforderung)}</textarea></label>
+        <label class="volle-breite">Norm/Standard EU<textarea data-feld="normEu" rows="2">${escapeHtml(eintrag.normEu)}</textarea></label>
+        <label class="volle-breite">Norm/Standard US (AATCC/ASTM)<textarea data-feld="normUs" rows="2">${escapeHtml(eintrag.normUs)}</textarea></label>
+        <label class="volle-breite">Mindest-Prüfnachweis<textarea data-feld="pruefnachweis" rows="2">${escapeHtml(eintrag.pruefnachweis)}</textarea></label>
+      </div>
       <div class="tag-feld">
-        <label>Schlagworte <span class="muted" style="font-weight:400">– Signalwörter, die in den Abschnitten „Qualität" oder „Material" stehen müssen, damit dieser Parameter relevant ist (perspektivisch für die automatische Auswahl im KV)</span></label>
+        <label>Schlagworte <span class="muted" style="font-weight:400">– Signalwörter, die in den Abschnitten „Qualität" oder „Material" stehen müssen, damit dieser Parameter relevant ist; werden im KV-Reiter automatisch als Vorschlag erkannt und im Text fett hervorgehoben</span></label>
         <div class="tag-chips" id="mak-tag-chips">
           ${schlagworte.length ? schlagworte.map((tag, i) => `<span class="tag-chip">${escapeHtml(tag)}<button type="button" data-idx="${i}" title="Schlagwort entfernen">×</button></span>`).join("") : '<span class="muted">Noch keine Schlagworte hinterlegt.</span>'}
         </div>
@@ -6467,11 +6535,35 @@ function renderMakDetail() {
           <button class="ghost small" id="mak-tag-hinzufuegen" type="button">+ Hinzufügen</button>
         </div>
       </div>
-      <div class="mak-feld"><h3>Anforderung</h3><p>${escapeHtml(eintrag.anforderung) || "–"}</p></div>
-      <div class="mak-feld"><h3>Norm/Standard EU</h3><p>${escapeHtml(eintrag.normEu) || "–"}</p></div>
-      <div class="mak-feld"><h3>Norm/Standard US (AATCC/ASTM)</h3><p>${escapeHtml(eintrag.normUs) || "–"}</p></div>
-      <div class="mak-feld"><h3>Mindest-Prüfnachweis</h3><p>${escapeHtml(eintrag.pruefnachweis) || "–"}</p></div>
+      ${varianten.length ? `<div class="mak-feld"><h3>Preisvarianten <span class="muted" style="font-weight:400">– LIDL-spezifisch, im KV-Reiter je Position auswählbar</span></h3>
+        <ul style="margin:0.3rem 0 0;padding-left:1.1rem">${varianten.map((v) => `<li>${escapeHtml(v.bezeichnung)} <span class="muted">(${v.kosten} €)</span></li>`).join("")}</ul>
+      </div>` : ""}
+      <div class="toolbar-zeile" style="margin-top:0.6rem">
+        <button class="danger small" id="mak-loeschen" style="margin-left:auto">MAK-Eintrag löschen</button>
+      </div>
     </div>`;
+  panel.querySelectorAll(".formular-grid [data-feld]").forEach((el) => {
+    el.addEventListener("input", () => {
+      eintrag[el.dataset.feld] = el.value;
+      speichereInLocalStorage();
+      renderMakListe();
+      if (el.dataset.feld === "parameter") panel.querySelector("h2").textContent = eintrag.parameter || "(ohne Parameter)";
+    });
+  });
+  const idInput = document.getElementById("mak-id-input");
+  idInput.addEventListener("change", () => {
+    const neueIdWert = idInput.value.trim();
+    if (!neueIdWert) { alert("Die ID darf nicht leer sein."); idInput.value = eintrag.id; return; }
+    if (neueIdWert !== eintrag.id && data.mak.some((m) => m.id === neueIdWert)) {
+      alert(`Die ID „${neueIdWert}" wird bereits von einem anderen Eintrag verwendet.`);
+      idInput.value = eintrag.id;
+      return;
+    }
+    eintrag.id = neueIdWert;
+    aktiveMakId = neueIdWert;
+    speichereInLocalStorage();
+    renderMakListe();
+  });
   panel.querySelectorAll("#mak-tag-chips button[data-idx]").forEach((btn) => {
     btn.addEventListener("click", () => {
       schlagworte.splice(Number(btn.dataset.idx), 1);
@@ -6495,9 +6587,24 @@ function renderMakDetail() {
   document.getElementById("mak-tag-input").addEventListener("keydown", (e) => {
     if (e.key === "Enter") { e.preventDefault(); tagEingabeHinzufuegen(); }
   });
+  document.getElementById("mak-loeschen").addEventListener("click", () => {
+    if (!confirm(`MAK-Eintrag "${eintrag.parameter || eintrag.id}" wirklich löschen?`)) return;
+    data.mak = data.mak.filter((m) => m.id !== eintrag.id);
+    aktiveMakId = data.mak.length ? data.mak[0].id : null;
+    speichereInLocalStorage();
+    renderMakTab();
+  });
 }
 
 function renderMakTab() { renderMakListe(); renderMakDetail(); }
+
+document.getElementById("btn-neue-mak").addEventListener("click", () => {
+  const eintrag = makEntwurfNeu();
+  data.mak.unshift(eintrag);
+  aktiveMakId = eintrag.id;
+  speichereInLocalStorage();
+  renderMakTab();
+});
 
 document.getElementById("mak-kategorie-filter").addEventListener("change", (e) => {
   makKategorieFilter = e.target.value;
@@ -7068,7 +7175,8 @@ document.getElementById("datei-laden-input").addEventListener("change", async (e
       mak: (geparst.mak && geparst.mak.length) ? geparst.mak : seedMak(),
       pruefungsarten: (geparst.pruefungsarten && geparst.pruefungsarten.length) ? geparst.pruefungsarten : seedPruefungsarten(),
       fixPositionenAlsNormenMigriert: !!geparst.fixPositionenAlsNormenMigriert,
-      kennzeichnungFixPositionenPruefungsartMigriert: !!geparst.kennzeichnungFixPositionenPruefungsartMigriert
+      kennzeichnungFixPositionenPruefungsartMigriert: !!geparst.kennzeichnungFixPositionenPruefungsartMigriert,
+      makVariantenMigriert: !!geparst.makVariantenMigriert
     };
     data.normen.forEach(migriereNorm);
     data.pruefgrundlagen.forEach(migrierePruefgrundlage);
@@ -7079,6 +7187,7 @@ document.getElementById("datei-laden-input").addEventListener("change", async (e
     migriereFixPositionenAlsNormen();
     migriereKennzeichnungFixPositionenPruefungsart();
     migriereMak();
+    migriereMakVarianten();
     aktivePaId = data.pruefauftraege.length ? data.pruefauftraege[0].id : null;
     aktiveKvId = data.kvs.length ? data.kvs[0].id : null;
     aktiveNormId = data.normen.length ? data.normen[0].id : null;

@@ -463,29 +463,32 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     übereinander die aus dem Prüfauftrag ausgelesenen **„Qualität"** und
     **„Material"** (jeweils als eigene Style-Blöcke aufgeteilt wie auf der
     Prüfauftrags-Detailseite; „Material" erscheint nur, wenn der PA ein
-    entsprechendes Feld enthält). Darunter ein **Dropdown „MAK-Parameter
-    nachschlagen"**, das alle Einträge des Materialanforderungskatalogs
-    (Reiter „MAK", siehe unten) nach Kategorie gruppiert zur Auswahl anbietet
-    — nach Auswahl eines Parameters erscheinen darunter dessen Anforderung,
-    Norm/Standard EU, Norm/Standard US und Mindest-Prüfnachweis, ohne in den
-    MAK-Tab wechseln zu müssen. Der Parameter ist dabei **kein reines
-    Nachschlagewerk**: per **„+ hinzufügen"** lässt er sich direkt als
-    Position in den KV übernehmen (Kategorie Produktspezifikationen, ohne
-    eigenen Preis/SAP-Code, da MAK-Einträge keinen Preis führen — Preis/
-    SAP-Code lassen sich danach wie jede andere Position frei nachtragen).
-    Direkt darunter lassen sich außerdem die **Schlagworte** des gewählten
-    Parameters bearbeiten (Chips hinzufügen/entfernen, identisch zum Reiter
-    „MAK" selbst — beide Ansichten teilen sich dieselben Daten, eine
-    Änderung hier ist also sofort auch dort sichtbar), ohne dafür extra in
-    den MAK-Tab wechseln zu müssen. Danach folgt die feste Position
-    „Projektkosten (nicht einsteuern)" sowie eine
-    durchsuchbare Liste aus dem echten, 62 Einträge umfassenden
-    Parameterkatalog (Parameter, Material/Kontext, Laufzeit, Norm, SAP-Code,
-    Preis) — Suchfeld oben, „+ hinzufügen" trägt die gewählte Zeile mit ihrem
-    tatsächlichen Preis und SAP-Code ein. Eine automatische Zuordnung nach
-    Auslobungen ist noch nicht hinterlegt. Bei Mehrfachauswahl (mehrere
-    aktive Positionen zu einer Kategorie) erscheint jede als eigener Block
-    untereinander statt in einer zusammengefügten Zeile.
+    entsprechendes Feld enthält). Kommt darin der Wortlaut eines **MAK-
+    Schlagworts** (siehe Reiter „MAK" unten) vor, wird die Fundstelle direkt
+    im Text **fett hervorgehoben** — und der zugehörige MAK-Parameter
+    erscheint zusätzlich als klickbarer **Vorschlag** direkt über dem
+    MAK-Dropdown (mit dem gefundenen Schlagwort in Klammern); ein Klick
+    wählt den Parameter im Dropdown aus. Das **Dropdown „MAK-Parameter
+    nachschlagen"** selbst bietet alle Einträge des Materialanforderungskatalogs
+    nach Kategorie gruppiert zur Auswahl an — nach Auswahl eines Parameters
+    erscheinen darunter dessen Anforderung, Norm/Standard EU, Norm/Standard
+    US und Mindest-Prüfnachweis, ohne in den MAK-Tab wechseln zu müssen. Der
+    Parameter ist dabei **kein reines Nachschlagewerk**: führt er **LIDL-
+    spezifische Preisvarianten** (z. B. Korrosionsbeständigkeit nach Laufzeit/
+    Paketpreis-Gruppe, siehe „MAK" unten), erscheint statt eines einzelnen
+    Buttons je Variante eine eigene Zeile mit ihrem tatsächlichen Preis und
+    SAP-Code zum Hinzufügen; ohne Preisvarianten bleibt es beim einzelnen
+    **„+ hinzufügen"** für den Parameter selbst (ohne Preis/SAP-Code, beides
+    danach wie jede andere Position frei nachtragbar) — beides landet als
+    Position mit Kategorie Produktspezifikationen im KV. Direkt darunter
+    lassen sich außerdem die **Schlagworte** des gewählten Parameters
+    bearbeiten (Chips hinzufügen/entfernen, identisch zum Reiter „MAK" selbst
+    — beide Ansichten teilen sich dieselben Daten, eine Änderung hier ist
+    also sofort auch dort sichtbar), ohne dafür extra in den MAK-Tab wechseln
+    zu müssen. Der frühere, separate 62-Zeilen-Parameterkatalog (feste
+    „Projektkosten"-Pauschale + durchsuchbare Katalog-Suche) ist entfallen —
+    seine LIDL-Preise stecken jetzt, soweit einem MAK-Parameter eindeutig
+    zuordenbar, direkt an den passenden MAK-Einträgen als Preisvarianten.
   - **FFU/Fitting** und **NGO**: je ein eigener Block, funktional analog zu
     Sicherheit-/Normprüfung — dasselbe im Sicherheit-/Normprüfung-Block
     gewählte Hauptprodukt (Warengruppe → Produkt) wird hier übernommen (zum
@@ -786,44 +789,60 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   erscheint dort „(gelöschte Norm)" statt der Bezeichnung — die Referenz
   bleibt technisch bestehen, sollte aber in der Prüfgrundlage entfernt oder
   ersetzt werden.
-- **MAK (Materialanforderungskatalog)** – Referenzliste (193 Zeilen, Spalten
-  ID/Kategorie/Bereich/Parameter/Anforderung/Norm-EU/Norm-US/Mindest-
-  Prüfnachweis aus der offiziellen Vorlage), im gleichen Listen-/
-  Detail-Layout wie der Reiter „Normen". Die **Parameter-Bezeichnung ist das
-  Hauptattribut**: sie steht fett in der Liste und als Überschrift in der
-  Detailansicht, die ID erscheint nur noch als Zusatzangabe darunter
-  (zusammen mit Kategorie/Bereich); die Liste ist entsprechend primär nach
-  Parameter alphabetisch sortiert (a-z), nicht mehr nach ID. Die
-  Detailansicht zeigt je Eintrag Anforderung, Norm/Standard EU,
-  Norm/Standard US (AATCC/ASTM) und Mindest-Prüfnachweis vollständig
-  (mehrzeilig, mit Zeilenumbrüchen wie in der Originaltabelle) – diese
-  Referenzspalten aus der offiziellen Vorlage bleiben schreibgeschützt.
-  Eine **übergeordnete Textsuche** (durchsucht alle Felder inkl.
-  Schlagworte, synchron mit der allgemeinen Suche oben im Header wie beim
-  Normen-Tab) lässt sich mit zwei weiteren Filtern kombinieren: einem
-  **Kategorie-Dropdown** (die acht Kategorien der Liste, z. B. „Akku",
+- **MAK (Materialanforderungskatalog)** – Referenzliste, beginnend mit den
+  193 offiziellen Zeilen (Spalten ID/Kategorie/Bereich/Parameter/Anforderung/
+  Norm-EU/Norm-US/Mindest-Prüfnachweis), im gleichen Listen-/Detail-Layout
+  wie der Reiter „Normen" — **vollständig editierbar und um eigene
+  Positionen erweiterbar**, nicht mehr schreibgeschützt: **„+ Neue
+  MAK-Position (manuell)"** legt einen leeren Entwurf an (mit provisorischer,
+  aber eindeutiger ID zum sofortigen Umbenennen), alle Felder der
+  Detailansicht (ID, Parameter, Kategorie, Bereich, Anforderung, Norm/
+  Standard EU, Norm/Standard US, Mindest-Prüfnachweis) sind direkt editierbar
+  und speichern bei jeder Änderung sofort; **„MAK-Eintrag löschen"** entfernt
+  einen Eintrag dauerhaft (mit Sicherheitsabfrage). Die **ID lässt sich
+  umbenennen**, wird dabei aber auf Eindeutigkeit geprüft — ein Duplikat wird
+  abgelehnt (Hinweis + Zurücksetzen auf den vorherigen Wert). Die
+  **Parameter-Bezeichnung ist das Hauptattribut**: sie steht fett in der
+  Liste und als Überschrift in der Detailansicht, die ID erscheint nur noch
+  als Zusatzangabe im Formular; die Liste ist entsprechend primär nach
+  Parameter alphabetisch sortiert (a-z), nicht nach ID. Eine
+  **übergeordnete Textsuche** (durchsucht alle Felder inkl. Schlagworte,
+  synchron mit der allgemeinen Suche oben im Header wie beim Normen-Tab)
+  lässt sich mit zwei weiteren Filtern kombinieren: einem
+  **Kategorie-Dropdown** (die Kategorien der Liste, z. B. „Akku",
   „Textilphysik") und einem **ID-Textfilter** (Teilstring-Suche, z. B. „TX00"
-  oder „BA"). Alle drei Filter wirken gemeinsam. Bei „Kategorie" und
-  „Mindest-Prüfnachweis" wurde die englische Übersetzung aus der Original-
-  Vorlage (jeweils nach einem „/") entfernt; in den übrigen Spalten ist „/"
-  auch regulärer Bestandteil des deutschen Texts bzw. Trennzeichen zwischen
-  mehreren Normen/Werten (z. B. „2100 mAh / 2400 mAh", „DIN EN ISO 105/X12")
-  und bleibt daher unverändert. CSV-Export wie bei den anderen Reitern
-  verfügbar (exportiert die aktuell gefilterte Liste, inkl. Schlagworte-Spalte).
+  oder „BA"). Alle drei Filter wirken gemeinsam. Bei den offiziellen
+  Einträgen wurde in „Kategorie" und „Mindest-Prüfnachweis" die englische
+  Übersetzung aus der Original-Vorlage (jeweils nach einem „/") entfernt; in
+  den übrigen Spalten ist „/" auch regulärer Bestandteil des deutschen Texts
+  bzw. Trennzeichen zwischen mehreren Normen/Werten (z. B. „2100 mAh / 2400
+  mAh", „DIN EN ISO 105/X12") und bleibt daher unverändert. CSV-Export wie
+  bei den anderen Reitern verfügbar (exportiert die aktuell gefilterte
+  Liste, inkl. Schlagworte-Spalte).
 
-  **Schlagworte je Eintrag** – einziges frei editierbares Feld der Liste:
-  in der Detailansicht lassen sich beliebig viele Schlagworte als Chips
-  hinzufügen (Eingabefeld + „+ Hinzufügen" oder Enter-Taste) und über das
-  „×" am jeweiligen Chip wieder entfernen; Duplikate (unabhängig von Groß-/
-  Kleinschreibung) werden automatisch abgefangen. Gedacht sind sie dafür,
-  händisch die Signalwörter einzutragen, die in den Abschnitten „Qualität"
+  **Preisvarianten (LIDL-spezifisch)** – manche Einträge (z. B.
+  Korrosionsbeständigkeit) führen zusätzlich eine Liste konkreter,
+  LIDL-spezifischer Preise nach Produkt/Laufzeit/Paketpreis-Gruppe (z. B.
+  „1m³ Kammer (24h) – B1 Paketpreis 1" für 480 €) — erscheinen in der
+  Detailansicht als schreibgeschützte Übersicht und im KV-Reiter je Position
+  einzeln auswählbar (siehe Produktspezifikationen oben). Stammen aus dem
+  früheren, eigenständigen Parameterkatalog und wurden dorthin migriert, wo
+  sich die Katalog-Zeile eindeutig einem MAK-Parameter zuordnen ließ.
+
+  **Schlagworte je Eintrag** – in der Detailansicht lassen sich beliebig
+  viele Schlagworte als Chips hinzufügen (Eingabefeld + „+ Hinzufügen" oder
+  Enter-Taste) und über das „×" am jeweiligen Chip wieder entfernen;
+  Duplikate (unabhängig von Groß-/Kleinschreibung) werden automatisch
+  abgefangen. Sie tragen die Signalwörter, die in den Abschnitten „Qualität"
   oder „Material" eines Prüfauftrags stehen müssen, damit dieser Parameter
-  relevant ist – aktuell rein informativ/vorbereitend, perspektivisch soll
-  darüber die passende Auswahl von MAK-Parametern im KV automatisch anhand
-  der Prüfauftrags-Texte
-  erfolgen. Schlagworte fließen bereits jetzt in die übergeordnete
-  Textsuche mit ein und werden dauerhaft in der lokalen Datenablage
-  gespeichert.
+  relevant ist: im KV-Reiter (Block Produktspezifikationen) werden
+  Fundstellen dieser Schlagworte im Qualität-/Material-Text automatisch fett
+  hervorgehoben, und der zugehörige Parameter erscheint dort zusätzlich als
+  klickbarer Vorschlag (siehe oben). Schlagworte fließen außerdem in die
+  übergeordnete Textsuche mit ein und werden dauerhaft in der lokalen
+  Datenablage gespeichert. Dieselbe Detailansicht (Felder, Schlagworte) ist
+  auch direkt im KV-Reiter über das MAK-Dropdown erreichbar (siehe oben) —
+  beide teilen sich dieselben Daten.
 - **Verwaltung** – **fünf umschaltbare Ansichten** (Pillen oben im Reiter:
   „Bereiche" / „Warengruppen" / „Prüfungsarten" / „Trivialartikel-Preisliste" /
   „Gefahrenzone"), von denen jeweils nur eine gleichzeitig sichtbar ist —
