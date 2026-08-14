@@ -4713,12 +4713,23 @@ function renderKennzeichnungKarte(kv, pa, kontext) {
    "Produktspezifikationen" - nach Kategorie gruppiert (optgroup), rein zum Nachschlagen (Anzeige
    von Anforderung/Norm/Prüfnachweis/Schlagworten), keine Verknüpfung mit Kosten/Positionen (MAK-
    Einträge haben keinen Preis). */
-function makAuswahlOptionenHtml() {
-  const kategorien = [...new Set(data.mak.map((m) => m.kategorie))].sort((a, b) => a.localeCompare(b, "de"));
-  return `<option value="">— MAK-Parameter wählen —</option>`
-    + kategorien.map((kat) => `<optgroup label="${escapeHtml(kat)}">
-        ${data.mak.filter((m) => m.kategorie === kat).sort((a, b) => (a.parameter || "").localeCompare(b.parameter || "", "de")).map((m) => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.parameter || "(ohne Parameter)")}</option>`).join("")}
+/* Textsuche für die Kategorie-gruppierte MAK-Auswahl im KV - dieselbe breite Feldsuche
+   (Parameter/Kategorie/Bereich/Anforderung/Norm EU/Norm US/Prüfnachweis/Schlagworte) wie im
+   Reiter "MAK" selbst (siehe gefiltereMak), hier aber nur zum Eingrenzen der Dropdown-Optionen -
+   keine eigene Ergebnisliste, da die Auswahl weiterhin über dasselbe Dropdown erfolgt. Kategorien
+   ohne Treffer werden dabei automatisch ausgeblendet (leere optgroup entsteht gar nicht erst). */
+function makEintragTrifftSuche(m, q) {
+  if (!q) return true;
+  return normalisiere([m.id, m.kategorie, m.bereich, m.parameter, m.anforderung, m.normEu, m.normUs, m.pruefnachweis, (m.schlagworte || []).join(" ")].join(" ")).includes(q);
+}
+function makAuswahlOptionenHtml(filterText) {
+  const q = normalisiere(filterText || "");
+  const treffer = data.mak.filter((m) => makEintragTrifftSuche(m, q));
+  const kategorien = [...new Set(treffer.map((m) => m.kategorie))].sort((a, b) => a.localeCompare(b, "de"));
+  const optionenHtml = kategorien.map((kat) => `<optgroup label="${escapeHtml(kat)}">
+        ${treffer.filter((m) => m.kategorie === kat).sort((a, b) => (a.parameter || "").localeCompare(b.parameter || "", "de")).map((m) => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.parameter || "(ohne Parameter)")}</option>`).join("")}
       </optgroup>`).join("");
+  return `<option value="">${q ? `— ${treffer.length} Treffer —` : "— MAK-Parameter wählen —"}</option>${optionenHtml}`;
 }
 /* MAK-Parameter-Detail im KV: kein reines Nachschlagewerk mehr. Führt der Parameter LIDL-
    spezifische Preisvarianten (siehe MAK_VARIANTEN_MIGRATION/migriereMakVarianten - z. B.
@@ -4862,6 +4873,7 @@ function renderProduktspezifikationenKarte(kv, pa, qualitaetBloeckeHtml, materia
     ${materialBloeckeHtml ? `<div class="pa-block-feld"><h3>Material (aus PA)</h3>${materialBloeckeHtml}</div>` : ""}
     <div class="mak-feld">
       <label style="display:flex;flex-direction:column;gap:0.2rem;font-size:0.8rem;font-weight:600;max-width:420px">MAK-Parameter nachschlagen (Materialanforderungskatalog)
+        <input type="text" id="kv-mak-suche" placeholder="Parameter, Kategorie, Anforderung, Norm, Schlagwort suchen…" style="font-family:inherit;font-size:0.85rem;padding:0.35rem 0.5rem;border:1px solid var(--border);border-radius:6px;font-weight:400">
         <select id="kv-mak-auswahl" style="font-family:inherit;font-size:0.85rem;padding:0.35rem 0.5rem;border:1px solid var(--border);border-radius:6px;font-weight:400">${makAuswahlOptionenHtml()}</select>
       </label>
       ${vorschlaegeHtml}
@@ -5258,6 +5270,22 @@ function initialisierePruefumfangUebersicht(panel, kv, pa) {
   const makAuswahl = panel.querySelector("#kv-mak-auswahl");
   if (makAuswahl) {
     makAuswahl.addEventListener("change", () => renderKvMakDetail(makAuswahl.value, kv));
+  }
+  const makSuche = panel.querySelector("#kv-mak-suche");
+  if (makSuche && makAuswahl) {
+    /* Rebaut nur die Dropdown-Optionen (nicht das ganze Formular), damit der Fokus im Suchfeld
+       beim Tippen erhalten bleibt - eine noch passende Auswahl bleibt selektiert, eine nicht mehr
+       passende wird zurückgesetzt (Detail-Anzeige darunter dann geleert). */
+    makSuche.addEventListener("input", () => {
+      const bisherigeAuswahl = makAuswahl.value;
+      makAuswahl.innerHTML = makAuswahlOptionenHtml(makSuche.value);
+      if ([...makAuswahl.options].some((o) => o.value === bisherigeAuswahl)) {
+        makAuswahl.value = bisherigeAuswahl;
+      } else {
+        makAuswahl.value = "";
+        renderKvMakDetail("", kv);
+      }
+    });
   }
   panel.querySelectorAll('[data-action="mak-vorschlag-waehlen"]').forEach((btn) => {
     btn.addEventListener("click", () => {

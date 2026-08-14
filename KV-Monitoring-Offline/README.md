@@ -481,9 +481,17 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     MAK-Dropdown (mit dem gefundenen Schlagwort in Klammern); ein Klick
     wählt den Parameter im Dropdown aus. Das **Dropdown „MAK-Parameter
     nachschlagen"** selbst bietet alle Einträge des Materialanforderungskatalogs
-    nach Kategorie gruppiert zur Auswahl an — nach Auswahl eines Parameters
-    erscheinen darunter dessen Anforderung, Norm/Standard EU, Norm/Standard
-    US und Mindest-Prüfnachweis, ohne in den MAK-Tab wechseln zu müssen. Der
+    nach Kategorie gruppiert zur Auswahl an; ein **Textfeld direkt darüber**
+    durchsucht dabei live alle Felder (Parameter, Kategorie, Bereich,
+    Anforderung, Norm EU/US, Mindest-Prüfnachweis, Schlagworte — dieselbe
+    breite Suche wie im Reiter „MAK" selbst) und grenzt die
+    Dropdown-Optionen entsprechend ein (Kategorien ohne Treffer verschwinden
+    automatisch) — praktisch bei der langen, nach Kategorie sortierten
+    Liste, um einen Parameter nicht erst durchscrollen zu müssen. Eine noch
+    passende Auswahl bleibt beim Weitertippen erhalten, eine nicht mehr
+    passende wird zurückgesetzt. Nach Auswahl eines Parameters erscheinen
+    darunter dessen Anforderung, Norm/Standard EU, Norm/Standard US und
+    Mindest-Prüfnachweis, ohne in den MAK-Tab wechseln zu müssen. Der
     Parameter ist dabei **kein reines Nachschlagewerk**: führt er **LIDL-
     spezifische Preisvarianten** (z. B. Korrosionsbeständigkeit nach Laufzeit/
     Paketpreis-Gruppe, siehe „MAK" unten), erscheint statt eines einzelnen
