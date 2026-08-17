@@ -1058,7 +1058,19 @@ Unterlagen zu dieser IAN zu finden. Ohne IAN erscheint kein Symbol.
   laden.
 - **🔀 Zusammenführen (JSON)** – Arbeitsstände mehrerer Personen/Rechner
   zusammenführen, mit Konfliktanzeige ("Aktuell behalten" / "Aus Datei
-  übernehmen") für alle Bereiche.
+  übernehmen") — deckt inzwischen **alle** Datenbereiche ab: Arbeitsvorrat,
+  Prüfaufträge, Kostenvoranschläge, Prüfgrundlagen, Normen, MAK,
+  Warengruppen, Warengruppen-Zuordnung, Trivialpreisliste sowie Bereiche und
+  Prüfungsarten (letztere beide als reine Werte-Listen ohne Unterfelder,
+  daher dort nur "neu hinzufügen", kein Feld-Konflikt möglich). Bei
+  Warengruppen/Bereichen sortiert sich die Liste nach neu hinzugefügten
+  Einträgen automatisch neu ein (wie beim manuellen Anlegen im Reiter
+  „Verwaltung"). Erkennung läuft je Bereich über einen fachlichen Schlüssel
+  (z. B. IAN bei Arbeitsvorrat/PA, Warengruppe+Produkt bei Prüfgrundlagen,
+  Bezeichnung bei Normen, ID bei MAK, Code bei Warengruppen/Trivialpreisliste)
+  statt über interne, pro Rechner zufällig vergebene IDs — zwei unabhängig
+  voneinander angelegte, aber inhaltlich gleiche Einträge werden so trotzdem
+  korrekt als derselbe erkannt.
 - **📄 CSV-Export** – exportiert die Tabelle des gerade offenen Reiters als
   `.csv`, direkt in Excel öffenbar.
 

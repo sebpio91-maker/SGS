@@ -7345,6 +7345,14 @@ function schluesselPa(p) { return normalisiere(p.ian); }
 function schluesselPruefgrundlage(e) { return normalisiereWarengruppe(e.warengruppeCode) + "|" + normalisiere(e.produkt); }
 function schluesselNorm(n) { return normalisiere(n.bezeichnung); }
 const NORM_FELDER = ["bezeichnung", "titel", "typ", "dateiname", "rohtext", "anwendungsbereiche", "bemerkung", "sapCode", "kennzeichnung", "bedienungsanleitung", "pruefungsart"];
+function schluesselMak(m) { return normalisiere(m.id); }
+const MAK_FELDER = ["kategorie", "bereich", "parameter", "anforderung", "normEu", "normUs", "pruefnachweis", "schlagworte", "varianten"];
+function schluesselWarengruppe(w) { return normalisiereWarengruppe(w.code); }
+const WARENGRUPPE_FELDER = ["name", "bereich"];
+function schluesselWarengruppenZuordnung(z) { return normalisiereWarengruppe(z.neu); }
+const WARENGRUPPENZUORDNUNG_FELDER = ["alt"];
+function schluesselTrivialpreisliste(t) { return normalisiereWarengruppe(t.code); }
+const TRIVIALPREISLISTE_FELDER = ["bezeichnungDe", "preisChemie", "preisVpKennzeichnung", "preisLfgbStichprobe", "preisGesamt", "preisAddSortierung"];
 
 /* JSON.stringify-Vergleich statt strikter Gleichheit, damit auch Feld-Werte, die Arrays sind
    (z. B. Normen/Materialien-Mehrfachauswahl), inhaltlich statt nach Objektreferenz verglichen
@@ -7352,14 +7360,28 @@ const NORM_FELDER = ["bezeichnung", "titel", "typ", "dateiname", "rohtext", "anw
    Export/Import-Zyklus) sollen nicht als Konflikt erkannt werden. */
 function feldweiseGleich(a, b, felder) { return felder.every((f) => JSON.stringify(a[f] ?? "") === JSON.stringify(b[f] ?? "")); }
 
+/* Achtung: der "imp.id &&"-Schutz vor dem .id-Kurzschluss ist notwendig, nicht nur Stil - ohne ihn
+   würde bei Listen ohne .id-Feld (z. B. Warengruppen, Warengruppen-Zuordnung, Trivialpreisliste:
+   dort ist der Schlüssel code/neu, kein .id) "l.id === imp.id" für JEDES Element zu
+   "undefined === undefined" (also true) auswerten - .find() bräche dann beim allerersten
+   lokalen Eintrag ab, unabhängig vom tatsächlichen Schlüssel. */
 function planFlacheListe(lokal, importiert, schluesselFn, vergleichFelder) {
   const neue = [], konflikte = [];
   importiert.forEach((imp) => {
-    const treffer = lokal.find((l) => l.id === imp.id || schluesselFn(l) === schluesselFn(imp));
+    const treffer = lokal.find((l) => (imp.id && l.id === imp.id) || schluesselFn(l) === schluesselFn(imp));
     if (!treffer) { neue.push(imp); return; }
     if (!feldweiseGleich(treffer, imp, vergleichFelder)) konflikte.push({ lokal: treffer, importiert: imp });
   });
   return { neue, konflikte };
+}
+
+/* Merge-Variante für reine String-Listen (Bereiche, Prüfungsarten) - hier gibt es keine
+   vergleichbaren "Felder" (ein String ist entweder identisch oder ein anderer Wert, kein
+   Teil-Update möglich), daher auch kein Konflikt-Konzept: nur neue, lokal noch nicht vorhandene
+   Werte werden vorgeschlagen. */
+function planFlacheStringListe(lokal, importiert) {
+  const vorhanden = new Set(lokal.map((s) => normalisiere(s)));
+  return (importiert || []).filter((s) => s && s.trim() && !vorhanden.has(normalisiere(s)));
 }
 
 let mergePlan = null;
@@ -7367,17 +7389,32 @@ let mergePlan = null;
 function berechneMergePlan(importData) {
   (importData.normen || []).forEach(migriereNorm);
   (importData.pruefgrundlagen || []).forEach(migrierePruefgrundlage);
+  (importData.mak || []).forEach((m) => {
+    if (!Array.isArray(m.schlagworte)) m.schlagworte = [];
+    if (!Array.isArray(m.varianten)) m.varianten = [];
+  });
   const avPlan = planFlacheListe(data.arbeitsvorrat, importData.arbeitsvorrat || [], schluesselArbeitsvorrat, ARBEITSVORRAT_FELDER);
   const paPlan = planFlacheListe(data.pruefauftraege, importData.pruefauftraege || [], schluesselPa, ["artikelbezeichnung", "warengruppe"]);
   const kvPlan = planFlacheListe(data.kvs, importData.kvs || [], (k) => k.id, ["ian", "artikel", "lieferant", "sapNummer", "warengruppeNeu", "warengruppeAlt", "notiz"]);
   const pruefgrundlagenPlan = planFlacheListe(data.pruefgrundlagen, importData.pruefgrundlagen || [], schluesselPruefgrundlage, PRUEFGRUNDLAGE_FELDER);
   const normenPlan = planFlacheListe(data.normen, importData.normen || [], schluesselNorm, NORM_FELDER);
+  const makPlan = planFlacheListe(data.mak, importData.mak || [], schluesselMak, MAK_FELDER);
+  const warengruppenPlan = planFlacheListe(data.warengruppen, importData.warengruppen || [], schluesselWarengruppe, WARENGRUPPE_FELDER);
+  const warengruppenZuordnungPlan = planFlacheListe(data.warengruppenZuordnung, importData.warengruppenZuordnung || [], schluesselWarengruppenZuordnung, WARENGRUPPENZUORDNUNG_FELDER);
+  const trivialpreislistePlan = planFlacheListe(data.trivialPreisliste, importData.trivialPreisliste || [], schluesselTrivialpreisliste, TRIVIALPREISLISTE_FELDER);
+  const neueBereiche = planFlacheStringListe(data.bereiche, importData.bereiche || []);
+  const neuePruefungsarten = planFlacheStringListe(data.pruefungsarten, importData.pruefungsarten || []);
   return {
     neueAv: avPlan.neue, avKonflikte: avPlan.konflikte,
     neuePa: paPlan.neue, paKonflikte: paPlan.konflikte,
     neueKv: kvPlan.neue, kvKonflikte: kvPlan.konflikte,
     neuePruefgrundlagen: pruefgrundlagenPlan.neue, pruefgrundlagenKonflikte: pruefgrundlagenPlan.konflikte,
-    neueNormen: normenPlan.neue, normenKonflikte: normenPlan.konflikte
+    neueNormen: normenPlan.neue, normenKonflikte: normenPlan.konflikte,
+    neueMak: makPlan.neue, makKonflikte: makPlan.konflikte,
+    neueWarengruppen: warengruppenPlan.neue, warengruppenKonflikte: warengruppenPlan.konflikte,
+    neueWarengruppenZuordnung: warengruppenZuordnungPlan.neue, warengruppenZuordnungKonflikte: warengruppenZuordnungPlan.konflikte,
+    neueTrivialpreisliste: trivialpreislistePlan.neue, trivialpreislisteKonflikte: trivialpreislistePlan.konflikte,
+    neueBereiche, neuePruefungsarten
   };
 }
 
@@ -7399,7 +7436,8 @@ function konfliktListeHtml(typ, liste, titelFn, textFn) {
 function renderMergeUebersicht() {
   const box = document.getElementById("overlay-box");
   const p = mergePlan;
-  const anzahl = p.neueAv.length + p.avKonflikte.length + p.neuePa.length + p.paKonflikte.length + p.neueKv.length + p.kvKonflikte.length + p.neuePruefgrundlagen.length + p.pruefgrundlagenKonflikte.length + p.neueNormen.length + p.normenKonflikte.length;
+  const anzahl = p.neueAv.length + p.avKonflikte.length + p.neuePa.length + p.paKonflikte.length + p.neueKv.length + p.kvKonflikte.length + p.neuePruefgrundlagen.length + p.pruefgrundlagenKonflikte.length + p.neueNormen.length + p.normenKonflikte.length
+    + p.neueMak.length + p.makKonflikte.length + p.neueWarengruppen.length + p.warengruppenKonflikte.length + p.neueWarengruppenZuordnung.length + p.warengruppenZuordnungKonflikte.length + p.neueTrivialpreisliste.length + p.trivialpreislisteKonflikte.length + p.neueBereiche.length + p.neuePruefungsarten.length;
 
   let html = `<h2>Zusammenführen: Änderungen prüfen</h2>`;
   if (anzahl === 0) {
@@ -7419,6 +7457,16 @@ function renderMergeUebersicht() {
   if (p.pruefgrundlagenKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Prüfgrundlagen (${p.pruefgrundlagenKonflikte.length})</h3>` + konfliktListeHtml("pruefgrundlagenKonflikt", p.pruefgrundlagenKonflikte, (k) => escapeHtml(k.lokal.warengruppeCode) + " " + escapeHtml(k.lokal.produkt), (e) => PRUEFGRUNDLAGE_FELDER.map((f) => f + ": " + (["normen", "ffuNormen", "stiwaNormen"].includes(f) ? normRefListeText(e[f]) : (e[f] ?? ""))).join("\n")) + `</div>`;
   if (p.neueNormen.length) html += `<div class="merge-section"><h3>Neue Normen (${p.neueNormen.length})</h3>` + checkboxListeHtml("neueNormen", p.neueNormen, (n) => `<strong>${escapeHtml(n.bezeichnung)}</strong> — ${(n.anwendungsbereiche || []).length} Anwendungsbereich(e)`) + `</div>`;
   if (p.normenKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Normen (${p.normenKonflikte.length})</h3>` + konfliktListeHtml("normenKonflikt", p.normenKonflikte, (k) => escapeHtml(k.lokal.bezeichnung), (n) => "Typ: " + normTypLabel(n.typ) + "\nTitel: " + (n.titel || "") + "\nDatei: " + (n.dateiname || "") + "\nSAP-Code: " + (n.sapCode || "") + "\nBemerkung: " + (n.bemerkung || "") + "\nAnwendungsbereiche: " + (n.anwendungsbereiche || []).length) + `</div>`;
+  if (p.neueMak.length) html += `<div class="merge-section"><h3>Neue MAK-Einträge (${p.neueMak.length})</h3>` + checkboxListeHtml("neueMak", p.neueMak, (m) => `<strong>${escapeHtml(m.parameter || m.id)}</strong> — ${escapeHtml(m.id)}`) + `</div>`;
+  if (p.makKonflikte.length) html += `<div class="merge-section"><h3>Abweichende MAK-Einträge (${p.makKonflikte.length})</h3>` + konfliktListeHtml("makKonflikt", p.makKonflikte, (k) => escapeHtml(k.lokal.parameter || k.lokal.id), (m) => MAK_FELDER.map((f) => f + ": " + (f === "schlagworte" ? (m.schlagworte || []).join(", ") : f === "varianten" ? (m.varianten || []).map((v) => `${v.bezeichnung} (${v.kosten} €)`).join("; ") : (m[f] ?? ""))).join("\n")) + `</div>`;
+  if (p.neueWarengruppen.length) html += `<div class="merge-section"><h3>Neue Warengruppen (${p.neueWarengruppen.length})</h3>` + checkboxListeHtml("neueWarengruppen", p.neueWarengruppen, (w) => `<strong>${escapeHtml(w.code)}</strong> — ${escapeHtml(w.name)}`) + `</div>`;
+  if (p.warengruppenKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Warengruppen (${p.warengruppenKonflikte.length})</h3>` + konfliktListeHtml("warengruppenKonflikt", p.warengruppenKonflikte, (k) => escapeHtml(k.lokal.code), (w) => "Name: " + (w.name || "") + "\nBereich: " + (w.bereich || "")) + `</div>`;
+  if (p.neueWarengruppenZuordnung.length) html += `<div class="merge-section"><h3>Neue Warengruppen-Zuordnungen (${p.neueWarengruppenZuordnung.length})</h3>` + checkboxListeHtml("neueWarengruppenZuordnung", p.neueWarengruppenZuordnung, (z) => `<strong>${escapeHtml(z.neu)}</strong> → ${escapeHtml(z.alt)}`) + `</div>`;
+  if (p.warengruppenZuordnungKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Warengruppen-Zuordnungen (${p.warengruppenZuordnungKonflikte.length})</h3>` + konfliktListeHtml("warengruppenZuordnungKonflikt", p.warengruppenZuordnungKonflikte, (k) => escapeHtml(k.lokal.neu), (z) => "Alt: " + (z.alt || "")) + `</div>`;
+  if (p.neueTrivialpreisliste.length) html += `<div class="merge-section"><h3>Neue Trivialpreisliste-Einträge (${p.neueTrivialpreisliste.length})</h3>` + checkboxListeHtml("neueTrivialpreisliste", p.neueTrivialpreisliste, (t) => `<strong>${escapeHtml(t.code)}</strong> — ${escapeHtml(t.bezeichnungDe || "")}`) + `</div>`;
+  if (p.trivialpreislisteKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Trivialpreisliste-Einträge (${p.trivialpreislisteKonflikte.length})</h3>` + konfliktListeHtml("trivialpreislisteKonflikt", p.trivialpreislisteKonflikte, (k) => escapeHtml(k.lokal.code), (t) => TRIVIALPREISLISTE_FELDER.map((f) => f + ": " + (t[f] ?? "")).join("\n")) + `</div>`;
+  if (p.neueBereiche.length) html += `<div class="merge-section"><h3>Neue Bereiche (${p.neueBereiche.length})</h3>` + checkboxListeHtml("neueBereiche", p.neueBereiche, (b) => escapeHtml(b)) + `</div>`;
+  if (p.neuePruefungsarten.length) html += `<div class="merge-section"><h3>Neue Prüfungsarten (${p.neuePruefungsarten.length})</h3>` + checkboxListeHtml("neuePruefungsarten", p.neuePruefungsarten, (a) => escapeHtml(a)) + `</div>`;
 
   html += `<div class="overlay-actions"><button id="merge-anwenden">Zusammenführung übernehmen</button><button class="ghost" id="merge-abbrechen">Abbrechen</button></div>`;
   box.innerHTML = html;
@@ -7445,6 +7493,27 @@ function wendeMergeAn() {
 
   p.neueNormen.forEach((n, i) => { const cb = box.querySelector(`[data-typ="neueNormen"][data-idx="${i}"]`); if (cb && cb.checked) data.normen.push(n); });
   p.normenKonflikte.forEach((k, i) => { const g = box.querySelector(`[name="normenKonflikt-${i}"]:checked`); if (g && g.value === "importiert") NORM_FELDER.forEach((f) => (k.lokal[f] = k.importiert[f])); });
+
+  p.neueMak.forEach((m, i) => { const cb = box.querySelector(`[data-typ="neueMak"][data-idx="${i}"]`); if (cb && cb.checked) data.mak.push(m); });
+  p.makKonflikte.forEach((k, i) => { const g = box.querySelector(`[name="makKonflikt-${i}"]:checked`); if (g && g.value === "importiert") MAK_FELDER.forEach((f) => (k.lokal[f] = k.importiert[f])); });
+
+  p.neueWarengruppen.forEach((w, i) => { const cb = box.querySelector(`[data-typ="neueWarengruppen"][data-idx="${i}"]`); if (cb && cb.checked) data.warengruppen.push(w); });
+  p.warengruppenKonflikte.forEach((k, i) => { const g = box.querySelector(`[name="warengruppenKonflikt-${i}"]:checked`); if (g && g.value === "importiert") WARENGRUPPE_FELDER.forEach((f) => (k.lokal[f] = k.importiert[f])); });
+  if (p.neueWarengruppen.some((w, i) => { const cb = box.querySelector(`[data-typ="neueWarengruppen"][data-idx="${i}"]`); return cb && cb.checked; })) {
+    data.warengruppen.sort((a, b) => a.code.localeCompare(b.code, "de", { numeric: true }));
+  }
+
+  p.neueWarengruppenZuordnung.forEach((z, i) => { const cb = box.querySelector(`[data-typ="neueWarengruppenZuordnung"][data-idx="${i}"]`); if (cb && cb.checked) data.warengruppenZuordnung.push(z); });
+  p.warengruppenZuordnungKonflikte.forEach((k, i) => { const g = box.querySelector(`[name="warengruppenZuordnungKonflikt-${i}"]:checked`); if (g && g.value === "importiert") WARENGRUPPENZUORDNUNG_FELDER.forEach((f) => (k.lokal[f] = k.importiert[f])); });
+
+  p.neueTrivialpreisliste.forEach((t, i) => { const cb = box.querySelector(`[data-typ="neueTrivialpreisliste"][data-idx="${i}"]`); if (cb && cb.checked) data.trivialPreisliste.push(t); });
+  p.trivialpreislisteKonflikte.forEach((k, i) => { const g = box.querySelector(`[name="trivialpreislisteKonflikt-${i}"]:checked`); if (g && g.value === "importiert") TRIVIALPREISLISTE_FELDER.forEach((f) => (k.lokal[f] = k.importiert[f])); });
+
+  let bereicheGeaendert = false;
+  p.neueBereiche.forEach((b, i) => { const cb = box.querySelector(`[data-typ="neueBereiche"][data-idx="${i}"]`); if (cb && cb.checked) { data.bereiche.push(b); bereicheGeaendert = true; } });
+  if (bereicheGeaendert) data.bereiche.sort((a, b) => a.localeCompare(b, "de"));
+
+  p.neuePruefungsarten.forEach((a, i) => { const cb = box.querySelector(`[data-typ="neuePruefungsarten"][data-idx="${i}"]`); if (cb && cb.checked) data.pruefungsarten.push(a); });
 
   speichereInLocalStorage();
   schliesseOverlay();
