@@ -489,16 +489,24 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   hinterlegt. Die einzelnen Blöcke:
   - **Sicherheit-/Normprüfung** (siehe oben, immer sichtbar sobald eine
     Warengruppe hinterlegt ist) — der Abschnitt „Weitere Positionen" enthält
-    hier alle **Normen mit Prüfungsart „LIDL-spezifisch"** (Reiter
-    „Normen"/„Verwaltung" → Prüfungsarten, analog zu „Kennzeichnung" oben)
-    als eigene, per „+ hinzufügen" direkt übernehmbare Zeilen mit ihrem
-    hinterlegten Preis (sofern gepflegt) — ohne Vorschlags-Markierung, da es
-    dafür (anders als bei den vier festen Kennzeichnung-GER-Varianten) kein
-    vergleichbares, aus dem Prüfauftrag ableitbares Signal gibt. Die früher
-    hier fest verankerten Katalogpositionen **Akkusicherheitskurzcheck** und
-    **Optischer Abgleich** wurden entfernt; **Mustereinlagerung** wird im
-    Prüfumfang ebenfalls nicht mehr angezeigt (weder als Vorschlag noch
-    manuell hinzufügbar).
+    hier (im Standardfall) alle **Normen mit Prüfungsart „LIDL-spezifisch"**
+    (Reiter „Normen"/„Verwaltung" → Prüfungsarten, analog zu „Kennzeichnung"
+    oben). Jede solche Norm hat im Reiter „Normen" zusätzlich ein Dropdown
+    **„KV-Block"**, das festlegt, in welchem der vier Blöcke Sicherheit-/
+    Normprüfung (Standard), (Physikalische-) Produktspezifikationen,
+    FFU/Fitting oder NGO sie als addierbare Position erscheint — dort dann
+    jeweils per „+ hinzufügen" direkt übernehmbar, mit ihrem hinterlegten
+    Preis (sofern gepflegt) und ohne Vorschlags-Markierung, da es dafür
+    (anders als bei den vier festen Kennzeichnung-GER-Varianten) kein
+    vergleichbares, aus dem Prüfauftrag ableitbares Signal gibt. Bei
+    Produktspezifikationen erscheint der Abschnitt „Weitere Positionen" nur,
+    wenn dort tatsächlich mindestens eine LIDL-spezifische Norm zugeordnet
+    ist (anders als bei den übrigen drei Blöcken gibt es dort sonst keine
+    feste Katalogposition, die den Abschnitt ohnehin sichtbar hielte). Die
+    früher hier fest verankerten Katalogpositionen
+    **Akkusicherheitskurzcheck** und **Optischer Abgleich** wurden entfernt;
+    **Mustereinlagerung** wird im Prüfumfang ebenfalls nicht mehr angezeigt
+    (weder als Vorschlag noch manuell hinzufügbar).
   - **Kennzeichnung** – eigener Block, erscheint sobald „Kennzeichnung
     (Verpackung & Produkt)" oder „Kennzeichnung (Bedienungsanleitung)"
     angehakt ist. Die zum Hinzufügen angebotenen Positionen sind **direkt die
@@ -513,12 +521,12 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     unten) ist weiterhin automatisch als „Vorschlag" markiert. Weitere echte
     Kennzeichnung-Normen lassen sich jederzeit im Reiter „Normen" ergänzen
     (Prüfungsart auf „Kennzeichnung" setzen) und erscheinen dann automatisch
-    mit in dieser Liste. Trägt eine solche Norm dort einen eingetragenen
-    **Kosten-Wert** (siehe „Kosten direkt an der Norm" weiter unten), wird
-    dieser als Preis der Position übernommen; ist kein Trivialartikel-
-    Paketpreis für diesen KV aktiv (siehe „VP & Kennzeichnung"-Hinweis unten),
-    bleibt dieser Wert unverändert stehen — nur wenn der Paketpreis greift,
-    überschreibt die automatische Verteilung ihn wieder.
+    mit in dieser Liste. Ein an einer Kennzeichnung-Norm eingetragener
+    **Kosten-Wert** (siehe „Kosten direkt an der Norm" weiter unten) wird für
+    diesen Block bewusst **nicht** angezeigt oder übernommen — der
+    Kennzeichnung-Block hat einen fest vorgegebenen Gesamtpreis (siehe „VP &
+    Kennzeichnung"-Hinweis weiter unten), der die einzelnen Norm-Kosten
+    immer überschreibt.
 
     Trägt die im Sicherheit-/Normprüfung-Block für
     dieses Produkt gewählte Norm selbst Kennzeichnungs- und/oder
@@ -1081,22 +1089,30 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     Zeile editierbar, neue Zeilen über das Formular darunter anlegen.
     **Angewendet wird davon aktuell nur der Preis „VP & Kennzeichnung"** (die
     übrigen Preise betreffen den chemischen Teil der Prüfung und sind noch
-    nicht verdrahtet): Im Kostenvoranschlag erscheint im Kennzeichnung-Block
-    ein Hinweis-Banner, sobald **Trivial = Ja** ODER die **Artikelkategorie
+    nicht verdrahtet): sobald **Trivial = Ja** ODER die **Artikelkategorie
     des verknüpften Prüfauftrags „Grün*" (mit Stern)** ist — derselbe
     Artikelkreis, der auch von der Sicherheit-/Normprüfung-Pflicht befreit
-    ist. Findet sich zur „Warengruppe (alt)" des KVs ein Eintrag in der
-    Trivialartikel-Preisliste, zeigt das Banner den VP&Kennzeichnung-Preis
-    und wird **automatisch** gleichmäßig auf die im Kennzeichnung-Block
-    bereits hinzugefügten, aktiven Positionen verteilt (nur eine aktiv →
-    volle Summe dort) — der Preis gilt als **Summe für alle zusammen**, nicht
-    je Position, und die Verteilung läuft jedes Mal neu, sobald im
+    ist — UND sich zur „Warengruppe (alt)" des KVs ein Eintrag mit
+    VP&Kennzeichnung-Preis in der Trivialartikel-Preisliste findet, gilt
+    dieser Preis als Gesamtsumme für den Kennzeichnung-Block.
+
+    **In allen anderen Fällen gilt stattdessen ein fester Standardpreis von
+    360 €** für den gesamten Kennzeichnung-Block — der Kennzeichnung-Block
+    kostet also **immer** entweder den Trivialartikel-Paketpreis oder
+    pauschal 360 €, **nie** die Summe der an den einzelnen Kennzeichnung-
+    Normen hinterlegten Kosten (diese werden für den Kennzeichnung-Block
+    komplett ignoriert; die eigentlichen Norm-Kosten spielen nur außerhalb
+    davon eine Rolle, z. B. bei „LIDL-spezifisch"-Normen). Der jeweils
+    geltende Gesamtpreis wird **automatisch** gleichmäßig auf die im
+    Kennzeichnung-Block bereits hinzugefügten, aktiven Positionen verteilt
+    (nur eine aktiv → volle Summe dort) und läuft jedes Mal neu, sobald im
     Kennzeichnung-Block eine weitere Norm hinzugefügt wird; ein manueller
-    Button ist dafür nicht mehr nötig. Stimmt die aktuelle Summe schon mit
-    dem Paketpreis überein, zeigt das Banner „✓ verteilt", bei einer später
-    manuell geänderten Summe „Summe weicht ab (manuell geändert?)". Ohne
-    passenden Eintrag in der Preisliste oder ohne bereits hinzugefügte
-    Kennzeichnung-Position erscheint stattdessen ein reiner Hinweis.
+    Button ist dafür nicht mehr nötig. Ein Hinweis-Banner im Kennzeichnung-
+    Block zeigt dabei immer, welcher der beiden Preise gerade greift.
+    Stimmt die aktuelle Summe schon mit dem Gesamtpreis überein, zeigt das
+    Banner „✓ verteilt", bei einer später manuell geänderten Summe „Summe
+    weicht ab (manuell geändert?)". Ohne bereits hinzugefügte Kennzeichnung-
+    Position bleibt der Hinweis reine Information ohne Verteilung.
   - **Gefahrenzone** – löscht **Arbeitsvorrat, Prüfaufträge und
     Kostenvoranschläge** unwiderruflich (zwei Sicherheitsabfragen), z. B. um
     nach dem Testen sauber mit echten Daten neu zu starten.

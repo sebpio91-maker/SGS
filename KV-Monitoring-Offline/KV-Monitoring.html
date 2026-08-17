@@ -2079,6 +2079,20 @@ function normTypFuerBlock(bez, erlaubteTypen) {
   if (!erlaubteTypen || !erlaubteTypen.length || erlaubteTypen.includes(geraten)) return geraten;
   return erlaubteTypen[0];
 }
+
+/* Normen mit Prüfungsart "LIDL-spezifisch" (siehe lidlSpezifischNormenAddableHtml) legen zusätzlich
+   fest, in welchem KV-Block sie als addierbare "Weitere Positionen" erscheinen sollen - Kategorie
+   und Kürzel entsprechen dabei denen, mit denen diese Blöcke ihre eigenen Positionen sonst
+   anlegen (siehe renderSicherheitNormKarte/renderProduktspezifikationenKarte/renderFfuNgoKarte). */
+const LIDL_SPEZIFISCH_BLOCK_OPTIONEN = [
+  { wert: "sicherheitNorm", label: "Sicherheit-/Normprüfung", kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", kuerzel: "MS" },
+  { wert: "produktspezifikationen", label: "(Physikalische-) Produktspezifikationen", kategorie: "(physikalische-) Produktspezifikation", kuerzel: "PS" },
+  { wert: "ffuFitting", label: "FFU/Fitting", kategorie: "FFU/Fitting", kuerzel: "FFU" },
+  { wert: "ngo", label: "NGO", kategorie: "NGO", kuerzel: "NGO" }
+];
+function lidlSpezifischBlockOptionenHtml(ausgewaehlt) {
+  return LIDL_SPEZIFISCH_BLOCK_OPTIONEN.map((o) => `<option value="${o.wert}" ${(ausgewaehlt || "sicherheitNorm") === o.wert ? "selected" : ""}>${escapeHtml(o.label)}</option>`).join("");
+}
 function normTypLabel(typ) {
   const eintrag = NORM_TYP_OPTIONEN.find((o) => o.wert === typ);
   return eintrag ? eintrag.label : NORM_TYP_OPTIONEN[0].label;
@@ -2103,6 +2117,7 @@ function migriereNorm(n) {
   if (n.bedienungsanleitung === undefined) n.bedienungsanleitung = false;
   if (n.pruefungsart === undefined) n.pruefungsart = "";
   if (n.kosten === undefined) n.kosten = null;
+  if (n.lidlSpezifischBlock === undefined) n.lidlSpezifischBlock = "sicherheitNorm";
   if (!Array.isArray(n.anwendungsbereiche)) n.anwendungsbereiche = [];
   if (Array.isArray(n.pruefpunkte) && n.pruefpunkte.length) {
     n.anwendungsbereiche = n.anwendungsbereiche.concat(n.pruefpunkte.map((p) => ({
@@ -4357,22 +4372,35 @@ function kennzeichnungAktivePositionen(kv) {
   return kv.positionen.filter((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere(SICHERHEIT_NORM_KATEGORIE_NAME) && normBezeichnungen.has(normalisiere(p.bezeichnung)));
 }
 
-/* Verteilt den Trivialartikel-Paketpreis "VP & Kennzeichnung" (Reiter "Verwaltung" ->
-   Trivialartikel-Preisliste) automatisch als SUMME gleichmäßig auf alle aktuell aktiven
-   Kennzeichnung-Positionen dieses KVs (siehe kennzeichnungAktivePositionen) - anders als früher
-   werden dabei KEINE Positionen mehr automatisch angelegt, sondern nur die vom Nutzer im
+/* Feste Gesamtsumme für den Kennzeichnung-Block, wenn (noch) kein Trivialartikel-Paketpreis aus
+   der Trivialartikel-Preisliste anwendbar ist (siehe wendeKennzeichnungPaketpreisAn) - LIDL-seitig
+   so vorgegeben, unabhängig von den ausgewählten Kennzeichnung-Positionen und ihren eigentlich an
+   der jeweiligen Norm hinterlegten Kosten. */
+const KENNZEICHNUNG_STANDARD_PAKETPREIS = 360;
+
+/* Verteilt einen Gesamtpreis für den Kennzeichnung-Block automatisch gleichmäßig auf alle aktuell
+   aktiven Kennzeichnung-Positionen dieses KVs (siehe kennzeichnungAktivePositionen) - anders als
+   früher werden dabei KEINE Positionen mehr automatisch angelegt, sondern nur die vom Nutzer im
    Kennzeichnung-Block bereits hinzugefügten neu verteilt (nur eine aktiv -> volle Summe dort).
-   Alle übrigen Preisfelder der Preisliste (Chemie, LFGB-Stichprobe, Gesamt, Add Sortierung)
-   betreffen den chemischen Teil der Prüfung und werden hier bewusst NICHT angewendet. Wird nach
-   jedem Hinzufügen einer Kennzeichnung-Position automatisch aufgerufen (siehe
-   initialisierePruefumfangUebersicht). */
+   Der zu verteilende Gesamtpreis kommt entweder aus dem Trivialartikel-Paketpreis "VP &
+   Kennzeichnung" (Reiter "Verwaltung", nur bei Trivial=Ja/Artikelkategorie Grün*, siehe
+   trivialPaketpreisAktiv) oder - wenn das nicht zutrifft bzw. kein Preislisten-Eintrag vorliegt -
+   pauschal aus KENNZEICHNUNG_STANDARD_PAKETPREIS; in JEDEM Fall gilt also am Ende eine feste
+   Gesamtsumme für den Block, nie die Summe der einzelnen Norm-Kosten. Alle übrigen Preisfelder der
+   Trivialartikel-Preisliste (Chemie, LFGB-Stichprobe, Gesamt, Add Sortierung) betreffen den
+   chemischen Teil der Prüfung und werden hier bewusst NICHT angewendet. Wird nach jedem Hinzufügen
+   einer Kennzeichnung-Position automatisch aufgerufen (siehe initialisierePruefumfangUebersicht). */
 function wendeKennzeichnungPaketpreisAn(kv, pa) {
-  if (!trivialPaketpreisAktiv(kv, pa)) return false;
-  const eintrag = trivialPreislisteEintragFuerKv(kv);
-  if (!eintrag || eintrag.preisVpKennzeichnung === "" || eintrag.preisVpKennzeichnung === null || eintrag.preisVpKennzeichnung === undefined) return false;
   const aktivePositionen = kennzeichnungAktivePositionen(kv);
   if (!aktivePositionen.length) return false;
-  const gesamt = Number(eintrag.preisVpKennzeichnung);
+  let gesamt = null;
+  if (trivialPaketpreisAktiv(kv, pa)) {
+    const eintrag = trivialPreislisteEintragFuerKv(kv);
+    if (eintrag && eintrag.preisVpKennzeichnung !== "" && eintrag.preisVpKennzeichnung !== null && eintrag.preisVpKennzeichnung !== undefined) {
+      gesamt = Number(eintrag.preisVpKennzeichnung);
+    }
+  }
+  if (gesamt === null) gesamt = KENNZEICHNUNG_STANDARD_PAKETPREIS;
   const anteil = Math.round((gesamt / aktivePositionen.length) * 100) / 100;
   aktivePositionen.forEach((p, idx) => {
     p.kosten = idx === aktivePositionen.length - 1 ? Math.round((gesamt - anteil * (aktivePositionen.length - 1)) * 100) / 100 : anteil;
@@ -4380,30 +4408,30 @@ function wendeKennzeichnungPaketpreisAn(kv, pa) {
   return true;
 }
 
-/* Hinweis im Kennzeichnung-Block, sobald für diesen KV ein Trivialartikel-Paketpreis infrage
-   kommt (siehe trivialPaketpreisAktiv) - der Preis wird automatisch verteilt (siehe
+/* Hinweis im Kennzeichnung-Block: der Gesamtpreis wird automatisch verteilt (siehe
    wendeKennzeichnungPaketpreisAn), hier gibt es dafür bewusst keinen manuellen Button mehr,
-   sondern nur noch den Status (verteilt / weicht ab / noch keine Position hinzugefügt). */
+   sondern nur noch den Status (verteilt / weicht ab / noch keine Position hinzugefügt) - erscheint
+   jetzt IMMER, nicht mehr nur bei Trivialartikeln, da auch der 360€-Standardfall automatisch
+   verteilt wird. */
 function kennzeichnungPaketpreisHinweisHtml(kv, pa) {
-  if (!trivialPaketpreisAktiv(kv, pa)) return "";
+  const trivialAktiv = trivialPaketpreisAktiv(kv, pa);
   const grund = jaNeinAnzeige(kv.trivial) === "Ja" ? "Trivial = Ja" : "Artikelkategorie Grün*";
-  const eintrag = trivialPreislisteEintragFuerKv(kv);
-  if (!eintrag || eintrag.preisVpKennzeichnung === "" || eintrag.preisVpKennzeichnung === null || eintrag.preisVpKennzeichnung === undefined) {
-    return `<div class="trivial-paketpreis-hinweis">
-      <strong>Trivialartikel-Paketpreis</strong> wäre anwendbar (${grund}), aber für die Warengruppe
-      (alt) „${escapeHtml(kv.warengruppeAlt || "– nicht gesetzt –")}" liegt kein VP&amp;Kennzeichnung-Preis
-      in der Trivialartikel-Preisliste (Reiter „Verwaltung") vor.
-    </div>`;
-  }
+  const eintrag = trivialAktiv ? trivialPreislisteEintragFuerKv(kv) : null;
+  const eintragHatPreis = eintrag && eintrag.preisVpKennzeichnung !== "" && eintrag.preisVpKennzeichnung !== null && eintrag.preisVpKennzeichnung !== undefined;
+  const gesamt = eintragHatPreis ? Number(eintrag.preisVpKennzeichnung) : KENNZEICHNUNG_STANDARD_PAKETPREIS;
+  const quelleHtml = eintragHatPreis
+    ? `<strong>Trivialartikel-Paketpreis</strong> (${grund}, Warengruppe alt „${escapeHtml(eintrag.code)}"): VP &amp; Kennzeichnung <strong>${gesamt.toFixed(2)} €</strong>`
+    : trivialAktiv
+      ? `Trivialartikel-Paketpreis wäre anwendbar (${grund}), aber für die Warengruppe (alt) „${escapeHtml(kv.warengruppeAlt || "– nicht gesetzt –")}" liegt kein VP&amp;Kennzeichnung-Preis in der Trivialartikel-Preisliste (Reiter „Verwaltung") vor - stattdessen gilt der <strong>Standardpreis ${gesamt.toFixed(2)} €</strong>`
+      : `<strong>Standardpreis Kennzeichnung ${gesamt.toFixed(2)} €</strong> (fest, unabhängig von den ausgewählten Positionen und ihren Norm-Kosten)`;
   const aktivePositionen = kennzeichnungAktivePositionen(kv);
   const aktuelleSumme = aktivePositionen.reduce((summe, p) => summe + (Number(p.kosten) || 0), 0);
-  const summeStimmt = aktivePositionen.length > 0 && Math.abs(aktuelleSumme - Number(eintrag.preisVpKennzeichnung)) < 0.01;
+  const summeStimmt = aktivePositionen.length > 0 && Math.abs(aktuelleSumme - gesamt) < 0.01;
   return `<div class="trivial-paketpreis-hinweis">
-    <strong>Trivialartikel-Paketpreis</strong> (${grund}, Warengruppe alt „${escapeHtml(eintrag.code)}"):
-    VP &amp; Kennzeichnung <strong>${Number(eintrag.preisVpKennzeichnung).toFixed(2)} €</strong> wird automatisch
-    gleichmäßig auf die unten hinzugefügten Kennzeichnung-Positionen verteilt, sobald mindestens eine
-    davon aktiv im KV steht. Weitere Preise der Preisliste (Chemie, LFGB-Stichprobe, Gesamt, Add
-    Sortierung) betreffen den chemischen Teil und sind hier nicht relevant.
+    ${quelleHtml} wird automatisch gleichmäßig auf die unten hinzugefügten Kennzeichnung-Positionen
+    verteilt, sobald mindestens eine davon aktiv im KV steht. Weitere Preise der Trivialartikel-Preisliste
+    (Chemie, LFGB-Stichprobe, Gesamt, Add Sortierung) betreffen den chemischen Teil und sind hier
+    nicht relevant.
     ${aktivePositionen.length ? (summeStimmt ? `<span class="badge ja">✓ verteilt</span>` : `<span class="badge nein">Summe weicht ab (manuell geändert?)</span>`) : `<span class="muted">Noch keine Kennzeichnung-Position hinzugefügt.</span>`}
   </div>`;
 }
@@ -4609,7 +4637,7 @@ function renderSicherheitNormKarte(kv, pa, kontext) {
      existieren. */
   const fixpositionenSichtbar = kategorieIstAusgewaehlt(kv, kat);
   const { positionenHtml, alleVorschlaegeButton } = fixPositionenListeHtml(kat, pa, kv, (k) => !KENNZEICHNUNG_FIXPOSITION_ID(k.id) && !WEITERE_POSITIONEN_AUSGEBLENDET_ID(k.id));
-  const lidlSpezifischHtml = lidlSpezifischNormenAddableHtml(kv);
+  const lidlSpezifischHtml = lidlSpezifischNormenAddableHtml(kv, "sicherheitNorm");
   const fixpositionenHtml = fixpositionenSichtbar ? `<div class="pruefumfang-kat-kopf" style="margin-top:0.6rem"><strong>Weitere Positionen</strong> ${alleVorschlaegeButton}</div>${positionenHtml}${lidlSpezifischHtml}` : "";
 
   /* "+ Neue Prüfgrundlage anlegen" (mit Warengruppe vorbelegt, sofern bekannt) und - sobald ein
@@ -4712,8 +4740,11 @@ function kennzeichnungNormIstVorschlag(norm, kv) {
 
 /* Positionen-Liste des Kennzeichnung-Blocks: statt eines festen Katalogs (siehe
    fixPositionenListeHtml) jetzt direkt aus den Normen mit Prüfungsart "Kennzeichnung" (Reiter
-   "Normen") gespeist - jede Norm ist per "+ hinzufügen" direkt als KV-Position übernehmbar (ohne
-   eigenen Preis, siehe wendeKennzeichnungPaketpreisAn für die automatische Preisverteilung). */
+   "Normen") gespeist - jede Norm ist per "+ hinzufügen" direkt als KV-Position übernehmbar. Ein
+   ggf. an der Norm hinterlegter Preis wird hier bewusst NICHT angezeigt, da der tatsächliche Preis
+   je Position ohnehin immer von der automatischen Paketpreis-Verteilung überschrieben wird (siehe
+   wendeKennzeichnungPaketpreisAn/KENNZEICHNUNG_STANDARD_PAKETPREIS) - der Block kostet in Summe
+   immer denselben festen Betrag, unabhängig von den einzelnen Norm-Kosten. */
 function kennzeichnungNormenAddableHtml(kv) {
   const normen = data.normen.filter((n) => n.pruefungsart === "Kennzeichnung").sort((a, b) => (a.bezeichnung || "").localeCompare(b.bezeichnung || "", "de"));
   if (!normen.length) {
@@ -4723,7 +4754,7 @@ function kennzeichnungNormenAddableHtml(kv) {
     const istVorschlag = kennzeichnungNormIstVorschlag(n, kv);
     const schonDrin = kvHatPosition(kv, { kategorie: SICHERHEIT_NORM_KATEGORIE_NAME, bezeichnung: n.bezeichnung });
     return `<div class="pruefumfang-position${istVorschlag ? " pruefumfang-position-vorschlag" : ""}">
-      <span>${normTypBadgeHtml(n.typ)}${escapeHtml(n.bezeichnung)}${n.titel ? ` <span class="muted">– ${escapeHtml(n.titel)}</span>` : ""}${n.kosten !== null && n.kosten !== undefined ? ` <span class="muted">(${n.kosten} €)</span>` : ""}${istVorschlag ? ` <span class="badge ja">Vorschlag</span>` : ""}</span>
+      <span>${normTypBadgeHtml(n.typ)}${escapeHtml(n.bezeichnung)}${n.titel ? ` <span class="muted">– ${escapeHtml(n.titel)}</span>` : ""}${istVorschlag ? ` <span class="badge ja">Vorschlag</span>` : ""}</span>
       ${schonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="kennzeichnung-norm-hinzufuegen" data-norm-id="${escapeHtml(n.id)}">+ hinzufügen</button>`}
     </div>`;
   }).join("");
@@ -4736,19 +4767,22 @@ function kennzeichnungNormenAddableHtml(kv) {
   return { positionenHtml, alleVorschlaegeButton };
 }
 
-/* "LIDL-spezifisch" getaggte Normen (Reiter "Normen" -> Prüfungsart) erscheinen zusätzlich zu den
-   festen Katalogpositionen im Abschnitt "Weitere Positionen" der Sicherheit-/Normprüfung (siehe
-   renderSicherheitNormKarte) - analog zum Kennzeichnung-Block (kennzeichnungNormenAddableHtml),
+/* "LIDL-spezifisch" getaggte Normen (Reiter "Normen" -> Prüfungsart) erscheinen als addierbare
+   "Weitere Positionen" - je Norm frei wählbar, in welchem KV-Block (siehe lidlSpezifischBlock/
+   LIDL_SPEZIFISCH_BLOCK_OPTIONEN), analog zum Kennzeichnung-Block (kennzeichnungNormenAddableHtml),
    aber ohne eigene "Vorschlag"-Markierung (dafür fehlt ein vergleichbares, aus dem Prüfauftrag
-   ableitbares Signal) und ohne eigenen Block, da sie inhaltlich zu den übrigen festen
-   Zusatzpositionen dieser Kategorie gehören. */
-function lidlSpezifischNormenAddableHtml(kv) {
-  const normen = data.normen.filter((n) => n.pruefungsart === "LIDL-spezifisch").sort((a, b) => (a.bezeichnung || "").localeCompare(b.bezeichnung || "", "de"));
+   ableitbares Signal). Kategorie/Kürzel des Zielblocks werden direkt als data-Attribute am Button
+   mitgegeben, damit ein einziger, block-unabhängiger Klick-Handler reicht (siehe
+   initialisierePruefumfangUebersicht). */
+function lidlSpezifischNormenAddableHtml(kv, blockWert) {
+  const block = LIDL_SPEZIFISCH_BLOCK_OPTIONEN.find((o) => o.wert === blockWert);
+  if (!block) return "";
+  const normen = data.normen.filter((n) => n.pruefungsart === "LIDL-spezifisch" && (n.lidlSpezifischBlock || "sicherheitNorm") === blockWert).sort((a, b) => (a.bezeichnung || "").localeCompare(b.bezeichnung || "", "de"));
   return normen.map((n) => {
-    const schonDrin = kvHatPosition(kv, { kategorie: SICHERHEIT_NORM_KATEGORIE_NAME, bezeichnung: n.bezeichnung });
+    const schonDrin = kvHatPosition(kv, { kategorie: block.kategorie, bezeichnung: n.bezeichnung });
     return `<div class="pruefumfang-position">
       <span>${normTypBadgeHtml(n.typ)}${escapeHtml(n.bezeichnung)}${n.titel ? ` <span class="muted">– ${escapeHtml(n.titel)}</span>` : ""}${n.kosten !== null && n.kosten !== undefined ? ` <span class="muted">(${n.kosten} €)</span>` : ""}</span>
-      ${schonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="lidl-spezifisch-norm-hinzufuegen" data-norm-id="${escapeHtml(n.id)}">+ hinzufügen</button>`}
+      ${schonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="lidl-spezifisch-norm-hinzufuegen" data-norm-id="${escapeHtml(n.id)}" data-kategorie="${escapeHtml(block.kategorie)}" data-kuerzel="${escapeHtml(block.kuerzel)}">+ hinzufügen</button>`}
     </div>`;
   }).join("");
 }
@@ -5004,6 +5038,15 @@ function renderProduktspezifikationenKarte(kv, pa, qualitaetBloeckeHtml, materia
     <div class="toolbar-zeile" style="margin-bottom:0.5rem">
       ${vorschlaege.map((t) => `<button type="button" class="ghost small" data-action="mak-vorschlag-waehlen" data-mak-id="${escapeHtml(t.mak.id)}">${escapeHtml(t.mak.parameter || t.mak.id)} <span class="muted">(»${escapeHtml(t.schlagwort)}«)</span></button>`).join("")}
     </div>` : "";
+  /* Normen mit Prüfungsart "LIDL-spezifisch", die auf diesen Block eingestellt sind (siehe
+     lidlSpezifischNormenAddableHtml) - anders als bei Sicherheit-/Normprüfung/FFU/NGO gibt es hier
+     sonst KEINE feste Katalogposition, die den Abschnitt ohnehin sichtbar hielte, daher erscheint
+     "Weitere Positionen" hier nur, wenn tatsächlich mindestens eine solche Norm existiert. */
+  const lidlSpezifischHtml = lidlSpezifischNormenAddableHtml(kv, "produktspezifikationen");
+  const weiterePositionenHtml = lidlSpezifischHtml ? `<div class="mak-feld">
+      <h3 style="margin-bottom:0.3rem">Weitere Positionen</h3>
+      ${lidlSpezifischHtml}
+    </div>` : "";
   return `<div class="card">
     <div class="pruefumfang-kat-kopf"><strong>${escapeHtml(kat.anzeigeName)}</strong> ${badge}</div>
     <p class="hinweis">${escapeHtml(kat.beschreibung)}</p>
@@ -5018,6 +5061,7 @@ function renderProduktspezifikationenKarte(kv, pa, qualitaetBloeckeHtml, materia
       ${vorschlaegeHtml}
       <div id="kv-mak-detail"></div>
     </div>
+    ${weiterePositionenHtml}
   </div>`;
 }
 
@@ -5029,6 +5073,11 @@ function renderProduktspezifikationenKarte(kv, pa, qualitaetBloeckeHtml, materia
 function renderFfuNgoKarte(kv, pa, kontext, kat, feldName, kuerzel, fixPosition) {
   const { warengruppe, gewaehlt } = kontext;
   const { positionenHtml, alleVorschlaegeButton } = fixPositionenListeHtml(kat, pa, kv, null);
+  /* Normen mit Prüfungsart "LIDL-spezifisch", die auf diesen Block eingestellt sind (siehe
+     lidlSpezifischNormenAddableHtml) - hängen an dieselbe "Weitere Positionen"/"Positionen"-Liste
+     wie die festen Katalogpositionen an, da FFU/Fitting bzw. NGO hier ohnehin immer mindestens
+     ihre eine feste Position zeigen (kein leerer-Abschnitt-Fall wie bei Produktspezifikationen). */
+  const lidlSpezifischHtml = lidlSpezifischNormenAddableHtml(kv, kat.id);
   const erkannt = pa ? erkennePruefumfangKategorien(pa.pruefumfang).some((k) => k.id === kat.id) : false;
   const badge = pa ? (erkannt ? `<span class="badge ja">im Prüfumfang</span>` : `<span class="badge nein">nicht erkannt</span>`) : "";
   const kopf = `<div class="pruefumfang-kat-kopf"><strong>${escapeHtml(kat.anzeigeName)}</strong> ${badge}</div><p class="hinweis">${escapeHtml(kat.beschreibung)}</p>`;
@@ -5037,7 +5086,7 @@ function renderFfuNgoKarte(kv, pa, kontext, kat, feldName, kuerzel, fixPosition)
       ${kopf}
       ${warengruppe ? `<p class="hinweis">Kein Produkt ausgewählt (siehe „Sicherheit-/Normprüfung" oben).</p>` : `<p class="hinweis">Noch keine Warengruppe hinterlegt.</p>`}
       <div class="pruefumfang-kat-kopf" style="margin-top:0.4rem"><strong>Positionen</strong> ${alleVorschlaegeButton}</div>
-      ${positionenHtml}
+      ${positionenHtml}${lidlSpezifischHtml}
     </div>`;
   }
   const komponentenHtml = mechanikKomponentenHtml(kontext, pa, feldName, kat.katalogKategorie, kuerzel, fixPositionSapCodeAktuell(fixPosition), false);
@@ -5046,7 +5095,7 @@ function renderFfuNgoKarte(kv, pa, kontext, kat, feldName, kuerzel, fixPosition)
     <p class="hinweis" style="margin-top:-0.4rem">Produkt: <strong>${escapeHtml(gewaehlt.produkt)}</strong></p>
     ${komponentenHtml || `<p class="hinweis">Für dieses Produkt (und ggf. Set-Bestandteile) sind keine ${escapeHtml(kat.anzeigeName)}-Normen in der Prüfgrundlage hinterlegt.</p>`}
     <div class="pruefumfang-kat-kopf" style="margin-top:0.6rem"><strong>Weitere Positionen</strong> ${alleVorschlaegeButton}</div>
-    ${positionenHtml}
+    ${positionenHtml}${lidlSpezifischHtml}
   </div>`;
 }
 
@@ -5392,14 +5441,16 @@ function initialisierePruefumfangUebersicht(panel, kv, pa) {
     });
   });
   /* Kennzeichnung-Block: Normen mit Prüfungsart "Kennzeichnung" statt fester Katalogpositionen
-     (siehe kennzeichnungNormenAddableHtml) - nach jedem Hinzufügen wird der Trivialartikel-
-     Paketpreis automatisch neu auf die dann aktiven Kennzeichnung-Positionen verteilt (siehe
-     wendeKennzeichnungPaketpreisAn), ganz ohne manuellen Zwischenschritt. */
+     (siehe kennzeichnungNormenAddableHtml) - nach jedem Hinzufügen wird der Kennzeichnung-
+     Gesamtpreis (Trivialartikel-Paketpreis oder ersatzweise KENNZEICHNUNG_STANDARD_PAKETPREIS)
+     automatisch neu auf die dann aktiven Kennzeichnung-Positionen verteilt (siehe
+     wendeKennzeichnungPaketpreisAn), ganz ohne manuellen Zwischenschritt - der hier übergebene
+     standardKosten-Wert 0 ist deshalb nur ein kurzzeitiger Platzhalter. */
   panel.querySelectorAll('[data-action="kennzeichnung-norm-hinzufuegen"]').forEach((btn) => {
     btn.addEventListener("click", () => {
       const norm = data.normen.find((n) => n.id === btn.dataset.normId);
       if (!norm) return;
-      fuegeKatalogPositionHinzu(kv, { kategorie: SICHERHEIT_NORM_KATEGORIE_NAME, bezeichnung: norm.bezeichnung, kuerzel: "MS", sapCode: norm.sapCode, standardKosten: norm.kosten || 0 });
+      fuegeKatalogPositionHinzu(kv, { kategorie: SICHERHEIT_NORM_KATEGORIE_NAME, bezeichnung: norm.bezeichnung, kuerzel: "MS", sapCode: norm.sapCode, standardKosten: 0 });
       wendeKennzeichnungPaketpreisAn(kv, pa);
       speichereInLocalStorage();
       renderKvDetail();
@@ -5411,7 +5462,7 @@ function initialisierePruefumfangUebersicht(panel, kv, pa) {
       const normIds = new Set((btn.dataset.normIds || "").split(",").filter(Boolean));
       let hinzugefuegt = 0;
       data.normen.filter((n) => normIds.has(n.id)).forEach((n) => {
-        if (fuegeKatalogPositionHinzu(kv, { kategorie: SICHERHEIT_NORM_KATEGORIE_NAME, bezeichnung: n.bezeichnung, kuerzel: "MS", sapCode: n.sapCode, standardKosten: n.kosten || 0 })) hinzugefuegt++;
+        if (fuegeKatalogPositionHinzu(kv, { kategorie: SICHERHEIT_NORM_KATEGORIE_NAME, bezeichnung: n.bezeichnung, kuerzel: "MS", sapCode: n.sapCode, standardKosten: 0 })) hinzugefuegt++;
       });
       if (hinzugefuegt) wendeKennzeichnungPaketpreisAn(kv, pa);
       speichereInLocalStorage();
@@ -5419,14 +5470,17 @@ function initialisierePruefumfangUebersicht(panel, kv, pa) {
       zeigeStatus(hinzugefuegt ? `${hinzugefuegt} Position(en) übernommen · ${jetzt()}` : "Alle Vorschläge waren bereits im KV", "ok");
     });
   });
-  /* "Weitere Positionen" (Sicherheit-/Normprüfung): Normen mit Prüfungsart "LIDL-spezifisch" statt
-     fester Katalogpositionen (siehe lidlSpezifischNormenAddableHtml) - kein Paketpreis-Mechanismus
-     wie bei Kennzeichnung, jede Norm landet einfach mit ihrem eigenen Preis (falls hinterlegt). */
+  /* "Weitere Positionen": Normen mit Prüfungsart "LIDL-spezifisch" statt fester Katalogpositionen
+     (siehe lidlSpezifischNormenAddableHtml) - erscheinen je nach eingestelltem KV-Block
+     (norm.lidlSpezifischBlock) in Sicherheit-/Normprüfung, Produktspezifikationen, FFU/Fitting oder
+     NGO; Kategorie/Kürzel des Zielblocks kommen direkt vom Button (data-kategorie/-kuerzel), daher
+     genügt EIN gemeinsamer Handler für alle vier Blöcke. Kein Paketpreis-Mechanismus wie bei
+     Kennzeichnung, jede Norm landet einfach mit ihrem eigenen Preis (falls hinterlegt). */
   panel.querySelectorAll('[data-action="lidl-spezifisch-norm-hinzufuegen"]').forEach((btn) => {
     btn.addEventListener("click", () => {
       const norm = data.normen.find((n) => n.id === btn.dataset.normId);
       if (!norm) return;
-      fuegeKatalogPositionHinzu(kv, { kategorie: SICHERHEIT_NORM_KATEGORIE_NAME, bezeichnung: norm.bezeichnung, kuerzel: "MS", sapCode: norm.sapCode, standardKosten: norm.kosten || 0 });
+      fuegeKatalogPositionHinzu(kv, { kategorie: btn.dataset.kategorie, bezeichnung: norm.bezeichnung, kuerzel: btn.dataset.kuerzel, sapCode: norm.sapCode, standardKosten: norm.kosten || 0 });
       speichereInLocalStorage();
       renderKvDetail();
       zeigeStatus("Position hinzugefügt · " + jetzt(), "ok");
@@ -5434,13 +5488,16 @@ function initialisierePruefumfangUebersicht(panel, kv, pa) {
   });
   /* Bewertungsgrundlage/Grenzwert direkt in der Übersicht "Bereits ausgewählte MAK-Parameter"
      editierbar (siehe produktspezifikationenAusgewaehlteMakHtml) - schreibt direkt auf die
-     KV-Position, kein renderKvDetail() nötig (kein anderer Bereich hängt vom Wert ab). */
+     KV-Position. Die Bemerkungen-Zeile unter der jeweiligen Position in der Positionstabelle
+     (siehe positionBemerkungen/renderKvPositionenTabelle) zeigt denselben Wert an, deshalb muss
+     diese Tabelle hier explizit neu gerendert werden statt nur die Übersicht selbst. */
   panel.querySelectorAll('[data-action="mak-uebersicht-bewertung-bearbeiten"]').forEach((input) => {
     input.addEventListener("change", () => {
       const pos = kv.positionen.find((p) => p.id === input.dataset.posId);
       if (!pos) return;
       pos.bewertungsgrundlage = input.value;
       speichereInLocalStorage();
+      renderKvPositionenTabelle(kv);
       zeigeStatus("Bewertungsgrundlage aktualisiert · " + jetzt(), "ok");
     });
   });
@@ -6510,7 +6567,7 @@ document.getElementById("pruefgrundlagen-ansicht-toggle").querySelectorAll("butt
    hochgeladen (nur Rohtext-Extraktion, siehe extrahiereDocxRohtext). Prüfpunkte werden in beiden
    Fällen ausschließlich von Hand gepflegt (keine automatische Erkennung mehr). */
 function normEntwurfNeu() {
-  return { id: neueId(), bezeichnung: "Neue Norm", titel: "", typ: "norm", dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "", sapCode: "", kennzeichnung: false, bedienungsanleitung: false, pruefungsart: "", kosten: null };
+  return { id: neueId(), bezeichnung: "Neue Norm", titel: "", typ: "norm", dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "", sapCode: "", kennzeichnung: false, bedienungsanleitung: false, pruefungsart: "", kosten: null, lidlSpezifischBlock: "sicherheitNorm" };
 }
 
 /* Liest eine Norm-.docx-Datei ein und liefert einen vollständigen Norm-Datensatz (noch nicht in
@@ -6664,6 +6721,7 @@ function renderNormDetail() {
         <label>Typ<select data-feld="typ">${NORM_TYP_OPTIONEN.map((o) => `<option value="${o.wert}" ${(norm.typ || "norm") === o.wert ? "selected" : ""}>${escapeHtml(o.label)}</option>`).join("")}</select></label>
         <label>Prüfungsart<select data-feld="pruefungsart">${pruefungsartOptionenHtml(norm.pruefungsart)}</select></label>
         ${norm.pruefungsart && norm.pruefungsart !== "Sicherheit-/Normprüfung" ? `<label title="Feste Kosten für diese Norm/dieses PPM - bei der Sicherheit-/Normprüfung kommen die Kosten stattdessen aus der jeweiligen Prüfgrundlage, da dieselbe Norm dort je Produkt unterschiedlich bepreist sein kann.">Kosten €<input type="number" step="0.01" data-feld="kosten" value="${zahlOderLeer(norm.kosten)}"></label>` : ""}
+        ${norm.pruefungsart === "LIDL-spezifisch" ? `<label title="Legt fest, in welchem KV-Block diese Norm als addierbare Position unter „Weitere Positionen" erscheint.">KV-Block<select data-feld="lidlSpezifischBlock">${lidlSpezifischBlockOptionenHtml(norm.lidlSpezifischBlock)}</select></label>` : ""}
         <label>SAP-Code (SAP-Material)<input type="text" data-feld="sapCode" value="${escapeHtml(norm.sapCode || "")}" placeholder="z. B. KENNZEICHNNG_SF_TS"></label>
         <label class="checkbox-label" title="Diese Norm enthält Kennzeichnungsanforderungen - wird beim Referenzieren in einer Prüfgrundlage automatisch übernommen (außer bei 'in Anlehnung an', dort nur auf Wunsch).">Kennzeichnungsanforderungen<input type="checkbox" data-feld="kennzeichnung" ${norm.kennzeichnung ? "checked" : ""}></label>
         <label class="checkbox-label" title="Diese Norm enthält Anforderungen an die Bedienungsanleitung - wird beim Referenzieren in einer Prüfgrundlage automatisch übernommen (außer bei 'in Anlehnung an', dort nur auf Wunsch).">Anforderungen an Bedienungsanleitung<input type="checkbox" data-feld="bedienungsanleitung" ${norm.bedienungsanleitung ? "checked" : ""}></label>
@@ -7631,7 +7689,7 @@ function schluesselArbeitsvorrat(r) { return normalisiere(r.ian); }
 function schluesselPa(p) { return normalisiere(p.ian); }
 function schluesselPruefgrundlage(e) { return normalisiereWarengruppe(e.warengruppeCode) + "|" + normalisiere(e.produkt); }
 function schluesselNorm(n) { return normalisiere(n.bezeichnung); }
-const NORM_FELDER = ["bezeichnung", "titel", "typ", "dateiname", "rohtext", "anwendungsbereiche", "bemerkung", "sapCode", "kennzeichnung", "bedienungsanleitung", "pruefungsart", "kosten"];
+const NORM_FELDER = ["bezeichnung", "titel", "typ", "dateiname", "rohtext", "anwendungsbereiche", "bemerkung", "sapCode", "kennzeichnung", "bedienungsanleitung", "pruefungsart", "kosten", "lidlSpezifischBlock"];
 function schluesselMak(m) { return normalisiere(m.id); }
 const MAK_FELDER = ["kategorie", "bereich", "parameter", "anforderung", "normEu", "normUs", "pruefnachweis", "schlagworte", "varianten", "kosten", "kostenWeiteresArtikel", "abrechnungsmodus", "bewertungsgrundlageErforderlich"];
 function schluesselWarengruppe(w) { return normalisiereWarengruppe(w.code); }
