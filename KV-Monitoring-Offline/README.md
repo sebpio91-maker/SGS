@@ -620,6 +620,22 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   Positionen auf einmal in die Prüfpositionen-Tabelle unten eintragen — dort
   dann wie gewohnt Kosten/Anzahl anpassen, deaktivieren oder entfernen.
   Positionen lassen sich außerdem frei anlegen („+ Freie Position").
+
+  **Die Tabelle „Mechanische Prüfpositionen" ist immer nach Kategorie
+  sortiert** (Sicherheit-/Normprüfung inkl. Kennzeichnung, dann
+  Produktspezifikation, FFU/Fitting, NGO, Referenzprüfung — passend zur
+  Reihenfolge im offiziellen LIDL/OWIM-Kostenvoranschlag), unabhängig von der
+  Reihenfolge, in der Positionen hinzugefügt wurden. **„📋 In Zwischenablage
+  kopieren"** kopiert die komplette Tabelle tabulatorgetrennt (Aktiv,
+  Kategorie, Bezeichnung, Kürzel, SAP-Code, Kosten, Anzahl, Summe) — direkt in
+  Excel einfügbar. In der Datei `IAN_CHARGE_AB_ARTIKEL...xlsm` liegt dafür ein
+  vorbereitetes VBA-Makro bereit (`Mechanik_Import.bas`, ersetzt den Code der
+  vorhandenen `Sub Mec()` hinter dem Button **„Mechanik einfügen"**): Klick
+  darauf übernimmt alle aktiven Positionen automatisch als neue Zeilen in die
+  Tabelle „Mechanik_30SER" auf dem Blatt „Inspection Booking" — die
+  Summenformeln (Sicherheit & Norm, Produktspezifikation, FFU/Fitting, NGO,
+  Referenzprüfung, Gesamtsumme) erweitern sich dabei automatisch. Details und
+  Einbau-Anleitung stehen als Kommentar am Anfang von `Mechanik_Import.bas`.
   **„⧉ Als Vorlage für neuen KV duplizieren"** kopiert einen bestehenden KV
   (z. B. eines Wiederholartikels) komplett als Ausgangspunkt für einen
   neuen. Über die Suche oben lassen sich bestehende KVs nach

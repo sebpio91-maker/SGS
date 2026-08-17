@@ -5303,6 +5303,18 @@ function pruefumfangEintragPositionenHtml(positionen) {
 
 const SICHERHEIT_NORM_KATEGORIE_NAME = "Sicherheit & Norm / Sonder- & Funktionsparameter";
 
+/* Feste Anzeige-/Sortierreihenfolge der "Mechanische Prüfpositionen"-Tabelle, auf Wunsch passend
+   zur Reihenfolge im offiziellen LIDL/OWIM-Kostenvoranschlag (Sicherheit-/Normprüfung inkl.
+   Kennzeichnung, dann Produktspezifikation, FFU/Fitting, NGO, Referenzprüfung). Kennzeichnung
+   nutzt dieselbe Kategorie wie Sicherheit-/Normprüfung (SICHERHEIT_NORM_KATEGORIE_NAME) und landet
+   dadurch automatisch in derselben Gruppe. Unbekannte/freie Kategorien (z. B. frei getippte
+   Positionen) rutschen ans Ende, statt den Sortiervorgang zu stören. */
+const MECHANIK_KATEGORIE_SORTIERUNG = [SICHERHEIT_NORM_KATEGORIE_NAME, PRODUKTSPEZI_KATEGORIE_NAME, "FFU/Fitting", "NGO", "Referenzprüfung"];
+function mechanikKategorieSortierIndex(kategorie) {
+  const idx = MECHANIK_KATEGORIE_SORTIERUNG.indexOf(kategorie);
+  return idx === -1 ? MECHANIK_KATEGORIE_SORTIERUNG.length : idx;
+}
+
 /* Ordnet die aktiven KV-Positionen einem Prüfumfang-Eintrag zu - bei den vier Sicherheit&Norm-
    Unterpunkten anhand ihrer bezeichnungRegex; für "Sicherheit-/Normprüfung" gibt es dafür keine
    feste Katalog-Bezeichnung mehr (der reale Wert kommt aus der Warengruppen-Empfehlung mit
@@ -5698,6 +5710,7 @@ function renderKvDetail() {
       <div class="toolbar-zeile">
         <h2 style="margin:0">Mechanische Prüfpositionen</h2>
         <div class="spacer"></div>
+        <button class="ghost small" id="kv-positionen-kopieren">📋 In Zwischenablage kopieren</button>
         <button class="ghost small" id="kv-freie-position">+ Freie Position</button>
       </div>
       <div class="tabellen-wrapper">
@@ -5779,6 +5792,11 @@ function renderKvDetail() {
     speichereInLocalStorage();
     renderKvPositionenTabelle(kv);
   });
+  document.getElementById("kv-positionen-kopieren").addEventListener("click", async () => {
+    const text = mechanischePositionenAlsTsv(kv);
+    const erfolg = await kopiereTextInZwischenablage(text);
+    zeigeStatus(erfolg ? `${kv.positionen.length} Position(en) in die Zwischenablage kopiert (tabulatorgetrennt, direkt in Excel einfügbar) · ${jetzt()}` : "Kopieren fehlgeschlagen - bitte Tabelle manuell markieren und kopieren (Strg+C).", erfolg ? "ok" : "");
+  });
 
   renderKvPositionenTabelle(kv);
 }
@@ -5828,7 +5846,57 @@ function positionBemerkungen(p) {
   return ergebnisse;
 }
 
+/* Kopiert Text in die Zwischenablage - versucht zuerst die moderne Clipboard-API, die aber unter
+   file:// (kein "sicherer Kontext") in Chrome oft mit NotAllowedError abgelehnt wird; als Fallback
+   ein klassisches, unsichtbares <textarea> + document.execCommand("copy"), das auch offline und
+   ohne HTTPS zuverlässig funktioniert, solange es (wie hier) direkt aus einem Button-Klick heraus
+   aufgerufen wird. */
+async function kopiereTextInZwischenablage(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (e) { /* fällt durch auf den execCommand-Fallback unten */ }
+  }
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  let erfolg = false;
+  try { erfolg = document.execCommand("copy"); } catch (e) { erfolg = false; }
+  document.body.removeChild(textarea);
+  return erfolg;
+}
+
+/* Tabulatorgetrennte Textdarstellung der Mechanik-Positionstabelle (exakt dieselben Spalten/
+   Reihenfolge wie die sichtbare Tabelle, siehe renderKvPositionenTabelle) - damit lässt sich der
+   Inhalt direkt in Excel (z. B. den LIDL/OWIM-Kostenvoranschlag) einfügen, jede Spalte landet dabei
+   automatisch in einer eigenen Zelle. */
+function mechanischePositionenAlsTsv(kv) {
+  const kopf = ["Aktiv", "Kategorie", "Bezeichnung", "Kürzel", "SAP-Code", "Kosten €", "Anzahl", "Summe €"];
+  const zeilen = kv.positionen.map((p) => [
+    p.aktiv ? "Ja" : "Nein",
+    p.kategorie || "",
+    p.bezeichnung || "",
+    p.kuerzel || "",
+    p.sapCode || "",
+    zahlOderLeer(p.kosten),
+    zahlOderLeer(p.anzahl),
+    ((Number(p.kosten) || 0) * (Number(p.anzahl) || 0)).toFixed(2)
+  ]);
+  return [kopf, ...zeilen].map((zeile) => zeile.join("\t")).join("\n");
+}
+
 function renderKvPositionenTabelle(kv) {
+  /* Sortiert die Positionen bei jedem Rendern fest nach Kategorie (siehe
+     MECHANIK_KATEGORIE_SORTIERUNG) - stabil, d. h. mehrere Positionen derselben Kategorie behalten
+     ihre bisherige relative Reihenfolge zueinander. Mutiert kv.positionen direkt (wie die "hoch"/
+     "runter"-Buttons auch), damit CSV-Export/Zwischenablage-Kopie dieselbe Reihenfolge zeigen. */
+  kv.positionen.sort((a, b) => mechanikKategorieSortierIndex(a.kategorie) - mechanikKategorieSortierIndex(b.kategorie));
   const tbody = document.getElementById("kv-positionen-body");
   if (!kv.positionen.length) {
     tbody.innerHTML = '<tr><td colspan="9" class="leerzustand">Noch keine Positionen. Über die Prüfumfang-Vorschläge oben oder als freie Position hinzufügen.</td></tr>';
