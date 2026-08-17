@@ -499,11 +499,14 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     Preis (sofern gepflegt) und ohne Vorschlags-Markierung, da es dafür
     (anders als bei den vier festen Kennzeichnung-GER-Varianten) kein
     vergleichbares, aus dem Prüfauftrag ableitbares Signal gibt. Bei
-    Produktspezifikationen erscheint der Abschnitt „Weitere Positionen" nur,
-    wenn dort tatsächlich mindestens eine LIDL-spezifische Norm zugeordnet
-    ist (anders als bei den übrigen drei Blöcken gibt es dort sonst keine
-    feste Katalogposition, die den Abschnitt ohnehin sichtbar hielte). Die
-    früher hier fest verankerten Katalogpositionen
+    Produktspezifikationen, FFU/Fitting und NGO erscheint der Abschnitt
+    „Weitere Positionen" jeweils **nur**, wenn dort tatsächlich mindestens
+    eine LIDL-spezifische Norm zugeordnet ist — dort gibt es (anders als bei
+    Sicherheit-/Normprüfung) keine feste Katalogposition mehr, die den
+    Abschnitt ohnehin sichtbar hielte. Bei Sicherheit-/Normprüfung selbst
+    bleibt der Abschnitt weiterhin an die dortige Checkbox-Auswahl gekoppelt
+    (siehe „Prüfumfang" oben), unabhängig davon, ob LIDL-spezifische Normen
+    zugeordnet sind. Die früher hier fest verankerten Katalogpositionen
     **Akkusicherheitskurzcheck** und **Optischer Abgleich** wurden entfernt;
     **Mustereinlagerung** wird im Prüfumfang ebenfalls nicht mehr angezeigt
     (weder als Vorschlag noch manuell hinzufügbar).
@@ -596,10 +599,13 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     Ändern zurück in den Sicherheit-/Normprüfung-Block wechseln, es gibt nur
     eine Produktauswahl), die Prüfgrundlage liefert aber die für **FFU**
     bzw. **NGO/StiWa** hinterlegten Normen samt Kosten (inkl.
-    Set-Bestandteile, Style-Zuordnung, Artikelkategorie-Rabattfaktor und
-    „Kosten (Prüfgrundlage) €"-Bearbeitung — siehe oben) statt der
-    Sicherheit & Norm-Normen. Darunter die jeweils feste Position
-    („FFU/Fitting" bzw. „NGO"), sobald im Prüfumfang erkannt.
+    Set-Bestandteile, Style-Zuordnung — **kein** Artikelkategorie-
+    Rabattfaktor, siehe oben — und „Kosten (Prüfgrundlage) €"-Bearbeitung)
+    statt der Sicherheit & Norm-Normen. Die früher hier fest verankerte
+    Katalogposition („FFU/Fitting" bzw. „NGO") wurde entfernt; der Abschnitt
+    „Weitere Positionen" erscheint deshalb nur noch, wenn für diesen Block
+    mindestens eine Norm mit Prüfungsart „LIDL-spezifisch" zugeordnet ist
+    (siehe oben).
   - **Referenzprüfung**: eigener Block mit der festen Position
     „Referenzprüfung" sowie zusätzlich der „Markenreferenz" aus dem
     Prüfauftrag (das Referenzprodukt, gegen das verglichen wird).

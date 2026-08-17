@@ -5072,21 +5072,25 @@ function renderProduktspezifikationenKarte(kv, pa, qualitaetBloeckeHtml, materia
    Block "Sicherheit-/Normprüfung" - hier wird das aktuell gewählte Produkt nur angezeigt. */
 function renderFfuNgoKarte(kv, pa, kontext, kat, feldName, kuerzel, fixPosition) {
   const { warengruppe, gewaehlt } = kontext;
-  const { positionenHtml, alleVorschlaegeButton } = fixPositionenListeHtml(kat, pa, kv, null);
-  /* Normen mit Prüfungsart "LIDL-spezifisch", die auf diesen Block eingestellt sind (siehe
-     lidlSpezifischNormenAddableHtml) - hängen an dieselbe "Weitere Positionen"/"Positionen"-Liste
-     wie die festen Katalogpositionen an, da FFU/Fitting bzw. NGO hier ohnehin immer mindestens
-     ihre eine feste Position zeigen (kein leerer-Abschnitt-Fall wie bei Produktspezifikationen). */
+  /* Die frühere feste Katalogposition der Kategorie (FFU_FITTING_FIXPOSITION/NGO_FIXPOSITION) wurde
+     auf Wunsch aus "Weitere Positionen"/"Positionen" entfernt - sie dient hier nur noch als
+     SAP-Code-Fallback für die Hauptprodukt/Set-Bestandteil-Komponenten (siehe
+     fixPositionSapCodeAktuell weiter unten), erscheint aber nicht mehr als eigene addierbare Zeile.
+     Übrig bleiben ausschließlich Normen mit Prüfungsart "LIDL-spezifisch", die auf diesen Block
+     eingestellt sind (siehe lidlSpezifischNormenAddableHtml) - der ganze Abschnitt "Weitere
+     Positionen"/"Positionen" erscheint deshalb nur noch, wenn mindestens eine solche Norm existiert
+     (analog zu Produktspezifikationen, wo es aus demselben Grund ebenfalls keine feste
+     Katalogposition mehr gibt, die den Abschnitt sonst sichtbar hielte). */
   const lidlSpezifischHtml = lidlSpezifischNormenAddableHtml(kv, kat.id);
   const erkannt = pa ? erkennePruefumfangKategorien(pa.pruefumfang).some((k) => k.id === kat.id) : false;
   const badge = pa ? (erkannt ? `<span class="badge ja">im Prüfumfang</span>` : `<span class="badge nein">nicht erkannt</span>`) : "";
   const kopf = `<div class="pruefumfang-kat-kopf"><strong>${escapeHtml(kat.anzeigeName)}</strong> ${badge}</div><p class="hinweis">${escapeHtml(kat.beschreibung)}</p>`;
+  const weiterePositionenHtml = lidlSpezifischHtml ? `<div class="pruefumfang-kat-kopf" style="margin-top:0.6rem"><strong>Weitere Positionen</strong></div>${lidlSpezifischHtml}` : "";
   if (!gewaehlt) {
     return `<div class="card">
       ${kopf}
       ${warengruppe ? `<p class="hinweis">Kein Produkt ausgewählt (siehe „Sicherheit-/Normprüfung" oben).</p>` : `<p class="hinweis">Noch keine Warengruppe hinterlegt.</p>`}
-      <div class="pruefumfang-kat-kopf" style="margin-top:0.4rem"><strong>Positionen</strong> ${alleVorschlaegeButton}</div>
-      ${positionenHtml}${lidlSpezifischHtml}
+      ${weiterePositionenHtml}
     </div>`;
   }
   const komponentenHtml = mechanikKomponentenHtml(kontext, pa, feldName, kat.katalogKategorie, kuerzel, fixPositionSapCodeAktuell(fixPosition), false);
@@ -5094,8 +5098,7 @@ function renderFfuNgoKarte(kv, pa, kontext, kat, feldName, kuerzel, fixPosition)
     ${kopf}
     <p class="hinweis" style="margin-top:-0.4rem">Produkt: <strong>${escapeHtml(gewaehlt.produkt)}</strong></p>
     ${komponentenHtml || `<p class="hinweis">Für dieses Produkt (und ggf. Set-Bestandteile) sind keine ${escapeHtml(kat.anzeigeName)}-Normen in der Prüfgrundlage hinterlegt.</p>`}
-    <div class="pruefumfang-kat-kopf" style="margin-top:0.6rem"><strong>Weitere Positionen</strong> ${alleVorschlaegeButton}</div>
-    ${positionenHtml}${lidlSpezifischHtml}
+    ${weiterePositionenHtml}
   </div>`;
 }
 
