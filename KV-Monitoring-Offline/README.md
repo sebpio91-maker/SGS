@@ -335,14 +335,18 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     normalisiert verglichen (ohne Sonderzeichen, Groß-/Kleinschreibung
     egal), damit der Rabatt auch bei solchen Varianten korrekt greift.
 
-  Dieselbe Hauptprodukt-/Set-Bestandteil-/Style-/Rabattfaktor-Mechanik dient
-  seit der Aufteilung in eigene Blöcke auch den **FFU/Fitting**- und
-  **NGO**-Blöcken (siehe unten) — dort jeweils bezogen auf die für FFU bzw.
-  NGO/StiWa hinterlegten Normen der Prüfgrundlage statt auf die Sicherheit &
-  Norm-Normen, aber mit demselben Rabattfaktor je Artikelkategorie. Die
-  zusätzlich vorhandenen **festen** FFU/Fitting- und NGO-Positionen (siehe
-  „Innerhalb der Blöcke" weiter unten) sind davon unabhängig und bleiben ohne
-  Set-Bestandteile/Rabatt.
+  Dieselbe Hauptprodukt-/Set-Bestandteil-/Style-Mechanik dient seit der
+  Aufteilung in eigene Blöcke auch den **FFU/Fitting**- und **NGO**-Blöcken
+  (siehe unten) — dort jeweils bezogen auf die für FFU bzw. NGO/StiWa
+  hinterlegten Normen der Prüfgrundlage statt auf die Sicherheit &
+  Norm-Normen. Der **Artikelkategorie-Rabattfaktor gilt bei LIDL
+  ausschließlich für die Sicherheit-/Normprüfung** — FFU/Fitting und NGO (wie
+  auch alle übrigen Prüfungskategorien: Kennzeichnung, Optischer Abgleich,
+  Produktspezifikation, Referenzprüfung) werden dort zum **vollen,
+  unrabattierten Preis** verrechnet, entsprechend fehlt der
+  Rabattfaktor-Hinweis in diesen beiden Blöcken. Die zusätzlich vorhandenen
+  **festen** FFU/Fitting- und NGO-Positionen (siehe „Innerhalb der Blöcke"
+  weiter unten) sind davon unabhängig und bleiben ohne Set-Bestandteile/Rabatt.
 
   **Kosten direkt anpassen**: unter jedem Block (Hauptprodukt, Set-Bestandteil,
   FFU, NGO/StiWa) gibt es ein Feld **„Kosten (Prüfgrundlage) €"**, mit dem
@@ -466,7 +470,14 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     unten) ist weiterhin automatisch als „Vorschlag" markiert. Weitere echte
     Kennzeichnung-Normen lassen sich jederzeit im Reiter „Normen" ergänzen
     (Prüfungsart auf „Kennzeichnung" setzen) und erscheinen dann automatisch
-    mit in dieser Liste. Trägt die im Sicherheit-/Normprüfung-Block für
+    mit in dieser Liste. Trägt eine solche Norm dort einen eingetragenen
+    **Kosten-Wert** (siehe „Kosten direkt an der Norm" weiter unten), wird
+    dieser als Preis der Position übernommen; ist kein Trivialartikel-
+    Paketpreis für diesen KV aktiv (siehe „VP & Kennzeichnung"-Hinweis unten),
+    bleibt dieser Wert unverändert stehen — nur wenn der Paketpreis greift,
+    überschreibt die automatische Verteilung ihn wieder.
+
+    Trägt die im Sicherheit-/Normprüfung-Block für
     dieses Produkt gewählte Norm selbst Kennzeichnungs- und/oder
     Bedienungsanleitung-Anforderungen (siehe „Kennzeichnung/Bedienungsanleitung
     je Norm" unten), erscheint dazu oben im Block ein entsprechendes Badge.
@@ -754,6 +765,20 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   die bisherige Prüfungsart verwenden, analog zu „Bereiche"). Alle Normen mit
   Prüfungsart „Kennzeichnung" werden im KV-Reiter direkt im
   Kennzeichnung-Block aufgelistet (siehe oben).
+
+  **Kosten direkt an der Norm**: für alle Normen mit einer Prüfungsart
+  außer „Sicherheit-/Normprüfung" (also z. B. Kennzeichnung,
+  Produktspezifikation oder frei angelegte weitere Arten wie „Sonstige")
+  erscheint zusätzlich ein Feld **„Kosten €"**, mit dem sich ein fester
+  Preis direkt an der Norm/dem PPM selbst hinterlegen lässt. Das ist bewusst
+  anders als bei der Sicherheit-/Normprüfung: dort kommen die Kosten
+  weiterhin ausschließlich aus der jeweiligen Prüfgrundlage (siehe
+  „Kosten (Prüfgrundlage) €" oben), weil dieselbe Norm dort je Produkt
+  unterschiedlich bepreist sein kann — bei den übrigen Prüfungsarten ist der
+  Preis dagegen üblicherweise für alle Produkte gleich. Aktuell wird dieser
+  Wert im Kennzeichnung-Block als Preis der Position übernommen, sobald sie
+  einem KV hinzugefügt wird (siehe oben); für andere Prüfungsarten ist er
+  vorerst reine Datenerfassung ohne automatische Auswirkung im KV.
 
   **Anwendungsbereiche**: manche Normen stellen je nach Verwendungszweck des
   Produkts unterschiedliche Anforderungen — z. B. hat DIN EN 581-2
