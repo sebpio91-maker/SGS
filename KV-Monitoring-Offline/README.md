@@ -371,6 +371,20 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   „Prüfgrundlagen" selbst editierbar (siehe dort) — beide Stellen zeigen
   denselben Wert.
 
+  **Prüfgrundlage komplett aus dem KV heraus pflegen**: im Kopf des
+  Sicherheit-/Normprüfung-Blocks gibt es zwei weitere Buttons, unabhängig von
+  den beiden oben beschriebenen Einzelfeldern. **„✎ Prüfgrundlage
+  bearbeiten"** (erscheint, sobald ein Produkt gewählt ist) öffnet das
+  vollständige Bearbeiten-Formular der zugehörigen Prüfgrundlage direkt als
+  Dialog — inklusive aller Felder (Normen, Muster, Trivial, Kommentare je
+  Block usw.), nicht nur Kosten/Kommentar wie bei den Einzelfeldern; nach dem
+  Speichern bleibt der KV-Tab aktiv. **„+ Neue Prüfgrundlage anlegen"** ist
+  immer sichtbar (auch wenn für die Warengruppe bereits eine oder mehrere
+  Prüfgrundlagen existieren, z. B. um ein weiteres Produkt derselben
+  Warengruppe zu ergänzen) und öffnet ein leeres Formular mit bereits
+  vorbelegter Warengruppe. Ein Wechsel in den Reiter „Prüfgrundlagen" ist für
+  beide Vorgänge nicht mehr nötig.
+
   **Artikelkategorie** – direkt oberhalb des Prüfumfangs zeigt eine eigene
   Karte die Artikelkategorie aus dem verknüpften Prüfauftrag (dieselbe, die
   auch den Rabattfaktor der Sicherheit & Norm-Position bestimmt, siehe

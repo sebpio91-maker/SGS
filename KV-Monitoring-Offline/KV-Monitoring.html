@@ -4592,9 +4592,22 @@ function renderSicherheitNormKarte(kv, pa, kontext) {
   const { positionenHtml, alleVorschlaegeButton } = fixPositionenListeHtml(kat, pa, kv, (k) => !KENNZEICHNUNG_FIXPOSITION_ID(k.id));
   const fixpositionenHtml = fixpositionenSichtbar ? `<div class="pruefumfang-kat-kopf" style="margin-top:0.6rem"><strong>Weitere Positionen</strong> ${alleVorschlaegeButton}</div>${positionenHtml}` : "";
 
+  /* "+ Neue Prüfgrundlage anlegen" (mit Warengruppe vorbelegt, sofern bekannt) und - sobald ein
+     Produkt gewählt ist - "✎ Prüfgrundlage bearbeiten" (öffnet direkt die vollständige Bearbeitung,
+     ohne den Umweg über refs.length wie bei mechanikKostenBearbeitenHtml) stehen jetzt in JEDER
+     Ausprägung dieser Karte zur Verfügung - nicht mehr nur, wenn (noch) keine Prüfgrundlage zur
+     Warengruppe existiert. Damit lassen sich Prüfgrundlagen komplett aus dem KV-Reiter heraus
+     pflegen, ohne in den Reiter „Prüfgrundlagen" wechseln zu müssen (siehe
+     initialisiereMechanikEmpfehlungKarte für die Klick-Handler). */
+  const neuePgButtonHtml = `<button type="button" class="ghost small" data-action="mechanik-neue-pruefgrundlage" data-warengruppe="${escapeHtml(warengruppe ? normalisiereWarengruppe(warengruppe) : "")}">+ Neue Prüfgrundlage anlegen</button>`;
+
   if (!warengruppe) {
     return `<div class="card">
-      <h2>Sicherheit-/Normprüfung</h2>
+      <div class="toolbar-zeile">
+        <h2 style="margin:0">Sicherheit-/Normprüfung</h2>
+        <div class="spacer"></div>
+        ${neuePgButtonHtml}
+      </div>
       <p class="hinweis">Noch keine Warengruppe hinterlegt — sobald „Warengruppe (neu)" gesetzt ist, werden hier passende Referenzdaten (Norm, Muster, Kosten) aus der Mechanik-Preisliste vorgeschlagen.</p>
       ${fixpositionenHtml}
     </div>`;
@@ -4602,9 +4615,12 @@ function renderSicherheitNormKarte(kv, pa, kontext) {
   const wgFormatiert = normalisiereWarengruppe(warengruppe);
   if (!treffer.length) {
     return `<div class="card">
-      <h2>Sicherheit-/Normprüfung</h2>
-      <p class="hinweis">Für Warengruppe <strong>${escapeHtml(wgFormatiert)}</strong> liegen keine Referenzdaten in der Mechanik-Preisliste (Reiter „Prüfgrundlagen") vor — Prüfpositionen unten manuell auswählen, oder direkt eine passende Prüfgrundlage anlegen:</p>
-      <button type="button" class="ghost small" data-action="mechanik-neue-pruefgrundlage" data-warengruppe="${escapeHtml(wgFormatiert)}">+ Neue Prüfgrundlage für Warengruppe ${escapeHtml(wgFormatiert)} anlegen</button>
+      <div class="toolbar-zeile">
+        <h2 style="margin:0">Sicherheit-/Normprüfung</h2>
+        <div class="spacer"></div>
+        ${neuePgButtonHtml}
+      </div>
+      <p class="hinweis">Für Warengruppe <strong>${escapeHtml(wgFormatiert)}</strong> liegen keine Referenzdaten in der Mechanik-Preisliste (Reiter „Prüfgrundlagen") vor — Prüfpositionen unten manuell auswählen, oder direkt eine passende Prüfgrundlage anlegen.</p>
       ${fixpositionenHtml}
     </div>`;
   }
@@ -4639,10 +4655,17 @@ function renderSicherheitNormKarte(kv, pa, kontext) {
       ${weiterenSetbestandteilHtml}`;
   }
 
+  const pgBearbeitenButtonHtml = gewaehlt
+    ? `<button type="button" class="ghost small" data-action="mechanik-pg-bearbeiten" data-pg-id="${escapeHtml(mechanikEintragId(gewaehlt))}">✎ Prüfgrundlage bearbeiten</button>`
+    : "";
+
   return `<div class="card">
     <div class="toolbar-zeile">
       <h2 style="margin:0">Sicherheit-/Normprüfung</h2>
       <span class="muted">Warengruppe ${escapeHtml(wgFormatiert)} · ${treffer.length} Produkt${treffer.length === 1 ? "" : "e"} in der Referenz</span>
+      <div class="spacer"></div>
+      ${pgBearbeitenButtonHtml}
+      ${neuePgButtonHtml}
     </div>
     ${auswahlHtml}
     ${detailHtml}
@@ -4976,6 +4999,19 @@ function initialisiereMechanikEmpfehlungKarte(panel, kv) {
       entwurf.warengruppeCode = eintrag ? eintrag.code : code;
       entwurf.warengruppeName = eintrag ? eintrag.name : code;
       oeffnePruefgrundlageModal(entwurf);
+    });
+  }
+  /* "✎ Prüfgrundlage bearbeiten" - bleibt bewusst im KV-Reiter (kein wechsleTab wie beim
+     bestehenden "→ Kosten in der Prüfgrundlage bearbeiten"-Link, siehe
+     mechanik-kosten-in-pg-bearbeiten unten), damit sich die Prüfgrundlage direkt aus dem KV heraus
+     bearbeiten lässt, ohne den Tab zu verlassen - renderAktivenTab() beim Speichern (siehe
+     oeffnePruefgrundlageModal) aktualisiert danach ohnehin die KV-Ansicht. */
+  const pgBearbeitenBtn = panel.querySelector('[data-action="mechanik-pg-bearbeiten"]');
+  if (pgBearbeitenBtn) {
+    pgBearbeitenBtn.addEventListener("click", () => {
+      const eintrag = data.pruefgrundlagen.find((e) => mechanikEintragId(e) === pgBearbeitenBtn.dataset.pgId);
+      if (!eintrag) return;
+      pruefgrundlageBearbeiten(eintrag);
     });
   }
   const sel = panel.querySelector("#mechanik-produkt-auswahl");
