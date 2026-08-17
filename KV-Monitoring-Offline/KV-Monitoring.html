@@ -5846,6 +5846,24 @@ function positionBemerkungen(p) {
   return ergebnisse;
 }
 
+/* Checkbox + Prozent-Feld "Teilprüfung" für Sicherheit&Norm-Positionen (Kürzel "MS") - erscheint
+   direkt unter der Position in der Prüfpositionstabelle (siehe renderKvPositionenTabelle), damit
+   bei einer Teilprüfung der mechanischen Sicherheit festgehalten werden kann, DASS es sich um eine
+   Teilprüfung handelt und WIE VIEL Prozent der Vollprüfung durchgeführt werden. Fließt beim
+   Kopieren in die Zwischenablage direkt in die Bezeichnung ein (siehe
+   mechanischePositionenAlsTsv), damit die Angabe auch beim Excel-/VBA-Import ankommt, ohne dass
+   dafür eine eigene Spalte in der externen Kalkulationsdatei nötig ist. */
+function teilpruefungFormularHtml(p) {
+  if (p.kuerzel !== "MS") return "";
+  return `<div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap">
+    <label style="display:flex;align-items:center;gap:0.3rem;font-weight:400;color:var(--muted)">
+      <input type="checkbox" data-action="position-teilpruefung" data-pos-id="${escapeHtml(p.id)}" ${p.teilpruefung ? "checked" : ""}> Teilprüfung
+    </label>
+    ${p.teilpruefung ? `<label style="display:flex;align-items:center;gap:0.3rem;font-weight:400;color:var(--muted)">
+      <input type="number" min="0" max="100" step="1" data-action="position-teilpruefung-prozent" data-pos-id="${escapeHtml(p.id)}" value="${p.teilpruefungProzent === null || p.teilpruefungProzent === undefined ? "" : p.teilpruefungProzent}" placeholder="%" style="width:56px;font-family:inherit;font-size:0.78rem;padding:0.15rem 0.3rem;border:1px solid var(--border);border-radius:5px"> % der Vollprüfung</label>` : ""}
+  </div>`;
+}
+
 /* Kopiert Text in die Zwischenablage - versucht zuerst die moderne Clipboard-API, die aber unter
    file:// (kein "sicherer Kontext") in Chrome oft mit NotAllowedError abgelehnt wird; als Fallback
    ein klassisches, unsichtbares <textarea> + document.execCommand("copy"), das auch offline und
@@ -5878,16 +5896,28 @@ async function kopiereTextInZwischenablage(text) {
    automatisch in einer eigenen Zelle. */
 function mechanischePositionenAlsTsv(kv) {
   const kopf = ["Aktiv", "Kategorie", "Bezeichnung", "Kürzel", "SAP-Code", "Kosten €", "Anzahl", "Summe €"];
-  const zeilen = kv.positionen.map((p) => [
-    p.aktiv ? "Ja" : "Nein",
-    p.kategorie || "",
-    p.bezeichnung || "",
-    p.kuerzel || "",
-    p.sapCode || "",
-    zahlOderLeer(p.kosten),
-    zahlOderLeer(p.anzahl),
-    ((Number(p.kosten) || 0) * (Number(p.anzahl) || 0)).toFixed(2)
-  ]);
+  const zeilen = kv.positionen.map((p) => {
+    /* Teilprüfung/Prozentsatz (siehe teilpruefungFormularHtml) fließt hier direkt in die
+       Bezeichnung ein - die externe Kalkulationsdatei/das VBA-Makro haben dafür keine eigene
+       Spalte, die Bezeichnung ist also der einzige Weg, wie diese Angabe dort ankommt. */
+    let bezeichnung = p.bezeichnung || "";
+    if (p.kuerzel === "MS" && p.teilpruefung) {
+      const prozentText = (p.teilpruefungProzent === null || p.teilpruefungProzent === undefined || p.teilpruefungProzent === "")
+        ? "Teilprüfung"
+        : `Teilprüfung, ca. ${p.teilpruefungProzent}% der Vollprüfung`;
+      bezeichnung = bezeichnung ? `${bezeichnung} - ${prozentText}` : prozentText;
+    }
+    return [
+      p.aktiv ? "Ja" : "Nein",
+      p.kategorie || "",
+      bezeichnung,
+      p.kuerzel || "",
+      p.sapCode || "",
+      zahlOderLeer(p.kosten),
+      zahlOderLeer(p.anzahl),
+      ((Number(p.kosten) || 0) * (Number(p.anzahl) || 0)).toFixed(2)
+    ];
+  });
   return [kopf, ...zeilen].map((zeile) => zeile.join("\t")).join("\n");
 }
 
@@ -5903,9 +5933,11 @@ function renderKvPositionenTabelle(kv) {
   } else {
     tbody.innerHTML = kv.positionen.map((p, idx) => {
       const bemerkungen = positionBemerkungen(p);
-      const bemerkungenZeile = bemerkungen.length ? `<tr data-bemerkungen-fuer="${p.id}">
+      const teilpruefungHtml = teilpruefungFormularHtml(p);
+      const bemerkungenZeile = (bemerkungen.length || teilpruefungHtml) ? `<tr data-bemerkungen-fuer="${p.id}">
         <td></td>
         <td colspan="8" style="padding-top:0;padding-bottom:0.6rem;font-size:0.8rem;color:var(--muted)">
+          ${teilpruefungHtml}
           ${bemerkungen.map((b) => `<div><strong>${escapeHtml(b.label)}:</strong> ${escapeHtml(b.text)}</div>`).join("")}
         </td>
       </tr>` : "";
@@ -5973,6 +6005,28 @@ function renderKvPositionenTabelle(kv) {
         renderKvPositionenTabelle(kv);
         renderKvListe();
       });
+    });
+  });
+  /* Teilprüfung-Checkbox/Prozent-Feld (siehe teilpruefungFormularHtml) - liegt in der
+     Bemerkungen-Zeile, also außerhalb der tr[data-id]-Schleife oben, deshalb eigene Bindung. Die
+     Checkbox rendert komplett neu (zeigt/versteckt das Prozent-Feld), das Prozent-Feld selbst nur
+     speichern (kein Neu-Rendern, damit der Fokus beim Tippen erhalten bleibt). */
+  tbody.querySelectorAll('[data-action="position-teilpruefung"]').forEach((cb) => {
+    cb.addEventListener("change", () => {
+      const pos = kv.positionen.find((p) => p.id === cb.dataset.posId);
+      if (!pos) return;
+      pos.teilpruefung = cb.checked;
+      if (!pos.teilpruefung) pos.teilpruefungProzent = null;
+      speichereInLocalStorage();
+      renderKvPositionenTabelle(kv);
+    });
+  });
+  tbody.querySelectorAll('[data-action="position-teilpruefung-prozent"]').forEach((input) => {
+    input.addEventListener("input", () => {
+      const pos = kv.positionen.find((p) => p.id === input.dataset.posId);
+      if (!pos) return;
+      pos.teilpruefungProzent = input.value === "" ? null : Number(input.value);
+      speichereInLocalStorage();
     });
   });
   document.getElementById("kv-gesamtsumme").textContent = kvGesamtsumme(kv).toFixed(2) + " €";
@@ -7755,8 +7809,8 @@ document.getElementById("btn-csv").addEventListener("click", () => {
     data.pruefauftraege.forEach((p) => (p.felder || []).forEach((f) => zeilen.push([p.ian, p.artikelbezeichnung, p.warengruppe, f.schluessel, f.wert])));
     csvHerunterladen(zeilen, "pruefauftraege_export.csv");
   } else if (aktiverTab === "kvs") {
-    const zeilen = [["IAN", "Artikel", "Lieferant", "SAP-Nummer", "Kategorie", "Bezeichnung", "Kürzel", "SAP-Code", "Bewertungsgrundlage/Grenzwert", "Kosten", "Anzahl", "Summe", "Aktiv"]];
-    data.kvs.forEach((k) => k.positionen.forEach((p) => zeilen.push([k.ian, k.artikel, k.lieferant, k.sapNummer, p.kategorie, p.bezeichnung, p.kuerzel, p.sapCode, p.bewertungsgrundlage || "", p.kosten, p.anzahl, (Number(p.kosten) || 0) * (Number(p.anzahl) || 0), p.aktiv ? "Ja" : "Nein"])));
+    const zeilen = [["IAN", "Artikel", "Lieferant", "SAP-Nummer", "Kategorie", "Bezeichnung", "Kürzel", "SAP-Code", "Bewertungsgrundlage/Grenzwert", "Teilprüfung", "Teilprüfung %", "Kosten", "Anzahl", "Summe", "Aktiv"]];
+    data.kvs.forEach((k) => k.positionen.forEach((p) => zeilen.push([k.ian, k.artikel, k.lieferant, k.sapNummer, p.kategorie, p.bezeichnung, p.kuerzel, p.sapCode, p.bewertungsgrundlage || "", p.teilpruefung ? "Ja" : "Nein", p.teilpruefung ? zahlOderLeer(p.teilpruefungProzent) : "", p.kosten, p.anzahl, (Number(p.kosten) || 0) * (Number(p.anzahl) || 0), p.aktiv ? "Ja" : "Nein"])));
     csvHerunterladen(zeilen, "kv_export.csv");
   } else if (aktiverTab === "pruefgrundlagen") {
     const zeilen = [["Bereich", "Warengruppe-Code", "Warengruppe-Name", "Produkt", "Normen", "Kosten Sicherheit&Norm (Summe)", "Bemerkungen Sicherheit&Norm", "Anzahl Muster", "Trivial", "Kennzeichnung", "Bedienungsanleitung", "FFU-Normen", "Kosten FFU (Summe)", "Bemerkungen FFU", "StiWa-Normen", "Kosten StiWa (Summe)", "Bemerkungen StiWa"]];

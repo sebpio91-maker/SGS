@@ -25,6 +25,15 @@ Attribute VB_Name = "Modul1"
 ' - wer sie braucht, aktiviert sie weiterhin wie bisher manuell (Spalte
 ' "FILTER" = "x").
 '
+' Vor jedem Import werden zunächst alle vorbelegten "x"-Markierungen in Spalte F (FILTER) der
+' bestehenden Standardzeilen entfernt - AUSGENOMMEN die Kategorie-Überschriften-Zeilen (Spalte C
+' gefüllt, z. B. "Sicherheit & Norm ...", "(physikalische-) Produktspezifikation", "FFU/Fitting",
+' "Referenzprüfung", "NGO"), deren "x" für die SUMPRODUCT-Formeln (G48/G55) benötigt wird. So
+' zählen nur noch die Positionen, die tatsächlich aus dem aktuellen KV-Monitoring-Export stammen -
+' nicht mehr die als Vorlage vorbelegten Standard-Haken. Am Ende wird die Tabelle automatisch auf
+' Spalte F = "x" gefiltert (bisher der separate Button/das separate Makro "Spalte_Filter"), sodass
+' nur die aktiven Zeilen sichtbar bleiben.
+'
 ' Da "Mechanik_30SER" eine echte Excel-Tabelle ist (ListObject), erweitert
 ' Excel beim Einfügen neuer Zeilen automatisch alle betroffenen Formeln
 ' (SUMPRODUCT in G48/G55, SUMIF für FFU/REF/NGO in der Kopfübersicht,
@@ -70,6 +79,8 @@ Sub Mec()
     Application.ScreenUpdating = False
     Application.Calculation = xlCalculationManual
 
+    Mec_AlteFilterZuruecksetzen tbl
+
     Dim eingefuegt As Long, uebersprungen As Long, warnungen As String
     Dim i As Long
     For i = startIdx To UBound(zeilen)
@@ -109,11 +120,27 @@ Sub Mec()
     Application.ScreenUpdating = True
     ws.Calculate
 
+    tbl.Range.AutoFilter Field:=4, Criteria1:="x"
+
     Dim meldung As String
     meldung = eingefuegt & " Position(en) eingefügt."
     If uebersprungen > 0 Then meldung = meldung & vbCrLf & uebersprungen & " Position(en) übersprungen (inaktiv oder unbekanntes Kürzel)."
     If Len(warnungen) > 0 Then meldung = meldung & vbCrLf & vbCrLf & warnungen
     MsgBox meldung, vbInformation, "Mechanik einfügen"
+End Sub
+
+' Entfernt alle vorbelegten "x"-Markierungen in Spalte F (FILTER) der bestehenden Zeilen der
+' Tabelle Mechanik_30SER - AUSSER bei den Kategorie-Überschriften-Zeilen (Spalte C gefüllt), deren
+' "x" die SUMPRODUCT-Formeln in G48/G55 braucht. Läuft VOR jedem Import, damit nur noch zählt, was
+' tatsächlich aus dem aktuellen KV-Monitoring-Export als aktiv markiert wurde - nicht mehr die als
+' Vorlage vorbelegten Standard-Haken (z. B. Kennzeichnung GER, Optischer Abgleich, Projektkosten).
+Private Sub Mec_AlteFilterZuruecksetzen(tbl As ListObject)
+    Dim zeile As ListRow
+    For Each zeile In tbl.ListRows
+        If Len(Trim(zeile.Range.Cells(1, 1).Value & "")) = 0 Then   ' Spalte C (1. Tabellenspalte) leer -> Detailzeile, keine Kategorie-Überschrift
+            zeile.Range.Cells(1, 4).Value = ""                       ' Spalte F ist die 4. Tabellenspalte (C=1, D=2, E=3, F=4)
+        End If
+    Next zeile
 End Sub
 
 ' Fügt EINE neue Zeile für die Kategorie "kuerzel" in die Tabelle Mechanik_30SER ein - direkt vor
@@ -189,6 +216,9 @@ End Function
 ' ----------------------------------------------------------------------------
 ' Unverändert aus der bisherigen Datei übernommen (nicht Teil dieser Änderung) -
 ' blendet in der Tabelle Mechanik_30SER nur die Zeilen mit FILTER = "x" ein.
+' Mec() ruft diesen Filter mittlerweile am Ende automatisch mit auf; dieses
+' separate Makro bleibt nur als manuelle Option erhalten (z. B. um den Filter
+' nach späteren Handeingaben erneut anzuwenden).
 ' ----------------------------------------------------------------------------
 Sub Spalte_Filter()
 '

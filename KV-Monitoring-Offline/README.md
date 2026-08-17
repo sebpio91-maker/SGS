@@ -634,8 +634,22 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   darauf übernimmt alle aktiven Positionen automatisch als neue Zeilen in die
   Tabelle „Mechanik_30SER" auf dem Blatt „Inspection Booking" — die
   Summenformeln (Sicherheit & Norm, Produktspezifikation, FFU/Fitting, NGO,
-  Referenzprüfung, Gesamtsumme) erweitern sich dabei automatisch. Details und
-  Einbau-Anleitung stehen als Kommentar am Anfang von `Mechanik_Import.bas`.
+  Referenzprüfung, Gesamtsumme) erweitern sich dabei automatisch. Vor jedem
+  Import setzt das Makro außerdem alle vorbelegten „x"-Haken in der
+  „FILTER"-Spalte der bestehenden Standardzeilen zurück (außer bei den
+  Kategorie-Überschriften-Zeilen, die diese für ihre Summenformel brauchen)
+  und filtert am Ende automatisch auf „FILTER" = „x", sodass nur noch die
+  Zeilen zählen/sichtbar sind, die tatsächlich aus dem aktuellen
+  KV-Monitoring-Export stammen. Details und Einbau-Anleitung stehen als
+  Kommentar am Anfang von `Mechanik_Import.bas`.
+
+  Bei Sicherheit-/Normprüfung-Positionen (Kürzel „MS") lässt sich direkt
+  darunter **„Teilprüfung"** ankreuzen und der Prozentsatz der Vollprüfung
+  angeben — wichtig, wenn nur ein Teil der eigentlichen Prüfung durchgeführt
+  wird. Die Angabe fließt beim Kopieren in die Zwischenablage automatisch in
+  die Bezeichnung ein (z. B. „… - Teilprüfung, ca. 50% der Vollprüfung"),
+  damit sie auch beim Excel-/VBA-Import ankommt, sowie in den CSV-Export
+  (Reiter „Kostenvoranschläge", eigene Spalten „Teilprüfung"/„Teilprüfung %").
   **„⧉ Als Vorlage für neuen KV duplizieren"** kopiert einen bestehenden KV
   (z. B. eines Wiederholartikels) komplett als Ausgangspunkt für einen
   neuen. Über die Suche oben lassen sich bestehende KVs nach
