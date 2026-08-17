@@ -203,6 +203,14 @@ tr.klickbar:hover td { background:#faf9f6; }
 .anwendungsbereich-item input, .anwendungsbereich-item textarea { font-family:inherit; font-size:0.85rem; padding:0.35rem 0.5rem; border:1px solid var(--border); border-radius:6px; }
 .anwendungsbereich-item textarea { width:100%; resize:vertical; }
 
+.mak-variante-item { border:1px solid var(--border); border-radius:6px; padding:0.5rem 0.6rem; margin-bottom:0.5rem; }
+.mak-variante-kopf { display:flex; gap:0.4rem; margin-bottom:0.35rem; }
+.mak-variante-kopf input[data-feld="bezeichnung"] { flex:1; font-weight:600; }
+.mak-variante-kopf input[data-feld="kosten"] { max-width:110px; }
+.mak-variante-item input { font-family:inherit; font-size:0.85rem; padding:0.35rem 0.5rem; border:1px solid var(--border); border-radius:6px; }
+.mak-variante-zusatz { display:flex; gap:0.4rem; }
+.mak-variante-zusatz input { flex:1; }
+
 /* #overlay-box scrollt sich selbst (statt der ganzen Seite/#overlay) und ist auf die Höhe des
    sichtbaren Fensters begrenzt - sonst "schwebt" die per position:sticky fixierte Aktionsleiste
    (Speichern/Abbrechen/Löschen) bereits beim Öffnen über noch ungescrolltem Inhalt und verdeckt
@@ -2551,6 +2559,10 @@ function migriereMak() {
     if (!Array.isArray(m.varianten)) m.varianten = [];
     if (m.kosten === undefined) m.kosten = null;
     if (m.kostenWeiteresArtikel === undefined) m.kostenWeiteresArtikel = null;
+    /* Abrechnungsmodus fehlte bislang komplett - Alteinträge mit bereits migrierten LIDL-
+       Preisvarianten (siehe MAK_VARIANTEN_MIGRATION) waren schon immer "pro Laufzeit" gemeint
+       (z. B. Korrosionsbeständigkeit nach 24h/48h/72h…), alle übrigen starten bei "pro Artikel". */
+    if (m.abrechnungsmodus === undefined) m.abrechnungsmodus = m.varianten.length ? "laufzeit" : "artikel";
   });
 }
 
@@ -2581,8 +2593,8 @@ function init() {
   migriereOffizielleWarengruppenStammdaten();
   migriereFixPositionenAlsNormen();
   migriereKennzeichnungFixPositionenPruefungsart();
-  migriereMak();
   migriereMakVarianten();
+  migriereMak();
 
   document.querySelectorAll("nav.tabs button[data-tab]").forEach((btn) => {
     btn.addEventListener("click", () => wechsleTab(btn.dataset.tab));
@@ -4786,22 +4798,23 @@ function renderKvMakDetail(makId, kv) {
   if (!eintrag) { container.innerHTML = ""; return; }
   const schlagworte = eintrag.schlagworte || [];
   const varianten = eintrag.varianten || [];
+  const proLaufzeit = eintrag.abrechnungsmodus === "laufzeit";
   const bezeichnung = kvMakBezeichnung(eintrag);
   const schonDrin = kv.positionen.some((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere(PRODUKTSPEZI_KATEGORIE_NAME) && normalisiere(p.bezeichnung) === normalisiere(bezeichnung));
-  const varianteHinzufuegenBtn = varianten.length ? "" : (schonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="mak-parameter-hinzufuegen">+ hinzufügen</button>`);
-  const variantenHtml = varianten.length ? `<div class="mak-feld">
-      <h3>Preisvarianten <span class="muted" style="font-weight:400">– LIDL-spezifisch</span></h3>
-      ${varianten.map((v) => {
+  const varianteHinzufuegenBtn = proLaufzeit ? "" : (schonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="mak-parameter-hinzufuegen">+ hinzufügen</button>`);
+  const variantenHtml = proLaufzeit ? `<div class="mak-feld">
+      <h3>Laufzeiten/Preise <span class="muted" style="font-weight:400">– LIDL-spezifisch, fest verhandelt</span></h3>
+      ${varianten.length ? varianten.map((v) => {
         const varBezeichnung = kvMakVarianteBezeichnung(eintrag, v);
         const varSchonDrin = kv.positionen.some((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere(PRODUKTSPEZI_KATEGORIE_NAME) && normalisiere(p.bezeichnung) === normalisiere(varBezeichnung));
         return `<div class="pruefumfang-position">
           <span title="${escapeHtml(v.hinweis || "")}">${escapeHtml(v.bezeichnung)} <span class="muted">(${v.kosten} €)</span></span>
           ${varSchonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="mak-variante-hinzufuegen" data-varianten-id="${escapeHtml(v.id)}">+ hinzufügen</button>`}
         </div>`;
-      }).join("")}
+      }).join("") : `<p class="muted">Noch keine Laufzeiten/Preise hinterlegt (im Reiter „MAK" ergänzen).</p>`}
     </div>` : "";
-  const preisHinweis = !varianten.length && eintrag.kosten !== null && eintrag.kosten !== undefined ? ` <span class="muted">(${eintrag.kosten} €)</span>` : "";
-  const staffelungHinweis = eintrag.kostenWeiteresArtikel !== null && eintrag.kostenWeiteresArtikel !== undefined
+  const preisHinweis = !proLaufzeit && eintrag.kosten !== null && eintrag.kosten !== undefined ? ` <span class="muted">(${eintrag.kosten} €)</span>` : "";
+  const staffelungHinweis = !proLaufzeit && eintrag.kostenWeiteresArtikel !== null && eintrag.kostenWeiteresArtikel !== undefined
     ? `<p class="hinweis" style="margin-top:-0.2rem">Staffelung je weiterem Artikel: <strong>${eintrag.kostenWeiteresArtikel} €</strong> <span class="muted">– Referenzangabe, beim Hinzufügen nicht automatisch verrechnet</span></p>`
     : "";
   container.innerHTML = `<div class="mak-feld">
@@ -6633,15 +6646,31 @@ function renderMakListeAktivMarkieren() {
    damit sie sofort in Listen/Dropdowns eindeutig auffindbar ist, bis der Nutzer sie durch eine
    "echte" ID (z. B. im Stil "DU023") ersetzt. */
 function makEntwurfNeu() {
-  return { id: "NEU-" + neueId().slice(0, 6).toUpperCase(), kategorie: "", bereich: "", parameter: "Neue MAK-Position", anforderung: "", normEu: "", normUs: "", pruefnachweis: "", schlagworte: [], varianten: [], kosten: null, kostenWeiteresArtikel: null };
+  return { id: "NEU-" + neueId().slice(0, 6).toUpperCase(), kategorie: "", bereich: "", parameter: "Neue MAK-Position", anforderung: "", normEu: "", normUs: "", pruefnachweis: "", schlagworte: [], varianten: [], kosten: null, kostenWeiteresArtikel: null, abrechnungsmodus: "artikel" };
 }
 
+/* Preisvariante ("Laufzeit"-Zeile, z. B. "1m³ Kammer (24h)" für 288,24 €) - editierbar analog zu
+   den Anwendungsbereichen bei Normen (siehe anwendungsbereichZeileHtml). */
+function makVarianteZeileHtml(v) {
+  return `<div class="mak-variante-item" data-id="${escapeHtml(v.id)}">
+    <div class="mak-variante-kopf">
+      <input type="text" data-feld="bezeichnung" value="${escapeHtml(v.bezeichnung)}" placeholder="z. B. 1m³ Kammer (24h)">
+      <input type="number" step="0.01" data-feld="kosten" value="${zahlOderLeer(v.kosten)}" placeholder="Preis €">
+      <button type="button" class="danger small" data-action="mak-variante-loeschen" title="Preisvariante löschen">🗑</button>
+    </div>
+    <div class="mak-variante-zusatz">
+      <input type="text" data-feld="sapCode" value="${escapeHtml(v.sapCode || "")}" placeholder="SAP-Code (optional)">
+      <input type="text" data-feld="hinweis" value="${escapeHtml(v.hinweis || "")}" placeholder="Hinweis, z. B. Norm/Standort (optional)">
+    </div>
+  </div>`;
+}
 function renderMakDetail() {
   const panel = document.getElementById("detail-panel-mak");
   const eintrag = data.mak.find((m) => m.id === aktiveMakId);
   if (!eintrag) { panel.innerHTML = '<div class="card leerzustand">Kein Eintrag ausgewählt.</div>'; return; }
   const schlagworte = eintrag.schlagworte || [];
   const varianten = eintrag.varianten || [];
+  const proLaufzeit = eintrag.abrechnungsmodus === "laufzeit";
   panel.innerHTML = `
     <div class="card">
       <h2 style="margin-top:0">${escapeHtml(eintrag.parameter || "(ohne Parameter)")}</h2>
@@ -6654,8 +6683,13 @@ function renderMakDetail() {
         <label class="volle-breite">Norm/Standard EU<textarea data-feld="normEu" rows="2">${escapeHtml(eintrag.normEu)}</textarea></label>
         <label class="volle-breite">Norm/Standard US (AATCC/ASTM)<textarea data-feld="normUs" rows="2">${escapeHtml(eintrag.normUs)}</textarea></label>
         <label class="volle-breite">Mindest-Prüfnachweis<textarea data-feld="pruefnachweis" rows="2">${escapeHtml(eintrag.pruefnachweis)}</textarea></label>
-        <label title="Fester Preis für diesen Parameter - wird beim Hinzufügen zu einem KV automatisch als Kosten der Position übernommen (sofern der Parameter keine eigenen Preisvarianten hat).">Preis €<input type="number" step="0.01" data-feld="kosten" value="${zahlOderLeer(eintrag.kosten)}"></label>
-        <label title="Reduzierter Preis für jeden weiteren Artikel, der zusammen mit diesem geprüft wird (analog zu „Kosten je weiterem Produkt" bei Normen) - reine Referenzangabe, wird nicht automatisch verrechnet.">Staffelung je weiterem Artikel €<input type="number" step="0.01" data-feld="kostenWeiteresArtikel" value="${zahlOderLeer(eintrag.kostenWeiteresArtikel)}"></label>
+        <label title="Legt fest, wie dieser Parameter abgerechnet wird - pro geprüftem Artikel (mit optionaler Staffelung für weitere Artikel) oder pro Laufzeit mit LIDL-seitig fest verhandelten Preisen (z. B. Korrosionsbeständigkeit nach 24h/48h/72h…).">Abrechnung<select data-feld="abrechnungsmodus">
+          <option value="artikel" ${!proLaufzeit ? "selected" : ""}>Pro Artikel (mit Staffelung)</option>
+          <option value="laufzeit" ${proLaufzeit ? "selected" : ""}>Pro Laufzeit (feste Preise)</option>
+        </select></label>
+        ${proLaufzeit ? "" : `
+        <label title="Fester Preis für diesen Parameter - wird beim Hinzufügen zu einem KV automatisch als Kosten der Position übernommen.">Preis €<input type="number" step="0.01" data-feld="kosten" value="${zahlOderLeer(eintrag.kosten)}"></label>
+        <label title="Reduzierter Preis für jeden weiteren Artikel, der zusammen mit diesem geprüft wird (analog zu „Kosten je weiterem Produkt" bei Normen) - reine Referenzangabe, wird nicht automatisch verrechnet.">Staffelung je weiterem Artikel €<input type="number" step="0.01" data-feld="kostenWeiteresArtikel" value="${zahlOderLeer(eintrag.kostenWeiteresArtikel)}"></label>`}
       </div>
       <div class="tag-feld">
         <label>Schlagworte <span class="muted" style="font-weight:400">– Signalwörter, die in den Abschnitten „Qualität" oder „Material" stehen müssen, damit dieser Parameter relevant ist; werden im KV-Reiter automatisch als Vorschlag erkannt und im Text fett hervorgehoben</span></label>
@@ -6667,8 +6701,13 @@ function renderMakDetail() {
           <button class="ghost small" id="mak-tag-hinzufuegen" type="button">+ Hinzufügen</button>
         </div>
       </div>
-      ${varianten.length ? `<div class="mak-feld"><h3>Preisvarianten <span class="muted" style="font-weight:400">– LIDL-spezifisch, im KV-Reiter je Position auswählbar</span></h3>
-        <ul style="margin:0.3rem 0 0;padding-left:1.1rem">${varianten.map((v) => `<li>${escapeHtml(v.bezeichnung)} <span class="muted">(${v.kosten} €)</span></li>`).join("")}</ul>
+      ${proLaufzeit ? `<div class="mak-feld">
+        <div class="toolbar-zeile">
+          <h3 style="margin:0">Laufzeiten/Preise <span class="muted" style="font-weight:400">– fest verhandelte LIDL-Preise, im KV-Reiter je Position auswählbar</span></h3>
+          <div class="spacer"></div>
+          <button type="button" class="ghost small" id="mak-variante-hinzufuegen-manuell">+ Laufzeit/Preis hinzufügen</button>
+        </div>
+        <div id="mak-varianten-liste">${varianten.length ? varianten.map((v) => makVarianteZeileHtml(v)).join("") : '<p class="muted">Noch keine Laufzeiten/Preise hinterlegt.</p>'}</div>
       </div>` : ""}
       <div class="toolbar-zeile" style="margin-top:0.6rem">
         <button class="danger small" id="mak-loeschen" style="margin-left:auto">MAK-Eintrag löschen</button>
@@ -6680,6 +6719,7 @@ function renderMakDetail() {
       speichereInLocalStorage();
       renderMakListe();
       if (el.dataset.feld === "parameter") panel.querySelector("h2").textContent = eintrag.parameter || "(ohne Parameter)";
+      if (el.dataset.feld === "abrechnungsmodus") renderMakDetail();
     });
   });
   const idInput = document.getElementById("mak-id-input");
@@ -6718,6 +6758,30 @@ function renderMakDetail() {
   document.getElementById("mak-tag-hinzufuegen").addEventListener("click", tagEingabeHinzufuegen);
   document.getElementById("mak-tag-input").addEventListener("keydown", (e) => {
     if (e.key === "Enter") { e.preventDefault(); tagEingabeHinzufuegen(); }
+  });
+  const varianteHinzufuegenBtn = document.getElementById("mak-variante-hinzufuegen-manuell");
+  if (varianteHinzufuegenBtn) {
+    varianteHinzufuegenBtn.addEventListener("click", () => {
+      eintrag.varianten = eintrag.varianten || [];
+      eintrag.varianten.push({ id: neueId(), bezeichnung: "", kosten: null, sapCode: "", hinweis: "" });
+      speichereInLocalStorage();
+      renderMakDetail();
+    });
+  }
+  panel.querySelectorAll(".mak-variante-item").forEach((div) => {
+    const variante = varianten.find((v) => v.id === div.dataset.id);
+    if (!variante) return;
+    div.querySelectorAll("[data-feld]").forEach((el) => {
+      el.addEventListener("input", () => {
+        variante[el.dataset.feld] = el.type === "number" ? (el.value === "" ? null : Number(el.value)) : el.value;
+        speichereInLocalStorage();
+      });
+    });
+    div.querySelector('[data-action="mak-variante-loeschen"]').addEventListener("click", () => {
+      eintrag.varianten = eintrag.varianten.filter((v) => v.id !== variante.id);
+      speichereInLocalStorage();
+      renderMakDetail();
+    });
   });
   document.getElementById("mak-loeschen").addEventListener("click", () => {
     if (!confirm(`MAK-Eintrag "${eintrag.parameter || eintrag.id}" wirklich löschen?`)) return;
@@ -7318,8 +7382,8 @@ document.getElementById("datei-laden-input").addEventListener("change", async (e
     migriereOffizielleWarengruppenStammdaten();
     migriereFixPositionenAlsNormen();
     migriereKennzeichnungFixPositionenPruefungsart();
-    migriereMak();
     migriereMakVarianten();
+    migriereMak();
     aktivePaId = data.pruefauftraege.length ? data.pruefauftraege[0].id : null;
     aktiveKvId = data.kvs.length ? data.kvs[0].id : null;
     aktiveNormId = data.normen.length ? data.normen[0].id : null;
@@ -7402,7 +7466,7 @@ function schluesselPruefgrundlage(e) { return normalisiereWarengruppe(e.warengru
 function schluesselNorm(n) { return normalisiere(n.bezeichnung); }
 const NORM_FELDER = ["bezeichnung", "titel", "typ", "dateiname", "rohtext", "anwendungsbereiche", "bemerkung", "sapCode", "kennzeichnung", "bedienungsanleitung", "pruefungsart", "kosten"];
 function schluesselMak(m) { return normalisiere(m.id); }
-const MAK_FELDER = ["kategorie", "bereich", "parameter", "anforderung", "normEu", "normUs", "pruefnachweis", "schlagworte", "varianten", "kosten", "kostenWeiteresArtikel"];
+const MAK_FELDER = ["kategorie", "bereich", "parameter", "anforderung", "normEu", "normUs", "pruefnachweis", "schlagworte", "varianten", "kosten", "kostenWeiteresArtikel", "abrechnungsmodus"];
 function schluesselWarengruppe(w) { return normalisiereWarengruppe(w.code); }
 const WARENGRUPPE_FELDER = ["name", "bereich"];
 function schluesselWarengruppenZuordnung(z) { return normalisiereWarengruppe(z.neu); }

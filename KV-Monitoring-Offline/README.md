@@ -517,19 +517,20 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     passende wird zurückgesetzt. Nach Auswahl eines Parameters erscheinen
     darunter dessen Anforderung, Norm/Standard EU, Norm/Standard US und
     Mindest-Prüfnachweis, ohne in den MAK-Tab wechseln zu müssen. Der
-    Parameter ist dabei **kein reines Nachschlagewerk**: führt er **LIDL-
-    spezifische Preisvarianten** (z. B. Korrosionsbeständigkeit nach Laufzeit/
-    Paketpreis-Gruppe, siehe „MAK" unten), erscheint statt eines einzelnen
-    Buttons je Variante eine eigene Zeile mit ihrem tatsächlichen Preis und
-    SAP-Code zum Hinzufügen; ohne Preisvarianten bleibt es beim einzelnen
-    **„+ hinzufügen"** für den Parameter selbst — trägt der Parameter dort
-    einen eigenen **Preis** (siehe „MAK" unten), erscheint dieser direkt neben
-    dem Titel und wird beim Hinzufügen automatisch als Kosten der Position
-    übernommen (SAP-Code bleibt frei nachtragbar); ohne hinterlegten Preis
-    landet die Position wie bisher mit 0 € — beides landet als Position mit
-    Kategorie Produktspezifikationen im KV. Ist zusätzlich eine **Staffelung
-    je weiterem Artikel** hinterlegt, erscheint sie hier als reiner Hinweis
-    (wird nicht automatisch verrechnet, siehe „MAK" unten). Direkt darunter
+    Parameter ist dabei **kein reines Nachschlagewerk**: je nach seiner
+    **Abrechnung** (siehe „MAK" unten) sieht die Darstellung unterschiedlich
+    aus. Im Modus **„Pro Laufzeit"** (z. B. Korrosionsbeständigkeit nach
+    Laufzeit/Paketpreis-Gruppe) erscheint statt eines einzelnen Buttons je
+    hinterlegter Laufzeit eine eigene Zeile **„Laufzeiten/Preise"** mit ihrem
+    tatsächlichen Preis und SAP-Code zum Hinzufügen. Im Modus **„Pro
+    Artikel"** bleibt es beim einzelnen **„+ hinzufügen"** für den Parameter
+    selbst — trägt der Parameter dort einen eigenen **Preis**, erscheint
+    dieser direkt neben dem Titel und wird beim Hinzufügen automatisch als
+    Kosten der Position übernommen (SAP-Code bleibt frei nachtragbar); ohne
+    hinterlegten Preis landet die Position wie bisher mit 0 €. Ist zusätzlich
+    eine **Staffelung je weiterem Artikel** hinterlegt, erscheint sie hier
+    als reiner Hinweis (wird nicht automatisch verrechnet). Beide Modi landen
+    als Position mit Kategorie Produktspezifikationen im KV. Direkt darunter
     lassen sich außerdem die **Schlagworte** des gewählten Parameters
     bearbeiten (Chips hinzufügen/entfernen, identisch zum Reiter „MAK" selbst
     — beide Ansichten teilen sich dieselben Daten, eine Änderung hier ist
@@ -896,26 +897,35 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   bei den anderen Reitern verfügbar (exportiert die aktuell gefilterte
   Liste, inkl. Schlagworte-Spalte).
 
-  **Preisvarianten (LIDL-spezifisch)** – manche Einträge (z. B.
-  Korrosionsbeständigkeit) führen zusätzlich eine Liste konkreter,
-  LIDL-spezifischer Preise nach Produkt/Laufzeit/Paketpreis-Gruppe (z. B.
-  „1m³ Kammer (24h) – B1 Paketpreis 1" für 480 €) — erscheinen in der
-  Detailansicht als schreibgeschützte Übersicht und im KV-Reiter je Position
-  einzeln auswählbar (siehe Produktspezifikationen oben). Stammen aus dem
-  früheren, eigenständigen Parameterkatalog und wurden dorthin migriert, wo
-  sich die Katalog-Zeile eindeutig einem MAK-Parameter zuordnen ließ.
+  **Abrechnung: Pro Artikel oder pro Laufzeit** – jeder MAK-Parameter hat ein
+  eigenes Dropdown **„Abrechnung"**, das festlegt, wie er bepreist wird:
+  - **„Pro Artikel (mit Staffelung)"** (Standard) – der Parameter trägt einen
+    einzelnen **„Preis €"**, der beim Hinzufügen einer Position automatisch
+    als Kosten übernommen wird und in der Detailansicht wie im KV-Reiter
+    neben dem Parameter-Titel erscheint. Zusätzlich lässt sich eine
+    **„Staffelung je weiterem Artikel €"** hinterlegen (analog zu „Kosten je
+    weiterem Produkt" bei Normen) — ein reduzierter Preis für jeden weiteren
+    gleichzeitig geprüften Artikel. Das ist eine reine Referenzangabe: sie
+    wird **nicht automatisch verrechnet**, sondern dient als Orientierung
+    beim manuellen Anpassen von Kosten/Anzahl der Position.
+  - **„Pro Laufzeit (feste Preise)"** – für Parameter mit LIDL-seitig fest
+    verhandelten Preisen je Laufzeit (z. B. Korrosionsbeständigkeit: 24h,
+    48h, 72h, 96h, 120h, 240h …, teils zusätzlich nach Kammergröße oder
+    Paketpreis-Gruppe gestaffelt). Statt eines einzelnen Preisfelds gibt es
+    hier eine frei editierbare Liste **„Laufzeiten/Preise"** — jede Zeile mit
+    eigener Bezeichnung, Preis, optionalem SAP-Code und Hinweis, per **„+
+    Laufzeit/Preis hinzufügen"** beliebig erweiterbar und einzeln löschbar
+    (identisches Editier-Muster wie bei den Anwendungsbereichen im
+    Normen-Tab). Im KV-Reiter erscheint dann statt eines einzelnen **„+
+    hinzufügen"** je Laufzeit eine eigene Zeile mit ihrem tatsächlichen
+    Preis/SAP-Code zum Hinzufügen (siehe Produktspezifikationen oben). Ein
+    Umschalten zwischen beiden Modi ist jederzeit möglich, die jeweils nicht
+    aktiven Felder bleiben dabei im Hintergrund erhalten.
 
-  **Preis und Staffelung (alle Einträge)** – unabhängig von den
-  LIDL-Preisvarianten hat jetzt **jeder** MAK-Parameter zwei eigene,
-  editierbare Felder: **„Preis €"** und **„Staffelung je weiterem Artikel
-  €"** (analog zu „Kosten je weiterem Produkt" bei Normen). Der Preis wird
-  beim Hinzufügen einer Position ohne eigene Preisvarianten automatisch als
-  Kosten übernommen (siehe Produktspezifikationen oben) und erscheint dort
-  wie auch in der Detailansicht neben dem Parameter-Titel. Die Staffelung ist
-  eine reine Referenzangabe für reduzierte Kosten bei mehreren gleichzeitig
-  geprüften Artikeln — wie bei „Kosten je weiterem Produkt" wird sie nicht
-  automatisch in eine Gesamtsumme eingerechnet, sondern dient als
-  Orientierung beim manuellen Anpassen von Kosten/Anzahl der Position.
+  Die 24 Parameter mit bereits migrierten LIDL-Preisen aus dem früheren,
+  eigenständigen Parameterkatalog (u. a. Korrosionsbeständigkeit) starten
+  automatisch im Modus „Pro Laufzeit"; alle übrigen starten bei „Pro
+  Artikel".
 
   **Schlagworte je Eintrag** – in der Detailansicht lassen sich beliebig
   viele Schlagworte als Chips hinzufügen (Eingabefeld + „+ Hinzufügen" oder
