@@ -157,16 +157,33 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     keine weitere „IAN-Vorgänger" mehr hinterlegt — ist als solches markiert).
 - **Kostenvoranschläge (KV)** – das Herzstück: pro IAN ein KV mit
   Stammdaten und einer Tabelle mechanischer Prüfpositionen (Kategorie,
-  Bezeichnung, Kürzel, SAP-Code, **Bewertungsgrundlage/Grenzwert**, Kosten,
-  Anzahl, Summe, aktiv/inaktiv) — die Spalte „Bewertungsgrundlage/Grenzwert"
-  ist frei editierbar und rein produktspezifisch (wird nur an der jeweiligen
-  KV-Position gespeichert, nicht in einer gemeinsamen Datenbank); bei
-  MAK-Parametern, die im Reiter „MAK" als **„Bewertungsgrundlage/Grenzwert
-  erforderlich"** markiert sind, erscheint dafür zusätzlich schon beim
-  Hinzufügen im Produktspezifikationen-Block ein eigenes Eingabefeld, dessen
-  Wert direkt in die neu angelegte Position übernommen wird (siehe MAK
-  unten) — bei allen anderen Positionen bleibt die Spalte einfach leer und
-  lässt sich bei Bedarf trotzdem frei befüllen. Die
+  Bezeichnung, Kürzel, SAP-Code, Kosten, Anzahl, Summe, aktiv/inaktiv). Jede
+  Position kann zusätzlich eine produktspezifische
+  **Bewertungsgrundlage/Grenzwert** tragen (wird nur an der jeweiligen
+  KV-Position gespeichert, nicht in einer gemeinsamen Datenbank) — dafür gibt
+  es bewusst **keine eigene Spalte** in dieser Tabelle, sondern ein direkt
+  editierbares Feld in der Übersicht „Bereits ausgewählte MAK-Parameter" im
+  Produktspezifikationen-Block (siehe dort), da die meisten Positionen dieses
+  Feld gar nicht brauchen. MAK-Parameter, die im Reiter „MAK" als
+  **„Bewertungsgrundlage/Grenzwert erforderlich"** markiert sind, zeigen beim
+  Hinzufügen im Produktspezifikationen-Block einen entsprechenden Hinweis
+  (siehe MAK unten).
+
+  **Bemerkungen-Zeile je Position**: sobald zu einer Position irgendwo im
+  Tool bereits etwas Relevantes hinterlegt ist, erscheint direkt darunter
+  eine schmale, schreibgeschützte Zusatzzeile mit allen gefundenen
+  Bemerkungen — ohne dafür extra in andere Reiter wechseln zu müssen. Da
+  Positionen selbst keine feste Rückreferenz auf ihre Quelle speichern,
+  erfolgt die Zuordnung best-effort über die Bezeichnung: die
+  **Norm-Bemerkung** (jede Norm, deren Bezeichnung in der Position vorkommt —
+  deckt Sicherheit & Norm, Kennzeichnung, LIDL-spezifisch, FFU/Fitting und
+  NGO gleichermaßen ab), der **Prüfgrundlage-Kommentar** (bei
+  „Produkt: …"-Bezeichnungen über den Produktnamen plus das zum Kürzel
+  passende Kommentarfeld), der **MAK-Hinweis** einer Preisvariante (bei
+  „Parameter / Variante"-Bezeichnungen) sowie die an der Position selbst
+  gespeicherte **Bewertungsgrundlage/Grenzwert**. Da die Zuordnung über den
+  Text läuft, kann sie bei manuell stark umbenannten oder freien Positionen
+  auch mal nichts finden — dann bleibt die Zusatzzeile schlicht weg. Die
   **Überschrift zeigt bevorzugt die Artikelbezeichnung aus dem verknüpften
   Prüfauftrag** (aussagekräftiger als die bloße IAN) — ohne verknüpften PA
   fällt sie auf das freie „Artikel"-Feld des KVs zurück, erst danach auf
@@ -471,20 +488,17 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   durch eine dünne Trennlinie abgesetzt zu sein — Vorschläge zusätzlich grün
   hinterlegt. Die einzelnen Blöcke:
   - **Sicherheit-/Normprüfung** (siehe oben, immer sichtbar sobald eine
-    Warengruppe hinterlegt ist) — enthält zusätzlich zur
-    Prüfgrundlagen-Empfehlung noch die beiden verbliebenen festen Positionen
-    dieses Abschnitts: **Akkusicherheitskurzcheck** (nur vorgeschlagen, wenn
-    das aus dem Prüfauftrag ausgelesene Feld „Batterietyp" auf eine
-    tatsächlich vorhandene Batterie/einen Akku hindeutet, nicht
-    „keine"/„nein"/leer) und **Optischer Abgleich**. **Mustereinlagerung**
-    wird im Prüfumfang nicht mehr angezeigt (weder als Vorschlag noch manuell
-    hinzufügbar). Zusätzlich erscheinen hier alle **Normen mit Prüfungsart
-    „LIDL-spezifisch"** (Reiter „Normen"/„Verwaltung" → Prüfungsarten,
-    analog zu „Kennzeichnung" oben) als eigene, per „+ hinzufügen" direkt
-    übernehmbare Zeilen mit ihrem hinterlegten Preis (sofern gepflegt) — ohne
-    Vorschlags-Markierung, da es dafür (anders als bei den vier festen
-    Kennzeichnung-GER-Varianten) kein vergleichbares, aus dem Prüfauftrag
-    ableitbares Signal gibt.
+    Warengruppe hinterlegt ist) — der Abschnitt „Weitere Positionen" enthält
+    hier alle **Normen mit Prüfungsart „LIDL-spezifisch"** (Reiter
+    „Normen"/„Verwaltung" → Prüfungsarten, analog zu „Kennzeichnung" oben)
+    als eigene, per „+ hinzufügen" direkt übernehmbare Zeilen mit ihrem
+    hinterlegten Preis (sofern gepflegt) — ohne Vorschlags-Markierung, da es
+    dafür (anders als bei den vier festen Kennzeichnung-GER-Varianten) kein
+    vergleichbares, aus dem Prüfauftrag ableitbares Signal gibt. Die früher
+    hier fest verankerten Katalogpositionen **Akkusicherheitskurzcheck** und
+    **Optischer Abgleich** wurden entfernt; **Mustereinlagerung** wird im
+    Prüfumfang ebenfalls nicht mehr angezeigt (weder als Vorschlag noch
+    manuell hinzufügbar).
   - **Kennzeichnung** – eigener Block, erscheint sobald „Kennzeichnung
     (Verpackung & Produkt)" oder „Kennzeichnung (Bedienungsanleitung)"
     angehakt ist. Die zum Hinzufügen angebotenen Positionen sind **direkt die
@@ -513,14 +527,18 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   - **(Physikalische-) Produktspezifikationen**: direkt oben im Block, noch
     vor Qualität/Material, erscheint sobald mindestens eine Position
     hinzugefügt wurde die Übersicht **„Bereits ausgewählte MAK-Parameter"**
-    (mit Anzahl) — eine schlichte Liste aller in dieser Kategorie bereits im
-    KV vorhandenen Positionen samt Kosten, damit auf einen Blick sichtbar
-    ist, was für dieses Produkt schon ausgewählt wurde, ohne dafür erst in
-    der großen Positionstabelle weiter unten suchen zu müssen. Deaktivierte
+    (mit Anzahl) — eine Liste aller in dieser Kategorie bereits im KV
+    vorhandenen Positionen samt Kosten, damit auf einen Blick sichtbar ist,
+    was für dieses Produkt schon ausgewählt wurde, ohne dafür erst in der
+    großen Positionstabelle weiter unten suchen zu müssen. Deaktivierte
     Positionen werden ebenfalls aufgeführt, aber als „– inaktiv" markiert,
-    damit nichts versteckt bleibt; die eigentliche Bearbeitung (SAP-Code,
-    Kosten, Anzahl, Aktiv-Status, Entfernen) bleibt weiterhin Sache der
-    Positionstabelle. Enthält direkt
+    damit nichts versteckt bleibt. Je Position gibt es hier außerdem ein
+    direkt editierbares Feld **„Bewertungsgrundlage/Grenzwert"** (produkt-
+    spezifisch, wird an der Position gespeichert — dafür gibt es bewusst
+    keine eigene Spalte in der großen Positionstabelle, da die meisten
+    Positionen dieses Feld nicht brauchen); alle übrigen Eigenschaften
+    (SAP-Code, Kosten, Anzahl, Aktiv-Status, Entfernen) bleiben weiterhin
+    Sache der Positionstabelle. Enthält direkt
     übereinander die aus dem Prüfauftrag ausgelesenen **„Qualität"** und
     **„Material"** (jeweils als eigene Style-Blöcke aufgeteilt wie auf der
     Prüfauftrags-Detailseite; „Material" erscheint nur, wenn der PA ein
@@ -943,8 +961,13 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     (identisches Editier-Muster wie bei den Anwendungsbereichen im
     Normen-Tab). Im KV-Reiter erscheint dann statt eines einzelnen **„+
     hinzufügen"** je Laufzeit eine eigene Zeile mit ihrem tatsächlichen
-    Preis/SAP-Code zum Hinzufügen (siehe Produktspezifikationen oben). Ein
-    Umschalten zwischen beiden Modi ist jederzeit möglich, die jeweils nicht
+    Preis/SAP-Code zum Hinzufügen, darunter jeweils sichtbar der hinterlegte
+    **Hinweis** (nicht nur als Hover-Tooltip), sowie darunter immer eine
+    Eingabe **„Freie Laufzeit (nicht in der Liste)"** (Bezeichnung + Preis),
+    für Laufzeiten außerhalb der festen Liste — landet als eigene Position
+    mit demselben Bezeichnungsschema wie die festen Varianten, aber frei
+    eingebbarem Preis (siehe Produktspezifikationen oben). Ein Umschalten
+    zwischen beiden Modi ist jederzeit möglich, die jeweils nicht
     aktiven Felder bleiben dabei im Hintergrund erhalten.
 
   Die 24 Parameter mit bereits migrierten LIDL-Preisen aus dem früheren,

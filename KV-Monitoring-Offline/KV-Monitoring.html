@@ -4589,22 +4589,26 @@ function fixPositionenListeHtml(kat, pa, kv, filterFn) {
 }
 
 const KENNZEICHNUNG_FIXPOSITION_ID = (id) => id.startsWith("fix-kennz") || id === "fix-bda";
+/* Akkusicherheitskurzcheck und Optischer Abgleich wurden auf Wunsch aus "Weitere Positionen"
+   entfernt - die Katalogeinträge selbst (fixPositionenFuerKategorie) bleiben unangetastet, nur die
+   Anzeige/das Hinzufügen an dieser Stelle ist ausgeblendet, analog zu KENNZEICHNUNG_FIXPOSITION_ID. */
+const WEITERE_POSITIONEN_AUSGEBLENDET_ID = (id) => id === "fix-akku" || id === "fix-optisch";
 
 /* Sicherheit-/Normprüfung (früher "Warengruppen-Empfehlung (Mechanik)") - funktional unverändert:
    Hauptprodukt + Set-Bestandteile mit den in der zugehörigen Prüfgrundlage hinterlegten
-   Sicherheit&Norm-Kosten, plus die übrigen (nicht Kennzeichnung betreffenden) festen
-   Katalogpositionen der Kategorie (Akkusicherheitskurzcheck, Optischer Abgleich). Die
-   Kennzeichnungspositionen sowie die Kennzeichnung/Bedienungsanleitung-Anforderungshinweise stehen
-   jetzt in ihrem eigenen Block (siehe renderKennzeichnungKarte). */
+   Sicherheit&Norm-Kosten, plus (bis auf Kennzeichnung sowie Akkusicherheitskurzcheck/Optischer
+   Abgleich, siehe WEITERE_POSITIONEN_AUSGEBLENDET_ID) die übrigen festen Katalogpositionen der
+   Kategorie. Die Kennzeichnungspositionen sowie die Kennzeichnung/Bedienungsanleitung-
+   Anforderungshinweise stehen jetzt in ihrem eigenen Block (siehe renderKennzeichnungKarte). */
 function renderSicherheitNormKarte(kv, pa, kontext) {
   const { warengruppe, treffer, gewaehlt } = kontext;
   const kat = { id: "sicherheitNorm", katalogKategorie: SICHERHEIT_NORM_KATEGORIE_NAME };
-  /* Die festen Katalogpositionen (Akkusicherheitskurzcheck, Optischer Abgleich) hängen NICHT von
-     einer gefundenen Prüfgrundlage/Warengruppe ab (anders als die Hauptprodukt/Set-Bestandteil-
-     Empfehlung) - sie müssen deshalb auch dann sichtbar bleiben, wenn noch keine Warengruppe
-     hinterlegt ist oder keine Referenzdaten dafür existieren. */
+  /* Die festen Katalogpositionen hängen NICHT von einer gefundenen Prüfgrundlage/Warengruppe ab
+     (anders als die Hauptprodukt/Set-Bestandteil-Empfehlung) - sie müssen deshalb auch dann
+     sichtbar bleiben, wenn noch keine Warengruppe hinterlegt ist oder keine Referenzdaten dafür
+     existieren. */
   const fixpositionenSichtbar = kategorieIstAusgewaehlt(kv, kat);
-  const { positionenHtml, alleVorschlaegeButton } = fixPositionenListeHtml(kat, pa, kv, (k) => !KENNZEICHNUNG_FIXPOSITION_ID(k.id));
+  const { positionenHtml, alleVorschlaegeButton } = fixPositionenListeHtml(kat, pa, kv, (k) => !KENNZEICHNUNG_FIXPOSITION_ID(k.id) && !WEITERE_POSITIONEN_AUSGEBLENDET_ID(k.id));
   const lidlSpezifischHtml = lidlSpezifischNormenAddableHtml(kv);
   const fixpositionenHtml = fixpositionenSichtbar ? `<div class="pruefumfang-kat-kopf" style="margin-top:0.6rem"><strong>Weitere Positionen</strong> ${alleVorschlaegeButton}</div>${positionenHtml}${lidlSpezifischHtml}` : "";
 
@@ -4821,16 +4825,32 @@ function renderKvMakDetail(makId, kv) {
   const bezeichnung = kvMakBezeichnung(eintrag);
   const schonDrin = kv.positionen.some((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere(PRODUKTSPEZI_KATEGORIE_NAME) && normalisiere(p.bezeichnung) === normalisiere(bezeichnung));
   const varianteHinzufuegenBtn = proLaufzeit ? "" : (schonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="mak-parameter-hinzufuegen">+ hinzufügen</button>`);
+  /* Jede Laufzeit-Zeile zeigt jetzt ihren Hinweis sichtbar (nicht mehr nur als Hover-Tooltip),
+     damit z. B. Prüfnorm/Standort direkt erkennbar sind. Zusätzlich gibt es darunter IMMER eine
+     freie Laufzeit-Eingabe (Bezeichnung + Preis) für Laufzeiten, die nicht in der festen Liste
+     stehen - landet als eigene Position mit demselben Bezeichnungsschema wie die festen Varianten
+     (siehe kvMakVarianteBezeichnung), aber frei eingebbarem Preis. */
   const variantenHtml = proLaufzeit ? `<div class="mak-feld">
       <h3>Laufzeiten/Preise <span class="muted" style="font-weight:400">– LIDL-spezifisch, fest verhandelt</span></h3>
       ${varianten.length ? varianten.map((v) => {
         const varBezeichnung = kvMakVarianteBezeichnung(eintrag, v);
         const varSchonDrin = kv.positionen.some((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere(PRODUKTSPEZI_KATEGORIE_NAME) && normalisiere(p.bezeichnung) === normalisiere(varBezeichnung));
-        return `<div class="pruefumfang-position">
-          <span title="${escapeHtml(v.hinweis || "")}">${escapeHtml(v.bezeichnung)} <span class="muted">(${v.kosten} €)</span></span>
-          ${varSchonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="mak-variante-hinzufuegen" data-varianten-id="${escapeHtml(v.id)}">+ hinzufügen</button>`}
+        return `<div class="pruefumfang-position" style="flex-direction:column;align-items:flex-start;gap:0.25rem">
+          <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:0.5rem">
+            <span>${escapeHtml(v.bezeichnung)} <span class="muted">(${v.kosten} €)</span></span>
+            ${varSchonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="mak-variante-hinzufuegen" data-varianten-id="${escapeHtml(v.id)}">+ hinzufügen</button>`}
+          </div>
+          ${v.hinweis ? `<p class="hinweis" style="margin:0">${escapeHtml(v.hinweis)}</p>` : ""}
         </div>`;
       }).join("") : `<p class="muted">Noch keine Laufzeiten/Preise hinterlegt (im Reiter „MAK" ergänzen).</p>`}
+      <div class="pruefumfang-position" style="flex-direction:column;align-items:flex-start;gap:0.4rem">
+        <strong style="font-size:0.82rem">Freie Laufzeit (nicht in der Liste)</strong>
+        <div style="display:flex;gap:0.4rem;flex-wrap:wrap;width:100%">
+          <input type="text" id="kv-mak-freie-laufzeit-bezeichnung" placeholder="z. B. 36h" style="flex:1;min-width:110px;font-family:inherit;font-size:0.82rem;padding:0.3rem 0.4rem;border:1px solid var(--border);border-radius:6px">
+          <input type="number" step="0.01" id="kv-mak-freie-laufzeit-kosten" placeholder="Preis €" style="width:100px;font-family:inherit;font-size:0.82rem;padding:0.3rem 0.4rem;border:1px solid var(--border);border-radius:6px">
+          <button type="button" class="ghost small" id="kv-mak-freie-laufzeit-hinzufuegen">+ hinzufügen</button>
+        </div>
+      </div>
     </div>` : "";
   const preisHinweis = !proLaufzeit && eintrag.kosten !== null && eintrag.kosten !== undefined ? ` <span class="muted">(${eintrag.kosten} €)</span>` : "";
   const staffelungHinweis = !proLaufzeit && eintrag.kostenWeiteresArtikel !== null && eintrag.kostenWeiteresArtikel !== undefined
@@ -4838,11 +4858,12 @@ function renderKvMakDetail(makId, kv) {
     : "";
   /* Bewertungsgrundlage/Grenzwert: an ausgewählten MAK-Parametern markiert (siehe Reiter "MAK"),
      aber der eigentliche Wert ist produktspezifisch und wird NICHT am MAK-Eintrag gespeichert,
-     sondern direkt an der beim Hinzufügen neu erzeugten KV-Position (siehe addBtn/
-     mak-variante-hinzufuegen unten) - danach in der Positionstabelle weiter editierbar. */
-  const bewertungHtml = eintrag.bewertungsgrundlageErforderlich ? `<label style="display:flex;flex-direction:column;gap:0.2rem;font-size:0.8rem;font-weight:600;max-width:420px;margin-top:0.4rem">Bewertungsgrundlage/Grenzwert <span class="muted" style="font-weight:400">– produktspezifisch, wird an der KV-Position gespeichert</span>
-      <input type="text" id="kv-mak-bewertungsgrundlage" placeholder="z. B. konkreter Grenzwert, Norm-Referenz…">
-    </label>` : "";
+     sondern erst NACH dem Hinzufügen direkt in der Übersicht "Bereits ausgewählte MAK-Parameter"
+     (siehe produktspezifikationenAusgewaehlteMakHtml) eingetragen - hier deshalb nur ein Hinweis,
+     kein Eingabefeld. */
+  const bewertungHinweisHtml = eintrag.bewertungsgrundlageErforderlich
+    ? `<p class="hinweis" style="margin-top:0.3rem">⚠ Für diesen Parameter sollte nach dem Hinzufügen eine produktspezifische <strong>Bewertungsgrundlage/Grenzwert</strong> eingetragen werden – direkt bei „Bereits ausgewählte MAK-Parameter" oben im Block.</p>`
+    : "";
   container.innerHTML = `<div class="mak-feld">
       <div class="toolbar-zeile">
         <h3 style="margin:0">${escapeHtml(eintrag.id)} — ${escapeHtml(eintrag.parameter || "(ohne Parameter)")}${preisHinweis}</h3>
@@ -4850,7 +4871,7 @@ function renderKvMakDetail(makId, kv) {
       </div>
       <p class="muted" style="margin-top:-0.4rem">Kategorie: ${escapeHtml(eintrag.kategorie)} · Bereich: ${escapeHtml(eintrag.bereich)}</p>
       ${staffelungHinweis}
-      ${bewertungHtml}
+      ${bewertungHinweisHtml}
     </div>
     <div class="mak-feld"><h3>Anforderung</h3><p>${escapeHtml(eintrag.anforderung) || "–"}</p></div>
     <div class="mak-feld"><h3>Norm/Standard EU</h3><p>${escapeHtml(eintrag.normEu) || "–"}</p></div>
@@ -4868,12 +4889,10 @@ function renderKvMakDetail(makId, kv) {
       </div>
     </div>`;
 
-  const bewertungFeld = () => document.getElementById("kv-mak-bewertungsgrundlage");
   const addBtn = container.querySelector('[data-action="mak-parameter-hinzufuegen"]');
   if (addBtn) {
     addBtn.addEventListener("click", () => {
-      const bf = bewertungFeld();
-      kv.positionen.push({ id: neueId(), kategorie: PRODUKTSPEZI_KATEGORIE_NAME, bezeichnung, kuerzel: "PS", sapCode: "", bewertungsgrundlage: bf ? bf.value.trim() : "", kosten: eintrag.kosten || 0, anzahl: 1, aktiv: true });
+      kv.positionen.push({ id: neueId(), kategorie: PRODUKTSPEZI_KATEGORIE_NAME, bezeichnung, kuerzel: "PS", sapCode: "", kosten: eintrag.kosten || 0, anzahl: 1, aktiv: true });
       speichereInLocalStorage();
       renderKvDetail();
       zeigeStatus("Position hinzugefügt · " + jetzt(), "ok");
@@ -4883,13 +4902,30 @@ function renderKvMakDetail(makId, kv) {
     btn.addEventListener("click", () => {
       const variante = varianten.find((v) => v.id === btn.dataset.variantenId);
       if (!variante) return;
-      const bf = bewertungFeld();
-      kv.positionen.push({ id: neueId(), kategorie: PRODUKTSPEZI_KATEGORIE_NAME, bezeichnung: kvMakVarianteBezeichnung(eintrag, variante), kuerzel: "PS", sapCode: variante.sapCode || "", bewertungsgrundlage: bf ? bf.value.trim() : "", kosten: Number(variante.kosten) || 0, anzahl: 1, aktiv: true });
+      kv.positionen.push({ id: neueId(), kategorie: PRODUKTSPEZI_KATEGORIE_NAME, bezeichnung: kvMakVarianteBezeichnung(eintrag, variante), kuerzel: "PS", sapCode: variante.sapCode || "", kosten: Number(variante.kosten) || 0, anzahl: 1, aktiv: true });
       speichereInLocalStorage();
       renderKvDetail();
       zeigeStatus("Position hinzugefügt · " + jetzt(), "ok");
     });
   });
+  const freieLaufzeitBtn = container.querySelector("#kv-mak-freie-laufzeit-hinzufuegen");
+  if (freieLaufzeitBtn) {
+    freieLaufzeitBtn.addEventListener("click", () => {
+      const bezeichnungFeld = document.getElementById("kv-mak-freie-laufzeit-bezeichnung");
+      const kostenFeld = document.getElementById("kv-mak-freie-laufzeit-kosten");
+      const freieBezeichnung = bezeichnungFeld.value.trim();
+      if (!freieBezeichnung) { zeigeStatus("Bitte eine Laufzeit-Bezeichnung eingeben.", ""); return; }
+      const varBezeichnung = kvMakVarianteBezeichnung(eintrag, { bezeichnung: freieBezeichnung });
+      if (kv.positionen.some((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere(PRODUKTSPEZI_KATEGORIE_NAME) && normalisiere(p.bezeichnung) === normalisiere(varBezeichnung))) {
+        zeigeStatus("Diese Laufzeit ist bereits im KV vorhanden.", "");
+        return;
+      }
+      kv.positionen.push({ id: neueId(), kategorie: PRODUKTSPEZI_KATEGORIE_NAME, bezeichnung: varBezeichnung, kuerzel: "PS", sapCode: "", kosten: kostenFeld.value === "" ? 0 : Number(kostenFeld.value), anzahl: 1, aktiv: true });
+      speichereInLocalStorage();
+      renderKvDetail();
+      zeigeStatus("Position hinzugefügt · " + jetzt(), "ok");
+    });
+  }
   container.querySelectorAll("#kv-mak-tag-chips button[data-idx]").forEach((btn) => {
     btn.addEventListener("click", () => {
       schlagworte.splice(Number(btn.dataset.idx), 1);
@@ -4940,19 +4976,23 @@ function makSchlagwortVorschlaege(pa) {
    renderKvMakDetail. Anhand der Schlagworte im Qualität-/Material-Text erkannte MAK-Parameter
    erscheinen zusätzlich als klickbare Vorschläge direkt über dem Dropdown. */
 /* Übersicht der bereits im KV vorhandenen Produktspezifikationen-Positionen (i. d. R. über das
-   MAK-Dropdown angelegt, siehe renderKvMakDetail) - rein informativ (kein eigener Bearbeitungsweg,
-   dafür weiterhin die Positionstabelle bzw. #kv-mak-auswahl), damit auf einen Blick sichtbar ist,
-   was für dieses Produkt schon ausgewählt wurde, ohne erst in der großen Positionstabelle danach
-   suchen zu müssen. Inaktive (deaktivierte) Positionen werden mit angezeigt, aber als solche
-   markiert, damit nichts versteckt bleibt. */
+   MAK-Dropdown angelegt, siehe renderKvMakDetail) - anders als eine reine Anzeige lässt sich hier
+   direkt je Position die produktspezifische Bewertungsgrundlage/Grenzwert eintragen (schreibt
+   direkt auf die Position, siehe initialisierePruefumfangUebersicht), statt dafür extra in der
+   großen Positionstabelle danach suchen zu müssen (dort gibt es dafür bewusst keine eigene Spalte
+   mehr). Inaktive (deaktivierte) Positionen werden mit angezeigt, aber als solche markiert, damit
+   nichts versteckt bleibt. */
 function produktspezifikationenAusgewaehlteMakHtml(kv) {
   const positionen = kv.positionen.filter((p) => normalisiere(p.kategorie) === normalisiere(PRODUKTSPEZI_KATEGORIE_NAME));
   if (!positionen.length) return "";
   return `<div class="mak-feld">
     <h3>Bereits ausgewählte MAK-Parameter <span class="muted" style="font-weight:400">(${positionen.length})</span></h3>
-    <ul style="margin:0.3rem 0 0;padding-left:1.1rem">
-      ${positionen.map((p) => `<li${p.aktiv ? "" : ' style="color:var(--muted)"'}>${escapeHtml(p.bezeichnung || "(ohne Bezeichnung)")} <span class="muted">(${(Number(p.kosten) || 0).toFixed(2)} €${Number(p.anzahl) > 1 ? `, ${p.anzahl}×` : ""})</span>${p.aktiv ? "" : ` <span class="muted">– inaktiv</span>`}</li>`).join("")}
-    </ul>
+    ${positionen.map((p) => `<div class="pruefumfang-position" style="flex-direction:column;align-items:flex-start;gap:0.3rem${p.aktiv ? "" : ";opacity:0.65"}">
+      <span>${escapeHtml(p.bezeichnung || "(ohne Bezeichnung)")} <span class="muted">(${(Number(p.kosten) || 0).toFixed(2)} €${Number(p.anzahl) > 1 ? `, ${p.anzahl}×` : ""})</span>${p.aktiv ? "" : ` <span class="muted">– inaktiv</span>`}</span>
+      <label style="display:flex;flex-direction:column;gap:0.15rem;font-size:0.78rem;font-weight:400;color:var(--muted);width:100%;max-width:420px">Bewertungsgrundlage/Grenzwert
+        <input type="text" data-action="mak-uebersicht-bewertung-bearbeiten" data-pos-id="${escapeHtml(p.id)}" value="${escapeHtml(p.bewertungsgrundlage || "")}" placeholder="z. B. konkreter Grenzwert, Norm-Referenz…" style="font-family:inherit;font-size:0.82rem;padding:0.3rem 0.4rem;border:1px solid var(--border);border-radius:6px;font-weight:400;color:var(--text)">
+      </label>
+    </div>`).join("")}
   </div>`;
 }
 function renderProduktspezifikationenKarte(kv, pa, qualitaetBloeckeHtml, materialBloeckeHtml) {
@@ -5392,6 +5432,18 @@ function initialisierePruefumfangUebersicht(panel, kv, pa) {
       zeigeStatus("Position hinzugefügt · " + jetzt(), "ok");
     });
   });
+  /* Bewertungsgrundlage/Grenzwert direkt in der Übersicht "Bereits ausgewählte MAK-Parameter"
+     editierbar (siehe produktspezifikationenAusgewaehlteMakHtml) - schreibt direkt auf die
+     KV-Position, kein renderKvDetail() nötig (kein anderer Bereich hängt vom Wert ab). */
+  panel.querySelectorAll('[data-action="mak-uebersicht-bewertung-bearbeiten"]').forEach((input) => {
+    input.addEventListener("change", () => {
+      const pos = kv.positionen.find((p) => p.id === input.dataset.posId);
+      if (!pos) return;
+      pos.bewertungsgrundlage = input.value;
+      speichereInLocalStorage();
+      zeigeStatus("Bewertungsgrundlage aktualisiert · " + jetzt(), "ok");
+    });
+  });
   const makAuswahl = panel.querySelector("#kv-mak-auswahl");
   if (makAuswahl) {
     makAuswahl.addEventListener("change", () => renderKvMakDetail(makAuswahl.value, kv));
@@ -5578,9 +5630,9 @@ function renderKvDetail() {
       <div class="tabellen-wrapper">
         <table class="tabelle">
           <thead><tr>
-            <th style="width:4%">Aktiv</th><th style="width:13%">Kategorie</th><th style="width:20%">Bezeichnung</th>
-            <th style="width:5%">Kürzel</th><th style="width:10%">SAP-Code</th><th style="width:13%" title="Produktspezifisch, z. B. konkreter Grenzwert oder Norm-Referenz - bei ausgewählten MAK-Parametern erforderlich, siehe Reiter „MAK"">Bewertungsgrundlage/Grenzwert</th><th style="width:7%">Kosten €</th>
-            <th style="width:5%">Anzahl</th><th style="width:7%">Summe €</th><th style="width:8%">Aktionen</th>
+            <th style="width:4%">Aktiv</th><th style="width:16%">Kategorie</th><th style="width:26%">Bezeichnung</th>
+            <th style="width:6%">Kürzel</th><th style="width:12%">SAP-Code</th><th style="width:8%">Kosten €</th>
+            <th style="width:6%">Anzahl</th><th style="width:8%">Summe €</th><th style="width:8%">Aktionen</th>
           </tr></thead>
           <tbody id="kv-positionen-body"></tbody>
         </table>
@@ -5658,19 +5710,70 @@ function renderKvDetail() {
   renderKvPositionenTabelle(kv);
 }
 
+/* Best-effort: sammelt alle bekannten Bemerkungen zu einer Position (Norm-Bemerkung,
+   Prüfgrundlage-Kommentar, MAK-Hinweis, Bewertungsgrundlage/Grenzwert) für die Zusatzzeile in der
+   Positionstabelle (siehe renderKvPositionenTabelle). Positionen speichern selbst keine
+   Rückreferenz auf ihre Quelle (Norm/Prüfgrundlage/MAK), daher rein über die Bezeichnung
+   zugeordnet:
+   - Norm-Bemerkung: jede Norm, deren Bezeichnung als Teilstring in der Position vorkommt - deckt
+     Sicherheit & Norm/Kennzeichnung/LIDL-spezifisch/FFU/NGO gleichermaßen ab, da deren
+     Positions-Bezeichnungen die jeweilige Norm-Bezeichnung immer wörtlich enthalten.
+   - Prüfgrundlage-Kommentar: bei "Produkt: …"-Bezeichnungen (Hauptprodukt/Set-Bestandteil aus
+     Sicherheit & Norm/FFU/NGO, siehe mechanikKomponentenHtml) über den Produktnamen vor dem ":"
+     plus das zum Kürzel passende Kommentarfeld (MS -> normenKommentar, FFU -> ffuNormenKommentar,
+     NGO -> stiwaNormenKommentar).
+   - MAK-Hinweis: bei "<Parameter> / <Variante>"-Bezeichnungen (siehe kvMakVarianteBezeichnung) die
+     passende Preisvariante.
+   - Bewertungsgrundlage/Grenzwert: direkt an der Position gespeichert, kein Matching nötig. */
+function positionBemerkungen(p) {
+  const ergebnisse = [];
+  if (p.bewertungsgrundlage) ergebnisse.push({ label: "Bewertungsgrundlage/Grenzwert", text: p.bewertungsgrundlage });
+
+  const bezNorm = normalisiere(p.bezeichnung || "");
+  const norm = data.normen.find((n) => n.bezeichnung && bezNorm.includes(normalisiere(n.bezeichnung)));
+  if (norm && norm.bemerkung) ergebnisse.push({ label: "Bemerkung (Norm)", text: norm.bemerkung });
+
+  if (p.bezeichnung && p.bezeichnung.includes(":")) {
+    const produktPrefix = p.bezeichnung.split(":")[0].trim();
+    const kommentarFeld = { MS: "normenKommentar", FFU: "ffuNormenKommentar", NGO: "stiwaNormenKommentar" }[p.kuerzel];
+    if (kommentarFeld) {
+      const pg = data.pruefgrundlagen.find((e) => normalisiere(e.produkt) === normalisiere(produktPrefix));
+      if (pg && pg[kommentarFeld]) ergebnisse.push({ label: "Kommentar (Prüfgrundlage)", text: pg[kommentarFeld] });
+    }
+  }
+
+  const teile = (p.bezeichnung || "").split(" / ");
+  if (teile.length >= 2) {
+    const makParam = data.mak.find((m) => normalisiere(m.parameter || "") === normalisiere(teile[0]));
+    if (makParam) {
+      const varianteText = teile.slice(1).join(" / ");
+      const variante = (makParam.varianten || []).find((v) => normalisiere(v.bezeichnung) === normalisiere(varianteText));
+      if (variante && variante.hinweis) ergebnisse.push({ label: "Hinweis (MAK)", text: variante.hinweis });
+    }
+  }
+
+  return ergebnisse;
+}
+
 function renderKvPositionenTabelle(kv) {
   const tbody = document.getElementById("kv-positionen-body");
   if (!kv.positionen.length) {
-    tbody.innerHTML = '<tr><td colspan="10" class="leerzustand">Noch keine Positionen. Über die Prüfumfang-Vorschläge oben oder als freie Position hinzufügen.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="leerzustand">Noch keine Positionen. Über die Prüfumfang-Vorschläge oben oder als freie Position hinzufügen.</td></tr>';
   } else {
-    tbody.innerHTML = kv.positionen.map((p, idx) => `
-      <tr data-id="${p.id}">
+    tbody.innerHTML = kv.positionen.map((p, idx) => {
+      const bemerkungen = positionBemerkungen(p);
+      const bemerkungenZeile = bemerkungen.length ? `<tr data-bemerkungen-fuer="${p.id}">
+        <td></td>
+        <td colspan="8" style="padding-top:0;padding-bottom:0.6rem;font-size:0.8rem;color:var(--muted)">
+          ${bemerkungen.map((b) => `<div><strong>${escapeHtml(b.label)}:</strong> ${escapeHtml(b.text)}</div>`).join("")}
+        </td>
+      </tr>` : "";
+      return `<tr data-id="${p.id}">
         <td style="text-align:center"><input type="checkbox" data-feld="aktiv" ${p.aktiv ? "checked" : ""}></td>
         <td><input type="text" data-feld="kategorie" value="${escapeHtml(p.kategorie)}"></td>
         <td><input type="text" data-feld="bezeichnung" value="${escapeHtml(p.bezeichnung)}"></td>
         <td><input type="text" data-feld="kuerzel" value="${escapeHtml(p.kuerzel)}"></td>
         <td><input type="text" data-feld="sapCode" value="${escapeHtml(p.sapCode)}"></td>
-        <td><input type="text" data-feld="bewertungsgrundlage" value="${escapeHtml(p.bewertungsgrundlage || "")}" placeholder="z. B. Grenzwert…"></td>
         <td><input type="number" data-feld="kosten" value="${zahlOderLeer(p.kosten)}"></td>
         <td><input type="number" data-feld="anzahl" value="${zahlOderLeer(p.anzahl)}"></td>
         <td class="pos-summe">${((Number(p.kosten) || 0) * (Number(p.anzahl) || 0)).toFixed(2)}</td>
@@ -5679,7 +5782,8 @@ function renderKvPositionenTabelle(kv) {
           <button class="ghost small" data-action="runter" ${idx === kv.positionen.length - 1 ? "disabled" : ""}>↓</button>
           <button class="danger small" data-action="loeschen">🗑</button>
         </td>
-      </tr>`).join("");
+      </tr>${bemerkungenZeile}`;
+    }).join("");
   }
 
   tbody.querySelectorAll("tr[data-id]").forEach((tr) => {
