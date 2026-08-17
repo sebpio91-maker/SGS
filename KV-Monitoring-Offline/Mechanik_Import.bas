@@ -42,6 +42,14 @@ Attribute VB_Name = "Modul1"
 ' Deshalb sucht Mec_ZeileEinfuegen die passende "Ankerzeile" (Beginn des
 ' jeweils nächsten Kategorie-Blocks) und fügt dort ein.
 '
+' Die bisher ungenutzte Spalte J (Kopf ein einzelnes Leerzeichen) wird für die
+' "Bemerkung" jeder neuen Zeile verwendet - dort landet die Teilprüfung-Angabe
+' (siehe teilpruefungFormularHtml im KV-Monitoring-Tool) sowie alle in der
+' Prüfpositionstabelle automatisch aggregierten Bemerkungen (siehe
+' positionBemerkungen: Bewertungsgrundlage/Grenzwert, Norm-Bemerkung,
+' Prüfgrundlage-Kommentar, MAK-Hinweis), damit diese Angaben auch in der
+' Excel-Datei nicht verloren gehen.
+'
 ' WICHTIG: Bitte zunächst an einer KOPIE der Datei testen und die Summen
 ' hinterher prüfen, bevor produktiv damit gearbeitet wird - das Makro wurde
 ' anhand der Formelstruktur analysiert, aber nicht in echtem Excel getestet
@@ -53,8 +61,11 @@ Sub Mec()
 ' Mec Makro ("Mechanik einfügen")
 ' Importiert die per "In Zwischenablage kopieren" aus dem KV-Monitoring-Tool
 ' kopierte Positionsliste (tabulatorgetrennt: Aktiv / Kategorie / Bezeichnung /
-' Kürzel / SAP-Code / Kosten € / Anzahl / Summe €) in die Tabelle
-' "Mechanik_30SER" auf diesem Blatt.
+' Kürzel / SAP-Code / Kosten € / Anzahl / Summe € / Bemerkung) in die Tabelle
+' "Mechanik_30SER" auf diesem Blatt. Die Bemerkung-Spalte (Teilprüfung/
+' Prozentsatz, Bewertungsgrundlage, Norm-Bemerkung, Prüfgrundlage-Kommentar,
+' MAK-Hinweis - siehe positionBemerkungen im KV-Monitoring-Tool) landet dabei
+' in der bisher ungenutzten Spalte J der Tabelle.
 '
     Dim ws As Worksheet
     Set ws = ThisWorkbook.Worksheets("Inspection Booking")
@@ -89,11 +100,11 @@ Sub Mec()
         If Len(Trim(zeile)) > 0 Then
             Dim spalten() As String
             spalten = Split(zeile, vbTab)
-            If UBound(spalten) < 7 Then
+            If UBound(spalten) < 8 Then
                 warnungen = warnungen & "Zeile " & (i + 1) & " übersprungen (zu wenige Spalten)." & vbCrLf
                 uebersprungen = uebersprungen + 1
             Else
-                Dim aktiv As String, bezeichnung As String, kuerzel As String, sapCode As String
+                Dim aktiv As String, bezeichnung As String, kuerzel As String, sapCode As String, bemerkung As String
                 Dim kosten As Double, anzahl As Double
                 aktiv = Trim(spalten(0))
                 bezeichnung = Trim(spalten(2))
@@ -101,6 +112,7 @@ Sub Mec()
                 sapCode = Trim(spalten(4))
                 kosten = Mec_Zahl(spalten(5))
                 anzahl = Mec_Zahl(spalten(6))
+                bemerkung = Trim(spalten(8))
                 If anzahl = 0 Then anzahl = 1
 
                 If aktiv <> "Ja" Then
@@ -109,7 +121,7 @@ Sub Mec()
                     warnungen = warnungen & "Zeile " & (i + 1) & " (""" & bezeichnung & """) übersprungen - unbekanntes Kürzel """ & kuerzel & """." & vbCrLf
                     uebersprungen = uebersprungen + 1
                 Else
-                    Mec_ZeileEinfuegen tbl, kuerzel, bezeichnung, kosten, anzahl, sapCode
+                    Mec_ZeileEinfuegen tbl, kuerzel, bezeichnung, kosten, anzahl, sapCode, bemerkung
                     eingefuegt = eingefuegt + 1
                 End If
             End If
@@ -147,7 +159,7 @@ End Sub
 ' dem Beginn des jeweils nächsten Kategorie-Blocks (bzw. bei NGO direkt vor der bestehenden
 ' NGO-Zeile), damit alle Summenformeln (SUMPRODUCT/SUMIF/SUM), die den Tabellenbereich
 ' referenzieren, sich automatisch mit erweitern.
-Private Sub Mec_ZeileEinfuegen(tbl As ListObject, kuerzel As String, bezeichnung As String, kosten As Double, anzahl As Double, sapCode As String)
+Private Sub Mec_ZeileEinfuegen(tbl As ListObject, kuerzel As String, bezeichnung As String, kosten As Double, anzahl As Double, sapCode As String, bemerkung As String)
     Dim ankerLabel As String
     Select Case kuerzel
         Case "MS": ankerLabel = "(physikalische-) Produktspezifikation"
@@ -181,6 +193,7 @@ Private Sub Mec_ZeileEinfuegen(tbl As ListObject, kuerzel As String, bezeichnung
     ws.Cells(r, 5).Value = kuerzel            ' E: Kategorie/Kürzel
     ws.Cells(r, 7).Value = kosten             ' G: Kosten
     ws.Cells(r, 8).Value = anzahl             ' H: Anzahl
+    ws.Cells(r, 10).Value = bemerkung         ' J: Bemerkung (Teilprüfung/Prozentsatz, Bewertungsgrundlage, Norm-/Prüfgrundlage-/MAK-Hinweise)
     ws.Cells(r, 11).Value = sapCode           ' K: SAP Material
 
     If kuerzel = "MS" Or kuerzel = "PS" Then

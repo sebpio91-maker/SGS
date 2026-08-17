@@ -5846,21 +5846,48 @@ function positionBemerkungen(p) {
   return ergebnisse;
 }
 
-/* Checkbox + Prozent-Feld "Teilprüfung" für Sicherheit&Norm-Positionen (Kürzel "MS") - erscheint
-   direkt unter der Position in der Prüfpositionstabelle (siehe renderKvPositionenTabelle), damit
-   bei einer Teilprüfung der mechanischen Sicherheit festgehalten werden kann, DASS es sich um eine
-   Teilprüfung handelt und WIE VIEL Prozent der Vollprüfung durchgeführt werden. Fließt beim
-   Kopieren in die Zwischenablage direkt in die Bezeichnung ein (siehe
-   mechanischePositionenAlsTsv), damit die Angabe auch beim Excel-/VBA-Import ankommt, ohne dass
-   dafür eine eigene Spalte in der externen Kalkulationsdatei nötig ist. */
-function teilpruefungFormularHtml(p) {
-  if (p.kuerzel !== "MS") return "";
+/* Erkennt, ob eine Position tatsächlich die "Sicherheit-/Normprüfung" selbst ist - nicht
+   Kennzeichnung GER, Bedienungsanleitung, Optischer Abgleich, Mustereinlagerung oder
+   Akkusicherheitskurzcheck, die alle dieselbe Kategorie und dasselbe Kürzel "MS" teilen (siehe
+   kvPositionenFuerPruefumfangEintrag, dieselbe Ausschluss-Logik für den Unterpunkt
+   "sicherheitNormpruefung"). "Teilprüfung" ist ausdrücklich nur für diese eine Position relevant,
+   nicht für die übrigen Sicherheit&Norm-Positionen. */
+function istSicherheitNormpruefungPosition(p) {
+  if (p.kuerzel !== "MS" || normalisiere(p.kategorie) !== normalisiere(SICHERHEIT_NORM_KATEGORIE_NAME)) return false;
+  const andereRegexe = SICHERHEIT_NORM_UNTERPUNKTE.filter((u) => u.id !== "sicherheitNormpruefung").map((u) => u.bezeichnungRegex);
+  return !andereRegexe.some((r) => r.test(p.bezeichnung)) && !/mustereinlagerung/i.test(p.bezeichnung) && !/akkusicherheitskurzcheck/i.test(p.bezeichnung);
+}
+
+/* Prozentsatz der Vollprüfung bei einer Teilprüfung - fachlich fest über die Artikelkategorie des
+   verknüpften Prüfauftrags vorgegeben (Grün 40 %, Gelb 50 %, Rot bzw. unbekannt/nicht hinterlegt
+   70 %). Eigene, von artikelkategorieMultiplikator (Rabattfaktor 0,3/0,5/0,7) unabhängige
+   Prozentwerte, auch wenn dieselbe Grün-/Gelb-Erkennung zugrunde liegt. Wird bewusst nicht als
+   editierbares Feld pro Position gespeichert, sondern bei jeder Anzeige/jedem Export frisch aus der
+   aktuellen Artikelkategorie berechnet, damit sich eine spätere Änderung der Artikelkategorie
+   sofort überall korrekt niederschlägt. */
+function teilpruefungProzentsatz(pa) {
+  const norm = normalisiereArtikelkategorie(pa);
+  if (norm.startsWith("grün")) return { prozent: 40, kategorieText: "Grün" };
+  if (norm.startsWith("gelb")) return { prozent: 50, kategorieText: "Gelb" };
+  return { prozent: 70, kategorieText: (pa && pa.artikelkategorie) ? "Rot" : "keine Artikelkategorie hinterlegt" };
+}
+
+/* Checkbox "Teilprüfung" für die Sicherheit-/Normprüfung-Position selbst (siehe
+   istSicherheitNormpruefungPosition) - erscheint direkt unter der Position in der
+   Prüfpositionstabelle (siehe renderKvPositionenTabelle), damit festgehalten werden kann, DASS es
+   sich um eine Teilprüfung der mechanischen Sicherheit handelt; der Prozentsatz der Vollprüfung
+   ergibt sich automatisch aus der Artikelkategorie (siehe teilpruefungProzentsatz), kein manuelles
+   Eingabefeld nötig. Fließt beim Kopieren in die Zwischenablage direkt in die Bezeichnung ein
+   (siehe mechanischePositionenAlsTsv), damit die Angabe auch beim Excel-/VBA-Import ankommt, ohne
+   dass dafür eine eigene Spalte in der externen Kalkulationsdatei nötig ist. */
+function teilpruefungFormularHtml(p, pa) {
+  if (!istSicherheitNormpruefungPosition(p)) return "";
+  const { prozent, kategorieText } = teilpruefungProzentsatz(pa);
   return `<div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap">
     <label style="display:flex;align-items:center;gap:0.3rem;font-weight:400;color:var(--muted)">
       <input type="checkbox" data-action="position-teilpruefung" data-pos-id="${escapeHtml(p.id)}" ${p.teilpruefung ? "checked" : ""}> Teilprüfung
     </label>
-    ${p.teilpruefung ? `<label style="display:flex;align-items:center;gap:0.3rem;font-weight:400;color:var(--muted)">
-      <input type="number" min="0" max="100" step="1" data-action="position-teilpruefung-prozent" data-pos-id="${escapeHtml(p.id)}" value="${p.teilpruefungProzent === null || p.teilpruefungProzent === undefined ? "" : p.teilpruefungProzent}" placeholder="%" style="width:56px;font-family:inherit;font-size:0.78rem;padding:0.15rem 0.3rem;border:1px solid var(--border);border-radius:5px"> % der Vollprüfung</label>` : ""}
+    ${p.teilpruefung ? `<span class="muted" style="font-size:0.78rem">${prozent}% der Vollprüfung (Artikelkategorie ${escapeHtml(kategorieText)})</span>` : ""}
   </div>`;
 }
 
@@ -5890,32 +5917,42 @@ async function kopiereTextInZwischenablage(text) {
   return erfolg;
 }
 
-/* Tabulatorgetrennte Textdarstellung der Mechanik-Positionstabelle (exakt dieselben Spalten/
-   Reihenfolge wie die sichtbare Tabelle, siehe renderKvPositionenTabelle) - damit lässt sich der
-   Inhalt direkt in Excel (z. B. den LIDL/OWIM-Kostenvoranschlag) einfügen, jede Spalte landet dabei
-   automatisch in einer eigenen Zelle. */
+/* Ersetzt Tabulatoren/Zeilenumbrüche durch Leerzeichen, damit ein Text (z. B. eine mehrzeilige
+   Norm-Bemerkung) in der tabulator-/zeilengetrennten Zwischenablagen-Kopie (siehe
+   mechanischePositionenAlsTsv) nicht versehentlich eine zusätzliche Spalte/Zeile erzeugt. */
+function tsvSicher(text) {
+  return String(text === null || text === undefined ? "" : text).replace(/[\r\n\t]+/g, " ").trim();
+}
+
+/* Tabulatorgetrennte Textdarstellung der Mechanik-Positionstabelle (dieselben Spalten wie die
+   sichtbare Tabelle, siehe renderKvPositionenTabelle, plus eine zusätzliche Spalte "Bemerkung") -
+   damit lässt sich der Inhalt direkt in Excel (z. B. den LIDL/OWIM-Kostenvoranschlag) einfügen,
+   jede Spalte landet dabei automatisch in einer eigenen Zelle. Die Bemerkung-Spalte fasst
+   Teilprüfung/Prozentsatz (siehe teilpruefungFormularHtml/teilpruefungProzentsatz) sowie alle in
+   der Prüfpositionstabelle automatisch aggregierten Bemerkungen (siehe positionBemerkungen:
+   Bewertungsgrundlage/Grenzwert, Norm-Bemerkung, Prüfgrundlage-Kommentar, MAK-Hinweis) zusammen,
+   damit sie auch beim Excel-/VBA-Import ankommen (dort landet die Spalte in der bisher ungenutzten
+   Spalte J der Tabelle "Mechanik_30SER", siehe Mechanik_Import.bas). */
 function mechanischePositionenAlsTsv(kv) {
-  const kopf = ["Aktiv", "Kategorie", "Bezeichnung", "Kürzel", "SAP-Code", "Kosten €", "Anzahl", "Summe €"];
+  const pa = data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(kv.ian));
+  const { prozent, kategorieText } = teilpruefungProzentsatz(pa);
+  const kopf = ["Aktiv", "Kategorie", "Bezeichnung", "Kürzel", "SAP-Code", "Kosten €", "Anzahl", "Summe €", "Bemerkung"];
   const zeilen = kv.positionen.map((p) => {
-    /* Teilprüfung/Prozentsatz (siehe teilpruefungFormularHtml) fließt hier direkt in die
-       Bezeichnung ein - die externe Kalkulationsdatei/das VBA-Makro haben dafür keine eigene
-       Spalte, die Bezeichnung ist also der einzige Weg, wie diese Angabe dort ankommt. */
-    let bezeichnung = p.bezeichnung || "";
-    if (p.kuerzel === "MS" && p.teilpruefung) {
-      const prozentText = (p.teilpruefungProzent === null || p.teilpruefungProzent === undefined || p.teilpruefungProzent === "")
-        ? "Teilprüfung"
-        : `Teilprüfung, ca. ${p.teilpruefungProzent}% der Vollprüfung`;
-      bezeichnung = bezeichnung ? `${bezeichnung} - ${prozentText}` : prozentText;
+    const bemerkungsTeile = [];
+    if (istSicherheitNormpruefungPosition(p) && p.teilpruefung) {
+      bemerkungsTeile.push(`Teilprüfung, ${prozent}% der Vollprüfung (Artikelkategorie ${kategorieText})`);
     }
+    positionBemerkungen(p).forEach((b) => bemerkungsTeile.push(`${b.label}: ${b.text}`));
     return [
       p.aktiv ? "Ja" : "Nein",
-      p.kategorie || "",
-      bezeichnung,
-      p.kuerzel || "",
-      p.sapCode || "",
+      tsvSicher(p.kategorie),
+      tsvSicher(p.bezeichnung),
+      tsvSicher(p.kuerzel),
+      tsvSicher(p.sapCode),
       zahlOderLeer(p.kosten),
       zahlOderLeer(p.anzahl),
-      ((Number(p.kosten) || 0) * (Number(p.anzahl) || 0)).toFixed(2)
+      ((Number(p.kosten) || 0) * (Number(p.anzahl) || 0)).toFixed(2),
+      tsvSicher(bemerkungsTeile.join(" | "))
     ];
   });
   return [kopf, ...zeilen].map((zeile) => zeile.join("\t")).join("\n");
@@ -5928,12 +5965,16 @@ function renderKvPositionenTabelle(kv) {
      "runter"-Buttons auch), damit CSV-Export/Zwischenablage-Kopie dieselbe Reihenfolge zeigen. */
   kv.positionen.sort((a, b) => mechanikKategorieSortierIndex(a.kategorie) - mechanikKategorieSortierIndex(b.kategorie));
   const tbody = document.getElementById("kv-positionen-body");
+  /* Für den Kennzeichnung-Paketpreis (siehe wendeKennzeichnungPaketpreisAn) und den
+     Teilprüfung-Prozentsatz (siehe teilpruefungProzentsatz) - beide hängen von der Artikelkategorie
+     des verknüpften Prüfauftrags ab. */
+  const pa = data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(kv.ian));
   if (!kv.positionen.length) {
     tbody.innerHTML = '<tr><td colspan="9" class="leerzustand">Noch keine Positionen. Über die Prüfumfang-Vorschläge oben oder als freie Position hinzufügen.</td></tr>';
   } else {
     tbody.innerHTML = kv.positionen.map((p, idx) => {
       const bemerkungen = positionBemerkungen(p);
-      const teilpruefungHtml = teilpruefungFormularHtml(p);
+      const teilpruefungHtml = teilpruefungFormularHtml(p, pa);
       const bemerkungenZeile = (bemerkungen.length || teilpruefungHtml) ? `<tr data-bemerkungen-fuer="${p.id}">
         <td></td>
         <td colspan="8" style="padding-top:0;padding-bottom:0.6rem;font-size:0.8rem;color:var(--muted)">
@@ -5959,10 +6000,6 @@ function renderKvPositionenTabelle(kv) {
     }).join("");
   }
 
-  /* Für den Kennzeichnung-Paketpreis (siehe wendeKennzeichnungPaketpreisAn) - wird hier gebraucht,
-     weil Löschen/Deaktivieren einer Position die Menge der aktiven Kennzeichnung-Positionen ändern
-     kann und der Preis dann neu verteilt werden muss. */
-  const pa = data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(kv.ian));
   tbody.querySelectorAll("tr[data-id]").forEach((tr) => {
     const pos = kv.positionen.find((p) => p.id === tr.dataset.id);
     tr.querySelectorAll("[data-feld]").forEach((el) => {
@@ -6007,26 +6044,16 @@ function renderKvPositionenTabelle(kv) {
       });
     });
   });
-  /* Teilprüfung-Checkbox/Prozent-Feld (siehe teilpruefungFormularHtml) - liegt in der
-     Bemerkungen-Zeile, also außerhalb der tr[data-id]-Schleife oben, deshalb eigene Bindung. Die
-     Checkbox rendert komplett neu (zeigt/versteckt das Prozent-Feld), das Prozent-Feld selbst nur
-     speichern (kein Neu-Rendern, damit der Fokus beim Tippen erhalten bleibt). */
+  /* Teilprüfung-Checkbox (siehe teilpruefungFormularHtml) - liegt in der Bemerkungen-Zeile, also
+     außerhalb der tr[data-id]-Schleife oben, deshalb eigene Bindung. Der Prozentsatz selbst ist
+     nicht editierbar (siehe teilpruefungProzentsatz), daher genügt hier ein einziger Handler. */
   tbody.querySelectorAll('[data-action="position-teilpruefung"]').forEach((cb) => {
     cb.addEventListener("change", () => {
       const pos = kv.positionen.find((p) => p.id === cb.dataset.posId);
       if (!pos) return;
       pos.teilpruefung = cb.checked;
-      if (!pos.teilpruefung) pos.teilpruefungProzent = null;
       speichereInLocalStorage();
       renderKvPositionenTabelle(kv);
-    });
-  });
-  tbody.querySelectorAll('[data-action="position-teilpruefung-prozent"]').forEach((input) => {
-    input.addEventListener("input", () => {
-      const pos = kv.positionen.find((p) => p.id === input.dataset.posId);
-      if (!pos) return;
-      pos.teilpruefungProzent = input.value === "" ? null : Number(input.value);
-      speichereInLocalStorage();
     });
   });
   document.getElementById("kv-gesamtsumme").textContent = kvGesamtsumme(kv).toFixed(2) + " €";
@@ -7810,7 +7837,14 @@ document.getElementById("btn-csv").addEventListener("click", () => {
     csvHerunterladen(zeilen, "pruefauftraege_export.csv");
   } else if (aktiverTab === "kvs") {
     const zeilen = [["IAN", "Artikel", "Lieferant", "SAP-Nummer", "Kategorie", "Bezeichnung", "Kürzel", "SAP-Code", "Bewertungsgrundlage/Grenzwert", "Teilprüfung", "Teilprüfung %", "Kosten", "Anzahl", "Summe", "Aktiv"]];
-    data.kvs.forEach((k) => k.positionen.forEach((p) => zeilen.push([k.ian, k.artikel, k.lieferant, k.sapNummer, p.kategorie, p.bezeichnung, p.kuerzel, p.sapCode, p.bewertungsgrundlage || "", p.teilpruefung ? "Ja" : "Nein", p.teilpruefung ? zahlOderLeer(p.teilpruefungProzent) : "", p.kosten, p.anzahl, (Number(p.kosten) || 0) * (Number(p.anzahl) || 0), p.aktiv ? "Ja" : "Nein"])));
+    data.kvs.forEach((k) => {
+      const pa = data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(k.ian));
+      const { prozent } = teilpruefungProzentsatz(pa);
+      k.positionen.forEach((p) => {
+        const istTeilpruefung = istSicherheitNormpruefungPosition(p) && p.teilpruefung;
+        zeilen.push([k.ian, k.artikel, k.lieferant, k.sapNummer, p.kategorie, p.bezeichnung, p.kuerzel, p.sapCode, p.bewertungsgrundlage || "", istTeilpruefung ? "Ja" : "Nein", istTeilpruefung ? prozent : "", p.kosten, p.anzahl, (Number(p.kosten) || 0) * (Number(p.anzahl) || 0), p.aktiv ? "Ja" : "Nein"]);
+      });
+    });
     csvHerunterladen(zeilen, "kv_export.csv");
   } else if (aktiverTab === "pruefgrundlagen") {
     const zeilen = [["Bereich", "Warengruppe-Code", "Warengruppe-Name", "Produkt", "Normen", "Kosten Sicherheit&Norm (Summe)", "Bemerkungen Sicherheit&Norm", "Anzahl Muster", "Trivial", "Kennzeichnung", "Bedienungsanleitung", "FFU-Normen", "Kosten FFU (Summe)", "Bemerkungen FFU", "StiWa-Normen", "Kosten StiWa (Summe)", "Bemerkungen StiWa"]];
