@@ -529,7 +529,12 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     diesen Block bewusst **nicht** angezeigt oder übernommen — der
     Kennzeichnung-Block hat einen fest vorgegebenen Gesamtpreis (siehe „VP &
     Kennzeichnung"-Hinweis weiter unten), der die einzelnen Norm-Kosten
-    immer überschreibt.
+    immer überschreibt. Dieser Gesamtpreis wird automatisch auf die gerade
+    **aktiven** Kennzeichnung-Positionen im KV verteilt — **löscht** oder
+    **deaktiviert** man eine davon in der Prüfpositionstabelle, verteilt sich
+    der Preis sofort neu auf die verbleibenden aktiven Positionen, und die
+    gelöschte/deaktivierte Norm erscheint hier wieder als „+ hinzufügen"
+    statt „bereits im KV".
 
     Trägt die im Sicherheit-/Normprüfung-Block für
     dieses Produkt gewählte Norm selbst Kennzeichnungs- und/oder
@@ -1221,8 +1226,21 @@ Unterlagen zu dieser IAN zu finden. Ohne IAN erscheint kein Symbol.
   `.csv`, direkt in Excel öffenbar.
 
 Alle Änderungen werden automatisch im Browser (Local Storage) auf diesem PC
-gespeichert. Für Backup/Weitergabe/Zusammenführen über mehrere Rechner die
-JSON-Funktionen benutzen.
+gespeichert. Der Speicher ist an die jeweilige Datei/den Dateipfad gebunden —
+eine **neue Version dieser Datei startet deshalb mit einem eigenen, leeren
+Speicher** und übernimmt Änderungen aus einer älteren Version nicht
+automatisch. Vor dem Wechsel auf eine neue Version deshalb erst **⬇ Sichern
+(JSON)** in der alten Datei, danach in der neuen Datei **🔀 Zusammenführen
+(JSON)** (empfohlen, zeigt Konflikte Feld für Feld) oder **⬆ Datei laden
+(JSON)** (ersetzt den kompletten Stand). Für Backup/Weitergabe/Zusammenführen
+über mehrere Rechner ebenfalls die JSON-Funktionen benutzen.
+
+**Reiter „Normen" startet nicht mehr leer:** anders als früher enthält eine
+frische Datei jetzt einen mitgelieferten **Startbestand** an Normen (Stand
+eines Datenexports), genau wie die übrigen Stammdaten (Prüfgrundlagen, MAK,
+Warengruppen …) das schon immer taten. Eigene, im Browser bereits vorhandene
+Normen werden dadurch nie überschrieben — der Startbestand greift nur, wenn
+der lokale Speicher für Normen leer ist.
 
 ## Wichtig: Excel-Upload und Duplikate
 
