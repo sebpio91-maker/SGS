@@ -2549,6 +2549,8 @@ function migriereMak() {
   data.mak.forEach((m) => {
     if (!Array.isArray(m.schlagworte)) m.schlagworte = [];
     if (!Array.isArray(m.varianten)) m.varianten = [];
+    if (m.kosten === undefined) m.kosten = null;
+    if (m.kostenWeiteresArtikel === undefined) m.kostenWeiteresArtikel = null;
   });
 }
 
@@ -4798,12 +4800,17 @@ function renderKvMakDetail(makId, kv) {
         </div>`;
       }).join("")}
     </div>` : "";
+  const preisHinweis = !varianten.length && eintrag.kosten !== null && eintrag.kosten !== undefined ? ` <span class="muted">(${eintrag.kosten} €)</span>` : "";
+  const staffelungHinweis = eintrag.kostenWeiteresArtikel !== null && eintrag.kostenWeiteresArtikel !== undefined
+    ? `<p class="hinweis" style="margin-top:-0.2rem">Staffelung je weiterem Artikel: <strong>${eintrag.kostenWeiteresArtikel} €</strong> <span class="muted">– Referenzangabe, beim Hinzufügen nicht automatisch verrechnet</span></p>`
+    : "";
   container.innerHTML = `<div class="mak-feld">
       <div class="toolbar-zeile">
-        <h3 style="margin:0">${escapeHtml(eintrag.id)} — ${escapeHtml(eintrag.parameter || "(ohne Parameter)")}</h3>
+        <h3 style="margin:0">${escapeHtml(eintrag.id)} — ${escapeHtml(eintrag.parameter || "(ohne Parameter)")}${preisHinweis}</h3>
         ${varianteHinzufuegenBtn}
       </div>
       <p class="muted" style="margin-top:-0.4rem">Kategorie: ${escapeHtml(eintrag.kategorie)} · Bereich: ${escapeHtml(eintrag.bereich)}</p>
+      ${staffelungHinweis}
     </div>
     <div class="mak-feld"><h3>Anforderung</h3><p>${escapeHtml(eintrag.anforderung) || "–"}</p></div>
     <div class="mak-feld"><h3>Norm/Standard EU</h3><p>${escapeHtml(eintrag.normEu) || "–"}</p></div>
@@ -4824,7 +4831,7 @@ function renderKvMakDetail(makId, kv) {
   const addBtn = container.querySelector('[data-action="mak-parameter-hinzufuegen"]');
   if (addBtn) {
     addBtn.addEventListener("click", () => {
-      kv.positionen.push({ id: neueId(), kategorie: PRODUKTSPEZI_KATEGORIE_NAME, bezeichnung, kuerzel: "PS", sapCode: "", kosten: 0, anzahl: 1, aktiv: true });
+      kv.positionen.push({ id: neueId(), kategorie: PRODUKTSPEZI_KATEGORIE_NAME, bezeichnung, kuerzel: "PS", sapCode: "", kosten: eintrag.kosten || 0, anzahl: 1, aktiv: true });
       speichereInLocalStorage();
       renderKvDetail();
       zeigeStatus("Position hinzugefügt · " + jetzt(), "ok");
@@ -6626,7 +6633,7 @@ function renderMakListeAktivMarkieren() {
    damit sie sofort in Listen/Dropdowns eindeutig auffindbar ist, bis der Nutzer sie durch eine
    "echte" ID (z. B. im Stil "DU023") ersetzt. */
 function makEntwurfNeu() {
-  return { id: "NEU-" + neueId().slice(0, 6).toUpperCase(), kategorie: "", bereich: "", parameter: "Neue MAK-Position", anforderung: "", normEu: "", normUs: "", pruefnachweis: "", schlagworte: [], varianten: [] };
+  return { id: "NEU-" + neueId().slice(0, 6).toUpperCase(), kategorie: "", bereich: "", parameter: "Neue MAK-Position", anforderung: "", normEu: "", normUs: "", pruefnachweis: "", schlagworte: [], varianten: [], kosten: null, kostenWeiteresArtikel: null };
 }
 
 function renderMakDetail() {
@@ -6647,6 +6654,8 @@ function renderMakDetail() {
         <label class="volle-breite">Norm/Standard EU<textarea data-feld="normEu" rows="2">${escapeHtml(eintrag.normEu)}</textarea></label>
         <label class="volle-breite">Norm/Standard US (AATCC/ASTM)<textarea data-feld="normUs" rows="2">${escapeHtml(eintrag.normUs)}</textarea></label>
         <label class="volle-breite">Mindest-Prüfnachweis<textarea data-feld="pruefnachweis" rows="2">${escapeHtml(eintrag.pruefnachweis)}</textarea></label>
+        <label title="Fester Preis für diesen Parameter - wird beim Hinzufügen zu einem KV automatisch als Kosten der Position übernommen (sofern der Parameter keine eigenen Preisvarianten hat).">Preis €<input type="number" step="0.01" data-feld="kosten" value="${zahlOderLeer(eintrag.kosten)}"></label>
+        <label title="Reduzierter Preis für jeden weiteren Artikel, der zusammen mit diesem geprüft wird (analog zu „Kosten je weiterem Produkt" bei Normen) - reine Referenzangabe, wird nicht automatisch verrechnet.">Staffelung je weiterem Artikel €<input type="number" step="0.01" data-feld="kostenWeiteresArtikel" value="${zahlOderLeer(eintrag.kostenWeiteresArtikel)}"></label>
       </div>
       <div class="tag-feld">
         <label>Schlagworte <span class="muted" style="font-weight:400">– Signalwörter, die in den Abschnitten „Qualität" oder „Material" stehen müssen, damit dieser Parameter relevant ist; werden im KV-Reiter automatisch als Vorschlag erkannt und im Text fett hervorgehoben</span></label>
@@ -6667,7 +6676,7 @@ function renderMakDetail() {
     </div>`;
   panel.querySelectorAll(".formular-grid [data-feld]").forEach((el) => {
     el.addEventListener("input", () => {
-      eintrag[el.dataset.feld] = el.value;
+      eintrag[el.dataset.feld] = el.type === "number" ? (el.value === "" ? null : Number(el.value)) : el.value;
       speichereInLocalStorage();
       renderMakListe();
       if (el.dataset.feld === "parameter") panel.querySelector("h2").textContent = eintrag.parameter || "(ohne Parameter)";
@@ -7393,7 +7402,7 @@ function schluesselPruefgrundlage(e) { return normalisiereWarengruppe(e.warengru
 function schluesselNorm(n) { return normalisiere(n.bezeichnung); }
 const NORM_FELDER = ["bezeichnung", "titel", "typ", "dateiname", "rohtext", "anwendungsbereiche", "bemerkung", "sapCode", "kennzeichnung", "bedienungsanleitung", "pruefungsart", "kosten"];
 function schluesselMak(m) { return normalisiere(m.id); }
-const MAK_FELDER = ["kategorie", "bereich", "parameter", "anforderung", "normEu", "normUs", "pruefnachweis", "schlagworte", "varianten"];
+const MAK_FELDER = ["kategorie", "bereich", "parameter", "anforderung", "normEu", "normUs", "pruefnachweis", "schlagworte", "varianten", "kosten", "kostenWeiteresArtikel"];
 function schluesselWarengruppe(w) { return normalisiereWarengruppe(w.code); }
 const WARENGRUPPE_FELDER = ["name", "bereich"];
 function schluesselWarengruppenZuordnung(z) { return normalisiereWarengruppe(z.neu); }

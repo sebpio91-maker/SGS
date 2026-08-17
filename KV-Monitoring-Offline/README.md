@@ -522,9 +522,14 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     Paketpreis-Gruppe, siehe „MAK" unten), erscheint statt eines einzelnen
     Buttons je Variante eine eigene Zeile mit ihrem tatsächlichen Preis und
     SAP-Code zum Hinzufügen; ohne Preisvarianten bleibt es beim einzelnen
-    **„+ hinzufügen"** für den Parameter selbst (ohne Preis/SAP-Code, beides
-    danach wie jede andere Position frei nachtragbar) — beides landet als
-    Position mit Kategorie Produktspezifikationen im KV. Direkt darunter
+    **„+ hinzufügen"** für den Parameter selbst — trägt der Parameter dort
+    einen eigenen **Preis** (siehe „MAK" unten), erscheint dieser direkt neben
+    dem Titel und wird beim Hinzufügen automatisch als Kosten der Position
+    übernommen (SAP-Code bleibt frei nachtragbar); ohne hinterlegten Preis
+    landet die Position wie bisher mit 0 € — beides landet als Position mit
+    Kategorie Produktspezifikationen im KV. Ist zusätzlich eine **Staffelung
+    je weiterem Artikel** hinterlegt, erscheint sie hier als reiner Hinweis
+    (wird nicht automatisch verrechnet, siehe „MAK" unten). Direkt darunter
     lassen sich außerdem die **Schlagworte** des gewählten Parameters
     bearbeiten (Chips hinzufügen/entfernen, identisch zum Reiter „MAK" selbst
     — beide Ansichten teilen sich dieselben Daten, eine Änderung hier ist
@@ -899,6 +904,18 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   einzeln auswählbar (siehe Produktspezifikationen oben). Stammen aus dem
   früheren, eigenständigen Parameterkatalog und wurden dorthin migriert, wo
   sich die Katalog-Zeile eindeutig einem MAK-Parameter zuordnen ließ.
+
+  **Preis und Staffelung (alle Einträge)** – unabhängig von den
+  LIDL-Preisvarianten hat jetzt **jeder** MAK-Parameter zwei eigene,
+  editierbare Felder: **„Preis €"** und **„Staffelung je weiterem Artikel
+  €"** (analog zu „Kosten je weiterem Produkt" bei Normen). Der Preis wird
+  beim Hinzufügen einer Position ohne eigene Preisvarianten automatisch als
+  Kosten übernommen (siehe Produktspezifikationen oben) und erscheint dort
+  wie auch in der Detailansicht neben dem Parameter-Titel. Die Staffelung ist
+  eine reine Referenzangabe für reduzierte Kosten bei mehreren gleichzeitig
+  geprüften Artikeln — wie bei „Kosten je weiterem Produkt" wird sie nicht
+  automatisch in eine Gesamtsumme eingerechnet, sondern dient als
+  Orientierung beim manuellen Anpassen von Kosten/Anzahl der Position.
 
   **Schlagworte je Eintrag** – in der Detailansicht lassen sich beliebig
   viele Schlagworte als Chips hinzufügen (Eingabefeld + „+ Hinzufügen" oder
