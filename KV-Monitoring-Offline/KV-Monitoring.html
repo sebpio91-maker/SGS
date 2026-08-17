@@ -5602,7 +5602,7 @@ document.getElementById("btn-neuer-kv").addEventListener("click", () => {
    werden. Normen/FFU/StiWa sind jetzt Referenzlisten ({normId, inAnlehnungAn}) auf data.normen
    statt Freitext - der generische JSON.stringify-Vergleich in feldweiseGleich() funktioniert dafür
    unverändert. */
-const PRUEFGRUNDLAGE_FELDER = ["bereich", "warengruppeCode", "warengruppeName", "produkt", "normen", "anzahlMuster", "trivial", "ffuNormen", "stiwaNormen"];
+const PRUEFGRUNDLAGE_FELDER = ["bereich", "warengruppeCode", "warengruppeName", "produkt", "normen", "anzahlMuster", "trivial", "ffuNormen", "stiwaNormen", "normenKommentar", "ffuNormenKommentar", "stiwaNormenKommentar"];
 
 /* ---------- Normen-/Prüfprogramm-Dokumente: Text auslesen, NICHT als Binärdatei speichern ----------
    Wird ausschließlich vom Reiter "Normen" genutzt (verarbeiteNormDatei). Eigener, minimaler
