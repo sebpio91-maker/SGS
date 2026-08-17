@@ -157,7 +157,16 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     keine weitere „IAN-Vorgänger" mehr hinterlegt — ist als solches markiert).
 - **Kostenvoranschläge (KV)** – das Herzstück: pro IAN ein KV mit
   Stammdaten und einer Tabelle mechanischer Prüfpositionen (Kategorie,
-  Bezeichnung, Kürzel, SAP-Code, Kosten, Anzahl, Summe, aktiv/inaktiv). Die
+  Bezeichnung, Kürzel, SAP-Code, **Bewertungsgrundlage/Grenzwert**, Kosten,
+  Anzahl, Summe, aktiv/inaktiv) — die Spalte „Bewertungsgrundlage/Grenzwert"
+  ist frei editierbar und rein produktspezifisch (wird nur an der jeweiligen
+  KV-Position gespeichert, nicht in einer gemeinsamen Datenbank); bei
+  MAK-Parametern, die im Reiter „MAK" als **„Bewertungsgrundlage/Grenzwert
+  erforderlich"** markiert sind, erscheint dafür zusätzlich schon beim
+  Hinzufügen im Produktspezifikationen-Block ein eigenes Eingabefeld, dessen
+  Wert direkt in die neu angelegte Position übernommen wird (siehe MAK
+  unten) — bei allen anderen Positionen bleibt die Spalte einfach leer und
+  lässt sich bei Bedarf trotzdem frei befüllen. Die
   **Überschrift zeigt bevorzugt die Artikelbezeichnung aus dem verknüpften
   Prüfauftrag** (aussagekräftiger als die bloße IAN) — ohne verknüpften PA
   fällt sie auf das freie „Artikel"-Feld des KVs zurück, erst danach auf
@@ -469,7 +478,13 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     tatsächlich vorhandene Batterie/einen Akku hindeutet, nicht
     „keine"/„nein"/leer) und **Optischer Abgleich**. **Mustereinlagerung**
     wird im Prüfumfang nicht mehr angezeigt (weder als Vorschlag noch manuell
-    hinzufügbar).
+    hinzufügbar). Zusätzlich erscheinen hier alle **Normen mit Prüfungsart
+    „LIDL-spezifisch"** (Reiter „Normen"/„Verwaltung" → Prüfungsarten,
+    analog zu „Kennzeichnung" oben) als eigene, per „+ hinzufügen" direkt
+    übernehmbare Zeilen mit ihrem hinterlegten Preis (sofern gepflegt) — ohne
+    Vorschlags-Markierung, da es dafür (anders als bei den vier festen
+    Kennzeichnung-GER-Varianten) kein vergleichbares, aus dem Prüfauftrag
+    ableitbares Signal gibt.
   - **Kennzeichnung** – eigener Block, erscheint sobald „Kennzeichnung
     (Verpackung & Produkt)" oder „Kennzeichnung (Bedienungsanleitung)"
     angehakt ist. Die zum Hinzufügen angebotenen Positionen sind **direkt die
@@ -495,7 +510,17 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     dieses Produkt gewählte Norm selbst Kennzeichnungs- und/oder
     Bedienungsanleitung-Anforderungen (siehe „Kennzeichnung/Bedienungsanleitung
     je Norm" unten), erscheint dazu oben im Block ein entsprechendes Badge.
-  - **(Physikalische-) Produktspezifikationen**: enthält direkt
+  - **(Physikalische-) Produktspezifikationen**: direkt oben im Block, noch
+    vor Qualität/Material, erscheint sobald mindestens eine Position
+    hinzugefügt wurde die Übersicht **„Bereits ausgewählte MAK-Parameter"**
+    (mit Anzahl) — eine schlichte Liste aller in dieser Kategorie bereits im
+    KV vorhandenen Positionen samt Kosten, damit auf einen Blick sichtbar
+    ist, was für dieses Produkt schon ausgewählt wurde, ohne dafür erst in
+    der großen Positionstabelle weiter unten suchen zu müssen. Deaktivierte
+    Positionen werden ebenfalls aufgeführt, aber als „– inaktiv" markiert,
+    damit nichts versteckt bleibt; die eigentliche Bearbeitung (SAP-Code,
+    Kosten, Anzahl, Aktiv-Status, Entfernen) bleibt weiterhin Sache der
+    Positionstabelle. Enthält direkt
     übereinander die aus dem Prüfauftrag ausgelesenen **„Qualität"** und
     **„Material"** (jeweils als eigene Style-Blöcke aufgeteilt wie auf der
     Prüfauftrags-Detailseite; „Material" erscheint nur, wenn der PA ein
@@ -926,6 +951,16 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   eigenständigen Parameterkatalog (u. a. Korrosionsbeständigkeit) starten
   automatisch im Modus „Pro Laufzeit"; alle übrigen starten bei „Pro
   Artikel".
+
+  **Bewertungsgrundlage/Grenzwert erforderlich** – eine eigene Checkbox in
+  der Detailansicht markiert Parameter, bei denen im KV zusätzlich eine
+  konkrete, produktspezifische Bewertungsgrundlage oder ein Grenzwert
+  angegeben werden muss (z. B. eine bestimmte Norm-Grenze oder ein
+  Toleranzwert) — unabhängig vom Abrechnungsmodus. Die Markierung selbst
+  gilt für den Parameter allgemein; der tatsächliche Wert ist **rein
+  produktspezifisch** und wird deshalb **nicht** hier am MAK-Eintrag
+  gespeichert, sondern erst beim Hinzufügen zu einem KV direkt an der
+  jeweiligen Position (siehe Kostenvoranschläge oben).
 
   **Schlagworte je Eintrag** – in der Detailansicht lassen sich beliebig
   viele Schlagworte als Chips hinzufügen (Eingabefeld + „+ Hinzufügen" oder
