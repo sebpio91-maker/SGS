@@ -633,16 +633,28 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   ersetzt den Code der vorhandenen `Sub Mec()` hinter dem Button **„Mechanik
   einfügen"**): Klick darauf übernimmt alle aktiven Positionen automatisch als
   neue Zeilen in die Tabelle „Mechanik_30SER" auf dem Blatt „Inspection
-  Booking" — die Summenformeln (Sicherheit & Norm, Produktspezifikation,
-  FFU/Fitting, NGO, Referenzprüfung, Gesamtsumme) erweitern sich dabei
-  automatisch, die Spalte „Bemerkung" landet in der bisher ungenutzten Spalte
-  J. Vor jedem Import setzt das Makro außerdem alle vorbelegten „x"-Haken in
-  der „FILTER"-Spalte der bestehenden Standardzeilen zurück (außer bei den
-  Kategorie-Überschriften-Zeilen, die diese für ihre Summenformel brauchen)
-  und filtert am Ende automatisch auf „FILTER" = „x", sodass nur noch die
-  Zeilen zählen/sichtbar sind, die tatsächlich aus dem aktuellen
-  KV-Monitoring-Export stammen. Details und Einbau-Anleitung stehen als
-  Kommentar am Anfang von `Mechanik_Import.bas`.
+  Booking", direkt hinter der jeweiligen Kategorie-Überschriften-Zeile
+  (Sicherheit & Norm, Produktspezifikation, FFU/Fitting, Referenzprüfung,
+  NGO); die Spalte „Bemerkung" landet in der bisher ungenutzten Spalte L. Vor
+  jedem Import setzt das Makro außerdem alle vorbelegten „x"-Haken in der
+  „FILTER"-Spalte der bestehenden Standardzeilen zurück (außer bei den fünf
+  Kategorie-Überschriften-Zeilen) und filtert am Ende automatisch auf
+  „FILTER" = „x", sodass nur noch die Zeilen zählen/sichtbar sind, die
+  tatsächlich aus dem aktuellen KV-Monitoring-Export stammen.
+
+  Die fünf Kategorie-Überschriften-Zeilen sind dabei **reine Überschriften-
+  und Summenzeilen ohne eigene Excel-Formel** — die ursprünglichen
+  SUMPRODUCT-/INDEX-MATCH-/IF(...)-Formeln wurden entfernt, das Makro
+  berechnet die Summe je Kategorie (Kosten × Anzahl aller zugehörigen, mit
+  „x" markierten Positionszeilen) selbst und schreibt sie als festen Wert in
+  die jeweilige Zeile; bei Produktspezifikation kommt zusätzlich der
+  Basispreis aus der Tabelle „Kostentabelle" hinzu (dieselbe Logik wie die
+  vorherige INDEX/MATCH-Formel, nur jetzt in VBA). Dadurch aktualisieren sich
+  die Summen **nicht mehr automatisch** bei manuellen Änderungen — dafür
+  einfach „Mechanik einfügen" erneut ausführen (funktioniert auch ganz ohne
+  neue Positionen aus der Zwischenablage, solange diese nicht leer ist).
+  Details und Einbau-Anleitung stehen als Kommentar am Anfang von
+  `Mechanik_Import.bas`.
 
   Bei der Sicherheit-/Normprüfung-Position, die **aus der Prüfgrundlage**
   ausgewählt wurde (Hauptprodukt/Set-Bestandteil, „+ hinzufügen" in der

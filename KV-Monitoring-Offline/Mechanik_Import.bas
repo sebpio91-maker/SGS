@@ -20,37 +20,52 @@ Attribute VB_Name = "Modul1"
 ' es wird NICHT versucht, Positionen automatisch den vorhandenen
 ' Standardzeilen (Akkusicherheitskurzcheck, Kennzeichnung GER, Optischer
 ' Abgleich, Klimawechselprüfung, UV-Beständigkeit, ...) zuzuordnen, da einige
-' davon eigene, vom Trivial-/DokCheck-Status abhängige Preisformeln enthalten,
-' die dabei NIE überschrieben werden sollen. Diese Zeilen bleiben unangetastet
-' - wer sie braucht, aktiviert sie weiterhin wie bisher manuell (Spalte
-' "FILTER" = "x").
+' davon eigene, vom Trivial-/DokCheck-Status abhängige Preisformeln enthielten
+' (siehe unten - diese Formeln wurden jetzt allerdings entfernt, die Werte
+' bleiben also einfach als zuletzt eingegebene/berechnete Zahl stehen, bis sie
+' manuell geändert werden). Diese Zeilen bleiben unangetastet - wer sie
+' braucht, aktiviert sie weiterhin wie bisher manuell (Spalte "FILTER" = "x").
 '
 ' Vor jedem Import werden zunächst alle vorbelegten "x"-Markierungen in Spalte F (FILTER) der
-' bestehenden Standardzeilen entfernt - AUSGENOMMEN die Kategorie-Überschriften-Zeilen (Spalte C
-' gefüllt, z. B. "Sicherheit & Norm ...", "(physikalische-) Produktspezifikation", "FFU/Fitting",
-' "Referenzprüfung", "NGO"), deren "x" für die SUMPRODUCT-Formeln (G48/G55) benötigt wird. So
-' zählen nur noch die Positionen, die tatsächlich aus dem aktuellen KV-Monitoring-Export stammen -
-' nicht mehr die als Vorlage vorbelegten Standard-Haken. Am Ende wird die Tabelle automatisch auf
-' Spalte F = "x" gefiltert (bisher der separate Button/das separate Makro "Spalte_Filter"), sodass
-' nur die aktiven Zeilen sichtbar bleiben.
+' bestehenden Standardzeilen entfernt - AUSGENOMMEN die fünf Kategorie-Überschriften-Zeilen
+' ("Sicherheit & Norm ...", "(physikalische-) Produktspezifikation", "FFU/Fitting",
+' "Referenzprüfung", "NGO"). So zählen nur noch die Positionen, die tatsächlich aus dem aktuellen
+' KV-Monitoring-Export stammen - nicht mehr die als Vorlage vorbelegten Standard-Haken. Am Ende wird
+' die Tabelle automatisch auf Spalte F = "x" gefiltert (bisher der separate Button/das separate
+' Makro "Spalte_Filter"), sodass nur die aktiven Zeilen sichtbar bleiben - die fünf
+' Kategorie-Überschriften-Zeilen bleiben dabei IMMER sichtbar (siehe Mec_KategorieSummeSchreiben).
 '
-' Da "Mechanik_30SER" eine echte Excel-Tabelle ist (ListObject), erweitert
-' Excel beim Einfügen neuer Zeilen automatisch alle betroffenen Formeln
-' (SUMPRODUCT in G48/G55, SUMIF für FFU/REF/NGO in der Kopfübersicht,
-' "ZWISCHENSUMME MECHANIK" = SUM(I48:I67)) - dafür muss jede neue Zeile
-' innerhalb des bestehenden Tabellenbereichs eingefügt werden, nie dahinter.
-' Deshalb sucht Mec_ZeileEinfuegen die passende "Ankerzeile" (Beginn des
-' jeweils nächsten Kategorie-Blocks) und fügt dort ein.
+' WICHTIG - Kategorie-Überschriften-Zeilen sind jetzt REINE Überschriften- UND Summenzeilen ohne
+' eigene Formel: Die ursprünglichen Formeln in diesen fünf Zeilen (SUMPRODUCT für Sicherheit & Norm/
+' Produktspezifikation, die INDEX/MATCH-Preistabellen-Abfrage für Produktspezifikation sowie die
+' IF(...)-Summenformeln bei FFU/Fitting, Referenzprüfung, NGO) wurden ENTFERNT. Die komplette Logik
+' steckt jetzt in Mec_KategorieSummeSchreiben: nach jedem Import werden für jede der fünf Kategorien
+' alle zugehörigen Positionszeilen (Spalte E = Kürzel, Spalte F = "x", außer der Überschriften-Zeile
+' selbst) aufsummiert (Kosten × Anzahl) und das Ergebnis als FESTER Zahlenwert (kein Formel mehr) in
+' die Kosten-/Summenspalte der jeweiligen Überschriften-Zeile geschrieben. Bei Produktspezifikation
+' kommt zusätzlich der Basispreis aus der Tabelle "Kostentabelle" (Spalte "PS", Zeile passend zur
+' aktuellen Auswahl in D14 "Prozessänderung") hinzu - exakt dieselbe Logik wie die alte
+' INDEX/MATCH-Formel, nur jetzt in VBA statt als Excel-Formel.
+' ACHTUNG: Da es sich um FESTE Werte statt Formeln handelt, aktualisieren sich diese Summen NICHT
+' mehr automatisch, wenn z. B. manuell eine Kosten-Zelle geändert oder eine FILTER-Markierung
+' nachträglich umgesetzt wird - dafür muss "Mechanik einfügen" erneut ausgeführt werden (aktualisiert
+' die Summen auch dann korrekt neu, auch ganz ohne etwas Neues aus der Zwischenablage einzufügen,
+' solange die Zwischenablage nicht leer ist).
 '
-' Die bisher ungenutzte Spalte J (Kopf ein einzelnes Leerzeichen) wird für die
-' "Bemerkung" jeder neuen Zeile verwendet - dort landet die automatische
-' Teilprüfung-Angabe der Sicherheit-/Normprüfung-Position (Prozentsatz je nach
-' Artikelkategorie - Grün 40 %, Gelb 50 %, Rot/unbekannt 70 %, siehe
-' teilpruefungProzentsatz im KV-Monitoring-Tool) sowie alle in der
-' Prüfpositionstabelle automatisch aggregierten Bemerkungen (siehe
-' positionBemerkungen: Bewertungsgrundlage/Grenzwert, Norm-Bemerkung,
-' Prüfgrundlage-Kommentar, MAK-Hinweis), damit diese Angaben auch in der
-' Excel-Datei nicht verloren gehen.
+' Da "Mechanik_30SER" eine echte Excel-Tabelle ist (ListObject), erweitert Excel beim Einfügen neuer
+' Zeilen automatisch die "ZWISCHENSUMME MECHANIK"-Formel (=SUM(I48:I67), liegt UNTERHALB der Tabelle
+' und wurde bewusst NICHT angetastet) sowie die SUMIF-Formeln der Kopfübersicht weiter oben im Blatt
+' (FFU/Fitting, Referenzprüfung, NGO) - dafür muss jede neue Zeile innerhalb des bestehenden
+' Tabellenbereichs eingefügt werden, nie dahinter. Jede neue Positionszeile landet direkt NACH der
+' zugehörigen Kategorie-Überschriften-Zeile (bzw. bei NGO als letzte Zeile ganz am Ende der
+' Tabelle, da keine weitere Kategorie mehr folgt) - siehe Mec_ZeileEinfuegen.
+'
+' Spalte L (bisher komplett ungenutzt) wird für die "Bemerkung" jeder neuen Zeile verwendet - dort
+' landet die automatische Teilprüfung-Angabe der Sicherheit-/Normprüfung-Position (Prozentsatz je
+' nach Artikelkategorie - Grün 40 %, Gelb 50 %, Rot/unbekannt 70 %, siehe teilpruefungProzentsatz im
+' KV-Monitoring-Tool) sowie alle in der Prüfpositionstabelle automatisch aggregierten Bemerkungen
+' (siehe positionBemerkungen: Bewertungsgrundlage/Grenzwert, Norm-Bemerkung, Prüfgrundlage-
+' Kommentar, MAK-Hinweis), damit diese Angaben auch in der Excel-Datei nicht verloren gehen.
 '
 ' WICHTIG: Bitte zunächst an einer KOPIE der Datei testen und die Summen
 ' hinterher prüfen, bevor produktiv damit gearbeitet wird - das Makro wurde
@@ -64,16 +79,16 @@ Sub Mec()
 ' Importiert die per "In Zwischenablage kopieren" aus dem KV-Monitoring-Tool
 ' kopierte Positionsliste (tabulatorgetrennt: Aktiv / Kategorie / Bezeichnung /
 ' Kürzel / SAP-Code / Kosten € / Anzahl / Summe € / Bemerkung) in die Tabelle
-' "Mechanik_30SER" auf diesem Blatt. Die Bemerkung-Spalte (Teilprüfung/
-' Prozentsatz, Bewertungsgrundlage, Norm-Bemerkung, Prüfgrundlage-Kommentar,
-' MAK-Hinweis - siehe positionBemerkungen im KV-Monitoring-Tool) landet dabei
-' in der bisher ungenutzten Spalte J der Tabelle.
+' "Mechanik_30SER" auf diesem Blatt und aktualisiert anschließend die
+' Kategorie-Summen (siehe Kommentarblock oben).
 '
     Dim ws As Worksheet
     Set ws = ThisWorkbook.Worksheets("Inspection Booking")
 
     Dim tbl As ListObject
     Set tbl = ws.ListObjects("Mechanik_30SER")
+
+    If Len(Trim(ws.Cells(47, 12).Value & "")) = 0 Then ws.Cells(47, 12).Value = "Bemerkung"   ' L47: Spaltenkopf einmalig ergänzen
 
     Dim clipText As String
     clipText = Mec_Zwischenablage()
@@ -130,6 +145,8 @@ Sub Mec()
         End If
     Next i
 
+    Mec_SummenAktualisieren tbl, ws
+
     Application.Calculation = xlCalculationAutomatic
     Application.ScreenUpdating = True
     ws.Calculate
@@ -144,10 +161,10 @@ Sub Mec()
 End Sub
 
 ' Entfernt alle vorbelegten "x"-Markierungen in Spalte F (FILTER) der bestehenden Zeilen der
-' Tabelle Mechanik_30SER - AUSSER bei den Kategorie-Überschriften-Zeilen (Spalte C gefüllt), deren
-' "x" die SUMPRODUCT-Formeln in G48/G55 braucht. Läuft VOR jedem Import, damit nur noch zählt, was
-' tatsächlich aus dem aktuellen KV-Monitoring-Export als aktiv markiert wurde - nicht mehr die als
-' Vorlage vorbelegten Standard-Haken (z. B. Kennzeichnung GER, Optischer Abgleich, Projektkosten).
+' Tabelle Mechanik_30SER - AUSSER bei den fünf Kategorie-Überschriften-Zeilen (Spalte C gefüllt).
+' Läuft VOR jedem Import, damit nur noch zählt, was tatsächlich aus dem aktuellen
+' KV-Monitoring-Export als aktiv markiert wurde - nicht mehr die als Vorlage vorbelegten
+' Standard-Haken (z. B. Kennzeichnung GER, Optischer Abgleich, Projektkosten).
 Private Sub Mec_AlteFilterZuruecksetzen(tbl As ListObject)
     Dim zeile As ListRow
     For Each zeile In tbl.ListRows
@@ -157,31 +174,38 @@ Private Sub Mec_AlteFilterZuruecksetzen(tbl As ListObject)
     Next zeile
 End Sub
 
-' Fügt EINE neue Zeile für die Kategorie "kuerzel" in die Tabelle Mechanik_30SER ein - direkt vor
-' dem Beginn des jeweils nächsten Kategorie-Blocks (bzw. bei NGO direkt vor der bestehenden
-' NGO-Zeile), damit alle Summenformeln (SUMPRODUCT/SUMIF/SUM), die den Tabellenbereich
-' referenzieren, sich automatisch mit erweitern.
+' Fügt EINE neue Positionszeile für die Kategorie "kuerzel" in die Tabelle Mechanik_30SER ein -
+' direkt NACH der zugehörigen Kategorie-Überschriften-Zeile (bzw. bei NGO als letzte Zeile ganz am
+' Ende der Tabelle, da nach NGO keine weitere Kategorie mehr folgt), damit die "ZWISCHENSUMME
+' MECHANIK"-Formel unterhalb der Tabelle sowie die SUMIF-Formeln der Kopfübersicht (FFU/Fitting,
+' Referenzprüfung, NGO) sich automatisch mit erweitern. Setzt bewusst KEINE Formel mehr in Spalte I
+' (Summe) - die Kategorie-Summe wird komplett zentral in Mec_KategorieSummeSchreiben berechnet, die
+' dafür direkt Kosten × Anzahl jeder mit "x" markierten Zeile derselben Kategorie liest.
 Private Sub Mec_ZeileEinfuegen(tbl As ListObject, kuerzel As String, bezeichnung As String, kosten As Double, anzahl As Double, sapCode As String, bemerkung As String)
-    Dim ankerLabel As String
-    Select Case kuerzel
-        Case "MS": ankerLabel = "(physikalische-) Produktspezifikation"
-        Case "PS": ankerLabel = "FFU/Fitting"
-        Case "FFU": ankerLabel = "Referenzprüfung"
-        Case "REF", "NGO": ankerLabel = "NGO"
-    End Select
-
-    Dim spalteC As Range
-    Set spalteC = tbl.DataBodyRange.Columns(1)   ' Spalte C innerhalb der Tabelle (Kategorie-Label)
-
-    Dim gefunden As Range
-    Set gefunden = spalteC.Find(What:=ankerLabel, LookIn:=xlValues, LookAt:=xlWhole, MatchCase:=True)
-    If gefunden Is Nothing Then
-        MsgBox "Ankerzeile """ & ankerLabel & """ nicht in der Tabelle ""Mechanik_30SER"" gefunden - Vorlage wurde vermutlich verändert. Import abgebrochen.", vbCritical, "Mechanik einfügen"
-        End
-    End If
-
     Dim neuePosition As Long
-    neuePosition = gefunden.Row - tbl.HeaderRowRange.Row   ' 1-basierte Position INNERHALB der Tabellendaten
+
+    If kuerzel = "NGO" Then
+        neuePosition = tbl.ListRows.Count + 1   ' ans Ende der Tabelle anhängen (keine nachfolgende Kategorie mehr)
+    Else
+        Dim ankerLabel As String
+        Select Case kuerzel
+            Case "MS": ankerLabel = "(physikalische-) Produktspezifikation"
+            Case "PS": ankerLabel = "FFU/Fitting"
+            Case "FFU": ankerLabel = "Referenzprüfung"
+            Case "REF": ankerLabel = "NGO"
+        End Select
+
+        Dim spalteC As Range
+        Set spalteC = tbl.DataBodyRange.Columns(1)   ' Spalte C innerhalb der Tabelle (Kategorie-Label)
+
+        Dim gefunden As Range
+        Set gefunden = spalteC.Find(What:=ankerLabel, LookIn:=xlValues, LookAt:=xlWhole, MatchCase:=True)
+        If gefunden Is Nothing Then
+            MsgBox "Ankerzeile """ & ankerLabel & """ nicht in der Tabelle ""Mechanik_30SER"" gefunden - Vorlage wurde vermutlich verändert. Import abgebrochen.", vbCritical, "Mechanik einfügen"
+            End
+        End If
+        neuePosition = gefunden.Row - tbl.HeaderRowRange.Row   ' 1-basierte Position INNERHALB der Tabellendaten
+    End If
 
     Dim neueZeile As ListRow
     Set neueZeile = tbl.ListRows.Add(Position:=neuePosition, AlwaysInsert:=True)
@@ -193,17 +217,83 @@ Private Sub Mec_ZeileEinfuegen(tbl As ListObject, kuerzel As String, bezeichnung
 
     ws.Cells(r, 4).Value = bezeichnung        ' D: Bezeichnung
     ws.Cells(r, 5).Value = kuerzel            ' E: Kategorie/Kürzel
+    ws.Cells(r, 6).Value = "x"                ' F: aktiv (zählt in der Kategorie-Summe mit, bleibt beim Filter sichtbar)
     ws.Cells(r, 7).Value = kosten             ' G: Kosten
     ws.Cells(r, 8).Value = anzahl             ' H: Anzahl
-    ws.Cells(r, 10).Value = bemerkung         ' J: Bemerkung (Teilprüfung/Prozentsatz, Bewertungsgrundlage, Norm-/Prüfgrundlage-/MAK-Hinweise)
     ws.Cells(r, 11).Value = sapCode           ' K: SAP Material
-
-    If kuerzel = "MS" Or kuerzel = "PS" Then
-        ws.Cells(r, 6).Value = "x"            ' F: aktiviert die Zeile in der SUMPRODUCT-Summe (G48/G55)
-    Else
-        ws.Cells(r, 9).Formula = "=IF(D" & r & "="""","""",G" & r & "*H" & r & ")"   ' I: eigene Summe (FFU/REF/NGO haben keine SUMPRODUCT-Sammelzeile)
-    End If
+    ws.Cells(r, 12).Value = bemerkung         ' L: Bemerkung
 End Sub
+
+' Berechnet für jede der fünf Kategorien die Summe aller zugehörigen, mit "x" markierten
+' Positionszeilen (Kosten × Anzahl, ohne die Überschriften-Zeile selbst) und schreibt sie als FESTEN
+' Zahlenwert in die jeweilige Kategorie-Überschriften-Zeile - ersetzt die ursprünglichen
+' SUMPRODUCT-/INDEX-MATCH-/IF(...)-Formeln dieser fünf Zeilen vollständig.
+Private Sub Mec_SummenAktualisieren(tbl As ListObject, ws As Worksheet)
+    Mec_KategorieSummeSchreiben tbl, ws, "Sicherheit & Norm / Sonder- & Funktionsparameter", "MS", False
+    Mec_KategorieSummeSchreiben tbl, ws, "(physikalische-) Produktspezifikation", "PS", True
+    Mec_KategorieSummeSchreiben tbl, ws, "FFU/Fitting", "FFU", False
+    Mec_KategorieSummeSchreiben tbl, ws, "Referenzprüfung", "REF", False
+    Mec_KategorieSummeSchreiben tbl, ws, "NGO", "NGO", False
+End Sub
+
+Private Sub Mec_KategorieSummeSchreiben(tbl As ListObject, ws As Worksheet, headerLabel As String, kuerzel As String, mitBasispreisProduktspezifikation As Boolean)
+    Dim spalteC As Range
+    Set spalteC = tbl.DataBodyRange.Columns(1)
+
+    Dim headerZelle As Range
+    Set headerZelle = spalteC.Find(What:=headerLabel, LookIn:=xlValues, LookAt:=xlWhole, MatchCase:=True)
+    If headerZelle Is Nothing Then Exit Sub
+    Dim headerRow As Long
+    headerRow = headerZelle.Row
+
+    Dim summe As Double
+    summe = 0
+    Dim zeile As ListRow
+    For Each zeile In tbl.ListRows
+        Dim r As Long
+        r = zeile.Range.Row
+        If r <> headerRow Then
+            If CStr(ws.Cells(r, 5).Value) = kuerzel And CStr(ws.Cells(r, 6).Value) = "x" Then
+                summe = summe + (Mec_ZahlAusZelle(ws.Cells(r, 7)) * Mec_ZahlAusZelle(ws.Cells(r, 8)))
+            End If
+        End If
+    Next zeile
+
+    If mitBasispreisProduktspezifikation Then summe = summe + Mec_KostentabelleBasispreis(ws)
+
+    ws.Cells(headerRow, 6).Value = "x"    ' F: Überschriften-Zeile bleibt beim Filter immer sichtbar
+    ws.Cells(headerRow, 7).Value = summe  ' G: Kategorie-Summe (fester Wert, keine Formel mehr)
+    ws.Cells(headerRow, 8).Value = 1      ' H: Anzahl (Multiplikator, unverändert 1)
+    ws.Cells(headerRow, 9).Value = summe  ' I: Summe = G*H (fester Wert, keine Formel mehr)
+End Sub
+
+Private Function Mec_ZahlAusZelle(zelle As Range) As Double
+    If IsNumeric(zelle.Value) Then
+        Mec_ZahlAusZelle = zelle.Value
+    Else
+        Mec_ZahlAusZelle = 0
+    End If
+End Function
+
+' Ersetzt die ursprüngliche Formel "=INDEX(Kostentabelle__2[PS],MATCH(D14,Kostentabelle__2[Prozess-
+' änderung],0))" in VBA: sucht in der Tabelle "Kostentabelle__2" (Blatt "Kostentabelle") die Zeile,
+' deren "Prozessänderung"-Spalte zur aktuellen Auswahl in D14 passt, und liefert deren "PS"-Spalte.
+Private Function Mec_KostentabelleBasispreis(ws As Worksheet) As Double
+    Dim prozessAenderung As String
+    prozessAenderung = CStr(ws.Range("D14").Value)
+
+    Dim ktTbl As ListObject
+    Set ktTbl = ThisWorkbook.Worksheets("Kostentabelle").ListObjects("Kostentabelle__2")
+
+    Dim ktZeile As ListRow
+    For Each ktZeile In ktTbl.ListRows
+        If CStr(ktZeile.Range.Cells(1, 1).Value) = prozessAenderung Then
+            Mec_KostentabelleBasispreis = Mec_ZahlAusZelle(ktZeile.Range.Cells(1, 2))
+            Exit Function
+        End If
+    Next ktZeile
+    Mec_KostentabelleBasispreis = 0
+End Function
 
 ' Val() erwartet IMMER einen Punkt als Dezimaltrennzeichen (so wie KV-Monitoring exportiert),
 ' unabhängig vom Gebietsschema/den Ländereinstellungen von Excel - anders als CDbl(), das je nach
