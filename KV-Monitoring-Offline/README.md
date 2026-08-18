@@ -646,18 +646,20 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
 
   Bei der Sicherheit-/Normprüfung-Position selbst (nicht bei Kennzeichnung,
   Akku, Bedienungsanleitung, Optischer Abgleich oder Mustereinlagerung, die
-  dieselbe Kategorie/dasselbe Kürzel „MS" teilen) lässt sich direkt darunter
-  **„Teilprüfung"** ankreuzen. Der Prozentsatz der Vollprüfung wird dabei
-  **automatisch aus der Artikelkategorie des verknüpften Prüfauftrags
-  berechnet** (Grün 40 %, Gelb 50 %, Rot bzw. keine Artikelkategorie
-  hinterlegt 70 %) — kein manuelles Eingabefeld. Die Angabe fließt beim
-  Kopieren in die Zwischenablage automatisch in die neue „Bemerkung"-Spalte
-  ein (z. B. „Teilprüfung, 40% der Vollprüfung (Artikelkategorie Grün)"),
-  zusammen mit allen anderen automatisch aggregierten Bemerkungen zur Position
-  (Bewertungsgrundlage/Grenzwert, Norm-Bemerkung, Prüfgrundlage-Kommentar,
-  MAK-Hinweis) — damit sie auch beim Excel-/VBA-Import ankommen. Im
-  CSV-Export (Reiter „Kostenvoranschläge") gibt es dafür eigene Spalten
-  „Teilprüfung"/„Teilprüfung %".
+  dieselbe Kategorie/dasselbe Kürzel „MS" teilen) erscheint darunter
+  automatisch **„Teilprüfung"** mit dem Prozentsatz der Vollprüfung — ganz
+  ohne Ankreuzen, da eine Teilprüfung der mechanischen Sicherheit laut
+  Fachvorgabe **immer** gefordert ist. Der Prozentsatz ergibt sich dabei
+  **automatisch aus der Artikelkategorie des verknüpften Prüfauftrags**
+  (Grün 40 %, Gelb 50 %, Rot bzw. keine Artikelkategorie hinterlegt 70 %) und
+  aktualisiert sich sofort, wenn sich die Artikelkategorie ändert. Die Angabe
+  fließt beim Kopieren in die Zwischenablage automatisch in die neue
+  „Bemerkung"-Spalte ein (z. B. „Teilprüfung: 40% der Vollprüfung
+  (Artikelkategorie Grün)"), zusammen mit allen anderen automatisch
+  aggregierten Bemerkungen zur Position (Bewertungsgrundlage/Grenzwert,
+  Norm-Bemerkung, Prüfgrundlage-Kommentar, MAK-Hinweis) — damit sie auch beim
+  Excel-/VBA-Import ankommen. Im CSV-Export (Reiter „Kostenvoranschläge")
+  gibt es dafür eigene Spalten „Teilprüfung"/„Teilprüfung %".
   **„⧉ Als Vorlage für neuen KV duplizieren"** kopiert einen bestehenden KV
   (z. B. eines Wiederholartikels) komplett als Ausgangspunkt für einen
   neuen. Über die Suche oben lassen sich bestehende KVs nach

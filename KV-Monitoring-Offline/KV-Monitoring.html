@@ -5801,11 +5801,15 @@ function renderKvDetail() {
   renderKvPositionenTabelle(kv);
 }
 
-/* Best-effort: sammelt alle bekannten Bemerkungen zu einer Position (Norm-Bemerkung,
+/* Best-effort: sammelt alle bekannten Bemerkungen zu einer Position (Teilprüfung, Norm-Bemerkung,
    Prüfgrundlage-Kommentar, MAK-Hinweis, Bewertungsgrundlage/Grenzwert) für die Zusatzzeile in der
    Positionstabelle (siehe renderKvPositionenTabelle). Positionen speichern selbst keine
    Rückreferenz auf ihre Quelle (Norm/Prüfgrundlage/MAK), daher rein über die Bezeichnung
    zugeordnet:
+   - Teilprüfung: automatisch für die Sicherheit-/Normprüfung-Position selbst (siehe
+     istSicherheitNormpruefungPosition), da diese laut Fachvorgabe IMMER als Teilprüfung gilt -
+     Prozentsatz aus der Artikelkategorie des übergebenen Prüfauftrags (siehe
+     teilpruefungProzentsatz), kein Ankreuzfeld.
    - Norm-Bemerkung: jede Norm, deren Bezeichnung als Teilstring in der Position vorkommt - deckt
      Sicherheit & Norm/Kennzeichnung/LIDL-spezifisch/FFU/NGO gleichermaßen ab, da deren
      Positions-Bezeichnungen die jeweilige Norm-Bezeichnung immer wörtlich enthalten.
@@ -5816,8 +5820,17 @@ function renderKvDetail() {
    - MAK-Hinweis: bei "<Parameter> / <Variante>"-Bezeichnungen (siehe kvMakVarianteBezeichnung) die
      passende Preisvariante.
    - Bewertungsgrundlage/Grenzwert: direkt an der Position gespeichert, kein Matching nötig. */
-function positionBemerkungen(p) {
+function positionBemerkungen(p, pa) {
   const ergebnisse = [];
+  /* Teilprüfung der mechanischen Sicherheit ist laut Fachvorgabe IMMER gefordert (nie eine freie
+     Wahl) - deshalb kein Ankreuzfeld, sondern automatisch für die Sicherheit-/Normprüfung-Position
+     selbst (siehe istSicherheitNormpruefungPosition; für alle anderen Positionen/Prüfungsblöcke
+     nicht relevant). Der Prozentsatz ergibt sich aus der Artikelkategorie (siehe
+     teilpruefungProzentsatz). */
+  if (istSicherheitNormpruefungPosition(p)) {
+    const { prozent, kategorieText } = teilpruefungProzentsatz(pa);
+    ergebnisse.push({ label: "Teilprüfung", text: `${prozent}% der Vollprüfung (Artikelkategorie ${kategorieText})` });
+  }
   if (p.bewertungsgrundlage) ergebnisse.push({ label: "Bewertungsgrundlage/Grenzwert", text: p.bewertungsgrundlage });
 
   const bezNorm = normalisiere(p.bezeichnung || "");
@@ -5872,25 +5885,6 @@ function teilpruefungProzentsatz(pa) {
   return { prozent: 70, kategorieText: (pa && pa.artikelkategorie) ? "Rot" : "keine Artikelkategorie hinterlegt" };
 }
 
-/* Checkbox "Teilprüfung" für die Sicherheit-/Normprüfung-Position selbst (siehe
-   istSicherheitNormpruefungPosition) - erscheint direkt unter der Position in der
-   Prüfpositionstabelle (siehe renderKvPositionenTabelle), damit festgehalten werden kann, DASS es
-   sich um eine Teilprüfung der mechanischen Sicherheit handelt; der Prozentsatz der Vollprüfung
-   ergibt sich automatisch aus der Artikelkategorie (siehe teilpruefungProzentsatz), kein manuelles
-   Eingabefeld nötig. Fließt beim Kopieren in die Zwischenablage direkt in die Bezeichnung ein
-   (siehe mechanischePositionenAlsTsv), damit die Angabe auch beim Excel-/VBA-Import ankommt, ohne
-   dass dafür eine eigene Spalte in der externen Kalkulationsdatei nötig ist. */
-function teilpruefungFormularHtml(p, pa) {
-  if (!istSicherheitNormpruefungPosition(p)) return "";
-  const { prozent, kategorieText } = teilpruefungProzentsatz(pa);
-  return `<div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap">
-    <label style="display:flex;align-items:center;gap:0.3rem;font-weight:400;color:var(--muted)">
-      <input type="checkbox" data-action="position-teilpruefung" data-pos-id="${escapeHtml(p.id)}" ${p.teilpruefung ? "checked" : ""}> Teilprüfung
-    </label>
-    ${p.teilpruefung ? `<span class="muted" style="font-size:0.78rem">${prozent}% der Vollprüfung (Artikelkategorie ${escapeHtml(kategorieText)})</span>` : ""}
-  </div>`;
-}
-
 /* Kopiert Text in die Zwischenablage - versucht zuerst die moderne Clipboard-API, die aber unter
    file:// (kein "sicherer Kontext") in Chrome oft mit NotAllowedError abgelehnt wird; als Fallback
    ein klassisches, unsichtbares <textarea> + document.execCommand("copy"), das auch offline und
@@ -5927,22 +5921,17 @@ function tsvSicher(text) {
 /* Tabulatorgetrennte Textdarstellung der Mechanik-Positionstabelle (dieselben Spalten wie die
    sichtbare Tabelle, siehe renderKvPositionenTabelle, plus eine zusätzliche Spalte "Bemerkung") -
    damit lässt sich der Inhalt direkt in Excel (z. B. den LIDL/OWIM-Kostenvoranschlag) einfügen,
-   jede Spalte landet dabei automatisch in einer eigenen Zelle. Die Bemerkung-Spalte fasst
-   Teilprüfung/Prozentsatz (siehe teilpruefungFormularHtml/teilpruefungProzentsatz) sowie alle in
-   der Prüfpositionstabelle automatisch aggregierten Bemerkungen (siehe positionBemerkungen:
-   Bewertungsgrundlage/Grenzwert, Norm-Bemerkung, Prüfgrundlage-Kommentar, MAK-Hinweis) zusammen,
-   damit sie auch beim Excel-/VBA-Import ankommen (dort landet die Spalte in der bisher ungenutzten
-   Spalte J der Tabelle "Mechanik_30SER", siehe Mechanik_Import.bas). */
+   jede Spalte landet dabei automatisch in einer eigenen Zelle. Die Bemerkung-Spalte fasst alle in
+   der Prüfpositionstabelle automatisch aggregierten Bemerkungen zusammen (siehe
+   positionBemerkungen: Teilprüfung/Prozentsatz, Bewertungsgrundlage/Grenzwert, Norm-Bemerkung,
+   Prüfgrundlage-Kommentar, MAK-Hinweis), damit sie auch beim Excel-/VBA-Import ankommen (dort
+   landet die Spalte in der bisher ungenutzten Spalte J der Tabelle "Mechanik_30SER", siehe
+   Mechanik_Import.bas). */
 function mechanischePositionenAlsTsv(kv) {
   const pa = data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(kv.ian));
-  const { prozent, kategorieText } = teilpruefungProzentsatz(pa);
   const kopf = ["Aktiv", "Kategorie", "Bezeichnung", "Kürzel", "SAP-Code", "Kosten €", "Anzahl", "Summe €", "Bemerkung"];
   const zeilen = kv.positionen.map((p) => {
-    const bemerkungsTeile = [];
-    if (istSicherheitNormpruefungPosition(p) && p.teilpruefung) {
-      bemerkungsTeile.push(`Teilprüfung, ${prozent}% der Vollprüfung (Artikelkategorie ${kategorieText})`);
-    }
-    positionBemerkungen(p).forEach((b) => bemerkungsTeile.push(`${b.label}: ${b.text}`));
+    const bemerkungsTeile = positionBemerkungen(p, pa).map((b) => `${b.label}: ${b.text}`);
     return [
       p.aktiv ? "Ja" : "Nein",
       tsvSicher(p.kategorie),
@@ -5973,12 +5962,10 @@ function renderKvPositionenTabelle(kv) {
     tbody.innerHTML = '<tr><td colspan="9" class="leerzustand">Noch keine Positionen. Über die Prüfumfang-Vorschläge oben oder als freie Position hinzufügen.</td></tr>';
   } else {
     tbody.innerHTML = kv.positionen.map((p, idx) => {
-      const bemerkungen = positionBemerkungen(p);
-      const teilpruefungHtml = teilpruefungFormularHtml(p, pa);
-      const bemerkungenZeile = (bemerkungen.length || teilpruefungHtml) ? `<tr data-bemerkungen-fuer="${p.id}">
+      const bemerkungen = positionBemerkungen(p, pa);
+      const bemerkungenZeile = bemerkungen.length ? `<tr data-bemerkungen-fuer="${p.id}">
         <td></td>
         <td colspan="8" style="padding-top:0;padding-bottom:0.6rem;font-size:0.8rem;color:var(--muted)">
-          ${teilpruefungHtml}
           ${bemerkungen.map((b) => `<div><strong>${escapeHtml(b.label)}:</strong> ${escapeHtml(b.text)}</div>`).join("")}
         </td>
       </tr>` : "";
@@ -6042,18 +6029,6 @@ function renderKvPositionenTabelle(kv) {
         renderKvPositionenTabelle(kv);
         renderKvListe();
       });
-    });
-  });
-  /* Teilprüfung-Checkbox (siehe teilpruefungFormularHtml) - liegt in der Bemerkungen-Zeile, also
-     außerhalb der tr[data-id]-Schleife oben, deshalb eigene Bindung. Der Prozentsatz selbst ist
-     nicht editierbar (siehe teilpruefungProzentsatz), daher genügt hier ein einziger Handler. */
-  tbody.querySelectorAll('[data-action="position-teilpruefung"]').forEach((cb) => {
-    cb.addEventListener("change", () => {
-      const pos = kv.positionen.find((p) => p.id === cb.dataset.posId);
-      if (!pos) return;
-      pos.teilpruefung = cb.checked;
-      speichereInLocalStorage();
-      renderKvPositionenTabelle(kv);
     });
   });
   document.getElementById("kv-gesamtsumme").textContent = kvGesamtsumme(kv).toFixed(2) + " €";
@@ -7841,7 +7816,7 @@ document.getElementById("btn-csv").addEventListener("click", () => {
       const pa = data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(k.ian));
       const { prozent } = teilpruefungProzentsatz(pa);
       k.positionen.forEach((p) => {
-        const istTeilpruefung = istSicherheitNormpruefungPosition(p) && p.teilpruefung;
+        const istTeilpruefung = istSicherheitNormpruefungPosition(p);
         zeilen.push([k.ian, k.artikel, k.lieferant, k.sapNummer, p.kategorie, p.bezeichnung, p.kuerzel, p.sapCode, p.bewertungsgrundlage || "", istTeilpruefung ? "Ja" : "Nein", istTeilpruefung ? prozent : "", p.kosten, p.anzahl, (Number(p.kosten) || 0) * (Number(p.anzahl) || 0), p.aktiv ? "Ja" : "Nein"]);
       });
     });

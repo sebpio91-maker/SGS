@@ -43,8 +43,10 @@ Attribute VB_Name = "Modul1"
 ' jeweils nächsten Kategorie-Blocks) und fügt dort ein.
 '
 ' Die bisher ungenutzte Spalte J (Kopf ein einzelnes Leerzeichen) wird für die
-' "Bemerkung" jeder neuen Zeile verwendet - dort landet die Teilprüfung-Angabe
-' (siehe teilpruefungFormularHtml im KV-Monitoring-Tool) sowie alle in der
+' "Bemerkung" jeder neuen Zeile verwendet - dort landet die automatische
+' Teilprüfung-Angabe der Sicherheit-/Normprüfung-Position (Prozentsatz je nach
+' Artikelkategorie - Grün 40 %, Gelb 50 %, Rot/unbekannt 70 %, siehe
+' teilpruefungProzentsatz im KV-Monitoring-Tool) sowie alle in der
 ' Prüfpositionstabelle automatisch aggregierten Bemerkungen (siehe
 ' positionBemerkungen: Bewertungsgrundlage/Grenzwert, Norm-Bemerkung,
 ' Prüfgrundlage-Kommentar, MAK-Hinweis), damit diese Angaben auch in der
