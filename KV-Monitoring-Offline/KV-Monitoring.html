@@ -5244,7 +5244,12 @@ function initialisiereMechanikEmpfehlungKarte(panel, kv) {
       if (schonDrin) { zeigeStatus("Bereits im KV vorhanden (mit dieser Style-/Anwendungsbereich-Zuordnung) · " + jetzt(), ""); return; }
       kv.positionen.push({
         id: neueId(), kategorie, bezeichnung,
-        kuerzel: btn.dataset.kuerzel || "MS", sapCode: btn.dataset.sapcode || "MECH_SICHERHEIT_TS", kosten: Number(btn.dataset.kosten) || 0, anzahl: 1, aktiv: true
+        kuerzel: btn.dataset.kuerzel || "MS", sapCode: btn.dataset.sapcode || "MECH_SICHERHEIT_TS", kosten: Number(btn.dataset.kosten) || 0, anzahl: 1, aktiv: true,
+        /* Markiert die Position als aus der Prüfgrundlage übernommen (siehe
+           istSicherheitNormpruefungPosition) - im Unterschied zu Positionen, die manuell frei
+           angelegt oder über "Weitere Positionen"/LIDL-spezifisch hinzugefügt wurden (siehe
+           lidl-spezifisch-norm-hinzufuegen unten, setzt dieses Feld bewusst NICHT). */
+        ausPruefgrundlage: true
       });
       speichereInLocalStorage();
       renderKvDetail();
@@ -5859,16 +5864,17 @@ function positionBemerkungen(p, pa) {
   return ergebnisse;
 }
 
-/* Erkennt, ob eine Position tatsächlich die "Sicherheit-/Normprüfung" selbst ist - nicht
-   Kennzeichnung GER, Bedienungsanleitung, Optischer Abgleich, Mustereinlagerung oder
-   Akkusicherheitskurzcheck, die alle dieselbe Kategorie und dasselbe Kürzel "MS" teilen (siehe
-   kvPositionenFuerPruefumfangEintrag, dieselbe Ausschluss-Logik für den Unterpunkt
-   "sicherheitNormpruefung"). "Teilprüfung" ist ausdrücklich nur für diese eine Position relevant,
-   nicht für die übrigen Sicherheit&Norm-Positionen. */
+/* Erkennt, ob eine Position tatsächlich die Sicherheit-/Normprüfung ist, die aus der Prüfgrundlage
+   ausgewählt wurde (Hauptprodukt/Set-Bestandteil, siehe mechanik-komponente-hinzufuegen, das dafür
+   das Feld ausPruefgrundlage setzt) - NICHT Kennzeichnung, Akkusicherheitskurzcheck,
+   Bedienungsanleitung, Optischer Abgleich, Mustereinlagerung oder eine über "Weitere Positionen"
+   manuell hinzugefügte LIDL-spezifische Norm, obwohl diese teils dieselbe Kategorie/dasselbe
+   Kürzel "MS" teilen und deshalb über eine reine Bezeichnungs-Heuristik nicht zuverlässig
+   unterscheidbar wären (z. B. enthält auch eine LIDL-spezifische Norm wie "DIN EN 12521:2023"
+   einen Doppelpunkt). "Teilprüfung" ist ausdrücklich nur für diese eine, aus der Prüfgrundlage
+   stammende Position relevant. */
 function istSicherheitNormpruefungPosition(p) {
-  if (p.kuerzel !== "MS" || normalisiere(p.kategorie) !== normalisiere(SICHERHEIT_NORM_KATEGORIE_NAME)) return false;
-  const andereRegexe = SICHERHEIT_NORM_UNTERPUNKTE.filter((u) => u.id !== "sicherheitNormpruefung").map((u) => u.bezeichnungRegex);
-  return !andereRegexe.some((r) => r.test(p.bezeichnung)) && !/mustereinlagerung/i.test(p.bezeichnung) && !/akkusicherheitskurzcheck/i.test(p.bezeichnung);
+  return !!p.ausPruefgrundlage && p.kuerzel === "MS" && normalisiere(p.kategorie) === normalisiere(SICHERHEIT_NORM_KATEGORIE_NAME);
 }
 
 /* Prozentsatz der Vollprüfung bei einer Teilprüfung - fachlich fest über die Artikelkategorie des

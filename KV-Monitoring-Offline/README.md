@@ -644,12 +644,16 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   KV-Monitoring-Export stammen. Details und Einbau-Anleitung stehen als
   Kommentar am Anfang von `Mechanik_Import.bas`.
 
-  Bei der Sicherheit-/Normprüfung-Position selbst (nicht bei Kennzeichnung,
-  Akku, Bedienungsanleitung, Optischer Abgleich oder Mustereinlagerung, die
-  dieselbe Kategorie/dasselbe Kürzel „MS" teilen) erscheint darunter
-  automatisch **„Teilprüfung"** mit dem Prozentsatz der Vollprüfung — ganz
-  ohne Ankreuzen, da eine Teilprüfung der mechanischen Sicherheit laut
-  Fachvorgabe **immer** gefordert ist. Der Prozentsatz ergibt sich dabei
+  Bei der Sicherheit-/Normprüfung-Position, die **aus der Prüfgrundlage**
+  ausgewählt wurde (Hauptprodukt/Set-Bestandteil, „+ hinzufügen" in der
+  Warengruppen-Empfehlung), erscheint darunter automatisch **„Teilprüfung"**
+  mit dem Prozentsatz der Vollprüfung — ganz ohne Ankreuzen, da eine
+  Teilprüfung der mechanischen Sicherheit laut Fachvorgabe **immer** gefordert
+  ist. Für alle anderen Positionen im selben Block (Kennzeichnung, Akku,
+  Bedienungsanleitung, Optischer Abgleich, Mustereinlagerung sowie über
+  „Weitere Positionen" manuell hinzugefügte LIDL-spezifische Normen — auch
+  wenn diese dieselbe Kategorie/dasselbe Kürzel „MS" teilen) erscheint sie
+  bewusst **nicht**. Der Prozentsatz ergibt sich dabei
   **automatisch aus der Artikelkategorie des verknüpften Prüfauftrags**
   (Grün 40 %, Gelb 50 %, Rot bzw. keine Artikelkategorie hinterlegt 70 %) und
   aktualisiert sich sofort, wenn sich die Artikelkategorie ändert. Die Angabe
