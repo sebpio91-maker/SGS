@@ -645,12 +645,13 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   Die fünf Kategorie-Überschriften-Zeilen sind dabei **reine Überschriften-
   und Summenzeilen ohne eigene Excel-Formel** — die ursprünglichen
   SUMPRODUCT-/INDEX-MATCH-/IF(...)-Formeln wurden entfernt, das Makro
-  berechnet die Summe je Kategorie (Kosten × Anzahl aller zugehörigen, mit
-  „x" markierten Positionszeilen) selbst und schreibt sie als festen Wert in
-  die jeweilige Zeile; bei Produktspezifikation kommt zusätzlich der
-  Basispreis aus der Tabelle „Kostentabelle" hinzu (dieselbe Logik wie die
-  vorherige INDEX/MATCH-Formel, nur jetzt in VBA). Dadurch aktualisieren sich
-  die Summen **nicht mehr automatisch** bei manuellen Änderungen — dafür
+  berechnet die Summe je Kategorie **ausschließlich aus den tatsächlich
+  ausgewählten Positionszeilen** (Kosten × Anzahl aller zugehörigen, mit „x"
+  markierten Zeilen) und schreibt sie als festen Wert in die jeweilige Zeile
+  — auch bei Produktspezifikation, ohne den früheren Pauschal-Aufschlag aus
+  der Tabelle „Kostentabelle" (190 €/250 €), der nicht mehr zutrifft. Dadurch
+  aktualisieren sich die Summen **nicht mehr automatisch** bei manuellen
+  Änderungen — dafür
   einfach „Mechanik einfügen" erneut ausführen (funktioniert auch ganz ohne
   neue Positionen aus der Zwischenablage, solange diese nicht leer ist).
   Details und Einbau-Anleitung stehen als Kommentar am Anfang von

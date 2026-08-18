@@ -40,12 +40,12 @@ Attribute VB_Name = "Modul1"
 ' Produktspezifikation, die INDEX/MATCH-Preistabellen-Abfrage für Produktspezifikation sowie die
 ' IF(...)-Summenformeln bei FFU/Fitting, Referenzprüfung, NGO) wurden ENTFERNT. Die komplette Logik
 ' steckt jetzt in Mec_KategorieSummeSchreiben: nach jedem Import werden für jede der fünf Kategorien
-' alle zugehörigen Positionszeilen (Spalte E = Kürzel, Spalte F = "x", außer der Überschriften-Zeile
-' selbst) aufsummiert (Kosten × Anzahl) und das Ergebnis als FESTER Zahlenwert (kein Formel mehr) in
-' die Kosten-/Summenspalte der jeweiligen Überschriften-Zeile geschrieben. Bei Produktspezifikation
-' kommt zusätzlich der Basispreis aus der Tabelle "Kostentabelle" (Spalte "PS", Zeile passend zur
-' aktuellen Auswahl in D14 "Prozessänderung") hinzu - exakt dieselbe Logik wie die alte
-' INDEX/MATCH-Formel, nur jetzt in VBA statt als Excel-Formel.
+' NUR die tatsächlich ausgewählten, zugehörigen Positionszeilen (Spalte E = Kürzel, Spalte F = "x",
+' außer der Überschriften-Zeile selbst) aufsummiert (Kosten × Anzahl) und das Ergebnis als FESTER
+' Zahlenwert (keine Formel mehr) in die Kosten-/Summenspalte der jeweiligen Überschriften-Zeile
+' geschrieben. Der frühere Pauschal-Aufschlag von 190 € (bzw. 250 € bei "MAK Pilot") aus der Tabelle
+' "Kostentabelle" für Produktspezifikation ist hinfällig und wurde komplett entfernt - Produkt-
+' spezifikation wird jetzt exakt wie die übrigen vier Kategorien behandelt.
 ' ACHTUNG: Da es sich um FESTE Werte statt Formeln handelt, aktualisieren sich diese Summen NICHT
 ' mehr automatisch, wenn z. B. manuell eine Kosten-Zelle geändert oder eine FILTER-Markierung
 ' nachträglich umgesetzt wird - dafür muss "Mechanik einfügen" erneut ausgeführt werden (aktualisiert
@@ -229,14 +229,18 @@ End Sub
 ' Zahlenwert in die jeweilige Kategorie-Überschriften-Zeile - ersetzt die ursprünglichen
 ' SUMPRODUCT-/INDEX-MATCH-/IF(...)-Formeln dieser fünf Zeilen vollständig.
 Private Sub Mec_SummenAktualisieren(tbl As ListObject, ws As Worksheet)
-    Mec_KategorieSummeSchreiben tbl, ws, "Sicherheit & Norm / Sonder- & Funktionsparameter", "MS", False
-    Mec_KategorieSummeSchreiben tbl, ws, "(physikalische-) Produktspezifikation", "PS", True
-    Mec_KategorieSummeSchreiben tbl, ws, "FFU/Fitting", "FFU", False
-    Mec_KategorieSummeSchreiben tbl, ws, "Referenzprüfung", "REF", False
-    Mec_KategorieSummeSchreiben tbl, ws, "NGO", "NGO", False
+    Mec_KategorieSummeSchreiben tbl, ws, "Sicherheit & Norm / Sonder- & Funktionsparameter", "MS"
+    Mec_KategorieSummeSchreiben tbl, ws, "(physikalische-) Produktspezifikation", "PS"
+    Mec_KategorieSummeSchreiben tbl, ws, "FFU/Fitting", "FFU"
+    Mec_KategorieSummeSchreiben tbl, ws, "Referenzprüfung", "REF"
+    Mec_KategorieSummeSchreiben tbl, ws, "NGO", "NGO"
 End Sub
 
-Private Sub Mec_KategorieSummeSchreiben(tbl As ListObject, ws As Worksheet, headerLabel As String, kuerzel As String, mitBasispreisProduktspezifikation As Boolean)
+' Summiert AUSSCHLIESSLICH die tatsächlich ausgewählten Positionszeilen (Kosten × Anzahl) derselben
+' Kategorie - keine Pauschale/Basispreis mehr. Der frühere Aufschlag von 190 € (bzw. 250 € bei "MAK
+' Pilot") aus der Tabelle "Kostentabelle" für Produktspezifikation ist hinfällig und wurde komplett
+' entfernt; Produktspezifikation wird jetzt exakt wie die übrigen vier Kategorien behandelt.
+Private Sub Mec_KategorieSummeSchreiben(tbl As ListObject, ws As Worksheet, headerLabel As String, kuerzel As String)
     Dim spalteC As Range
     Set spalteC = tbl.DataBodyRange.Columns(1)
 
@@ -259,8 +263,6 @@ Private Sub Mec_KategorieSummeSchreiben(tbl As ListObject, ws As Worksheet, head
         End If
     Next zeile
 
-    If mitBasispreisProduktspezifikation Then summe = summe + Mec_KostentabelleBasispreis(ws)
-
     ws.Cells(headerRow, 6).Value = "x"    ' F: Überschriften-Zeile bleibt beim Filter immer sichtbar
     ws.Cells(headerRow, 7).Value = summe  ' G: Kategorie-Summe (fester Wert, keine Formel mehr)
     ws.Cells(headerRow, 8).Value = 1      ' H: Anzahl (Multiplikator, unverändert 1)
@@ -273,26 +275,6 @@ Private Function Mec_ZahlAusZelle(zelle As Range) As Double
     Else
         Mec_ZahlAusZelle = 0
     End If
-End Function
-
-' Ersetzt die ursprüngliche Formel "=INDEX(Kostentabelle__2[PS],MATCH(D14,Kostentabelle__2[Prozess-
-' änderung],0))" in VBA: sucht in der Tabelle "Kostentabelle__2" (Blatt "Kostentabelle") die Zeile,
-' deren "Prozessänderung"-Spalte zur aktuellen Auswahl in D14 passt, und liefert deren "PS"-Spalte.
-Private Function Mec_KostentabelleBasispreis(ws As Worksheet) As Double
-    Dim prozessAenderung As String
-    prozessAenderung = CStr(ws.Range("D14").Value)
-
-    Dim ktTbl As ListObject
-    Set ktTbl = ThisWorkbook.Worksheets("Kostentabelle").ListObjects("Kostentabelle__2")
-
-    Dim ktZeile As ListRow
-    For Each ktZeile In ktTbl.ListRows
-        If CStr(ktZeile.Range.Cells(1, 1).Value) = prozessAenderung Then
-            Mec_KostentabelleBasispreis = Mec_ZahlAusZelle(ktZeile.Range.Cells(1, 2))
-            Exit Function
-        End If
-    Next ktZeile
-    Mec_KostentabelleBasispreis = 0
 End Function
 
 ' Val() erwartet IMMER einen Punkt als Dezimaltrennzeichen (so wie KV-Monitoring exportiert),
