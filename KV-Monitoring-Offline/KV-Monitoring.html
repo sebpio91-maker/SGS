@@ -272,12 +272,12 @@ input[type=file] { display:none; }
       <button type="button" data-ansicht="nein">Arbeitsvorrat (offene Mechanik)</button>
       <button type="button" data-ansicht="">Gesamtliste (alle jemals hochgeladenen)</button>
     </div>
-    <p class="hinweis"><strong>Arbeitsvorrat</strong> zeigt nur Einträge, bei denen die Mechanik noch offen ist (Standardansicht); <strong>Gesamtliste</strong> zeigt alle jemals hochgeladenen Aufträge unabhängig vom Mech.-Status — oben umschaltbar. Bezeichnung, Lieferant, Angelegt am und Sachbearbeiter kommen aus dem SAP-Export. Warengruppe, Styles, LFGB? und Trivial? werden — wenn möglich — aus dem verknüpften Prüfauftrag übernommen (siehe Reiter „Prüfaufträge"). „Mech. erledigt" ist nur ein Haken, ob der KV von mechanischer Seite fertig ist; anklicken zum Umschalten. Die Spalte „PA" zeigt, sobald zu einer IAN ein Prüfauftrag vorliegt, dessen Stand (Datum der PDF) als klickbares Feld — Klick öffnet direkt den Prüfauftrag. Unter der Kopfzeile lässt sich die Tabelle filtern: IAN als Freitext; VK Büro, Lieferant und Warengruppe als durchsuchbare Mehrfachauswahl (anklicken, tippen zum Suchen, mehrere Häkchen setzen); Sachbearbeiter, LFGB?, Trivial? und Mech. erledigt als einfaches Dropdown. VK Büro wird unabhängig von führenden Nullen zusammengefasst (070 = 70), Warengruppe immer als ###.### angezeigt. „Filter zurücksetzen" setzt alle Filter außer der Arbeitsvorrat/Gesamtliste-Ansicht zurück.</p>
+    <p class="hinweis"><strong>Arbeitsvorrat</strong> zeigt nur Einträge, bei denen die Mechanik noch offen ist (Standardansicht); <strong>Gesamtliste</strong> zeigt alle jemals hochgeladenen Aufträge unabhängig vom Mech.-Status — oben umschaltbar. Auftrag (Vertriebsbeleg), Bezeichnung, Lieferant, Angelegt am und Sachbearbeiter kommen aus dem SAP-Export. Warengruppe, Styles, LFGB? und Trivial? werden — wenn möglich — aus dem verknüpften Prüfauftrag übernommen (siehe Reiter „Prüfaufträge"). „Mech. erledigt" ist nur ein Haken, ob der KV von mechanischer Seite fertig ist; anklicken zum Umschalten. Die Spalte „PA" zeigt, sobald zu einer IAN ein Prüfauftrag vorliegt, dessen Stand (Datum der PDF) als klickbares Feld — Klick öffnet direkt den Prüfauftrag. Unter der Kopfzeile lässt sich die Tabelle filtern: IAN und Auftrag als Freitext; VK Büro, Lieferant und Warengruppe als durchsuchbare Mehrfachauswahl (anklicken, tippen zum Suchen, mehrere Häkchen setzen); Sachbearbeiter, LFGB?, Trivial? und Mech. erledigt als einfaches Dropdown. VK Büro wird unabhängig von führenden Nullen zusammengefasst (070 = 70), Warengruppe immer als ###.### angezeigt. „Filter zurücksetzen" setzt alle Filter außer der Arbeitsvorrat/Gesamtliste-Ansicht zurück.</p>
     <div class="tabellen-wrapper">
       <table class="tabelle readonly" id="arbeitsvorrat-tabelle">
         <thead>
           <tr>
-            <th>IAN</th><th>VK Büro</th><th>Bezeichnung</th><th>Lieferant</th><th>Angelegt am</th><th>Sachbearbeiter</th>
+            <th>IAN</th><th>Auftrag</th><th>VK Büro</th><th>Bezeichnung</th><th>Lieferant</th><th>Angelegt am</th><th>Sachbearbeiter</th>
             <th>Warengruppe</th><th>Styles</th><th>LFGB?</th><th>Trivial?</th><th>Mech. erledigt</th><th>PA</th><th>KV</th>
             <th>Bemerkung</th><th>Aktion</th>
           </tr>
@@ -2764,7 +2764,7 @@ const ARBEITSVORRAT_SELECT_FELDER = ["sachbearbeiter", "lfgb", "trivial", "mechE
 /* mechErledigt startet auf "nein" (= Ansicht "Arbeitsvorrat"), da das der tägliche Arbeitsmodus
    ist - alles, wo die Mechanik noch offen ist. "Gesamtliste" (alle jemals hochgeladenen Aufträge,
    unabhängig vom Mech.-Status) ist über den Ansicht-Umschalter erreichbar. */
-let arbeitsvorratFilter = { ian: "", bezeichnung: "", vkBuero: [], lieferant: [], warengruppe: [], sachbearbeiter: "", lfgb: "", trivial: "", mechErledigt: "nein" };
+let arbeitsvorratFilter = { ian: "", auftrag: "", bezeichnung: "", vkBuero: [], lieferant: [], warengruppe: [], sachbearbeiter: "", lfgb: "", trivial: "", mechErledigt: "nein" };
 
 /* Synchronisiert den Arbeitsvorrat/Gesamtliste-Umschalter (aktive Schaltfläche + Kartentitel)
    mit dem aktuellen mechErledigt-Filter - unabhängig davon, ob der über den Umschalter selbst
@@ -2793,6 +2793,8 @@ function gefiltertArbeitsvorrat() {
   });
   const ianFilter = normalisiere(arbeitsvorratFilter.ian);
   if (ianFilter) liste = liste.filter((r) => normalisiere(r.ian).includes(ianFilter));
+  const auftragFilter = normalisiere(arbeitsvorratFilter.auftrag);
+  if (auftragFilter) liste = liste.filter((r) => normalisiere(r.auftrag).includes(auftragFilter));
   const bezeichnungFilter = normalisiere(arbeitsvorratFilter.bezeichnung);
   if (bezeichnungFilter) liste = liste.filter((r) => normalisiere(r.bezeichnung).includes(bezeichnungFilter));
   const q = normalisiere(suchbegriffe.arbeitsvorrat);
@@ -2911,7 +2913,7 @@ function initialisiereMehrfachauswahl(feld) {
 
 function renderArbeitsvorratFilterZeile() {
   const tr = document.getElementById("arbeitsvorrat-filter-zeile");
-  const spaltenReihenfolge = ["ian:text", "vkBuero:multi", "bezeichnung:text", "lieferant:multi", "", "sachbearbeiter:select", "warengruppe:multi", "", "lfgb:select", "trivial:select", "mechErledigt:select", "", "", "", ""];
+  const spaltenReihenfolge = ["ian:text", "auftrag:text", "vkBuero:multi", "bezeichnung:text", "lieferant:multi", "", "sachbearbeiter:select", "warengruppe:multi", "", "lfgb:select", "trivial:select", "mechErledigt:select", "", "", "", ""];
   tr.innerHTML = spaltenReihenfolge.map((eintragTyp) => {
     if (!eintragTyp) return "<th></th>";
     const [feld, typ] = eintragTyp.split(":");
@@ -2958,6 +2960,7 @@ document.getElementById("btn-arbeitsvorrat-filter-zuruecksetzen").addEventListen
      "normaler" Filter, und soll beim Zurücksetzen der übrigen Filter erhalten bleiben. */
   ARBEITSVORRAT_SELECT_FELDER.forEach((f) => { if (f !== "mechErledigt") arbeitsvorratFilter[f] = ""; });
   arbeitsvorratFilter.ian = "";
+  arbeitsvorratFilter.auftrag = "";
   arbeitsvorratFilter.bezeichnung = "";
   suchbegriffe.arbeitsvorrat = "";
   if (aktiverTab === "arbeitsvorrat") document.getElementById("suche").value = "";
@@ -2984,7 +2987,7 @@ function renderArbeitsvorratKoerper() {
   document.getElementById("arbeitsvorrat-zaehler").textContent = `${liste.length} von ${data.arbeitsvorrat.length} Einträgen`;
 
   if (!liste.length) {
-    tbody.innerHTML = '<tr><td colspan="15" class="leerzustand">Keine Einträge gefunden.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="16" class="leerzustand">Keine Einträge gefunden.</td></tr>';
     return;
   }
 
@@ -2999,6 +3002,7 @@ function renderArbeitsvorratKoerper() {
     return `
     <tr data-id="${r.id}">
       <td><strong>${escapeHtml(r.ian)}</strong>${sharepointSucheLink(r.ian)}</td>
+      <td>${escapeHtml(r.auftrag)}</td>
       <td>${escapeHtml(normalisiereVkBuero(r.vkBuero))}</td>
       <td title="${escapeHtml(r.bezeichnung)}">${escapeHtml(r.bezeichnung)}</td>
       <td title="${escapeHtml(r.lieferant)}">${escapeHtml(r.lieferant)}</td>
@@ -5609,7 +5613,7 @@ function renderKvListe() {
   ul.innerHTML = liste.map((k) => `
     <li class="${k.id === aktiveKvId ? "aktiv" : ""}" data-id="${k.id}">
       <strong>${escapeHtml(k.ian || "(ohne IAN)")}</strong>
-      <div class="muted">${escapeHtml(k.artikel || "")} · ${kvGesamtsumme(k).toFixed(2)} €</div>
+      <div class="muted">${escapeHtml(k.artikel || "")}${k.sapNummer ? " · Auftrag " + escapeHtml(k.sapNummer) : ""} · ${kvGesamtsumme(k).toFixed(2)} €</div>
     </li>`).join("");
   ul.querySelectorAll("li[data-id]").forEach((li) => li.addEventListener("click", () => { aktiveKvId = li.dataset.id; renderKvTab(); }));
 }
@@ -5700,6 +5704,7 @@ function renderKvDetail() {
         <h2 style="margin:0">${escapeHtml(kvUeberschrift(kv, verknuepftePa))}</h2>
         ${sharepointSucheLink(kv.ian)}
         <span class="muted" id="kv-ian-badge" ${kv.ian ? "" : "hidden"}>IAN ${escapeHtml(kv.ian)}</span>
+        <span class="muted" id="kv-sap-badge" ${kv.sapNummer ? "" : "hidden"}>Auftrag ${escapeHtml(kv.sapNummer)}</span>
       </div>
       <div class="formular-grid" id="kv-formular">
         <label>IAN<input type="text" data-feld="ian" value="${escapeHtml(kv.ian)}"></label>
@@ -5769,6 +5774,11 @@ function renderKvDetail() {
         const badge = document.getElementById("kv-ian-badge");
         badge.textContent = "IAN " + kv.ian;
         badge.hidden = !kv.ian;
+      }
+      if (el.dataset.feld === "sapNummer") {
+        const badge = document.getElementById("kv-sap-badge");
+        badge.textContent = "Auftrag " + kv.sapNummer;
+        badge.hidden = !kv.sapNummer;
       }
     });
   });

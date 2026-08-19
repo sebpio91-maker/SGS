@@ -28,7 +28,9 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   existiert zu dieser IAN aber bereits einer, wird KEIN Duplikat angelegt**,
   sondern direkt zum vorhandenen KV gewechselt (Beschriftung wechselt dann
   entsprechend auf „→ KV"). **VK Büro** wird jetzt als eigene Spalte
-  angezeigt. Die Spalten **„PA"** und **„KV"** zeigen auf einen Blick, ob zu
+  angezeigt. Direkt neben der IAN steht die Spalte **„Auftrag"** (die
+  SAP-Auftragsnummer/das Vertriebsbeleg aus dem SAP-Export). Die Spalten
+  **„PA"** und **„KV"** zeigen auf einen Blick, ob zu
   dieser IAN bereits ein Prüfauftrag bzw. ein Kostenvoranschlag existiert:
   liegt einer vor, erscheint ein anklickbares Feld — bei „PA" mit dem
   **Stand der PA-PDF** (Datum aus dem Dateinamen bzw. ersatzweise aus dem
@@ -39,7 +41,7 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   KV-Erstellung (Karte „Pflichtangaben") gepflegt werden, zählt hier
   automatisch der Wert des verknüpften KVs, falls das Feld am
   Arbeitsvorrat-Eintrag selbst noch leer ist (ein dort manuell eingetragener
-  Wert hat weiterhin Vorrang). Unter der Kopfzeile der Tabelle gibt es **Filter**: IAN und
+  Wert hat weiterhin Vorrang). Unter der Kopfzeile der Tabelle gibt es **Filter**: IAN, Auftrag und
   **Bezeichnung** als Freitextfeld (Teiltreffer); **VK Büro, Lieferant und Warengruppe als
   durchsuchbare Mehrfachauswahl** — anklicken öffnet ein Panel mit Suchfeld
   und Checkbox-Liste, mehrere Werte gleichzeitig ankreuzbar (inkl.
@@ -168,6 +170,12 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   **„Bewertungsgrundlage/Grenzwert erforderlich"** markiert sind, zeigen beim
   Hinzufügen im Produktspezifikationen-Block einen entsprechenden Hinweis
   (siehe MAK unten).
+
+  **SAP-Nummer (Auftrag/Vertriebsbeleg) sichtbar**: das Feld „SAP-Nummer" im
+  KV-Formular wird zusätzlich direkt neben der IAN-Kennzeichnung im
+  Detail-Header angezeigt (Badge „Auftrag …", nur sichtbar wenn befüllt) sowie
+  in der KV-Übersichtsliste links als Teil der Unterzeile — so ist sie auch
+  ohne Aufklappen des Formulars auf einen Blick sichtbar.
 
   **Bemerkungen-Zeile je Position**: sobald zu einer Position irgendwo im
   Tool bereits etwas Relevantes hinterlegt ist, erscheint direkt darunter
