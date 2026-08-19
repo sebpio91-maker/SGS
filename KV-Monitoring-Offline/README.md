@@ -190,9 +190,13 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   Felder werden automatisch vorbelegt, sobald der KV mit einer IAN verknüpft
   ist (über „+ KV" aus dem Arbeitsvorrat direkt bei der Anlage, oder beim
   Eintragen/Ändern der IAN im KV-Formular): „SAP-Nummer" aus dem Feld
-  „Auftrag" (Vertriebsbeleg) des Arbeitsvorrat-Eintrags, „Charge" aus der dort
-  angezeigten Charge (inkl. deren eigenem Fallback auf den Prüfauftrag, siehe
-  oben). Ein bereits vorhandener Wert wird dabei nie überschrieben.
+  „Auftrag" (Vertriebsbeleg) des Arbeitsvorrat-Eintrags, „Charge" primär aus
+  dem Arbeitsvorrat-Eintrag (SAP-Import-Spalte „Bestellnummer"), hat dort
+  aber kein Arbeitsvorrat-Eintrag noch eine eigene Charge, ersatzweise direkt
+  aus dem verknüpften Prüfauftrag (PDF-Feld „Initiale Charge" bzw. der
+  Zahlenteil hinter dem „/" im Feld „IAN / Charge") — diese Reihenfolge gilt
+  unabhängig davon, ob überhaupt ein Arbeitsvorrat-Eintrag zur IAN existiert.
+  Ein bereits vorhandener Wert wird dabei nie überschrieben.
 
   **Bemerkungen-Zeile je Position**: sobald zu einer Position irgendwo im
   Tool bereits etwas Relevantes hinterlegt ist, erscheint direkt darunter
@@ -204,9 +208,13 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   deckt Sicherheit & Norm, Kennzeichnung, LIDL-spezifisch, FFU/Fitting und
   NGO gleichermaßen ab), der **Prüfgrundlage-Kommentar** (bei
   „Produkt: …"-Bezeichnungen über den Produktnamen plus das zum Kürzel
-  passende Kommentarfeld), der **MAK-Hinweis** einer Preisvariante (bei
-  „Parameter / Variante"-Bezeichnungen) sowie die an der Position selbst
-  gespeicherte **Bewertungsgrundlage/Grenzwert**. Da die Zuordnung über den
+  passende Kommentarfeld), die **MAK-Bemerkung** (gilt für den Parameter
+  überall, siehe Reiter „MAK" oben) und der **MAK-Hinweis** einer
+  Preisvariante (bei „Parameter / Variante"-Bezeichnungen), sowie die an der
+  Position selbst gespeicherte **Bewertungsgrundlage/Grenzwert** und eine rein
+  **KV-spezifische Bemerkung** (beide nur bei Produktspezifikationen/
+  MAK-Positionen direkt in der Übersicht „Bereits ausgewählte MAK-Parameter"
+  editierbar). Da die Zuordnung über den
   Text läuft, kann sie bei manuell stark umbenannten oder freien Positionen
   auch mal nichts finden — dann bleibt die Zusatzzeile schlicht weg. Die
   **Überschrift zeigt bevorzugt die Artikelbezeichnung aus dem verknüpften
@@ -420,16 +428,18 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   Set-Bestandteile/Rabatt/Styles-Formel.
 
   **Kosten direkt anpassen**: unter jedem Block (Hauptprodukt, Set-Bestandteil,
-  FFU, NGO/StiWa) gibt es ein Feld **„Kosten (Prüfgrundlage) €"**, mit dem
-  sich der hinterlegte Preis direkt hier ändern lässt, ohne extra in den
-  Reiter „Prüfgrundlagen" wechseln zu müssen — die Änderung wird **direkt an
-  der Prüfgrundlage gespeichert** und wirkt sich damit auch auf künftige KVs
-  mit derselben Warengruppe/demselben Produkt aus (der angezeigte
-  Vorschlagspreis daneben bleibt der bereits rabattierte Wert, das Eingabefeld
-  zeigt den unrabattierten Rohwert aus der Prüfgrundlage). Referenziert ein
-  Block mehrere Normen (in den mitgelieferten Daten aktuell nicht der Fall),
-  erscheint dort stattdessen ein Link **„→ Kosten in der Prüfgrundlage
-  bearbeiten"**, der direkt zur vollständigen Bearbeitung wechselt.
+  FFU, NGO/StiWa) gibt es zwei Felder **„Kosten (Prüfgrundlage) €"** und
+  **„Kosten je weiterem Produkt €"** (die Grundlage der Styles-Formel oben),
+  mit denen sich die hinterlegten Preise direkt hier ändern lassen, ohne
+  extra in den Reiter „Prüfgrundlagen" wechseln zu müssen — die Änderung wird
+  **direkt an der Prüfgrundlage gespeichert** und wirkt sich damit auch auf
+  künftige KVs mit derselben Warengruppe/demselben Produkt aus (der
+  angezeigte Vorschlagspreis daneben bleibt der bereits styles-angepasste und
+  rabattierte Wert, die Eingabefelder zeigen die unrabattierten Rohwerte aus
+  der Prüfgrundlage). Referenziert ein Block mehrere Normen (in den
+  mitgelieferten Daten aktuell nicht der Fall), erscheint dort stattdessen
+  ein Link **„→ Kosten in der Prüfgrundlage bearbeiten"**, der direkt zur
+  vollständigen Bearbeitung wechselt.
 
   **Kommentar direkt bearbeiten**: direkt unter dem Kosten-Feld gibt es je
   Block (Hauptprodukt, Set-Bestandteil, FFU, NGO/StiWa) zusätzlich ein Feld
@@ -1109,6 +1119,17 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   produktspezifisch** und wird deshalb **nicht** hier am MAK-Eintrag
   gespeichert, sondern erst beim Hinzufügen zu einem KV direkt an der
   jeweiligen Position (siehe Kostenvoranschläge oben).
+
+  **Bemerkung** – ein freies Textfeld in der Detailansicht, analog zur
+  Bemerkung an einer Norm: gilt **für den Parameter allgemein** und damit für
+  **jeden** KV, in dem er vorkommt (anders als die produktspezifische
+  Bewertungsgrundlage/Grenzwert oben). Erscheint als „Bemerkung (MAK)" in der
+  Bemerkungen-Zeile jeder KV-Position mit diesem Parameter (siehe
+  Kostenvoranschläge oben). Zusätzlich lässt sich im Kostenvoranschlag selbst,
+  direkt bei „Bereits ausgewählte MAK-Parameter", **je Position** eine rein
+  KV-spezifische Bemerkung eintragen (erscheint dort als „Bemerkung
+  (KV-spezifisch)") — beide Bemerkungen sind unabhängig voneinander und
+  können gleichzeitig vorkommen.
 
   **Schlagworte je Eintrag** – in der Detailansicht lassen sich beliebig
   viele Schlagworte als Chips hinzufügen (Eingabefeld + „+ Hinzufügen" oder

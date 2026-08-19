@@ -2069,6 +2069,16 @@ function fuelleKvAusPa(kv, pa, ueberschreiben) {
     kv.styleanzahl = anzahlStyles;
     geaendert = true;
   }
+  /* Charge NUR übernehmen, wenn im KV noch leer - unabhängig von "ueberschreiben"/dem manuellen
+     "↺ … aus PA übernehmen"-Button (der laut Beschriftung nur Warengruppe/Styleanzahl betrifft).
+     pa.charge kommt aus dem PDF-Feld "Initiale Charge" bzw. dem Zahlenteil hinter dem "/" im Feld
+     "IAN / Charge" (siehe leitePaKopfdatenAb). Deckt insbesondere den Fall ab, dass zur IAN (noch)
+     gar kein Arbeitsvorrat-Eintrag existiert - fuelleKvAusArbeitsvorrat (Charge aus dem SAP-Import)
+     läuft dann nicht, hier greift die PA-Charge trotzdem direkt. */
+  if (pa.charge && !kv.charge) {
+    kv.charge = pa.charge;
+    geaendert = true;
+  }
   if (!kv.warengruppeAlt) {
     const alt = altWarengruppeFuer(kv.warengruppeNeu);
     if (alt) { kv.warengruppeAlt = alt; geaendert = true; }
@@ -2657,6 +2667,7 @@ function migriereMak() {
        (z. B. Korrosionsbeständigkeit nach 24h/48h/72h…), alle übrigen starten bei "pro Artikel". */
     if (m.abrechnungsmodus === undefined) m.abrechnungsmodus = m.varianten.length ? "laufzeit" : "artikel";
     if (m.bewertungsgrundlageErforderlich === undefined) m.bewertungsgrundlageErforderlich = false;
+    if (m.bemerkung === undefined) m.bemerkung = "";
   });
 }
 
@@ -4602,10 +4613,15 @@ function artikelkategorieMultiplikator(pa) {
 function mechanikKostenBearbeitenHtml(pgId, feld, refs) {
   if (refs && refs.length === 1) {
     const kosten = refs[0].kosten;
+    const kostenWeiteresProdukt = refs[0].kostenWeiteresProdukt;
     return `<label style="display:inline-flex;align-items:center;gap:0.35rem;font-size:0.78rem;font-weight:400;color:var(--muted)">Kosten (Prüfgrundlage) €
       <input type="number" step="1" style="width:80px;font-family:inherit;font-size:0.82rem;padding:0.2rem 0.35rem;border:1px solid var(--border);border-radius:5px"
-        data-action="mechanik-kosten-bearbeiten" data-pg-id="${escapeHtml(pgId)}" data-feld="${feld}" data-idx="0"
-        value="${kosten === null || kosten === undefined ? "" : kosten}" placeholder="Anfrage"></label>`;
+        data-action="mechanik-kosten-bearbeiten" data-pg-id="${escapeHtml(pgId)}" data-feld="${feld}" data-idx="0" data-rolle="kosten"
+        value="${kosten === null || kosten === undefined ? "" : kosten}" placeholder="Anfrage"></label>
+    <label style="display:inline-flex;align-items:center;gap:0.35rem;font-size:0.78rem;font-weight:400;color:var(--muted)" title="Kosten für jeden weiteren Style (Rüstzeiten fallen nur einmal an) - fließt über die Styleanzahl des KVs automatisch in den Vorschlagspreis ein: 1. Prüfung + (Styleanzahl - 1) × dieser Wert. Leer = wie 1. Prüfung.">Kosten je weiterem Produkt €
+      <input type="number" step="1" style="width:80px;font-family:inherit;font-size:0.82rem;padding:0.2rem 0.35rem;border:1px solid var(--border);border-radius:5px"
+        data-action="mechanik-kosten-bearbeiten" data-pg-id="${escapeHtml(pgId)}" data-feld="${feld}" data-idx="0" data-rolle="kostenWeiteresProdukt"
+        value="${kostenWeiteresProdukt === null || kostenWeiteresProdukt === undefined ? "" : kostenWeiteresProdukt}" placeholder="wie 1. Prüfung"></label>`;
   }
   return `<button type="button" class="ghost small" data-action="mechanik-kosten-in-pg-bearbeiten" data-pg-id="${escapeHtml(pgId)}">→ Kosten in der Prüfgrundlage bearbeiten</button>`;
 }
@@ -5148,11 +5164,14 @@ function makSchlagwortVorschlaege(pa) {
    erscheinen zusätzlich als klickbare Vorschläge direkt über dem Dropdown. */
 /* Übersicht der bereits im KV vorhandenen Produktspezifikationen-Positionen (i. d. R. über das
    MAK-Dropdown angelegt, siehe renderKvMakDetail) - anders als eine reine Anzeige lässt sich hier
-   direkt je Position die produktspezifische Bewertungsgrundlage/Grenzwert eintragen (schreibt
-   direkt auf die Position, siehe initialisierePruefumfangUebersicht), statt dafür extra in der
-   großen Positionstabelle danach suchen zu müssen (dort gibt es dafür bewusst keine eigene Spalte
-   mehr). Inaktive (deaktivierte) Positionen werden mit angezeigt, aber als solche markiert, damit
-   nichts versteckt bleibt. */
+   direkt je Position die produktspezifische Bewertungsgrundlage/Grenzwert UND eine rein
+   KV-spezifische Bemerkung eintragen (beide schreiben direkt auf die Position, siehe
+   initialisierePruefumfangUebersicht), statt dafür extra in der großen Positionstabelle danach
+   suchen zu müssen (dort gibt es dafür bewusst keine eigene Spalte mehr). Die Bemerkung hier ist
+   NICHT dasselbe wie die Bemerkung am MAK-Eintrag selbst (Reiter „MAK", gilt überall/für jeden KV
+   mit diesem Parameter, siehe renderMakDetail) - beide erscheinen unabhängig voneinander in der
+   Bemerkungen-Zeile (siehe positionBemerkungen). Inaktive (deaktivierte) Positionen werden mit
+   angezeigt, aber als solche markiert, damit nichts versteckt bleibt. */
 function produktspezifikationenAusgewaehlteMakHtml(kv) {
   const positionen = kv.positionen.filter((p) => normalisiere(p.kategorie) === normalisiere(PRODUKTSPEZI_KATEGORIE_NAME));
   if (!positionen.length) return "";
@@ -5162,6 +5181,9 @@ function produktspezifikationenAusgewaehlteMakHtml(kv) {
       <span>${escapeHtml(p.bezeichnung || "(ohne Bezeichnung)")} <span class="muted">(${(Number(p.kosten) || 0).toFixed(2)} €${Number(p.anzahl) > 1 ? `, ${p.anzahl}×` : ""})</span>${p.aktiv ? "" : ` <span class="muted">– inaktiv</span>`}</span>
       <label style="display:flex;flex-direction:column;gap:0.15rem;font-size:0.78rem;font-weight:400;color:var(--muted);width:100%;max-width:420px">Bewertungsgrundlage/Grenzwert
         <input type="text" data-action="mak-uebersicht-bewertung-bearbeiten" data-pos-id="${escapeHtml(p.id)}" value="${escapeHtml(p.bewertungsgrundlage || "")}" placeholder="z. B. konkreter Grenzwert, Norm-Referenz…" style="font-family:inherit;font-size:0.82rem;padding:0.3rem 0.4rem;border:1px solid var(--border);border-radius:6px;font-weight:400;color:var(--text)">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:0.15rem;font-size:0.78rem;font-weight:400;color:var(--muted);width:100%;max-width:420px">Bemerkung (nur dieser Kostenvoranschlag)
+        <textarea rows="2" data-action="mak-uebersicht-bemerkung-bearbeiten" data-pos-id="${escapeHtml(p.id)}" placeholder="z. B. Besonderheiten für dieses Projekt…" style="font-family:inherit;font-size:0.82rem;padding:0.3rem 0.4rem;border:1px solid var(--border);border-radius:6px;font-weight:400;color:var(--text)">${escapeHtml(p.bemerkung || "")}</textarea>
       </label>
     </div>`).join("")}
   </div>`;
@@ -5328,7 +5350,7 @@ function initialisiereMechanikEmpfehlungKarte(panel, kv) {
       const refs = eintrag ? eintrag[input.dataset.feld] : null;
       const ref = refs ? refs[Number(input.dataset.idx)] : null;
       if (!ref) return;
-      ref.kosten = input.value === "" ? null : Number(input.value);
+      ref[input.dataset.rolle || "kosten"] = input.value === "" ? null : Number(input.value);
       speichereInLocalStorage();
       renderKvDetail();
       zeigeStatus("Kosten in der Prüfgrundlage aktualisiert · " + jetzt(), "ok");
@@ -5658,6 +5680,16 @@ function initialisierePruefumfangUebersicht(panel, kv, pa) {
       zeigeStatus("Bewertungsgrundlage aktualisiert · " + jetzt(), "ok");
     });
   });
+  panel.querySelectorAll('[data-action="mak-uebersicht-bemerkung-bearbeiten"]').forEach((textarea) => {
+    textarea.addEventListener("change", () => {
+      const pos = kv.positionen.find((p) => p.id === textarea.dataset.posId);
+      if (!pos) return;
+      pos.bemerkung = textarea.value;
+      speichereInLocalStorage();
+      renderKvPositionenTabelle(kv);
+      zeigeStatus("Bemerkung aktualisiert · " + jetzt(), "ok");
+    });
+  });
   const makAuswahl = panel.querySelector("#kv-mak-auswahl");
   if (makAuswahl) {
     makAuswahl.addEventListener("change", () => renderKvMakDetail(makAuswahl.value, kv));
@@ -5784,10 +5816,13 @@ function renderKvDetail() {
   if (!kv) { panel.innerHTML = '<div class="card leerzustand">Kein Kostenvoranschlag ausgewählt. Links auswählen oder neuen anlegen.</div>'; return; }
 
   const verknuepftePa = data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(kv.ian));
-  /* Warengruppe (neu)/Styleanzahl automatisch aus der verlinkten PA übernehmen, sobald sie im KV
-     noch leer sind (überschreibt nie einen bereits vorhandenen/manuell gewählten Wert) - so
-     entfällt bei frisch angelegten oder von Hand mit einer IAN verknüpften KVs das manuelle
-     Abtippen. */
+  const verknuepfterAv = data.arbeitsvorrat.find((a) => normalisiere(a.ian) === normalisiere(kv.ian));
+  /* Warengruppe (neu)/Styleanzahl/Auftrag/Charge automatisch aus dem verlinkten Arbeitsvorrat-
+     Eintrag bzw. Prüfauftrag übernehmen, sobald sie im KV noch leer sind (überschreibt nie einen
+     bereits vorhandenen/manuell gewählten Wert) - so entfällt bei frisch angelegten oder von Hand
+     mit einer IAN verknüpften KVs das manuelle Abtippen. Reihenfolge wichtig: Arbeitsvorrat (SAP-
+     Import) zuerst, damit dessen Charge/Auftrag Vorrang vor der PA-Charge behält. */
+  fuelleKvAusArbeitsvorrat(kv, verknuepfterAv, false);
   fuelleKvAusPa(kv, verknuepftePa, false);
 
   panel.innerHTML = `
@@ -5887,8 +5922,10 @@ function renderKvDetail() {
   panel.querySelector('#kv-formular [data-feld="ian"]').addEventListener("change", () => {
     const neuVerknuepft = data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(kv.ian));
     const avVerknuepft = data.arbeitsvorrat.find((a) => normalisiere(a.ian) === normalisiere(kv.ian));
-    const geaendertPa = neuVerknuepft && fuelleKvAusPa(kv, neuVerknuepft, false);
+    /* Reihenfolge wichtig: Arbeitsvorrat (SAP-Import) zuerst, damit dessen Charge/Auftrag Vorrang
+       vor der PA-Charge behält - fuelleKvAusPa füllt Charge nur, wenn danach immer noch leer. */
     const geaendertAv = avVerknuepft && fuelleKvAusArbeitsvorrat(kv, avVerknuepft, false);
+    const geaendertPa = neuVerknuepft && fuelleKvAusPa(kv, neuVerknuepft, false);
     if (geaendertPa || geaendertAv) renderKvDetail();
   });
   /* LFGB/Trivial fließen direkt in die Vorbelegung von Sicherheit-/Normprüfung (Trivial="Ja") bzw.
@@ -5947,15 +5984,18 @@ function renderKvDetail() {
   renderKvPositionenTabelle(kv);
 }
 
-/* Best-effort: sammelt alle bekannten Bemerkungen zu einer Position (Teilprüfung, Norm-Bemerkung,
-   Prüfgrundlage-Kommentar, MAK-Hinweis, Bewertungsgrundlage/Grenzwert) für die Zusatzzeile in der
-   Positionstabelle (siehe renderKvPositionenTabelle). Positionen speichern selbst keine
-   Rückreferenz auf ihre Quelle (Norm/Prüfgrundlage/MAK), daher rein über die Bezeichnung
-   zugeordnet:
+/* Best-effort: sammelt alle bekannten Bemerkungen zu einer Position (Teilprüfung, Bewertungs-
+   grundlage/Grenzwert, KV-spezifische Bemerkung, Norm-Bemerkung, Prüfgrundlage-Kommentar,
+   MAK-Bemerkung, MAK-Hinweis) für die Zusatzzeile in der Positionstabelle (siehe
+   renderKvPositionenTabelle). Positionen speichern selbst keine Rückreferenz auf ihre Quelle
+   (Norm/Prüfgrundlage/MAK), daher größtenteils über die Bezeichnung zugeordnet:
    - Teilprüfung: automatisch für die Sicherheit-/Normprüfung-Position selbst (siehe
      istSicherheitNormpruefungPosition), da diese laut Fachvorgabe IMMER als Teilprüfung gilt -
      Prozentsatz aus der Artikelkategorie des übergebenen Prüfauftrags (siehe
      teilpruefungProzentsatz), kein Ankreuzfeld.
+   - Bewertungsgrundlage/Grenzwert und KV-spezifische Bemerkung (p.bewertungsgrundlage/p.bemerkung):
+     direkt an der Position gespeichert, kein Matching nötig - beide nur bei Produktspezifikationen/
+     MAK-Positionen editierbar, siehe produktspezifikationenAusgewaehlteMakHtml.
    - Norm-Bemerkung: jede Norm, deren Bezeichnung als Teilstring in der Position vorkommt - deckt
      Sicherheit & Norm/Kennzeichnung/LIDL-spezifisch/FFU/NGO gleichermaßen ab, da deren
      Positions-Bezeichnungen die jeweilige Norm-Bezeichnung immer wörtlich enthalten.
@@ -5963,9 +6003,10 @@ function renderKvDetail() {
      Sicherheit & Norm/FFU/NGO, siehe mechanikKomponentenHtml) über den Produktnamen vor dem ":"
      plus das zum Kürzel passende Kommentarfeld (MS -> normenKommentar, FFU -> ffuNormenKommentar,
      NGO -> stiwaNormenKommentar).
-   - MAK-Hinweis: bei "<Parameter> / <Variante>"-Bezeichnungen (siehe kvMakVarianteBezeichnung) die
-     passende Preisvariante.
-   - Bewertungsgrundlage/Grenzwert: direkt an der Position gespeichert, kein Matching nötig. */
+   - MAK-Bemerkung (gilt für den Parameter überall, analog zur Norm-Bemerkung) und MAK-Hinweis (nur
+     bei der gewählten Preisvariante, siehe kvMakVarianteBezeichnung): beide über kvMakBezeichnung/
+     kvMakVarianteBezeichnung gegen die Bezeichnung abgeglichen - deckt sowohl Positionen ohne
+     Variante ("Parameter (ID)") als auch mit Variante ("Parameter / Variante") ab. */
 function positionBemerkungen(p, pa) {
   const ergebnisse = [];
   /* Teilprüfung der mechanischen Sicherheit ist laut Fachvorgabe IMMER gefordert (nie eine freie
@@ -5978,6 +6019,7 @@ function positionBemerkungen(p, pa) {
     ergebnisse.push({ label: "Teilprüfung", text: `${prozent}% der Vollprüfung (Artikelkategorie ${kategorieText})` });
   }
   if (p.bewertungsgrundlage) ergebnisse.push({ label: "Bewertungsgrundlage/Grenzwert", text: p.bewertungsgrundlage });
+  if (p.bemerkung) ergebnisse.push({ label: "Bemerkung (KV-spezifisch)", text: p.bemerkung });
 
   const bezNorm = normalisiere(p.bezeichnung || "");
   const norm = data.normen.find((n) => n.bezeichnung && bezNorm.includes(normalisiere(n.bezeichnung)));
@@ -5992,10 +6034,13 @@ function positionBemerkungen(p, pa) {
     }
   }
 
-  const teile = (p.bezeichnung || "").split(" / ");
-  if (teile.length >= 2) {
-    const makParam = data.mak.find((m) => normalisiere(m.parameter || "") === normalisiere(teile[0]));
-    if (makParam) {
+  /* MAK-Zuordnung deckt beide Bezeichnungsformate ab: "Parameter (ID)" ohne Variante (siehe
+     kvMakBezeichnung) und "Parameter / Variante" (siehe kvMakVarianteBezeichnung). */
+  const makParam = data.mak.find((m) => p.bezeichnung === kvMakBezeichnung(m) || (p.bezeichnung || "").startsWith(`${m.parameter} / `));
+  if (makParam) {
+    if (makParam.bemerkung) ergebnisse.push({ label: "Bemerkung (MAK)", text: makParam.bemerkung });
+    const teile = (p.bezeichnung || "").split(" / ");
+    if (teile.length >= 2) {
       const varianteText = teile.slice(1).join(" / ");
       const variante = (makParam.varianten || []).find((v) => normalisiere(v.bezeichnung) === normalisiere(varianteText));
       if (variante && variante.hinweis) ergebnisse.push({ label: "Hinweis (MAK)", text: variante.hinweis });
@@ -7197,7 +7242,7 @@ function renderMakListeAktivMarkieren() {
    damit sie sofort in Listen/Dropdowns eindeutig auffindbar ist, bis der Nutzer sie durch eine
    "echte" ID (z. B. im Stil "DU023") ersetzt. */
 function makEntwurfNeu() {
-  return { id: "NEU-" + neueId().slice(0, 6).toUpperCase(), kategorie: "", bereich: "", parameter: "Neue MAK-Position", anforderung: "", normEu: "", normUs: "", pruefnachweis: "", schlagworte: [], varianten: [], kosten: null, kostenWeiteresArtikel: null, abrechnungsmodus: "artikel", bewertungsgrundlageErforderlich: false };
+  return { id: "NEU-" + neueId().slice(0, 6).toUpperCase(), kategorie: "", bereich: "", parameter: "Neue MAK-Position", anforderung: "", normEu: "", normUs: "", pruefnachweis: "", schlagworte: [], varianten: [], kosten: null, kostenWeiteresArtikel: null, abrechnungsmodus: "artikel", bewertungsgrundlageErforderlich: false, bemerkung: "" };
 }
 
 /* Preisvariante ("Laufzeit"-Zeile, z. B. "1m³ Kammer (24h)" für 288,24 €) - editierbar analog zu
@@ -7234,6 +7279,7 @@ function renderMakDetail() {
         <label class="volle-breite">Norm/Standard EU<textarea data-feld="normEu" rows="2">${escapeHtml(eintrag.normEu)}</textarea></label>
         <label class="volle-breite">Norm/Standard US (AATCC/ASTM)<textarea data-feld="normUs" rows="2">${escapeHtml(eintrag.normUs)}</textarea></label>
         <label class="volle-breite">Mindest-Prüfnachweis<textarea data-feld="pruefnachweis" rows="2">${escapeHtml(eintrag.pruefnachweis)}</textarea></label>
+        <label class="volle-breite">Bemerkung <span class="muted" style="font-weight:400">– gilt für diesen Parameter überall (analog zur Bemerkung an einer Norm), erscheint in der Bemerkungen-Zeile jeder KV-Position mit diesem Parameter</span><textarea data-feld="bemerkung" rows="2">${escapeHtml(eintrag.bemerkung)}</textarea></label>
         <label title="Legt fest, wie dieser Parameter abgerechnet wird - pro geprüftem Artikel (mit optionaler Staffelung für weitere Artikel) oder pro Laufzeit mit LIDL-seitig fest verhandelten Preisen (z. B. Korrosionsbeständigkeit nach 24h/48h/72h…).">Abrechnung<select data-feld="abrechnungsmodus">
           <option value="artikel" ${!proLaufzeit ? "selected" : ""}>Pro Artikel (mit Staffelung)</option>
           <option value="laufzeit" ${proLaufzeit ? "selected" : ""}>Pro Laufzeit (feste Preise)</option>
@@ -8071,7 +8117,7 @@ function schluesselPruefgrundlage(e) { return normalisiereWarengruppe(e.warengru
 function schluesselNorm(n) { return normalisiere(n.bezeichnung); }
 const NORM_FELDER = ["bezeichnung", "titel", "typ", "dateiname", "rohtext", "anwendungsbereiche", "bemerkung", "sapCode", "kennzeichnung", "bedienungsanleitung", "pruefungsart", "kosten", "lidlSpezifischBlock"];
 function schluesselMak(m) { return normalisiere(m.id); }
-const MAK_FELDER = ["kategorie", "bereich", "parameter", "anforderung", "normEu", "normUs", "pruefnachweis", "schlagworte", "varianten", "kosten", "kostenWeiteresArtikel", "abrechnungsmodus", "bewertungsgrundlageErforderlich"];
+const MAK_FELDER = ["kategorie", "bereich", "parameter", "anforderung", "normEu", "normUs", "pruefnachweis", "schlagworte", "varianten", "kosten", "kostenWeiteresArtikel", "abrechnungsmodus", "bewertungsgrundlageErforderlich", "bemerkung"];
 function schluesselWarengruppe(w) { return normalisiereWarengruppe(w.code); }
 const WARENGRUPPE_FELDER = ["name", "bereich"];
 function schluesselWarengruppenZuordnung(z) { return normalisiereWarengruppe(z.neu); }
