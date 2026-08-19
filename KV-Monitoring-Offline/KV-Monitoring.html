@@ -2637,7 +2637,8 @@ function init() {
     pruefungsarten: (geladen && geladen.pruefungsarten && geladen.pruefungsarten.length) ? geladen.pruefungsarten : seedPruefungsarten(),
     fixPositionenAlsNormenMigriert: !!(geladen && geladen.fixPositionenAlsNormenMigriert),
     kennzeichnungFixPositionenPruefungsartMigriert: !!(geladen && geladen.kennzeichnungFixPositionenPruefungsartMigriert),
-    makVariantenMigriert: !!(geladen && geladen.makVariantenMigriert)
+    makVariantenMigriert: !!(geladen && geladen.makVariantenMigriert),
+    geloeschteEintraege: (geladen && Array.isArray(geladen.geloeschteEintraege)) ? geladen.geloeschteEintraege : []
   };
   data.normen.forEach(migriereNorm);
   data.pruefgrundlagen.forEach(migrierePruefgrundlage);
@@ -3092,6 +3093,7 @@ function oeffneArbeitsvorratModal(eintrag) {
   document.getElementById("av-abbrechen").addEventListener("click", schliesseOverlay);
   document.getElementById("av-loeschen").addEventListener("click", () => {
     if (!confirm(`Eintrag "${eintrag.ian}" wirklich löschen?`)) return;
+    merkeGeloescht("arbeitsvorrat", schluesselArbeitsvorrat(eintrag));
     data.arbeitsvorrat = data.arbeitsvorrat.filter((r) => r.id !== eintrag.id);
     speichereInLocalStorage();
     schliesseOverlay();
@@ -3715,6 +3717,7 @@ function renderPaDetail() {
   });
   document.getElementById("pa-loeschen").addEventListener("click", () => {
     if (!confirm("Prüfauftrag wirklich löschen?")) return;
+    merkeGeloescht("pruefauftraege", schluesselPa(pa));
     data.pruefauftraege = data.pruefauftraege.filter((p) => p.id !== pa.id);
     aktivePaId = data.pruefauftraege.length ? data.pruefauftraege[0].id : null;
     speichereInLocalStorage();
@@ -5812,6 +5815,7 @@ function renderKvDetail() {
   initialisierePruefumfangUebersicht(panel, kv, verknuepftePa);
   document.getElementById("kv-loeschen").addEventListener("click", () => {
     if (!confirm(`KV "${kv.ian}" wirklich löschen?`)) return;
+    merkeGeloescht("kvs", kv.id);
     data.kvs = data.kvs.filter((k) => k.id !== kv.id);
     aktiveKvId = data.kvs.length ? data.kvs[0].id : null;
     speichereInLocalStorage();
@@ -6321,6 +6325,7 @@ function renderPruefgrundlagenTab() {
     tr.querySelector('[data-action="bearbeiten"]').addEventListener("click", () => pruefgrundlageBearbeiten(eintrag));
     tr.querySelector('[data-action="loeschen"]').addEventListener("click", () => {
       if (!confirm(`Prüfgrundlage "${eintrag.produkt || "(ohne Produktnamen)"}" wirklich löschen?`)) return;
+      merkeGeloescht("pruefgrundlagen", schluesselPruefgrundlage(eintrag));
       data.pruefgrundlagen = data.pruefgrundlagen.filter((e) => e.id !== eintrag.id);
       speichereInLocalStorage();
       renderPruefgrundlagenTab();
@@ -6734,6 +6739,7 @@ function oeffnePruefgrundlageModal(entwurf) {
   if (loeschenBtn) {
     loeschenBtn.addEventListener("click", () => {
       if (!confirm(`Prüfgrundlage "${entwurf.produkt || "(ohne Produktnamen)"}" wirklich löschen?`)) return;
+      merkeGeloescht("pruefgrundlagen", schluesselPruefgrundlage(entwurf));
       data.pruefgrundlagen = data.pruefgrundlagen.filter((e) => e.id !== entwurf.id);
       speichereInLocalStorage();
       schliesseOverlay();
@@ -6965,6 +6971,7 @@ function renderNormDetail() {
 
   document.getElementById("norm-loeschen").addEventListener("click", () => {
     if (!confirm(`Norm "${norm.bezeichnung}" wirklich löschen?`)) return;
+    merkeGeloescht("normen", schluesselNorm(norm));
     data.normen = data.normen.filter((n) => n.id !== norm.id);
     aktiveNormId = data.normen.length ? data.normen[0].id : null;
     speichereInLocalStorage();
@@ -7203,6 +7210,7 @@ function renderMakDetail() {
   });
   document.getElementById("mak-loeschen").addEventListener("click", () => {
     if (!confirm(`MAK-Eintrag "${eintrag.parameter || eintrag.id}" wirklich löschen?`)) return;
+    merkeGeloescht("mak", schluesselMak(eintrag));
     data.mak = data.mak.filter((m) => m.id !== eintrag.id);
     aktiveMakId = data.mak.length ? data.mak[0].id : null;
     speichereInLocalStorage();
@@ -7636,6 +7644,7 @@ function renderTrivialpreislisteVerwaltung() {
     });
     tr.querySelector('[data-action="trivialpreis-loeschen"]').addEventListener("click", () => {
       if (!confirm(`Eintrag „${alterCode}" wirklich löschen?`)) return;
+      merkeGeloescht("trivialPreisliste", schluesselTrivialpreisliste({ code: alterCode }));
       data.trivialPreisliste = data.trivialPreisliste.filter((e) => e.code !== alterCode);
       speichereInLocalStorage();
       renderVerwaltungTab();
@@ -7790,7 +7799,8 @@ document.getElementById("datei-laden-input").addEventListener("change", async (e
       pruefungsarten: (geparst.pruefungsarten && geparst.pruefungsarten.length) ? geparst.pruefungsarten : seedPruefungsarten(),
       fixPositionenAlsNormenMigriert: !!geparst.fixPositionenAlsNormenMigriert,
       kennzeichnungFixPositionenPruefungsartMigriert: !!geparst.kennzeichnungFixPositionenPruefungsartMigriert,
-      makVariantenMigriert: !!geparst.makVariantenMigriert
+      makVariantenMigriert: !!geparst.makVariantenMigriert,
+      geloeschteEintraege: Array.isArray(geparst.geloeschteEintraege) ? geparst.geloeschteEintraege : []
     };
     data.normen.forEach(migriereNorm);
     data.pruefgrundlagen.forEach(migrierePruefgrundlage);
@@ -7885,6 +7895,18 @@ document.getElementById("btn-csv").addEventListener("click", () => {
 
 /* ================= Zusammenführen (JSON, geräteübergreifend) ================= */
 
+/* Löschungen werden als "Tombstone" (typ + fachlicher Schlüssel + Zeitpunkt) in
+   data.geloeschteEintraege festgehalten, statt beim Löschen einfach spurlos aus dem Array zu
+   verschwinden. Ohne das würde ein auf Gerät A gelöschter Eintrag beim Zusammenführen mit einem
+   älteren Stand von Gerät B als "neu" wiederauftauchen (er ist dort ja weiterhin vorhanden) -
+   das war genau der gemeldete Fehler ("gelöschte Einträge werden auf einem anderen Gerät
+   weiterhin angezeigt"). Die Tombstones selbst werden beim Zusammenführen ebenfalls übernommen
+   (siehe wendeMergeAn), damit sich eine Löschung auch über mehrere Geräte hinweg durchsetzt. */
+function merkeGeloescht(typ, schluessel) {
+  data.geloeschteEintraege = data.geloeschteEintraege || [];
+  data.geloeschteEintraege.push({ typ, schluessel, zeitpunkt: new Date().toISOString() });
+}
+
 function schluesselArbeitsvorrat(r) { return normalisiere(r.ian); }
 function schluesselPa(p) { return normalisiere(p.ian); }
 function schluesselPruefgrundlage(e) { return normalisiereWarengruppe(e.warengruppeCode) + "|" + normalisiere(e.produkt); }
@@ -7910,14 +7932,29 @@ function feldweiseGleich(a, b, felder) { return felder.every((f) => JSON.stringi
    dort ist der Schlüssel code/neu, kein .id) "l.id === imp.id" für JEDES Element zu
    "undefined === undefined" (also true) auswerten - .find() bräche dann beim allerersten
    lokalen Eintrag ab, unabhängig vom tatsächlichen Schlüssel. */
-function planFlacheListe(lokal, importiert, schluesselFn, vergleichFelder) {
+function planFlacheListe(lokal, importiert, schluesselFn, vergleichFelder, lokalGeloeschtSchluessel) {
   const neue = [], konflikte = [];
+  const geloescht = lokalGeloeschtSchluessel || new Set();
   importiert.forEach((imp) => {
     const treffer = lokal.find((l) => (imp.id && l.id === imp.id) || schluesselFn(l) === schluesselFn(imp));
-    if (!treffer) { neue.push(imp); return; }
+    if (!treffer) {
+      /* hier lokal bereits bewusst gelöscht - nicht als "neu" wieder aufleben lassen */
+      if (geloescht.has(schluesselFn(imp))) return;
+      neue.push(imp);
+      return;
+    }
     if (!feldweiseGleich(treffer, imp, vergleichFelder)) konflikte.push({ lokal: treffer, importiert: imp });
   });
   return { neue, konflikte };
+}
+
+/* Einträge, die HIER lokal noch vorhanden sind, laut Import-Datei aber auf einem anderen Gerät
+   bereits gelöscht wurden - werden im Merge-Overlay als Löschvorschlag (mit Checkbox, per
+   Default angehakt) angezeigt, damit der Nutzer die Löschung bestätigen oder bei Bedarf
+   ablehnen kann (z. B. wenn hier zwischenzeitlich doch noch etwas Wichtiges ergänzt wurde). */
+function planGeloeschteAusImport(lokal, importGeloescht, typ, schluesselFn) {
+  const schluessel = new Set((importGeloescht || []).filter((g) => g.typ === typ).map((g) => g.schluessel));
+  return lokal.filter((l) => schluessel.has(schluesselFn(l)));
 }
 
 /* Merge-Variante für reine String-Listen (Bereiche, Prüfungsarten) - hier gibt es keine
@@ -7938,17 +7975,31 @@ function berechneMergePlan(importData) {
     if (!Array.isArray(m.schlagworte)) m.schlagworte = [];
     if (!Array.isArray(m.varianten)) m.varianten = [];
   });
-  const avPlan = planFlacheListe(data.arbeitsvorrat, importData.arbeitsvorrat || [], schluesselArbeitsvorrat, ARBEITSVORRAT_FELDER);
-  const paPlan = planFlacheListe(data.pruefauftraege, importData.pruefauftraege || [], schluesselPa, ["artikelbezeichnung", "warengruppe"]);
-  const kvPlan = planFlacheListe(data.kvs, importData.kvs || [], (k) => k.id, ["ian", "artikel", "lieferant", "sapNummer", "warengruppeNeu", "warengruppeAlt", "notiz"]);
-  const pruefgrundlagenPlan = planFlacheListe(data.pruefgrundlagen, importData.pruefgrundlagen || [], schluesselPruefgrundlage, PRUEFGRUNDLAGE_FELDER);
-  const normenPlan = planFlacheListe(data.normen, importData.normen || [], schluesselNorm, NORM_FELDER);
-  const makPlan = planFlacheListe(data.mak, importData.mak || [], schluesselMak, MAK_FELDER);
+  const lokalGeloescht = (typ) => new Set((data.geloeschteEintraege || []).filter((g) => g.typ === typ).map((g) => g.schluessel));
+  const importGeloescht = importData.geloeschteEintraege || [];
+
+  const avPlan = planFlacheListe(data.arbeitsvorrat, importData.arbeitsvorrat || [], schluesselArbeitsvorrat, ARBEITSVORRAT_FELDER, lokalGeloescht("arbeitsvorrat"));
+  const paPlan = planFlacheListe(data.pruefauftraege, importData.pruefauftraege || [], schluesselPa, ["artikelbezeichnung", "warengruppe"], lokalGeloescht("pruefauftraege"));
+  const kvPlan = planFlacheListe(data.kvs, importData.kvs || [], (k) => k.id, ["ian", "artikel", "lieferant", "sapNummer", "warengruppeNeu", "warengruppeAlt", "notiz"], lokalGeloescht("kvs"));
+  const pruefgrundlagenPlan = planFlacheListe(data.pruefgrundlagen, importData.pruefgrundlagen || [], schluesselPruefgrundlage, PRUEFGRUNDLAGE_FELDER, lokalGeloescht("pruefgrundlagen"));
+  const normenPlan = planFlacheListe(data.normen, importData.normen || [], schluesselNorm, NORM_FELDER, lokalGeloescht("normen"));
+  const makPlan = planFlacheListe(data.mak, importData.mak || [], schluesselMak, MAK_FELDER, lokalGeloescht("mak"));
   const warengruppenPlan = planFlacheListe(data.warengruppen, importData.warengruppen || [], schluesselWarengruppe, WARENGRUPPE_FELDER);
   const warengruppenZuordnungPlan = planFlacheListe(data.warengruppenZuordnung, importData.warengruppenZuordnung || [], schluesselWarengruppenZuordnung, WARENGRUPPENZUORDNUNG_FELDER);
-  const trivialpreislistePlan = planFlacheListe(data.trivialPreisliste, importData.trivialPreisliste || [], schluesselTrivialpreisliste, TRIVIALPREISLISTE_FELDER);
+  const trivialpreislistePlan = planFlacheListe(data.trivialPreisliste, importData.trivialPreisliste || [], schluesselTrivialpreisliste, TRIVIALPREISLISTE_FELDER, lokalGeloescht("trivialPreisliste"));
   const neueBereiche = planFlacheStringListe(data.bereiche, importData.bereiche || []);
   const neuePruefungsarten = planFlacheStringListe(data.pruefungsarten, importData.pruefungsarten || []);
+
+  const geloeschtVorschlaege = {
+    arbeitsvorrat: planGeloeschteAusImport(data.arbeitsvorrat, importGeloescht, "arbeitsvorrat", schluesselArbeitsvorrat),
+    pruefauftraege: planGeloeschteAusImport(data.pruefauftraege, importGeloescht, "pruefauftraege", schluesselPa),
+    kvs: planGeloeschteAusImport(data.kvs, importGeloescht, "kvs", (k) => k.id),
+    pruefgrundlagen: planGeloeschteAusImport(data.pruefgrundlagen, importGeloescht, "pruefgrundlagen", schluesselPruefgrundlage),
+    normen: planGeloeschteAusImport(data.normen, importGeloescht, "normen", schluesselNorm),
+    mak: planGeloeschteAusImport(data.mak, importGeloescht, "mak", schluesselMak),
+    trivialPreisliste: planGeloeschteAusImport(data.trivialPreisliste, importGeloescht, "trivialPreisliste", schluesselTrivialpreisliste)
+  };
+
   return {
     neueAv: avPlan.neue, avKonflikte: avPlan.konflikte,
     neuePa: paPlan.neue, paKonflikte: paPlan.konflikte,
@@ -7959,7 +8010,8 @@ function berechneMergePlan(importData) {
     neueWarengruppen: warengruppenPlan.neue, warengruppenKonflikte: warengruppenPlan.konflikte,
     neueWarengruppenZuordnung: warengruppenZuordnungPlan.neue, warengruppenZuordnungKonflikte: warengruppenZuordnungPlan.konflikte,
     neueTrivialpreisliste: trivialpreislistePlan.neue, trivialpreislisteKonflikte: trivialpreislistePlan.konflikte,
-    neueBereiche, neuePruefungsarten
+    neueBereiche, neuePruefungsarten,
+    geloeschtVorschlaege, importGeloescht
   };
 }
 
@@ -7981,8 +8033,10 @@ function konfliktListeHtml(typ, liste, titelFn, textFn) {
 function renderMergeUebersicht() {
   const box = document.getElementById("overlay-box");
   const p = mergePlan;
+  const g = p.geloeschtVorschlaege;
   const anzahl = p.neueAv.length + p.avKonflikte.length + p.neuePa.length + p.paKonflikte.length + p.neueKv.length + p.kvKonflikte.length + p.neuePruefgrundlagen.length + p.pruefgrundlagenKonflikte.length + p.neueNormen.length + p.normenKonflikte.length
-    + p.neueMak.length + p.makKonflikte.length + p.neueWarengruppen.length + p.warengruppenKonflikte.length + p.neueWarengruppenZuordnung.length + p.warengruppenZuordnungKonflikte.length + p.neueTrivialpreisliste.length + p.trivialpreislisteKonflikte.length + p.neueBereiche.length + p.neuePruefungsarten.length;
+    + p.neueMak.length + p.makKonflikte.length + p.neueWarengruppen.length + p.warengruppenKonflikte.length + p.neueWarengruppenZuordnung.length + p.warengruppenZuordnungKonflikte.length + p.neueTrivialpreisliste.length + p.trivialpreislisteKonflikte.length + p.neueBereiche.length + p.neuePruefungsarten.length
+    + g.arbeitsvorrat.length + g.pruefauftraege.length + g.kvs.length + g.pruefgrundlagen.length + g.normen.length + g.mak.length + g.trivialPreisliste.length;
 
   let html = `<h2>Zusammenführen: Änderungen prüfen</h2>`;
   if (anzahl === 0) {
@@ -8012,6 +8066,14 @@ function renderMergeUebersicht() {
   if (p.trivialpreislisteKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Trivialpreisliste-Einträge (${p.trivialpreislisteKonflikte.length})</h3>` + konfliktListeHtml("trivialpreislisteKonflikt", p.trivialpreislisteKonflikte, (k) => escapeHtml(k.lokal.code), (t) => TRIVIALPREISLISTE_FELDER.map((f) => f + ": " + (t[f] ?? "")).join("\n")) + `</div>`;
   if (p.neueBereiche.length) html += `<div class="merge-section"><h3>Neue Bereiche (${p.neueBereiche.length})</h3>` + checkboxListeHtml("neueBereiche", p.neueBereiche, (b) => escapeHtml(b)) + `</div>`;
   if (p.neuePruefungsarten.length) html += `<div class="merge-section"><h3>Neue Prüfungsarten (${p.neuePruefungsarten.length})</h3>` + checkboxListeHtml("neuePruefungsarten", p.neuePruefungsarten, (a) => escapeHtml(a)) + `</div>`;
+
+  if (g.arbeitsvorrat.length) html += `<div class="merge-section"><h3>🗑 Auf einem anderen Gerät gelöscht — Arbeitsvorrat (${g.arbeitsvorrat.length})</h3><p>Hier lokal noch vorhanden. Angehakte Einträge werden beim Übernehmen ebenfalls gelöscht.</p>` + checkboxListeHtml("geloeschtAv", g.arbeitsvorrat, (r) => `<strong>${escapeHtml(r.ian)}</strong> — ${escapeHtml(r.bezeichnung)}`) + `</div>`;
+  if (g.pruefauftraege.length) html += `<div class="merge-section"><h3>🗑 Auf einem anderen Gerät gelöscht — Prüfaufträge (${g.pruefauftraege.length})</h3><p>Hier lokal noch vorhanden. Angehakte Einträge werden beim Übernehmen ebenfalls gelöscht.</p>` + checkboxListeHtml("geloeschtPa", g.pruefauftraege, (pa) => `<strong>${escapeHtml(pa.ian)}</strong> — ${escapeHtml(pa.artikelbezeichnung)}`) + `</div>`;
+  if (g.kvs.length) html += `<div class="merge-section"><h3>🗑 Auf einem anderen Gerät gelöscht — Kostenvoranschläge (${g.kvs.length})</h3><p>Hier lokal noch vorhanden. Angehakte Einträge werden beim Übernehmen ebenfalls gelöscht.</p>` + checkboxListeHtml("geloeschtKv", g.kvs, (k) => `<strong>${escapeHtml(k.ian)}</strong> — ${escapeHtml(k.artikel)}`) + `</div>`;
+  if (g.pruefgrundlagen.length) html += `<div class="merge-section"><h3>🗑 Auf einem anderen Gerät gelöscht — Prüfgrundlagen (${g.pruefgrundlagen.length})</h3><p>Hier lokal noch vorhanden. Angehakte Einträge werden beim Übernehmen ebenfalls gelöscht.</p>` + checkboxListeHtml("geloeschtPruefgrundlagen", g.pruefgrundlagen, (e) => `<strong>${escapeHtml(e.warengruppeCode)} ${escapeHtml(e.produkt)}</strong>`) + `</div>`;
+  if (g.normen.length) html += `<div class="merge-section"><h3>🗑 Auf einem anderen Gerät gelöscht — Normen (${g.normen.length})</h3><p>Hier lokal noch vorhanden. Angehakte Einträge werden beim Übernehmen ebenfalls gelöscht.</p>` + checkboxListeHtml("geloeschtNormen", g.normen, (n) => `<strong>${escapeHtml(n.bezeichnung)}</strong>`) + `</div>`;
+  if (g.mak.length) html += `<div class="merge-section"><h3>🗑 Auf einem anderen Gerät gelöscht — MAK-Einträge (${g.mak.length})</h3><p>Hier lokal noch vorhanden. Angehakte Einträge werden beim Übernehmen ebenfalls gelöscht.</p>` + checkboxListeHtml("geloeschtMak", g.mak, (m) => `<strong>${escapeHtml(m.parameter || m.id)}</strong>`) + `</div>`;
+  if (g.trivialPreisliste.length) html += `<div class="merge-section"><h3>🗑 Auf einem anderen Gerät gelöscht — Trivialpreisliste (${g.trivialPreisliste.length})</h3><p>Hier lokal noch vorhanden. Angehakte Einträge werden beim Übernehmen ebenfalls gelöscht.</p>` + checkboxListeHtml("geloeschtTrivialpreisliste", g.trivialPreisliste, (t) => `<strong>${escapeHtml(t.code)}</strong> — ${escapeHtml(t.bezeichnungDe || "")}`) + `</div>`;
 
   html += `<div class="overlay-actions"><button id="merge-anwenden">Zusammenführung übernehmen</button><button class="ghost" id="merge-abbrechen">Abbrechen</button></div>`;
   box.innerHTML = html;
@@ -8059,6 +8121,58 @@ function wendeMergeAn() {
   if (bereicheGeaendert) data.bereiche.sort((a, b) => a.localeCompare(b, "de"));
 
   p.neuePruefungsarten.forEach((a, i) => { const cb = box.querySelector(`[data-typ="neuePruefungsarten"][data-idx="${i}"]`); if (cb && cb.checked) data.pruefungsarten.push(a); });
+
+  /* Auf einem anderen Gerät gelöschte, hier lokal aber noch vorhandene Einträge - werden nur
+     gelöscht, wenn im Overlay angehakt (Default: angehakt). */
+  const geloeschtAvIds = new Set();
+  p.geloeschtVorschlaege.arbeitsvorrat.forEach((r, i) => { const cb = box.querySelector(`[data-typ="geloeschtAv"][data-idx="${i}"]`); if (cb && cb.checked) geloeschtAvIds.add(r.id); });
+  if (geloeschtAvIds.size) data.arbeitsvorrat = data.arbeitsvorrat.filter((r) => !geloeschtAvIds.has(r.id));
+
+  const geloeschtPaIds = new Set();
+  p.geloeschtVorschlaege.pruefauftraege.forEach((pa, i) => { const cb = box.querySelector(`[data-typ="geloeschtPa"][data-idx="${i}"]`); if (cb && cb.checked) geloeschtPaIds.add(pa.id); });
+  if (geloeschtPaIds.size) {
+    data.pruefauftraege = data.pruefauftraege.filter((pa) => !geloeschtPaIds.has(pa.id));
+    if (aktivePaId && geloeschtPaIds.has(aktivePaId)) aktivePaId = data.pruefauftraege.length ? data.pruefauftraege[0].id : null;
+  }
+
+  const geloeschtKvIds = new Set();
+  p.geloeschtVorschlaege.kvs.forEach((kv, i) => { const cb = box.querySelector(`[data-typ="geloeschtKv"][data-idx="${i}"]`); if (cb && cb.checked) geloeschtKvIds.add(kv.id); });
+  if (geloeschtKvIds.size) {
+    data.kvs = data.kvs.filter((kv) => !geloeschtKvIds.has(kv.id));
+    if (aktiveKvId && geloeschtKvIds.has(aktiveKvId)) aktiveKvId = data.kvs.length ? data.kvs[0].id : null;
+  }
+
+  const geloeschtPgIds = new Set();
+  p.geloeschtVorschlaege.pruefgrundlagen.forEach((e, i) => { const cb = box.querySelector(`[data-typ="geloeschtPruefgrundlagen"][data-idx="${i}"]`); if (cb && cb.checked) geloeschtPgIds.add(e.id); });
+  if (geloeschtPgIds.size) data.pruefgrundlagen = data.pruefgrundlagen.filter((e) => !geloeschtPgIds.has(e.id));
+
+  const geloeschtNormenIds = new Set();
+  p.geloeschtVorschlaege.normen.forEach((n, i) => { const cb = box.querySelector(`[data-typ="geloeschtNormen"][data-idx="${i}"]`); if (cb && cb.checked) geloeschtNormenIds.add(n.id); });
+  if (geloeschtNormenIds.size) {
+    data.normen = data.normen.filter((n) => !geloeschtNormenIds.has(n.id));
+    if (aktiveNormId && geloeschtNormenIds.has(aktiveNormId)) aktiveNormId = data.normen.length ? data.normen[0].id : null;
+  }
+
+  const geloeschtMakIds = new Set();
+  p.geloeschtVorschlaege.mak.forEach((m, i) => { const cb = box.querySelector(`[data-typ="geloeschtMak"][data-idx="${i}"]`); if (cb && cb.checked) geloeschtMakIds.add(m.id); });
+  if (geloeschtMakIds.size) {
+    data.mak = data.mak.filter((m) => !geloeschtMakIds.has(m.id));
+    if (aktiveMakId && geloeschtMakIds.has(aktiveMakId)) aktiveMakId = data.mak.length ? data.mak[0].id : null;
+  }
+
+  const geloeschtTrivialCodes = new Set();
+  p.geloeschtVorschlaege.trivialPreisliste.forEach((t, i) => { const cb = box.querySelector(`[data-typ="geloeschtTrivialpreisliste"][data-idx="${i}"]`); if (cb && cb.checked) geloeschtTrivialCodes.add(t.code); });
+  if (geloeschtTrivialCodes.size) data.trivialPreisliste = data.trivialPreisliste.filter((t) => !geloeschtTrivialCodes.has(t.code));
+
+  /* Tombstones aus der Import-Datei übernehmen (nicht nur die hier tatsächlich ausgeführten
+     Löschungen) - so setzt sich eine Löschung auch über mehr als zwei Geräte hinweg durch, wenn
+     dieser Stand später an ein drittes Gerät weitergegeben wird, das die Löschung noch nicht kennt. */
+  data.geloeschteEintraege = data.geloeschteEintraege || [];
+  p.importGeloescht.forEach((eintrag) => {
+    if (!data.geloeschteEintraege.some((x) => x.typ === eintrag.typ && x.schluessel === eintrag.schluessel)) {
+      data.geloeschteEintraege.push(eintrag);
+    }
+  });
 
   speichereInLocalStorage();
   schliesseOverlay();

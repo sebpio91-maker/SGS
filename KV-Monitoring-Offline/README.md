@@ -1279,6 +1279,19 @@ Unterlagen zu dieser IAN zu finden. Ohne IAN erscheint kein Symbol.
   statt über interne, pro Rechner zufällig vergebene IDs — zwei unabhängig
   voneinander angelegte, aber inhaltlich gleiche Einträge werden so trotzdem
   korrekt als derselbe erkannt.
+
+  **Löschungen werden beim Zusammenführen mitgenommen:** wird ein Eintrag
+  (Arbeitsvorrat, Prüfauftrag, KV, Prüfgrundlage, Norm, MAK oder
+  Trivialpreisliste-Eintrag) gelöscht, merkt sich das Tool das im Hintergrund
+  ("Tombstone"). Beim Zusammenführen zweier Arbeitsstände gilt dadurch: ein
+  hier bereits gelöschter Eintrag taucht nicht wieder als "neu" auf, nur weil
+  die eingespielte Datei ihn noch enthält. Umgekehrt zeigt das Tool, wenn ein
+  Eintrag auf dem *anderen* Gerät gelöscht wurde, hier lokal aber noch
+  vorhanden ist, einen eigenen Abschnitt „🗑 Auf einem anderen Gerät gelöscht"
+  mit Checkbox (per Default angehakt) — erst nach „Zusammenführung
+  übernehmen" wird er auch hier tatsächlich entfernt, sodass sich Löschungen
+  zuverlässig über mehrere Geräte durchsetzen, auch wenn mehr als zwei Geräte
+  im Umlauf sind.
 - **📄 CSV-Export** – exportiert die Tabelle des gerade offenen Reiters als
   `.csv`, direkt in Excel öffenbar.
 
