@@ -1292,6 +1292,21 @@ automatisch. Vor dem Wechsel auf eine neue Version deshalb erst **⬇ Sichern
 (JSON)** (ersetzt den kompletten Stand). Für Backup/Weitergabe/Zusammenführen
 über mehrere Rechner ebenfalls die JSON-Funktionen benutzen.
 
+**Warnung bei vollem Browser-Speicher:** der Local Storage jeder Datei hat ein
+festes Größenlimit (browserabhängig, i. d. R. wenige MB). Wird dieses Limit
+erreicht, kann nicht mehr automatisch gespeichert werden — früher blieb das
+fast unbemerkt (nur eine unauffällige Statuszeile), sodass der zuletzt
+eingegebene Stand zwar noch auf dem Bildschirm sichtbar war, beim Schließen
+oder Neuladen der Datei aber verloren ging. Jetzt wird ein solcher Fehler
+laut gemeldet: die Statuszeile zeigt „⚠ NICHT gespeichert - Speicher voll!",
+zusätzlich erscheint ein Hinweisfenster und es wird automatisch eine
+Notsicherungs-Datei heruntergeladen (`kv-monitoring_NOTSICHERUNG_…json`, im
+selben Format wie „⬇ Sichern (JSON)"). Diese Datei aufbewahren und in einer
+neuen/leeren Version dieses Tools über **🔀 Zusammenführen (JSON)** wieder
+einspielen. Das Hinweisfenster erscheint nur einmal pro Fehler-Serie (kein
+Alert bei jedem Tastendruck), sobald wieder erfolgreich gespeichert werden
+konnte, wird bei einem erneuten Fehler wieder gewarnt.
+
 **Reiter „Normen" startet nicht mehr leer:** anders als früher enthält eine
 frische Datei jetzt einen mitgelieferten **Startbestand** an Normen (Stand
 eines Datenexports), genau wie die übrigen Stammdaten (Prüfgrundlagen, MAK,

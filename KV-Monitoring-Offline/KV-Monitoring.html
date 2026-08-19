@@ -2360,12 +2360,37 @@ function ladeAusLocalStorage() {
   } catch (e) { /* ignorieren, dann Startdaten verwenden */ }
   return null;
 }
+/* true, solange der Nutzer über den AKTUELLEN Speicherfehler noch nicht per Alert informiert wurde -
+   verhindert, dass bei jedem einzelnen Tastendruck erneut ein blockierender Alert erscheint,
+   solange der Speicher voll bleibt. Wird bei jedem erfolgreichen Speichern zurückgesetzt, damit ein
+   künftiger (neuer) Fehler wieder gemeldet wird. */
+let localStorageFehlerGemeldet = false;
 function speichereInLocalStorage() {
   try {
     localStorage.setItem(SPEICHER_SCHLUESSEL, JSON.stringify(data));
     zeigeStatus("Automatisch gespeichert · " + jetzt(), "ok");
+    localStorageFehlerGemeldet = false;
   } catch (e) {
-    zeigeStatus("Konnte nicht automatisch speichern (Speicher voll?)", "");
+    /* Kritischer Fall: der Browser-Speicher dieser Datei ist voll (QuotaExceededError) - alle
+       Änderungen seit dem letzten ERFOLGREICHEN Speichern gehen beim Schließen/Neuladen der Datei
+       verloren, OHNE dass die Bedienoberfläche das erkennen lässt (der zuletzt eingegebene Stand
+       bleibt sichtbar, wirkt also fälschlich "gespeichert"). Deshalb hier statt nur der unauffälligen
+       Statuszeile: einmalig ein automatischer JSON-Notsicherungs-Download UND ein blockierender
+       Alert, der unmissverständlich zum sofortigen Handeln auffordert. */
+    zeigeStatus("⚠ NICHT gespeichert - Speicher voll! Siehe Hinweis.", "");
+    if (!localStorageFehlerGemeldet) {
+      localStorageFehlerGemeldet = true;
+      let notsicherungText = "";
+      try {
+        const payload = { version: 2, exportiertAm: new Date().toISOString(), ...data };
+        const zeitstempel = new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
+        herunterladen(JSON.stringify(payload, null, 2), `kv-monitoring_NOTSICHERUNG_${zeitstempel}.json`, "application/json");
+        notsicherungText = "Als Notsicherung wurde soeben automatisch eine JSON-Datei heruntergeladen (\"kv-monitoring_NOTSICHERUNG_…json\", aktueller Stand). Diese Datei aufbewahren und in einer neuen/leeren Version dieses Tools über „🔀 Zusammenführen (JSON)“ wieder einspielen.";
+      } catch (e2) {
+        notsicherungText = "Die automatische Notsicherung ist ebenfalls fehlgeschlagen - bitte den aktuellen Bildschirminhalt manuell sichern (z. B. Screenshot/Abschreiben), bevor diese Datei geschlossen wird.";
+      }
+      alert("⚠ Speicher voll - Änderungen werden NICHT mehr automatisch gespeichert!\n\nDer Browser-Speicher dieser Datei ist an seine Grenze gekommen. Der aktuell angezeigte Stand ist NICHT gesichert und geht beim Schließen oder Neuladen dieser Datei verloren.\n\n" + notsicherungText);
+    }
   }
 }
 function zeigeStatus(text, klasse) {
