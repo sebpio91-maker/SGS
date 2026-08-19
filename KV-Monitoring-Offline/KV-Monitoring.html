@@ -272,12 +272,12 @@ input[type=file] { display:none; }
       <button type="button" data-ansicht="nein">Arbeitsvorrat (offene Mechanik)</button>
       <button type="button" data-ansicht="">Gesamtliste (alle jemals hochgeladenen)</button>
     </div>
-    <p class="hinweis"><strong>Arbeitsvorrat</strong> zeigt nur Einträge, bei denen die Mechanik noch offen ist (Standardansicht); <strong>Gesamtliste</strong> zeigt alle jemals hochgeladenen Aufträge unabhängig vom Mech.-Status — oben umschaltbar. Auftrag (Vertriebsbeleg), Bezeichnung, Lieferant, Angelegt am und Sachbearbeiter kommen aus dem SAP-Export. Warengruppe, Styles, LFGB? und Trivial? werden — wenn möglich — aus dem verknüpften Prüfauftrag übernommen (siehe Reiter „Prüfaufträge"). „Mech. erledigt" ist nur ein Haken, ob der KV von mechanischer Seite fertig ist; anklicken zum Umschalten. Die Spalte „PA" zeigt, sobald zu einer IAN ein Prüfauftrag vorliegt, dessen Stand (Datum der PDF) als klickbares Feld — Klick öffnet direkt den Prüfauftrag. Unter der Kopfzeile lässt sich die Tabelle filtern: IAN und Auftrag als Freitext; VK Büro, Lieferant und Warengruppe als durchsuchbare Mehrfachauswahl (anklicken, tippen zum Suchen, mehrere Häkchen setzen); Sachbearbeiter, LFGB?, Trivial? und Mech. erledigt als einfaches Dropdown. VK Büro wird unabhängig von führenden Nullen zusammengefasst (070 = 70), Warengruppe immer als ###.### angezeigt. „Filter zurücksetzen" setzt alle Filter außer der Arbeitsvorrat/Gesamtliste-Ansicht zurück.</p>
+    <p class="hinweis"><strong>Arbeitsvorrat</strong> zeigt nur Einträge, bei denen die Mechanik noch offen ist (Standardansicht); <strong>Gesamtliste</strong> zeigt alle jemals hochgeladenen Aufträge unabhängig vom Mech.-Status — oben umschaltbar. Auftrag (Vertriebsbeleg), Bezeichnung, Lieferant, Angelegt am und Sachbearbeiter kommen aus dem SAP-Export. Die <strong>Charge</strong> wird aus der SAP-Export-Spalte „Bestellnummer" abgeleitet (der Teil hinter dem „_", z. B. aus „538616_2604" wird Charge „2604") — fehlt sie dort, wird ersatzweise die Charge aus dem verknüpften Prüfauftrag angezeigt (Feld „Initiale Charge" bzw. „IAN / Charge" der PDF). Warengruppe, Styles, LFGB? und Trivial? werden — wenn möglich — aus dem verknüpften Prüfauftrag übernommen (siehe Reiter „Prüfaufträge"). „Mech. erledigt" ist nur ein Haken, ob der KV von mechanischer Seite fertig ist; anklicken zum Umschalten. Die Spalte „PA" zeigt, sobald zu einer IAN ein Prüfauftrag vorliegt, dessen Stand (Datum der PDF) als klickbares Feld — Klick öffnet direkt den Prüfauftrag. Unter der Kopfzeile lässt sich die Tabelle filtern: IAN, Charge und Auftrag als Freitext; VK Büro, Lieferant und Warengruppe als durchsuchbare Mehrfachauswahl (anklicken, tippen zum Suchen, mehrere Häkchen setzen); Sachbearbeiter, LFGB?, Trivial? und Mech. erledigt als einfaches Dropdown. VK Büro wird unabhängig von führenden Nullen zusammengefasst (070 = 70), Warengruppe immer als ###.### angezeigt. „Filter zurücksetzen" setzt alle Filter außer der Arbeitsvorrat/Gesamtliste-Ansicht zurück.</p>
     <div class="tabellen-wrapper">
       <table class="tabelle readonly" id="arbeitsvorrat-tabelle">
         <thead>
           <tr>
-            <th>IAN</th><th>Auftrag</th><th>VK Büro</th><th>Bezeichnung</th><th>Lieferant</th><th>Angelegt am</th><th>Sachbearbeiter</th>
+            <th>IAN</th><th>Charge</th><th>Auftrag</th><th>VK Büro</th><th>Bezeichnung</th><th>Lieferant</th><th>Angelegt am</th><th>Sachbearbeiter</th>
             <th>Warengruppe</th><th>Styles</th><th>LFGB?</th><th>Trivial?</th><th>Mech. erledigt</th><th>PA</th><th>KV</th>
             <th>Bemerkung</th><th>Aktion</th>
           </tr>
@@ -601,7 +601,7 @@ function zahlOderLeer(v) { return (v === null || v === undefined || v === "") ? 
 })();
 
 /* ---------- Startdaten: Arbeitsvorrat (aus HL_KV_Monitoring_PA_ab_SeptMAK.xlsx, Blatt "Tabelle1") ---------- */
-const ARBEITSVORRAT_FELDER = ["ian","auftrag","vkBuero","bestellnummer","bezeichnung","lieferant","angelegtAm","sachbearbeiter","link","warengruppe","anzahlStyles","lfgb","trivial","mechErledigt","alteWarengruppe","bemerkung","versand","uvUndKlimawechsel"];
+const ARBEITSVORRAT_FELDER = ["ian","charge","auftrag","vkBuero","bestellnummer","bezeichnung","lieferant","angelegtAm","sachbearbeiter","link","warengruppe","anzahlStyles","lfgb","trivial","mechErledigt","alteWarengruppe","bemerkung","versand","uvUndKlimawechsel"];
 /* Diese 4 Felder kommen bewusst NICHT aus dem SAP-Export, sondern (wenn möglich) aus dem verknüpften Prüfauftrag. */
 const ARBEITSVORRAT_PA_FELDER = ["warengruppe", "anzahlStyles", "lfgb", "trivial"];
 /* Felder, die beim SAP-Excel-Upload abgeglichen/übernommen werden (alles außer den PA-Feldern). */
@@ -2066,6 +2066,20 @@ function fuelleKvAusPa(kv, pa, ueberschreiben) {
   return geaendert;
 }
 
+/* Übernimmt Auftrag (Vertriebsbeleg, landet im KV-Feld "sapNummer") und Charge aus dem
+   verknüpften Arbeitsvorrat-Eintrag in den KV - analog zu fuelleKvAusPa, nur mit dem
+   Arbeitsvorrat statt dem Prüfauftrag als Quelle. Überschreibt nie einen bereits vorhandenen
+   Wert, außer ueberschreiben ist gesetzt. */
+function fuelleKvAusArbeitsvorrat(kv, eintrag, ueberschreiben) {
+  if (!eintrag) return false;
+  let geaendert = false;
+  if (eintrag.auftrag && (ueberschreiben || !kv.sapNummer)) { kv.sapNummer = eintrag.auftrag; geaendert = true; }
+  const charge = arbeitsvorratAnzeigewert(eintrag, "charge");
+  if (charge && (ueberschreiben || !kv.charge)) { kv.charge = charge; geaendert = true; }
+  if (geaendert) speichereInLocalStorage();
+  return geaendert;
+}
+
 /* ---------- Norm-Typ: externe Norm vs. interne Prüfprogramme (PPM/PPM_FFU/StiWa) ----------
    Die Normendatenbank (data.normen) sammelt sowohl echte externe Normen (DIN/EN/ISO) als auch
    interne Prüfprogramm-Kürzel (z. B. "102_PPM", "163_PPM_FFU", "StiWa 06/2014") - beide kamen in
@@ -2753,6 +2767,11 @@ function arbeitsvorratAnzeigewert(r, feld) {
     const kv = data.kvs.find((k) => normalisiere(k.ian) === normalisiere(r.ian));
     return kv ? kv[feld] : "";
   }
+  if (feld === "charge") {
+    if (r.charge) return r.charge;
+    const pa = data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(r.ian));
+    return pa ? pa.charge : "";
+  }
   return r[feld];
 }
 
@@ -2764,7 +2783,7 @@ const ARBEITSVORRAT_SELECT_FELDER = ["sachbearbeiter", "lfgb", "trivial", "mechE
 /* mechErledigt startet auf "nein" (= Ansicht "Arbeitsvorrat"), da das der tägliche Arbeitsmodus
    ist - alles, wo die Mechanik noch offen ist. "Gesamtliste" (alle jemals hochgeladenen Aufträge,
    unabhängig vom Mech.-Status) ist über den Ansicht-Umschalter erreichbar. */
-let arbeitsvorratFilter = { ian: "", auftrag: "", bezeichnung: "", vkBuero: [], lieferant: [], warengruppe: [], sachbearbeiter: "", lfgb: "", trivial: "", mechErledigt: "nein" };
+let arbeitsvorratFilter = { ian: "", charge: "", auftrag: "", bezeichnung: "", vkBuero: [], lieferant: [], warengruppe: [], sachbearbeiter: "", lfgb: "", trivial: "", mechErledigt: "nein" };
 
 /* Synchronisiert den Arbeitsvorrat/Gesamtliste-Umschalter (aktive Schaltfläche + Kartentitel)
    mit dem aktuellen mechErledigt-Filter - unabhängig davon, ob der über den Umschalter selbst
@@ -2793,6 +2812,8 @@ function gefiltertArbeitsvorrat() {
   });
   const ianFilter = normalisiere(arbeitsvorratFilter.ian);
   if (ianFilter) liste = liste.filter((r) => normalisiere(r.ian).includes(ianFilter));
+  const chargeFilter = normalisiere(arbeitsvorratFilter.charge);
+  if (chargeFilter) liste = liste.filter((r) => normalisiere(arbeitsvorratAnzeigewert(r, "charge")).includes(chargeFilter));
   const auftragFilter = normalisiere(arbeitsvorratFilter.auftrag);
   if (auftragFilter) liste = liste.filter((r) => normalisiere(r.auftrag).includes(auftragFilter));
   const bezeichnungFilter = normalisiere(arbeitsvorratFilter.bezeichnung);
@@ -2913,7 +2934,7 @@ function initialisiereMehrfachauswahl(feld) {
 
 function renderArbeitsvorratFilterZeile() {
   const tr = document.getElementById("arbeitsvorrat-filter-zeile");
-  const spaltenReihenfolge = ["ian:text", "auftrag:text", "vkBuero:multi", "bezeichnung:text", "lieferant:multi", "", "sachbearbeiter:select", "warengruppe:multi", "", "lfgb:select", "trivial:select", "mechErledigt:select", "", "", "", ""];
+  const spaltenReihenfolge = ["ian:text", "charge:text", "auftrag:text", "vkBuero:multi", "bezeichnung:text", "lieferant:multi", "", "sachbearbeiter:select", "warengruppe:multi", "", "lfgb:select", "trivial:select", "mechErledigt:select", "", "", "", ""];
   tr.innerHTML = spaltenReihenfolge.map((eintragTyp) => {
     if (!eintragTyp) return "<th></th>";
     const [feld, typ] = eintragTyp.split(":");
@@ -2960,6 +2981,7 @@ document.getElementById("btn-arbeitsvorrat-filter-zuruecksetzen").addEventListen
      "normaler" Filter, und soll beim Zurücksetzen der übrigen Filter erhalten bleiben. */
   ARBEITSVORRAT_SELECT_FELDER.forEach((f) => { if (f !== "mechErledigt") arbeitsvorratFilter[f] = ""; });
   arbeitsvorratFilter.ian = "";
+  arbeitsvorratFilter.charge = "";
   arbeitsvorratFilter.auftrag = "";
   arbeitsvorratFilter.bezeichnung = "";
   suchbegriffe.arbeitsvorrat = "";
@@ -2987,7 +3009,7 @@ function renderArbeitsvorratKoerper() {
   document.getElementById("arbeitsvorrat-zaehler").textContent = `${liste.length} von ${data.arbeitsvorrat.length} Einträgen`;
 
   if (!liste.length) {
-    tbody.innerHTML = '<tr><td colspan="16" class="leerzustand">Keine Einträge gefunden.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="17" class="leerzustand">Keine Einträge gefunden.</td></tr>';
     return;
   }
 
@@ -3002,6 +3024,7 @@ function renderArbeitsvorratKoerper() {
     return `
     <tr data-id="${r.id}">
       <td><strong>${escapeHtml(r.ian)}</strong>${sharepointSucheLink(r.ian)}</td>
+      <td>${escapeHtml(arbeitsvorratAnzeigewert(r, "charge"))}</td>
       <td>${escapeHtml(r.auftrag)}</td>
       <td>${escapeHtml(normalisiereVkBuero(r.vkBuero))}</td>
       <td title="${escapeHtml(r.bezeichnung)}">${escapeHtml(r.bezeichnung)}</td>
@@ -3052,7 +3075,7 @@ function renderArbeitsvorratKoerper() {
 
 function arbeitsvorratFormularHtml(eintrag) {
   const feldLabel = {
-    ian: "IAN", auftrag: "Auftrag", vkBuero: "VK Büro", bestellnummer: "Bestellnummer", bezeichnung: "Bezeichnung (SAP)",
+    ian: "IAN", charge: "Charge", auftrag: "Auftrag", vkBuero: "VK Büro", bestellnummer: "Bestellnummer", bezeichnung: "Bezeichnung (SAP)",
     lieferant: "Lieferant (SAP)", angelegtAm: "Angelegt am (SAP)", sachbearbeiter: "Sachbearbeiter (SAP)", link: "Link",
     warengruppe: "Warengruppe (aus PA)", anzahlStyles: "Anzahl Styles (aus PA)", lfgb: "LFGB? (manuell, bei KV-Erstellung)", trivial: "Trivial? (manuell, bei KV-Erstellung)",
     alteWarengruppe: "ALTE Warengruppe", bemerkung: "Bemerkung", versand: "Versand", uvUndKlimawechsel: "UV und Klimawechsel"
@@ -3123,7 +3146,8 @@ function neuerKvAusArbeitsvorrat(eintrag) {
     return;
   }
   const kv = {
-    id: neueId(), ian: eintrag.ian, artikel: eintrag.bezeichnung, lieferant: eintrag.lieferant, sapNummer: "",
+    id: neueId(), ian: eintrag.ian, artikel: eintrag.bezeichnung, lieferant: eintrag.lieferant, sapNummer: eintrag.auftrag || "",
+    charge: arbeitsvorratAnzeigewert(eintrag, "charge") || "",
     warengruppeNeu: normalisiereWarengruppe(eintrag.warengruppe), warengruppeAlt: eintrag.alteWarengruppe, lfgb: eintrag.lfgb, trivial: eintrag.trivial,
     styleanzahl: eintrag.anzahlStyles, vkBuero: normalisiereVkBuero(eintrag.vkBuero), notiz: "", erstelltAm: heutigesDatumLokal(),
     mechanikProduktId: "", mechanikSetbestandteile: [], positionen: []
@@ -3452,6 +3476,15 @@ function leiteFuehrendeZahlAb(text) {
   return treffer ? treffer[1] : "";
 }
 
+/* Charge aus einem Text ableiten, z. B. aus "538616_2604" oder "532862 / 2604" -> 2604 -
+   das Gegenstück zu leiteFuehrendeZahlAb (die davon nur die führende Zahl/IAN liefert). Wird
+   sowohl aus der SAP-Export-Spalte "Bestellnummer" als auch aus dem PA-Feld "IAN / Charge"
+   herangezogen. */
+function leiteChargeAb(text) {
+  const treffer = String(text || "").trim().match(/^\d+\s*[_/]\s*(.+)$/);
+  return treffer ? treffer[1].trim() : "";
+}
+
 function parseArbeitsvorratExcel(workbook) {
   const { ws } = findeArbeitsvorratSheet(workbook);
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null, raw: true });
@@ -3468,11 +3501,12 @@ function parseArbeitsvorratExcel(workbook) {
     if (!row || row.every((z) => z === null || z === undefined || z === "")) continue;
     const eintrag = { id: neueId() };
     ARBEITSVORRAT_SAP_FELDER.forEach((f) => {
-      if (f === "mechErledigt" || f === "ian") return;
+      if (f === "mechErledigt" || f === "ian" || f === "charge") return;
       const idx = spalten[f];
       eintrag[f] = idx === -1 || idx === undefined ? "" : excelWertZuText(row[idx]);
     });
     eintrag.ian = normalisiereIan(spalten.ian !== -1 ? excelWertZuText(row[spalten.ian]) : leiteFuehrendeZahlAb(eintrag.bestellnummer));
+    eintrag.charge = leiteChargeAb(eintrag.bestellnummer);
     eintrag.vkBuero = normalisiereVkBuero(eintrag.vkBuero);
     eintrag.mechErledigt = spalten.kvMech === -1 ? false : normalisiere(row[spalten.kvMech]) === "x";
     ARBEITSVORRAT_PA_FELDER.forEach((f) => (eintrag[f] = ""));
@@ -3595,7 +3629,7 @@ function renderPaListe() {
   ul.innerHTML = liste.map((p) => `
     <li class="${p.id === aktivePaId ? "aktiv" : ""}" data-id="${p.id}">
       <strong>${escapeHtml(p.ian || "(ohne IAN)")}</strong>${p.stand ? ` <span class="muted">· Stand ${escapeHtml(p.stand)}</span>` : ""}
-      <div class="muted">${escapeHtml(p.artikelbezeichnung || "")}</div>
+      <div class="muted">${escapeHtml(p.artikelbezeichnung || "")}${p.charge ? " · Charge " + escapeHtml(p.charge) : ""}</div>
     </li>`).join("");
   ul.querySelectorAll("li[data-id]").forEach((li) => li.addEventListener("click", () => { aktivePaId = li.dataset.id; renderPaTab(); }));
 }
@@ -3681,9 +3715,11 @@ function renderPaDetail() {
         <h2 style="margin:0">${escapeHtml(pa.ian || "(ohne IAN)")}</h2>
         ${sharepointSucheLink(pa.ian)}
         ${pa.stand ? `<span class="badge ja">Stand ${escapeHtml(pa.stand)}</span>` : ""}
+        <span class="muted" id="pa-charge-badge" ${pa.charge ? "" : "hidden"}>Charge ${escapeHtml(pa.charge)}</span>
       </div>
       <div class="formular-grid" id="pa-kopf-formular">
         <label>IAN / Charge<input type="text" data-feld="ian" value="${escapeHtml(pa.ian)}"></label>
+        <label>Charge<input type="text" data-feld="charge" value="${escapeHtml(pa.charge)}"></label>
         <label>Warengruppe<input type="text" data-feld="warengruppe" value="${escapeHtml(pa.warengruppe)}"></label>
         <label class="volle-breite">Artikelbezeichnung<input type="text" data-feld="artikelbezeichnung" value="${escapeHtml(pa.artikelbezeichnung)}"></label>
         <label>Artikelkategorie<input type="text" data-feld="artikelkategorie" value="${escapeHtml(pa.artikelkategorie)}"></label>
@@ -3717,7 +3753,17 @@ function renderPaDetail() {
     </div>`;
 
   panel.querySelectorAll("#pa-kopf-formular [data-feld]").forEach((el) => {
-    el.addEventListener("input", () => { pa[el.dataset.feld] = el.value; speichereInLocalStorage(); renderPaListe(); if (el.dataset.feld === "ian") panel.querySelector("h2").textContent = pa.ian || "(ohne IAN)"; });
+    el.addEventListener("input", () => {
+      pa[el.dataset.feld] = el.value;
+      speichereInLocalStorage();
+      renderPaListe();
+      if (el.dataset.feld === "ian") panel.querySelector("h2").textContent = pa.ian || "(ohne IAN)";
+      if (el.dataset.feld === "charge") {
+        const badge = document.getElementById("pa-charge-badge");
+        badge.textContent = "Charge " + pa.charge;
+        badge.hidden = !pa.charge;
+      }
+    });
   });
   document.getElementById("pa-loeschen").addEventListener("click", () => {
     if (!confirm("Prüfauftrag wirklich löschen?")) return;
@@ -3973,8 +4019,10 @@ async function extrahierePaAusDatei(datei) {
 function leitePaKopfdatenAb(felder, rohtext, erzwingeIan) {
   const findeWert = (regex) => { const t = felder.find((f) => regex.test(f.schluessel)); return t ? t.wert : ""; };
   const ian = normalisiereIan(erzwingeIan || leiteFuehrendeZahlAb(findeWert(/^ian \/ charge$/i)));
+  const charge = findeWert(/^initiale charge$/i) || leiteChargeAb(findeWert(/^ian \/ charge$/i));
   return {
     ian,
+    charge,
     artikelbezeichnung: findeWert(/^artikelbezeichnung$/i),
     warengruppe: normalisiereWarengruppe(findeWert(/^warengruppe$/i)),
     artikelkategorie: findeWert(/^artikelkategorie$/i),
@@ -4005,7 +4053,7 @@ function legePaAusFeldernAn(felder, rohtext, erzwingeIan, stand, frageBeiKonflik
     ziel = { id: neueId() };
     data.pruefauftraege.unshift(ziel);
   }
-  ziel.ian = kopf.ian; ziel.artikelbezeichnung = kopf.artikelbezeichnung; ziel.warengruppe = kopf.warengruppe;
+  ziel.ian = kopf.ian; ziel.charge = kopf.charge; ziel.artikelbezeichnung = kopf.artikelbezeichnung; ziel.warengruppe = kopf.warengruppe;
   ziel.artikelkategorie = kopf.artikelkategorie; ziel.ianVorgaenger = kopf.ianVorgaenger; ziel.fruehLt = kopf.fruehLt;
   ziel.lieferant = kopf.lieferant; ziel.pruefumfang = kopf.pruefumfang;
   ziel.felder = felder; ziel.rohtext = rohtext; ziel.stand = stand || "";
@@ -5599,7 +5647,7 @@ function initialisierePruefumfangUebersicht(panel, kv, pa) {
 function gefiltertKvs() {
   const q = normalisiere(suchbegriffe.kvs);
   if (!q) return data.kvs;
-  return data.kvs.filter((k) => ["ian", "artikel", "lieferant", "warengruppeNeu", "warengruppeAlt", "sapNummer"].some((f) => normalisiere(k[f]).includes(q)));
+  return data.kvs.filter((k) => ["ian", "charge", "artikel", "lieferant", "warengruppeNeu", "warengruppeAlt", "sapNummer"].some((f) => normalisiere(k[f]).includes(q)));
 }
 
 function kvGesamtsumme(kv) {
@@ -5705,9 +5753,11 @@ function renderKvDetail() {
         ${sharepointSucheLink(kv.ian)}
         <span class="muted" id="kv-ian-badge" ${kv.ian ? "" : "hidden"}>IAN ${escapeHtml(kv.ian)}</span>
         <span class="muted" id="kv-sap-badge" ${kv.sapNummer ? "" : "hidden"}>Auftrag ${escapeHtml(kv.sapNummer)}</span>
+        <span class="muted" id="kv-charge-badge" ${kv.charge ? "" : "hidden"}>Charge ${escapeHtml(kv.charge)}</span>
       </div>
       <div class="formular-grid" id="kv-formular">
         <label>IAN<input type="text" data-feld="ian" value="${escapeHtml(kv.ian)}"></label>
+        <label>Charge<input type="text" data-feld="charge" value="${escapeHtml(kv.charge)}"></label>
         <label>SAP-Nummer<input type="text" data-feld="sapNummer" value="${escapeHtml(kv.sapNummer)}"></label>
         <label class="volle-breite">Artikel<input type="text" data-feld="artikel" value="${escapeHtml(kv.artikel)}"></label>
         <label>Lieferant<input type="text" data-feld="lieferant" value="${escapeHtml(kv.lieferant)}"></label>
@@ -5780,6 +5830,11 @@ function renderKvDetail() {
         badge.textContent = "Auftrag " + kv.sapNummer;
         badge.hidden = !kv.sapNummer;
       }
+      if (el.dataset.feld === "charge") {
+        const badge = document.getElementById("kv-charge-badge");
+        badge.textContent = "Charge " + kv.charge;
+        badge.hidden = !kv.charge;
+      }
     });
   });
   /* Erst beim Verlassen des IAN-Felds (nicht bei jedem Tastendruck, sonst geht der Fokus mitten im
@@ -5787,7 +5842,10 @@ function renderKvDetail() {
      Styleanzahl von dort übernehmen (nur wenn im KV noch leer) - danach einmalig neu rendern. */
   panel.querySelector('#kv-formular [data-feld="ian"]').addEventListener("change", () => {
     const neuVerknuepft = data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(kv.ian));
-    if (neuVerknuepft && fuelleKvAusPa(kv, neuVerknuepft, false)) renderKvDetail();
+    const avVerknuepft = data.arbeitsvorrat.find((a) => normalisiere(a.ian) === normalisiere(kv.ian));
+    const geaendertPa = neuVerknuepft && fuelleKvAusPa(kv, neuVerknuepft, false);
+    const geaendertAv = avVerknuepft && fuelleKvAusArbeitsvorrat(kv, avVerknuepft, false);
+    if (geaendertPa || geaendertAv) renderKvDetail();
   });
   /* LFGB/Trivial fließen direkt in die Vorbelegung von Sicherheit-/Normprüfung (Trivial="Ja") bzw.
      die Kennzeichnung-GER-Variante (LFGB="Ja") ein - bei einer Dropdown-Auswahl (kein Tippen, also
@@ -6083,7 +6141,7 @@ function renderKvPositionenTabelle(kv) {
 function renderKvTab() { renderKvListe(); renderKvDetail(); }
 
 document.getElementById("btn-neuer-kv").addEventListener("click", () => {
-  const kv = { id: neueId(), ian: "", artikel: "", lieferant: "", sapNummer: "", warengruppeNeu: "", warengruppeAlt: "", lfgb: "", trivial: "", styleanzahl: "", vkBuero: "", notiz: "", erstelltAm: heutigesDatumLokal(), mechanikProduktId: "", mechanikSetbestandteile: [], positionen: [] };
+  const kv = { id: neueId(), ian: "", artikel: "", lieferant: "", sapNummer: "", charge: "", warengruppeNeu: "", warengruppeAlt: "", lfgb: "", trivial: "", styleanzahl: "", vkBuero: "", notiz: "", erstelltAm: heutigesDatumLokal(), mechanikProduktId: "", mechanikSetbestandteile: [], positionen: [] };
   data.kvs.unshift(kv);
   aktiveKvId = kv.id;
   speichereInLocalStorage();
@@ -7858,17 +7916,17 @@ document.getElementById("btn-csv").addEventListener("click", () => {
     })));
     csvHerunterladen(zeilen, "arbeitsvorrat_export.csv");
   } else if (aktiverTab === "pruefauftraege") {
-    const zeilen = [["IAN", "Artikelbezeichnung", "Warengruppe", "Schlüssel", "Wert"]];
-    data.pruefauftraege.forEach((p) => (p.felder || []).forEach((f) => zeilen.push([p.ian, p.artikelbezeichnung, p.warengruppe, f.schluessel, f.wert])));
+    const zeilen = [["IAN", "Charge", "Artikelbezeichnung", "Warengruppe", "Schlüssel", "Wert"]];
+    data.pruefauftraege.forEach((p) => (p.felder || []).forEach((f) => zeilen.push([p.ian, p.charge, p.artikelbezeichnung, p.warengruppe, f.schluessel, f.wert])));
     csvHerunterladen(zeilen, "pruefauftraege_export.csv");
   } else if (aktiverTab === "kvs") {
-    const zeilen = [["IAN", "Artikel", "Lieferant", "SAP-Nummer", "Kategorie", "Bezeichnung", "Kürzel", "SAP-Code", "Bewertungsgrundlage/Grenzwert", "Teilprüfung", "Teilprüfung %", "Kosten", "Anzahl", "Summe", "Aktiv"]];
+    const zeilen = [["IAN", "Charge", "Artikel", "Lieferant", "SAP-Nummer", "Kategorie", "Bezeichnung", "Kürzel", "SAP-Code", "Bewertungsgrundlage/Grenzwert", "Teilprüfung", "Teilprüfung %", "Kosten", "Anzahl", "Summe", "Aktiv"]];
     data.kvs.forEach((k) => {
       const pa = data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(k.ian));
       const { prozent } = teilpruefungProzentsatz(pa);
       k.positionen.forEach((p) => {
         const istTeilpruefung = istSicherheitNormpruefungPosition(p);
-        zeilen.push([k.ian, k.artikel, k.lieferant, k.sapNummer, p.kategorie, p.bezeichnung, p.kuerzel, p.sapCode, p.bewertungsgrundlage || "", istTeilpruefung ? "Ja" : "Nein", istTeilpruefung ? prozent : "", p.kosten, p.anzahl, (Number(p.kosten) || 0) * (Number(p.anzahl) || 0), p.aktiv ? "Ja" : "Nein"]);
+        zeilen.push([k.ian, k.charge, k.artikel, k.lieferant, k.sapNummer, p.kategorie, p.bezeichnung, p.kuerzel, p.sapCode, p.bewertungsgrundlage || "", istTeilpruefung ? "Ja" : "Nein", istTeilpruefung ? prozent : "", p.kosten, p.anzahl, (Number(p.kosten) || 0) * (Number(p.anzahl) || 0), p.aktiv ? "Ja" : "Nein"]);
       });
     });
     csvHerunterladen(zeilen, "kv_export.csv");
@@ -7989,8 +8047,8 @@ function berechneMergePlan(importData) {
   const importGeloescht = importData.geloeschteEintraege || [];
 
   const avPlan = planFlacheListe(data.arbeitsvorrat, importData.arbeitsvorrat || [], schluesselArbeitsvorrat, ARBEITSVORRAT_FELDER, lokalGeloescht("arbeitsvorrat"));
-  const paPlan = planFlacheListe(data.pruefauftraege, importData.pruefauftraege || [], schluesselPa, ["artikelbezeichnung", "warengruppe"], lokalGeloescht("pruefauftraege"));
-  const kvPlan = planFlacheListe(data.kvs, importData.kvs || [], (k) => k.id, ["ian", "artikel", "lieferant", "sapNummer", "warengruppeNeu", "warengruppeAlt", "notiz"], lokalGeloescht("kvs"));
+  const paPlan = planFlacheListe(data.pruefauftraege, importData.pruefauftraege || [], schluesselPa, ["artikelbezeichnung", "warengruppe", "charge"], lokalGeloescht("pruefauftraege"));
+  const kvPlan = planFlacheListe(data.kvs, importData.kvs || [], (k) => k.id, ["ian", "charge", "artikel", "lieferant", "sapNummer", "warengruppeNeu", "warengruppeAlt", "notiz"], lokalGeloescht("kvs"));
   const pruefgrundlagenPlan = planFlacheListe(data.pruefgrundlagen, importData.pruefgrundlagen || [], schluesselPruefgrundlage, PRUEFGRUNDLAGE_FELDER, lokalGeloescht("pruefgrundlagen"));
   const normenPlan = planFlacheListe(data.normen, importData.normen || [], schluesselNorm, NORM_FELDER, lokalGeloescht("normen"));
   const makPlan = planFlacheListe(data.mak, importData.mak || [], schluesselMak, MAK_FELDER, lokalGeloescht("mak"));
@@ -8059,9 +8117,9 @@ function renderMergeUebersicht() {
   if (p.neueAv.length) html += `<div class="merge-section"><h3>Neue Arbeitsvorrat-Einträge (${p.neueAv.length})</h3>` + checkboxListeHtml("neueAv", p.neueAv, (r) => `<strong>${escapeHtml(r.ian)}</strong> — ${escapeHtml(r.bezeichnung)}`) + `</div>`;
   if (p.avKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Arbeitsvorrat-Einträge (${p.avKonflikte.length})</h3>` + konfliktListeHtml("avKonflikt", p.avKonflikte, (k) => escapeHtml(k.lokal.ian), (r) => ARBEITSVORRAT_FELDER.map((f) => f + ": " + (r[f] ?? "")).join("\n")) + `</div>`;
   if (p.neuePa.length) html += `<div class="merge-section"><h3>Neue Prüfaufträge (${p.neuePa.length})</h3>` + checkboxListeHtml("neuePa", p.neuePa, (pa) => `<strong>${escapeHtml(pa.ian)}</strong> — ${escapeHtml(pa.artikelbezeichnung)}`) + `</div>`;
-  if (p.paKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Prüfaufträge (${p.paKonflikte.length})</h3>` + konfliktListeHtml("paKonflikt", p.paKonflikte, (k) => escapeHtml(k.lokal.ian), (pa) => "Artikelbezeichnung: " + (pa.artikelbezeichnung || "") + "\nWarengruppe: " + (pa.warengruppe || "") + "\nFelder: " + (pa.felder || []).length) + `</div>`;
+  if (p.paKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Prüfaufträge (${p.paKonflikte.length})</h3>` + konfliktListeHtml("paKonflikt", p.paKonflikte, (k) => escapeHtml(k.lokal.ian), (pa) => "Artikelbezeichnung: " + (pa.artikelbezeichnung || "") + "\nWarengruppe: " + (pa.warengruppe || "") + "\nCharge: " + (pa.charge || "") + "\nFelder: " + (pa.felder || []).length) + `</div>`;
   if (p.neueKv.length) html += `<div class="merge-section"><h3>Neue Kostenvoranschläge (${p.neueKv.length})</h3>` + checkboxListeHtml("neueKv", p.neueKv, (k) => `<strong>${escapeHtml(k.ian)}</strong> — ${escapeHtml(k.artikel)}`) + `</div>`;
-  if (p.kvKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Kostenvoranschläge (${p.kvKonflikte.length})</h3>` + konfliktListeHtml("kvKonflikt", p.kvKonflikte, (k) => escapeHtml(k.lokal.ian), (kv) => "Artikel: " + (kv.artikel || "") + "\nPositionen: " + (kv.positionen || []).length) + `</div>`;
+  if (p.kvKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Kostenvoranschläge (${p.kvKonflikte.length})</h3>` + konfliktListeHtml("kvKonflikt", p.kvKonflikte, (k) => escapeHtml(k.lokal.ian), (kv) => "Artikel: " + (kv.artikel || "") + "\nCharge: " + (kv.charge || "") + "\nPositionen: " + (kv.positionen || []).length) + `</div>`;
   if (p.neuePruefgrundlagen.length) html += `<div class="merge-section"><h3>Neue Prüfgrundlagen (${p.neuePruefgrundlagen.length})</h3>` + checkboxListeHtml("neuePruefgrundlagen", p.neuePruefgrundlagen, (e) => `<strong>${escapeHtml(e.warengruppeCode)} ${escapeHtml(e.produkt)}</strong> — ${escapeHtml(normRefListeText(e.normen))}`) + `</div>`;
   if (p.pruefgrundlagenKonflikte.length) html += `<div class="merge-section"><h3>Abweichende Prüfgrundlagen (${p.pruefgrundlagenKonflikte.length})</h3>` + konfliktListeHtml("pruefgrundlagenKonflikt", p.pruefgrundlagenKonflikte, (k) => escapeHtml(k.lokal.warengruppeCode) + " " + escapeHtml(k.lokal.produkt), (e) => PRUEFGRUNDLAGE_FELDER.map((f) => f + ": " + (["normen", "ffuNormen", "stiwaNormen"].includes(f) ? normRefListeText(e[f]) : (e[f] ?? ""))).join("\n")) + `</div>`;
   if (p.neueNormen.length) html += `<div class="merge-section"><h3>Neue Normen (${p.neueNormen.length})</h3>` + checkboxListeHtml("neueNormen", p.neueNormen, (n) => `<strong>${escapeHtml(n.bezeichnung)}</strong> — ${(n.anwendungsbereiche || []).length} Anwendungsbereich(e)`) + `</div>`;
@@ -8099,10 +8157,10 @@ function wendeMergeAn() {
   p.avKonflikte.forEach((k, i) => { const g = box.querySelector(`[name="avKonflikt-${i}"]:checked`); if (g && g.value === "importiert") ARBEITSVORRAT_FELDER.forEach((f) => (k.lokal[f] = k.importiert[f])); });
 
   p.neuePa.forEach((pa, i) => { const cb = box.querySelector(`[data-typ="neuePa"][data-idx="${i}"]`); if (cb && cb.checked) data.pruefauftraege.push(pa); });
-  p.paKonflikte.forEach((k, i) => { const g = box.querySelector(`[name="paKonflikt-${i}"]:checked`); if (g && g.value === "importiert") { k.lokal.artikelbezeichnung = k.importiert.artikelbezeichnung; k.lokal.warengruppe = k.importiert.warengruppe; k.lokal.felder = k.importiert.felder; k.lokal.rohtext = k.importiert.rohtext; } });
+  p.paKonflikte.forEach((k, i) => { const g = box.querySelector(`[name="paKonflikt-${i}"]:checked`); if (g && g.value === "importiert") { k.lokal.artikelbezeichnung = k.importiert.artikelbezeichnung; k.lokal.warengruppe = k.importiert.warengruppe; k.lokal.charge = k.importiert.charge; k.lokal.felder = k.importiert.felder; k.lokal.rohtext = k.importiert.rohtext; } });
 
   p.neueKv.forEach((kv, i) => { const cb = box.querySelector(`[data-typ="neueKv"][data-idx="${i}"]`); if (cb && cb.checked) data.kvs.push(kv); });
-  p.kvKonflikte.forEach((k, i) => { const g = box.querySelector(`[name="kvKonflikt-${i}"]:checked`); if (g && g.value === "importiert") { ["artikel", "lieferant", "sapNummer", "warengruppeNeu", "warengruppeAlt", "notiz", "positionen"].forEach((f) => (k.lokal[f] = k.importiert[f])); } });
+  p.kvKonflikte.forEach((k, i) => { const g = box.querySelector(`[name="kvKonflikt-${i}"]:checked`); if (g && g.value === "importiert") { ["artikel", "lieferant", "sapNummer", "charge", "warengruppeNeu", "warengruppeAlt", "notiz", "positionen"].forEach((f) => (k.lokal[f] = k.importiert[f])); } });
 
 
   p.neuePruefgrundlagen.forEach((e, i) => { const cb = box.querySelector(`[data-typ="neuePruefgrundlagen"][data-idx="${i}"]`); if (cb && cb.checked) data.pruefgrundlagen.push(e); });

@@ -28,8 +28,14 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   existiert zu dieser IAN aber bereits einer, wird KEIN Duplikat angelegt**,
   sondern direkt zum vorhandenen KV gewechselt (Beschriftung wechselt dann
   entsprechend auf „→ KV"). **VK Büro** wird jetzt als eigene Spalte
-  angezeigt. Direkt neben der IAN steht die Spalte **„Auftrag"** (die
-  SAP-Auftragsnummer/das Vertriebsbeleg aus dem SAP-Export). Die Spalten
+  angezeigt. Direkt neben der IAN stehen die Spalten **„Charge"** und
+  **„Auftrag"** (die SAP-Auftragsnummer/das Vertriebsbeleg aus dem
+  SAP-Export). Die **Charge** wird automatisch aus der SAP-Export-Spalte
+  „Bestellnummer" abgeleitet — der Teil hinter dem „_" (z. B. aus
+  „538616_2604" wird Charge „2604"). Fehlt dort eine Charge, zeigt die
+  Spalte ersatzweise die Charge aus dem verknüpften Prüfauftrag (Feld
+  „Initiale Charge" bzw. der Zahlenteil hinter dem „/" im Feld
+  „IAN / Charge" der PDF). Die Spalten
   **„PA"** und **„KV"** zeigen auf einen Blick, ob zu
   dieser IAN bereits ein Prüfauftrag bzw. ein Kostenvoranschlag existiert:
   liegt einer vor, erscheint ein anklickbares Feld — bei „PA" mit dem
@@ -114,8 +120,13 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   „…_Stand_16.07.2026.pdf", ersatzweise aus dem Seitenfuß der PDF) wird
   automatisch erkannt, als Badge oben auf der Detailseite sowie in der
   Prüfauftrag-Liste angezeigt und ist bei Bedarf im Kopf-Formular korrigierbar.
+  Ebenso wird die **Charge** automatisch erkannt (aus dem PDF-Feld „Initiale
+  Charge", ersatzweise aus dem Zahlenteil hinter dem „/" im Feld
+  „IAN / Charge") und als eigenes Badge „Charge …" oben auf der Detailseite
+  sowie in der Prüfauftrag-Liste angezeigt.
   Die Detailseite eines Prüfauftrags ist in drei Bereiche gegliedert:
-  - **Kopfdaten**: IAN/Charge, Warengruppe, Artikelbezeichnung, Artikelkategorie,
+  - **Kopfdaten**: IAN/Charge (Rohfeld), Charge (eigenes Feld), Warengruppe,
+    Artikelbezeichnung, Artikelkategorie,
     IAN-Vorgänger, Früh. LT, Lieferant, Stand der PDF – direkt editierbar.
   - **Prüfumfang**: der Fließtext-Absatz aus der PDF (30% SPU/QSP, ALT, 100% PSI
     usw.), die **ALT-Zeile ist hervorgehoben**, da sie meist am relevantesten ist.
@@ -171,11 +182,17 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   Hinzufügen im Produktspezifikationen-Block einen entsprechenden Hinweis
   (siehe MAK unten).
 
-  **SAP-Nummer (Auftrag/Vertriebsbeleg) sichtbar**: das Feld „SAP-Nummer" im
-  KV-Formular wird zusätzlich direkt neben der IAN-Kennzeichnung im
-  Detail-Header angezeigt (Badge „Auftrag …", nur sichtbar wenn befüllt) sowie
-  in der KV-Übersichtsliste links als Teil der Unterzeile — so ist sie auch
-  ohne Aufklappen des Formulars auf einen Blick sichtbar.
+  **SAP-Nummer (Auftrag/Vertriebsbeleg) und Charge sichtbar & automatisch
+  übernommen**: die Felder „SAP-Nummer" und „Charge" im KV-Formular werden
+  zusätzlich direkt neben der IAN-Kennzeichnung im Detail-Header angezeigt
+  (Badges „Auftrag …" bzw. „Charge …", nur sichtbar wenn befüllt) — „Auftrag"
+  außerdem als Teil der Unterzeile in der KV-Übersichtsliste links. Beide
+  Felder werden automatisch vorbelegt, sobald der KV mit einer IAN verknüpft
+  ist (über „+ KV" aus dem Arbeitsvorrat direkt bei der Anlage, oder beim
+  Eintragen/Ändern der IAN im KV-Formular): „SAP-Nummer" aus dem Feld
+  „Auftrag" (Vertriebsbeleg) des Arbeitsvorrat-Eintrags, „Charge" aus der dort
+  angezeigten Charge (inkl. deren eigenem Fallback auf den Prüfauftrag, siehe
+  oben). Ein bereits vorhandener Wert wird dabei nie überschrieben.
 
   **Bemerkungen-Zeile je Position**: sobald zu einer Position irgendwo im
   Tool bereits etwas Relevantes hinterlegt ist, erscheint direkt darunter
