@@ -407,6 +407,7 @@ input[type=file] { display:none; }
     <button type="button" data-ansicht="warengruppen">Warengruppen</button>
     <button type="button" data-ansicht="pruefungsarten">Prüfungsarten</button>
     <button type="button" data-ansicht="trivialpreisliste">Trivialartikel-Preisliste</button>
+    <button type="button" data-ansicht="pruefumfang">Prüfumfang je Artikelkategorie</button>
     <button type="button" data-ansicht="gefahrenzone">Gefahrenzone</button>
   </div>
   <div class="card" id="verwaltung-block-bereiche" style="max-width:520px">
@@ -474,6 +475,16 @@ input[type=file] { display:none; }
       <input type="number" id="trivialpreisliste-neu-add-input" placeholder="Add Sort. €" style="width:100px;font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px">
       <button type="button" id="trivialpreisliste-hinzufuegen-btn">+ Hinzufügen</button>
     </div>
+  </div>
+  <div class="card" id="verwaltung-block-pruefumfang" style="max-width:560px">
+    <h2 style="margin-top:0">Prüfumfang je Artikelkategorie</h2>
+    <p class="hinweis">Legt fest, wie viel Prozent der Vollprüfung/des vollen Preises je
+      Artikelkategorie für die Sicherheit-/Normprüfung gilt. Ein Wert steuert beides zugleich: den
+      Rabattfaktor auf die aus der Prüfgrundlage berechneten Kosten (Warengruppen-Empfehlung im
+      Reiter „Kostenvoranschläge") sowie den Hinweistext „Teilprüfung: X% der Vollprüfung" an der
+      jeweiligen Position. „Grün" gilt dabei mit und ohne Sternchen („Grün*") gleichermaßen; nicht
+      erkannte oder fehlende Artikelkategorien zählen als „Rot".</p>
+    <div class="formular-grid" id="pruefumfang-formular"></div>
   </div>
   <div class="card" id="verwaltung-block-gefahrenzone" style="max-width:720px;border-color:#d98a8a">
     <h2 style="margin-top:0">Gefahrenzone</h2>
@@ -2338,7 +2349,22 @@ function migriereMakVarianten() {
   data.makVariantenMigriert = true;
 }
 
+/* Ergänzt fehlende Schlüssel in data.artikelkategoriePruefumfang um die Standardwerte - schützt
+   vor unvollständigen/älteren JSON-Importen (z. B. von vor Einführung dieser Einstellung), ohne
+   vom Nutzer bereits angepasste Werte zu überschreiben. */
+function migriereArtikelkategoriePruefumfang() {
+  data.artikelkategoriePruefumfang = { ...DEFAULT_ARTIKELKATEGORIE_PRUEFUMFANG, ...(data.artikelkategoriePruefumfang || {}) };
+}
+
 const SPEICHER_SCHLUESSEL = "kv_monitoring_v3";
+
+/* Prüfumfang (in %) je Artikelkategorie für die Sicherheit-/Normprüfung - editierbar im Reiter
+   "Verwaltung" (siehe renderPruefumfangVerwaltung). EIN Wert steuert beides: den Rabattfaktor auf
+   die aus der Prüfgrundlage berechneten Kosten (siehe artikelkategorieMultiplikator) UND den
+   Hinweistext "Teilprüfung: X% der Vollprüfung" an der jeweiligen Position (siehe
+   teilpruefungProzentsatz) - beide greifen auf pruefumfangFuerArtikelkategorie() zurück. "Grün"
+   gilt dabei mit und ohne Sternchen ("Grün*") gleichermaßen. */
+const DEFAULT_ARTIKELKATEGORIE_PRUEFUMFANG = { gruen: 40, gelb: 50, rot: 60 };
 
 /* ---------- Zustand ---------- */
 
@@ -2652,7 +2678,8 @@ function init() {
     fixPositionenAlsNormenMigriert: !!(geladen && geladen.fixPositionenAlsNormenMigriert),
     kennzeichnungFixPositionenPruefungsartMigriert: !!(geladen && geladen.kennzeichnungFixPositionenPruefungsartMigriert),
     makVariantenMigriert: !!(geladen && geladen.makVariantenMigriert),
-    geloeschteEintraege: (geladen && Array.isArray(geladen.geloeschteEintraege)) ? geladen.geloeschteEintraege : []
+    geloeschteEintraege: (geladen && Array.isArray(geladen.geloeschteEintraege)) ? geladen.geloeschteEintraege : [],
+    artikelkategoriePruefumfang: (geladen && geladen.artikelkategoriePruefumfang) ? geladen.artikelkategoriePruefumfang : { ...DEFAULT_ARTIKELKATEGORIE_PRUEFUMFANG }
   };
   data.normen.forEach(migriereNorm);
   data.pruefgrundlagen.forEach(migrierePruefgrundlage);
@@ -2664,6 +2691,7 @@ function init() {
   migriereKennzeichnungFixPositionenPruefungsart();
   migriereMakVarianten();
   migriereMak();
+  migriereArtikelkategoriePruefumfang();
 
   document.querySelectorAll("nav.tabs button[data-tab]").forEach((btn) => {
     btn.addEventListener("click", () => wechsleTab(btn.dataset.tab));
@@ -4529,17 +4557,30 @@ function kennzeichnungPaketpreisHinweisHtml(kv, pa) {
   </div>`;
 }
 
-/* Rabattfaktor auf die kombinierten Sicherheit&Norm-Kosten je nach Artikelkategorie des verknüpften
-   PA - nachgebaut aus Auswahl_LIDL (Preisliste_Hilfe_claude.xlsm): Gesamtkosten = SUMME(Kosten VP
-   je Setbestandteil) * (Grün:0,3 | Gelb:0,5 | sonst:0,7). Das Original vergleicht die Artikelkategorie
-   per exaktem String ("="Grün""); reale PA-Extraktionen liefern aber z.B. "Grün*" (Sternchen/Zusatz) -
-   hier deshalb bewusst normalisiert verglichen. */
+/* Prüfumfang (in %) je Artikelkategorie des verknüpften PA - EINZIGE Quelle für beide Stellen,
+   die früher unabhängig voneinander fest verdrahtete Prozentsätze hatten: den Rabattfaktor auf die
+   kombinierten Sicherheit&Norm-Kosten (siehe artikelkategorieMultiplikator, ursprünglich aus
+   Auswahl_LIDL/Preisliste_Hilfe_claude.xlsm mit 30/50/70%) und den Hinweistext "Teilprüfung: X%
+   der Vollprüfung" an der jeweiligen Position (siehe teilpruefungProzentsatz, ursprünglich
+   40/50/70%). Beide sind jetzt EIN im Reiter "Verwaltung" editierbarer Wert je Artikelkategorie
+   (data.artikelkategoriePruefumfang, Standard 40/50/60%, siehe DEFAULT_ARTIKELKATEGORIE_PRUEFUMFANG).
+   "Grün" gilt mit und ohne Sternchen ("Grün*") gleichermaßen (reale PA-Extraktionen liefern
+   z. B. "Grün*", daher bewusst normalisiert statt exakt verglichen). */
+function pruefumfangFuerArtikelkategorie(pa) {
+  const einstellung = (data && data.artikelkategoriePruefumfang) || DEFAULT_ARTIKELKATEGORIE_PRUEFUMFANG;
+  const norm = normalisiereArtikelkategorie(pa);
+  if (norm.startsWith("grün")) return { prozent: Number(einstellung.gruen), kategorieText: "Grün" };
+  if (norm.startsWith("gelb")) return { prozent: Number(einstellung.gelb), kategorieText: "Gelb" };
+  return { prozent: Number(einstellung.rot), kategorieText: (pa && pa.artikelkategorie) ? "Rot" : "keine Artikelkategorie hinterlegt" };
+}
+
 function artikelkategorieMultiplikator(pa) {
   const roh = pa ? String(pa.artikelkategorie || "").trim() : "";
-  const norm = normalisiereArtikelkategorie(pa);
-  if (norm.startsWith("grün")) return { faktor: 0.3, hinweisText: `Rabattfaktor 0,3 (Artikelkategorie „${escapeHtml(roh)}“ → Grün)` };
-  if (norm.startsWith("gelb")) return { faktor: 0.5, hinweisText: `Rabattfaktor 0,5 (Artikelkategorie „${escapeHtml(roh)}“ → Gelb)` };
-  return { faktor: 0.7, hinweisText: roh ? `Rabattfaktor 0,7 (Artikelkategorie „${escapeHtml(roh)}“ nicht als Grün/Gelb erkannt)` : `Rabattfaktor 0,7 (keine Artikelkategorie hinterlegt)` };
+  const { prozent, kategorieText } = pruefumfangFuerArtikelkategorie(pa);
+  const hinweisText = (kategorieText === "Grün" || kategorieText === "Gelb")
+    ? `Rabattfaktor ${prozent}% (Artikelkategorie „${escapeHtml(roh)}“ → ${kategorieText})`
+    : (roh ? `Rabattfaktor ${prozent}% (Artikelkategorie „${escapeHtml(roh)}“ nicht als Grün/Gelb erkannt)` : `Rabattfaktor ${prozent}% (keine Artikelkategorie hinterlegt)`);
+  return { faktor: prozent / 100, hinweisText };
 }
 
 /* Warengruppen-getriebene Empfehlung: direkter Nachschlag in data.pruefgrundlagen nach der Warengruppe
@@ -4636,8 +4677,10 @@ function mechanikKontext(kv) {
    je Komponente einzeln angewendet statt auf die Summe - mathematisch identisch zum Gesamtergebnis
    (Faktor × Summe = Summe der Faktor × Einzelkosten). data-kategorie/-kuerzel steuern, mit welcher
    Kategorie/welchem Kürzel "+ hinzufügen" die Position im KV anlegt (siehe
-   initialisiereMechanikEmpfehlungKarte). */
-function mechanikKomponentenHtml(kontext, pa, feldName, kategorie, kuerzel, sapCodeFallback, rabattAnwenden) {
+   initialisiereMechanikEmpfehlungKarte). styleanzahl (kv.styleanzahl) fließt über
+   normenBlockSummeMitStyles in die Kosten ein: 1. Prüfung + (Styles-1) × Kosten je weiterem
+   Produkt, für alle drei Blöcke gleichermaßen. */
+function mechanikKomponentenHtml(kontext, pa, feldName, kategorie, kuerzel, sapCodeFallback, rabattAnwenden, styleanzahl) {
   const { gewaehlt, teilprodukte } = kontext;
   if (!gewaehlt) return "";
   /* Der Artikelkategorie-Rabattfaktor gilt bei LIDL ausschließlich für die Sicherheit-/
@@ -4647,18 +4690,19 @@ function mechanikKomponentenHtml(kontext, pa, feldName, kategorie, kuerzel, sapC
      renderSicherheitNormKarte) und wird von renderFfuNgoKarte (FFU/Fitting, NGO) explizit auf
      false gesetzt. */
   const { faktor, hinweisText } = rabattAnwenden === false ? { faktor: 1, hinweisText: "" } : artikelkategorieMultiplikator(pa);
+  const anzahlStylesFuerFormel = Math.max(1, Number(styleanzahl) || 1);
   const styleNamen = ermittleStyleNamen(pa);
   const komponenten = [{ id: "haupt", produkt: gewaehlt.produkt, refs: gewaehlt[feldName], entfernbar: false, pgId: mechanikEintragId(gewaehlt) }]
     .concat(teilprodukte.map((t) => ({ id: t.sb.id, produkt: t.eintrag.produkt, refs: t.eintrag[feldName], entfernbar: true, pgId: mechanikEintragId(t.eintrag) })));
 
   const komponentenHtml = komponenten.map((k) => {
     const norm = normRefListeText(k.refs);
-    const kosten = normenBlockSumme(k.refs);
+    const kosten = normenBlockSummeMitStyles(k.refs, anzahlStylesFuerFormel);
     const sapCode = normRefSapCode(k.refs) || sapCodeFallback;
     const hatKosten = kosten !== null && kosten !== undefined;
     const kostenRabattiert = hatKosten ? Math.round(Number(kosten) * faktor * 100) / 100 : null;
     const bezeichnungBasis = norm ? `${k.produkt}: ${norm}` : k.produkt;
-    const kostenText = hatKosten ? `${kostenRabattiert} €` : "Preis auf Anfrage";
+    const kostenText = hatKosten ? `${kostenRabattiert} €${anzahlStylesFuerFormel > 1 ? ` (${anzahlStylesFuerFormel} Styles)` : ""}` : "Preis auf Anfrage";
     const styleAuswahlHtml = styleNamen.length > 1
       ? `<select class="mechanik-komponente-stil" style="font-family:inherit;font-size:0.82rem;padding:0.3rem 0.4rem;border:1px solid var(--border);border-radius:6px">
           <option value="">Alle Styles</option>
@@ -4778,7 +4822,7 @@ function renderSicherheitNormKarte(kv, pa, kontext) {
     if (gewaehlt.anzahlMuster) badges.push(`<span class="badge nein">Anzahl Muster: ${escapeHtml(String(gewaehlt.anzahlMuster))}</span>`);
     if (gewaehlt.trivial) badges.push(`<span class="badge ja">Trivial</span>`);
 
-    const komponentenHtml = mechanikKomponentenHtml(kontext, pa, "normen", SICHERHEIT_NORM_KATEGORIE_NAME, "MS", "MECH_SICHERHEIT_TS");
+    const komponentenHtml = mechanikKomponentenHtml(kontext, pa, "normen", SICHERHEIT_NORM_KATEGORIE_NAME, "MS", "MECH_SICHERHEIT_TS", undefined, kv.styleanzahl);
     const weiterenSetbestandteilHtml = `<div class="pruefumfang-position" style="align-items:flex-start;flex-direction:column;gap:0.3rem">
       <label style="display:flex;flex-direction:column;gap:0.2rem;font-size:0.8rem;font-weight:600;width:100%;max-width:420px">Weiteren Set-Bestandteil hinzufügen
         <input type="text" id="setbestandteil-suche" placeholder="Produkt in der gesamten Mechanik-Referenz suchen…" style="font-family:inherit;font-size:0.85rem;padding:0.35rem 0.5rem;border:1px solid var(--border);border-radius:6px;font-weight:400">
@@ -5186,7 +5230,7 @@ function renderFfuNgoKarte(kv, pa, kontext, kat, feldName, kuerzel, fixPosition)
       ${weiterePositionenHtml}
     </div>`;
   }
-  const komponentenHtml = mechanikKomponentenHtml(kontext, pa, feldName, kat.katalogKategorie, kuerzel, fixPositionSapCodeAktuell(fixPosition), false);
+  const komponentenHtml = mechanikKomponentenHtml(kontext, pa, feldName, kat.katalogKategorie, kuerzel, fixPositionSapCodeAktuell(fixPosition), false, kv.styleanzahl);
   return `<div class="card">
     ${kopf}
     <p class="hinweis" style="margin-top:-0.4rem">Produkt: <strong>${escapeHtml(gewaehlt.produkt)}</strong></p>
@@ -5974,18 +6018,16 @@ function istSicherheitNormpruefungPosition(p) {
   return !!p.ausPruefgrundlage && p.kuerzel === "MS" && normalisiere(p.kategorie) === normalisiere(SICHERHEIT_NORM_KATEGORIE_NAME);
 }
 
-/* Prozentsatz der Vollprüfung bei einer Teilprüfung - fachlich fest über die Artikelkategorie des
-   verknüpften Prüfauftrags vorgegeben (Grün 40 %, Gelb 50 %, Rot bzw. unbekannt/nicht hinterlegt
-   70 %). Eigene, von artikelkategorieMultiplikator (Rabattfaktor 0,3/0,5/0,7) unabhängige
-   Prozentwerte, auch wenn dieselbe Grün-/Gelb-Erkennung zugrunde liegt. Wird bewusst nicht als
-   editierbares Feld pro Position gespeichert, sondern bei jeder Anzeige/jedem Export frisch aus der
-   aktuellen Artikelkategorie berechnet, damit sich eine spätere Änderung der Artikelkategorie
-   sofort überall korrekt niederschlägt. */
+/* Prozentsatz der Vollprüfung bei einer Teilprüfung - fachlich über den im Reiter "Verwaltung"
+   editierbaren Prüfumfang je Artikelkategorie vorgegeben (data.artikelkategoriePruefumfang,
+   Standard Grün 40 %, Gelb 50 %, Rot bzw. unbekannt/nicht hinterlegt 60 %) - siehe
+   pruefumfangFuerArtikelkategorie, das denselben Wert auch für den Kosten-Rabattfaktor
+   (artikelkategorieMultiplikator) liefert. Wird bewusst nicht als editierbares Feld pro Position
+   gespeichert, sondern bei jeder Anzeige/jedem Export frisch aus der aktuellen Artikelkategorie
+   berechnet, damit sich eine spätere Änderung der Artikelkategorie (oder der Verwaltungs-
+   Einstellung) sofort überall korrekt niederschlägt. */
 function teilpruefungProzentsatz(pa) {
-  const norm = normalisiereArtikelkategorie(pa);
-  if (norm.startsWith("grün")) return { prozent: 40, kategorieText: "Grün" };
-  if (norm.startsWith("gelb")) return { prozent: 50, kategorieText: "Gelb" };
-  return { prozent: 70, kategorieText: (pa && pa.artikelkategorie) ? "Rot" : "keine Artikelkategorie hinterlegt" };
+  return pruefumfangFuerArtikelkategorie(pa);
 }
 
 /* Kopiert Text in die Zwischenablage - versucht zuerst die moderne Clipboard-API, die aber unter
@@ -6551,6 +6593,24 @@ function normenBlockSumme(refs) {
   const bekannte = (refs || []).filter((r) => r.kosten !== null && r.kosten !== undefined && r.kosten !== "");
   if (!bekannte.length) return null;
   return bekannte.reduce((s, r) => s + Number(r.kosten), 0);
+}
+
+/* Wie normenBlockSumme, aber inkl. Styles-Formel je Norm-Referenz: Kosten (1. Prüfung) +
+   (Anzahl Styles - 1) × Kosten je weiterem Produkt (r.kostenWeiteresProdukt) - ist dieses Feld
+   nicht gesetzt, gilt ersatzweise derselbe Betrag wie für die 1. Prüfung (siehe Platzhaltertext
+   "wie Kosten" im Prüfgrundlage-Formular). Bei Anzahl Styles ≤ 1 (leer/nicht numerisch/genau 1)
+   identisch zu normenBlockSumme. Nur für die KV-Vorschlagskarte relevant (mechanikKomponentenHtml)
+   - die Prüfgrundlage selbst ist wiederverwendbar über verschiedene KVs mit unterschiedlicher
+   Styleanzahl hinweg und zeigt deshalb weiterhin nur den einfachen Basispreis (normenBlockSumme). */
+function normenBlockSummeMitStyles(refs, styleanzahl) {
+  const bekannte = (refs || []).filter((r) => r.kosten !== null && r.kosten !== undefined && r.kosten !== "");
+  if (!bekannte.length) return null;
+  const anzahl = Math.max(1, Number(styleanzahl) || 1);
+  return bekannte.reduce((s, r) => {
+    const erst = Number(r.kosten);
+    const weiterer = (r.kostenWeiteresProdukt === null || r.kostenWeiteresProdukt === undefined || r.kostenWeiteresProdukt === "") ? erst : Number(r.kostenWeiteresProdukt);
+    return s + erst + (anzahl - 1) * weiterer;
+  }, 0);
 }
 
 function aktualisiereNormenSumme(container, feldName, refs) {
@@ -7321,11 +7381,39 @@ function renderVerwaltungTab() {
   document.getElementById("verwaltung-block-warengruppen").hidden = verwaltungAnsicht !== "warengruppen";
   document.getElementById("verwaltung-block-pruefungsarten").hidden = verwaltungAnsicht !== "pruefungsarten";
   document.getElementById("verwaltung-block-trivialpreisliste").hidden = verwaltungAnsicht !== "trivialpreisliste";
+  document.getElementById("verwaltung-block-pruefumfang").hidden = verwaltungAnsicht !== "pruefumfang";
   document.getElementById("verwaltung-block-gefahrenzone").hidden = verwaltungAnsicht !== "gefahrenzone";
   renderBereicheVerwaltung();
   renderWarengruppenVerwaltung();
   renderPruefungsartenVerwaltung();
   renderTrivialpreislisteVerwaltung();
+  renderPruefumfangVerwaltung();
+}
+
+/* Editierbare Prozentsätze je Artikelkategorie (siehe pruefumfangFuerArtikelkategorie) - drei
+   einfache Zahlenfelder, sofort beim Verlassen des Felds gespeichert (kein separater
+   "Speichern"-Button, analog zu den Norm-Kostenfeldern in der Prüfgrundlage-Bearbeitung). */
+function renderPruefumfangVerwaltung() {
+  const container = document.getElementById("pruefumfang-formular");
+  if (!container) return;
+  const e = data.artikelkategoriePruefumfang;
+  container.innerHTML = `
+    <label>Grün / Grün* (%)<input type="number" min="0" max="100" step="1" data-feld="gruen" value="${e.gruen}"></label>
+    <label>Gelb (%)<input type="number" min="0" max="100" step="1" data-feld="gelb" value="${e.gelb}"></label>
+    <label>Rot / sonstige (%)<input type="number" min="0" max="100" step="1" data-feld="rot" value="${e.rot}"></label>`;
+  container.querySelectorAll("[data-feld]").forEach((inp) => {
+    inp.addEventListener("change", () => {
+      const wert = inp.value === "" ? "" : Number(inp.value);
+      if (wert === "" || Number.isNaN(wert) || wert < 0 || wert > 100) {
+        alert("Bitte einen Prozentwert zwischen 0 und 100 eingeben.");
+        inp.value = data.artikelkategoriePruefumfang[inp.dataset.feld];
+        return;
+      }
+      data.artikelkategoriePruefumfang[inp.dataset.feld] = wert;
+      speichereInLocalStorage();
+      zeigeStatus(`Prüfumfang aktualisiert · ${jetzt()}`, "ok");
+    });
+  });
 }
 
 document.getElementById("verwaltung-ansicht-toggle").querySelectorAll("button[data-ansicht]").forEach((btn) => {
@@ -7868,7 +7956,8 @@ document.getElementById("datei-laden-input").addEventListener("change", async (e
       fixPositionenAlsNormenMigriert: !!geparst.fixPositionenAlsNormenMigriert,
       kennzeichnungFixPositionenPruefungsartMigriert: !!geparst.kennzeichnungFixPositionenPruefungsartMigriert,
       makVariantenMigriert: !!geparst.makVariantenMigriert,
-      geloeschteEintraege: Array.isArray(geparst.geloeschteEintraege) ? geparst.geloeschteEintraege : []
+      geloeschteEintraege: Array.isArray(geparst.geloeschteEintraege) ? geparst.geloeschteEintraege : [],
+      artikelkategoriePruefumfang: geparst.artikelkategoriePruefumfang || { ...DEFAULT_ARTIKELKATEGORIE_PRUEFUMFANG }
     };
     data.normen.forEach(migriereNorm);
     data.pruefgrundlagen.forEach(migrierePruefgrundlage);
@@ -7880,6 +7969,7 @@ document.getElementById("datei-laden-input").addEventListener("change", async (e
     migriereKennzeichnungFixPositionenPruefungsart();
     migriereMakVarianten();
     migriereMak();
+    migriereArtikelkategoriePruefumfang();
     aktivePaId = data.pruefauftraege.length ? data.pruefauftraege[0].id : null;
     aktiveKvId = data.kvs.length ? data.kvs[0].id : null;
     aktiveNormId = data.normen.length ? data.normen[0].id : null;

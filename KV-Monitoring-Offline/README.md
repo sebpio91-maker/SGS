@@ -375,29 +375,49 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     Artikeln erscheint kein Style-Dropdown.
   - **Artikelkategorie-Rabattfaktor**: die Kosten jedes einzelnen Blocks
     (Hauptprodukt wie auch jedes Set-Bestandteil) werden automatisch mit
-    einem Faktor je nach Artikelkategorie des verknüpften Prüfauftrags
-    multipliziert — **Grün → 0,3, Gelb → 0,5, sonst/unbekannt → 0,7** —, in
-    Summe rechnerisch identisch zum früheren „Summe zuerst, dann Faktor"
-    (der Faktor ist auf jeden Block gleich, Multiplikation ist
-    distributiv). Der verwendete Faktor und die erkannte Artikelkategorie
-    werden direkt unter den Blöcken angezeigt. Hinweis: das Original
-    vergleicht die Artikelkategorie exakt (nur „Grün"); da reale
-    Prüfaufträge auch Werte wie „Grün*" liefern, wird hier bewusst
-    normalisiert verglichen (ohne Sonderzeichen, Groß-/Kleinschreibung
-    egal), damit der Rabatt auch bei solchen Varianten korrekt greift.
+    einem Prozentsatz je nach Artikelkategorie des verknüpften Prüfauftrags
+    multipliziert — Standard **Grün/Grün* → 40 %, Gelb → 50 %, sonst/unbekannt
+    → 60 %**, im Reiter „Verwaltung" unter „Prüfumfang je Artikelkategorie"
+    editierbar (siehe dort) —, in Summe rechnerisch identisch zum „Summe
+    zuerst, dann Faktor" (der Faktor ist auf jeden Block gleich,
+    Multiplikation ist distributiv). Der verwendete Prozentsatz und die
+    erkannte Artikelkategorie werden direkt unter den Blöcken angezeigt.
+    „Grün" wird dabei mit und ohne Sternchen („Grün*") gleich behandelt;
+    reale Prüfaufträge liefern teils Varianten wie „Grün*", die Erkennung
+    vergleicht deshalb bewusst normalisiert (ohne Sonderzeichen,
+    Groß-/Kleinschreibung egal) statt exakt, damit der Rabatt auch dort
+    korrekt greift. Derselbe Prozentsatz bestimmt außerdem den Hinweistext
+    „Teilprüfung: X% der Vollprüfung" (siehe weiter unten) — beide Stellen
+    nutzen dieselbe, im Reiter „Verwaltung" gepflegte Einstellung.
+  - **Styles-Formel**: ist am Kostenvoranschlag eine **Styleanzahl** hinterlegt
+    (Feld „Styleanzahl" in den KV-Stammdaten, meist automatisch aus dem
+    Prüfauftrag übernommen), fließt sie in die Kosten jedes Blocks ein:
+    **1. Prüfung (Feld „Kosten") + (Styleanzahl − 1) × Kosten je weiterem
+    Produkt** (Feld „Kosten je weiterem Produkt" an derselben Norm-Referenz
+    der Prüfgrundlage). Ist „Kosten je weiterem Produkt" nicht gesetzt, gilt
+    ersatzweise derselbe Betrag wie für die 1. Prüfung. Bei Styleanzahl ≤ 1
+    (leer, „1" oder nicht numerisch) ändert sich nichts gegenüber vorher.
+    Der Rabattfaktor wird auf den bereits styles-angepassten Betrag
+    angewendet; ab 2 Styles zeigt der Vorschlag zusätzlich einen Hinweis
+    „(N Styles)". Gilt gleichermaßen für Sicherheit-/Normprüfung,
+    FFU/Fitting und NGO/StiWa. Die Prüfgrundlage selbst (Reiter
+    „Prüfgrundlagen") ist wiederverwendbar über verschiedene KVs mit
+    unterschiedlicher Styleanzahl hinweg und zeigt deshalb weiterhin nur den
+    einfachen Basispreis ohne Styles-Formel.
 
   Dieselbe Hauptprodukt-/Set-Bestandteil-/Style-Mechanik dient seit der
   Aufteilung in eigene Blöcke auch den **FFU/Fitting**- und **NGO**-Blöcken
   (siehe unten) — dort jeweils bezogen auf die für FFU bzw. NGO/StiWa
   hinterlegten Normen der Prüfgrundlage statt auf die Sicherheit &
-  Norm-Normen. Der **Artikelkategorie-Rabattfaktor gilt bei LIDL
-  ausschließlich für die Sicherheit-/Normprüfung** — FFU/Fitting und NGO (wie
-  auch alle übrigen Prüfungskategorien: Kennzeichnung, Optischer Abgleich,
-  Produktspezifikation, Referenzprüfung) werden dort zum **vollen,
-  unrabattierten Preis** verrechnet, entsprechend fehlt der
-  Rabattfaktor-Hinweis in diesen beiden Blöcken. Die zusätzlich vorhandenen
-  **festen** FFU/Fitting- und NGO-Positionen (siehe „Innerhalb der Blöcke"
-  weiter unten) sind davon unabhängig und bleiben ohne Set-Bestandteile/Rabatt.
+  Norm-Normen (inkl. Styles-Formel, siehe oben). Der **Artikelkategorie-
+  Rabattfaktor gilt bei LIDL ausschließlich für die Sicherheit-/Normprüfung**
+  — FFU/Fitting und NGO (wie auch alle übrigen Prüfungskategorien:
+  Kennzeichnung, Optischer Abgleich, Produktspezifikation, Referenzprüfung)
+  werden dort zum **vollen, unrabattierten Preis** verrechnet, entsprechend
+  fehlt der Rabattfaktor-Hinweis in diesen beiden Blöcken. Die zusätzlich
+  vorhandenen **festen** FFU/Fitting- und NGO-Positionen (siehe „Innerhalb
+  der Blöcke" weiter unten) sind davon unabhängig und bleiben ohne
+  Set-Bestandteile/Rabatt/Styles-Formel.
 
   **Kosten direkt anpassen**: unter jedem Block (Hauptprodukt, Set-Bestandteil,
   FFU, NGO/StiWa) gibt es ein Feld **„Kosten (Prüfgrundlage) €"**, mit dem
@@ -692,9 +712,13 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   „Weitere Positionen" manuell hinzugefügte LIDL-spezifische Normen — auch
   wenn diese dieselbe Kategorie/dasselbe Kürzel „MS" teilen) erscheint sie
   bewusst **nicht**. Der Prozentsatz ergibt sich dabei
-  **automatisch aus der Artikelkategorie des verknüpften Prüfauftrags**
-  (Grün 40 %, Gelb 50 %, Rot bzw. keine Artikelkategorie hinterlegt 70 %) und
-  aktualisiert sich sofort, wenn sich die Artikelkategorie ändert. Die Angabe
+  **automatisch aus der Artikelkategorie des verknüpften Prüfauftrags**, auf
+  Basis derselben, im Reiter „Verwaltung" unter „Prüfumfang je
+  Artikelkategorie" editierbaren Einstellung, die auch den
+  Artikelkategorie-Rabattfaktor bestimmt (Standard Grün/Grün* 40 %, Gelb
+  50 %, Rot bzw. keine Artikelkategorie hinterlegt 60 %, siehe oben) und
+  aktualisiert sich sofort, wenn sich die Artikelkategorie oder die
+  Verwaltungs-Einstellung ändert. Die Angabe
   fließt beim Kopieren in die Zwischenablage automatisch in die neue
   „Bemerkung"-Spalte ein (z. B. „Teilprüfung: 40% der Vollprüfung
   (Artikelkategorie Grün)"), zusammen mit allen anderen automatisch
@@ -1100,9 +1124,10 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   Datenablage gespeichert. Dieselbe Detailansicht (Felder, Schlagworte) ist
   auch direkt im KV-Reiter über das MAK-Dropdown erreichbar (siehe oben) —
   beide teilen sich dieselben Daten.
-- **Verwaltung** – **fünf umschaltbare Ansichten** (Pillen oben im Reiter:
+- **Verwaltung** – **sechs umschaltbare Ansichten** (Pillen oben im Reiter:
   „Bereiche" / „Warengruppen" / „Prüfungsarten" / „Trivialartikel-Preisliste" /
-  „Gefahrenzone"), von denen jeweils nur eine gleichzeitig sichtbar ist —
+  „Prüfumfang je Artikelkategorie" / „Gefahrenzone"), von denen jeweils nur
+  eine gleichzeitig sichtbar ist —
   analog zum Ansicht-Umschalter im Reiter „Prüfgrundlagen" (siehe oben),
   statt einer langen Scroll-Seite mit allen Blöcken untereinander. Die
   Stammdaten-Listen sind zusätzlich bei mehr als einer Bildschirmseite an
@@ -1206,6 +1231,15 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     Banner „✓ verteilt", bei einer später manuell geänderten Summe „Summe
     weicht ab (manuell geändert?)". Ohne bereits hinzugefügte Kennzeichnung-
     Position bleibt der Hinweis reine Information ohne Verteilung.
+  - **Prüfumfang je Artikelkategorie** – drei editierbare Prozentfelder
+    (Grün/Grün*, Gelb, Rot/sonstige — Standard 40 %/50 %/60 %), sofort beim
+    Verlassen des Felds gespeichert. Steuert zentral **beides zugleich**: den
+    Artikelkategorie-Rabattfaktor auf die aus der Prüfgrundlage berechneten
+    Kosten in der Sicherheit-/Normprüfung-Warengruppen-Empfehlung im Reiter
+    „Kostenvoranschläge" sowie den Hinweistext „Teilprüfung: X% der
+    Vollprüfung" an der jeweiligen Position (siehe dort) — beide bezogen
+    dieselbe Artikelkategorie-Erkennung, „Grün" gilt mit und ohne Sternchen
+    gleich.
   - **Gefahrenzone** – löscht **Arbeitsvorrat, Prüfaufträge und
     Kostenvoranschläge** unwiderruflich (zwei Sicherheitsabfragen), z. B. um
     nach dem Testen sauber mit echten Daten neu zu starten.
