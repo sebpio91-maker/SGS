@@ -57,6 +57,9 @@ nav.tabs button.aktiv { background:var(--card); color:var(--accent-dark); font-w
 .liste-panel li:hover { background:#faf9f6; }
 .liste-panel li.aktiv { background:#e2efed; font-weight:600; }
 .liste-panel li .muted { color:var(--muted); font-size:0.78rem; }
+/* Norm, die (noch) in keiner einzigen Prüfgrundlage referenziert ist - dezent hervorgehoben, damit
+   solche Karteileichen beim Durchsehen der Normenliste auffallen. */
+.norm-ungenutzt { color:var(--amber); }
 .liste-panel .leer { padding:1rem 0.9rem; color:var(--muted); font-size:0.85rem; }
 
 #detail-panel-pa, #detail-panel-kv, #detail-panel-normen { flex:1; min-width:0; }
@@ -7087,18 +7090,43 @@ function gefiltereNormen() {
   }).sort((a, b) => normenSortierSchluessel(a.bezeichnung).localeCompare(normenSortierSchluessel(b.bezeichnung), "de", { numeric: true }));
 }
 
+/* Zählt je Norm-ID, in wie vielen VERSCHIEDENEN Prüfgrundlagen sie referenziert wird - eine
+   Prüfgrundlage, die dieselbe Norm in mehreren Blöcken führt (z. B. Sicherheit & Norm UND
+   FFU/Fitting), zählt dabei nur einmal. Wird EINMAL pro Listen-Aufbau berechnet statt je Norm
+   einzeln (siehe normVerwendungInPruefgrundlagen, das für die Detailansicht die vollständigen
+   Treffer liefert): bei ~120 Normen und ~185 Prüfgrundlagen wären das sonst zehntausende
+   Durchläufe pro Render. */
+function normVerwendungsZaehler() {
+  const zaehler = new Map();
+  data.pruefgrundlagen.forEach((e) => {
+    const inDieserPg = new Set();
+    ["normen", "ffuNormen", "stiwaNormen"].forEach((feld) => {
+      (e[feld] || []).forEach((r) => { if (r.normId) inDieserPg.add(r.normId); });
+    });
+    inDieserPg.forEach((normId) => zaehler.set(normId, (zaehler.get(normId) || 0) + 1));
+  });
+  return zaehler;
+}
+
 function renderNormenListe() {
   const suchfeld = document.getElementById("normen-suche");
   if (suchfeld && suchfeld !== document.activeElement) suchfeld.value = suchbegriffe.normen;
   const ul = document.getElementById("normen-liste");
   const liste = gefiltereNormen();
   if (!liste.length) { ul.innerHTML = '<li class="leer">Keine Normen gefunden.</li>'; return; }
-  ul.innerHTML = liste.map((n) => `
+  const verwendung = normVerwendungsZaehler();
+  ul.innerHTML = liste.map((n) => {
+    const anzahl = verwendung.get(n.id) || 0;
+    const verwendungText = anzahl
+      ? `in ${anzahl} Prüfgrundlage${anzahl === 1 ? "" : "n"}`
+      : `<span class="norm-ungenutzt">in keiner Prüfgrundlage</span>`;
+    return `
     <li class="${n.id === aktiveNormId ? "aktiv" : ""}" data-id="${n.id}">
       <strong>${normTypBadgeHtml(n.typ)}${escapeHtml(n.bezeichnung || "(ohne Bezeichnung)")}</strong>
       ${n.titel ? `<div class="muted">${escapeHtml(n.titel)}</div>` : ""}
-      <div class="muted">${(n.anwendungsbereiche || []).length} Anwendungsbereich${(n.anwendungsbereiche || []).length === 1 ? "" : "e"}${n.dateiname ? " · " + escapeHtml(n.dateiname) : ""}</div>
-    </li>`).join("");
+      <div class="muted">${verwendungText}${n.dateiname ? " · " + escapeHtml(n.dateiname) : ""}</div>
+    </li>`;
+  }).join("");
   ul.querySelectorAll("li[data-id]").forEach((li) => li.addEventListener("click", () => { aktiveNormId = li.dataset.id; renderNormenTab(); }));
 }
 
@@ -7197,7 +7225,13 @@ function renderNormDetail() {
     <div class="card">
       <div class="toolbar-zeile">
         <h2 style="margin:0">${escapeHtml(norm.bezeichnung || "(ohne Bezeichnung)")}</h2>
-        <span class="zaehler">${(norm.anwendungsbereiche || []).length} Anwendungsbereich${(norm.anwendungsbereiche || []).length === 1 ? "" : "e"}</span>
+        <span class="zaehler">${(() => {
+          /* Wie in der Normenliste: entscheidend ist, in wie vielen Prüfgrundlagen die Norm
+             tatsächlich angewendet wird. Die vollständige Aufstellung dazu steht weiter unten in
+             der Karte "Verwendet in Prüfgrundlagen". */
+          const anzahl = new Set(normVerwendungInPruefgrundlagen(norm).map((t) => t.pgId)).size;
+          return anzahl ? `in ${anzahl} Prüfgrundlage${anzahl === 1 ? "" : "n"}` : `<span class="norm-ungenutzt">in keiner Prüfgrundlage</span>`;
+        })()}</span>
       </div>
       <div class="formular-grid">
         <label>Bezeichnung<input type="text" data-feld="bezeichnung" value="${escapeHtml(norm.bezeichnung)}"></label>
@@ -7222,6 +7256,7 @@ function renderNormDetail() {
     <div class="card">
       <div class="toolbar-zeile">
         <h2 style="margin:0">Anwendungsbereiche</h2>
+        <span class="zaehler">${(norm.anwendungsbereiche || []).length}</span>
         <div class="spacer"></div>
         <button class="ghost small" id="anwendungsbereich-hinzufuegen">+ Anwendungsbereich hinzufügen</button>
       </div>

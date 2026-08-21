@@ -918,7 +918,22 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   Prüfgrundlagen verknüpft (siehe oben). Die **Auswahlleiste (Liste) zeigt
   neben der Bezeichnung jetzt auch den Titel** der Norm (sofern hinterlegt) —
   praktisch, um Normen mit kryptischer Bezeichnung (z. B. reine Normnummern)
-  auf einen Blick zu erkennen, ohne jede einzeln öffnen zu müssen. Über der
+  auf einen Blick zu erkennen, ohne jede einzeln öffnen zu müssen.
+
+  **Verwendungszähler statt Anwendungsbereich-Anzahl:** darunter steht, in
+  **wie vielen Prüfgrundlagen** die Norm tatsächlich angewendet wird — die
+  praktisch relevante Information, wenn man wissen will, ob eine Norm
+  überhaupt im Einsatz ist. Eine Prüfgrundlage, die dieselbe Norm in mehreren
+  Blöcken führt (z. B. Sicherheit & Norm *und* FFU/Fitting), zählt dabei nur
+  **einmal**. Normen, die in **keiner** Prüfgrundlage referenziert sind,
+  werden farblich hervorgehoben — so fallen Karteileichen beim Durchsehen
+  sofort auf. Dieselbe Angabe steht auch oben in der Detailansicht; die
+  vollständige Aufstellung (welche Produkte, welcher Block, welche Kosten)
+  liefert weiterhin die Karte „Verwendet in Prüfgrundlagen" darunter. Die
+  Anzahl der Anwendungsbereiche steht jetzt als eigener Zähler an der Karte
+  „Anwendungsbereiche" selbst.
+
+  Über der
   Liste steht ein eigenes **Suchfeld** (Bezeichnung, Titel, Dateiname,
   Bemerkung, Anwendungsbereiche) —
   synchron mit der allgemeinen Suche oben im Header, beide filtern dieselbe
