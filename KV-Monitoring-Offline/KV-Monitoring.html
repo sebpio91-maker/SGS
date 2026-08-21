@@ -60,6 +60,19 @@ nav.tabs button.aktiv { background:var(--card); color:var(--accent-dark); font-w
 /* Norm, die (noch) in keiner einzigen Prüfgrundlage referenziert ist - dezent hervorgehoben, damit
    solche Karteileichen beim Durchsehen der Normenliste auffallen. */
 .norm-ungenutzt { color:var(--amber); }
+/* Eine Zeile der Karte "Gemeinsam anzuwendende Normen" (Reiter „Normen"). */
+/* KEIN flex-wrap: sonst rutscht bei einem langen Norm-Titel die Löschen-Schaltfläche in die nächste
+   Zeile und die Einträge stehen nicht mehr bündig untereinander. Der Titel bekommt stattdessen
+   min-width:0 und wird bei Bedarf mit Auslassungspunkten gekürzt. */
+.norm-verknuepfung-zeile { display:flex; align-items:center; gap:0.5rem; padding:0.3rem 0; border-bottom:1px solid var(--border); font-size:0.85rem; }
+.norm-verknuepfung-zeile:last-child { border-bottom:none; }
+.norm-verknuepfung-zeile > button:first-child { flex-shrink:0; max-width:55%; text-align:left; }
+.norm-verknuepfung-zeile .norm-verknuepfung-titel { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* Hinweis auf noch fehlende, gemeinsam anzuwendende Normen - in der Prüfgrundlage-Bearbeitung und
+   in der Warengruppen-Empfehlung des KVs. */
+.norm-partner-hinweis { font-size:0.8rem; background:#fdf7e8; border:1px solid #e8d9a8; border-radius:6px; padding:0.45rem 0.6rem; margin:0.4rem 0; }
+.norm-partner-hinweis strong { color:var(--amber); }
+.norm-partner-hinweis .toolbar-zeile { margin:0.35rem 0 0; gap:0.35rem; }
 .liste-panel .leer { padding:1rem 0.9rem; color:var(--muted); font-size:0.85rem; }
 
 #detail-panel-pa, #detail-panel-kv, #detail-panel-normen { flex:1; min-width:0; }
@@ -2253,6 +2266,7 @@ function migriereNorm(n) {
   if (n.kosten === undefined) n.kosten = null;
   if (n.lidlSpezifischBlock === undefined) n.lidlSpezifischBlock = "sicherheitNorm";
   if (!Array.isArray(n.anwendungsbereiche)) n.anwendungsbereiche = [];
+  if (!Array.isArray(n.verknuepfteNormen)) n.verknuepfteNormen = [];
   delete n.preis;
   if (Array.isArray(n.pruefpunkte) && n.pruefpunkte.length) {
     n.anwendungsbereiche = n.anwendungsbereiche.concat(n.pruefpunkte.map((p) => ({
@@ -6842,8 +6856,17 @@ function renderNormenChips(container, entwurf, feldName) {
         </div>`;
       }).join("")
     : `<span class="muted" style="font-size:0.78rem">Keine.</span>`;
+  liste.insertAdjacentHTML("beforeend", fehlendePartnerNormenHtml(refs));
   liste.querySelectorAll('[data-rolle="entfernen"]').forEach((btn) => {
     btn.addEventListener("click", () => { refs.splice(Number(btn.dataset.idx), 1); renderNormenChips(container, entwurf, feldName); });
+  });
+  /* Übernimmt eine als "gehört dazu" gemeldete Norm mit einem Klick in denselben Block. */
+  liste.querySelectorAll('[data-rolle="partner-uebernehmen"]').forEach((btn) => {
+    btn.addEventListener("click", () => {
+      refs.push({ normId: btn.dataset.normid, inAnlehnungAn: false, kosten: null, kostenWeiteresProdukt: null, anwendungsbereichId: null });
+      renderNormenChips(container, entwurf, feldName);
+      aktualisiereNormenSumme(container, feldName, refs);
+    });
   });
   /* Springt direkt in die Bearbeitung der referenzierten Norm/PPM im Reiter "Normen" - schließt
      dafür (wie "Abbrechen") das Prüfgrundlage-Overlay und verwirft dessen ungespeicherten Entwurf,
@@ -7054,7 +7077,7 @@ document.getElementById("pruefgrundlagen-ansicht-toggle").querySelectorAll("butt
    hochgeladen (nur Rohtext-Extraktion, siehe extrahiereDocxRohtext). Prüfpunkte werden in beiden
    Fällen ausschließlich von Hand gepflegt (keine automatische Erkennung mehr). */
 function normEntwurfNeu() {
-  return { id: neueId(), bezeichnung: "Neue Norm", titel: "", typ: "norm", dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "", sapCode: "", kennzeichnung: false, bedienungsanleitung: false, pruefungsart: "", kosten: null, lidlSpezifischBlock: "sicherheitNorm" };
+  return { id: neueId(), bezeichnung: "Neue Norm", titel: "", typ: "norm", dateiname: "", hochgeladenAm: "", rohtext: "", anwendungsbereiche: [], bemerkung: "", sapCode: "", kennzeichnung: false, bedienungsanleitung: false, pruefungsart: "", kosten: null, lidlSpezifischBlock: "sicherheitNorm", verknuepfteNormen: [] };
 }
 
 /* Liest eine Norm-.docx-Datei ein und liefert einen vollständigen Norm-Datensatz (noch nicht in
@@ -7169,6 +7192,43 @@ function anwendungsbereichZeileHtml(b) {
    so ist auf einen Blick sichtbar, in welchen Produkten die Norm verwendet wird und was sie dort
    jeweils kostet (Kosten sind pro Prüfgrundlage/Produkt hinterlegt, nicht an der Norm selbst - siehe
    "Kosten je Norm" in den Prüfgrundlagen). */
+/* ---------- Verknüpfte Normen ----------
+   Manche Normen gehören fachlich zusammen und werden praktisch immer gemeinsam angewendet (z. B.
+   DIN EN 581-1 mit -2 und -3). Die Verknüpfung wird bewusst nur EINSEITIG gespeichert (in
+   norm.verknuepfteNormen), gilt aber in BEIDE Richtungen: verknuepfteNormenFuer() zählt sowohl die
+   an dieser Norm hinterlegten IDs als auch alle Normen, die ihrerseits diese Norm eingetragen
+   haben. Dadurch kann die Verknüpfung nicht "halb" existieren (A kennt B, B kennt A nicht), ohne
+   dass beim Speichern zwei Datensätze gepflegt werden müssten. */
+function verknuepfteNormenFuer(norm) {
+  if (!norm) return [];
+  const ids = new Set(norm.verknuepfteNormen || []);
+  data.normen.forEach((n) => {
+    if (n.id !== norm.id && (n.verknuepfteNormen || []).includes(norm.id)) ids.add(n.id);
+  });
+  ids.delete(norm.id);
+  return [...ids].map((id) => data.normen.find((n) => n.id === id)).filter(Boolean)
+    .sort((a, b) => normenSortierSchluessel(a.bezeichnung).localeCompare(normenSortierSchluessel(b.bezeichnung), "de", { numeric: true }));
+}
+
+function verknuepfeNormen(norm, andereId) {
+  if (!norm || !andereId || norm.id === andereId) return false;
+  norm.verknuepfteNormen = norm.verknuepfteNormen || [];
+  const andere = data.normen.find((n) => n.id === andereId);
+  if (!andere) return false;
+  /* Schon in der Gegenrichtung hinterlegt? Dann nichts tun - die Verknüpfung gilt bereits. */
+  if (norm.verknuepfteNormen.includes(andereId) || (andere.verknuepfteNormen || []).includes(norm.id)) return false;
+  norm.verknuepfteNormen.push(andereId);
+  return true;
+}
+
+/* Entfernt die Verknüpfung unabhängig davon, an welcher der beiden Normen sie hinterlegt ist. */
+function loeseNormVerknuepfung(norm, andereId) {
+  if (!norm) return;
+  norm.verknuepfteNormen = (norm.verknuepfteNormen || []).filter((id) => id !== andereId);
+  const andere = data.normen.find((n) => n.id === andereId);
+  if (andere) andere.verknuepfteNormen = (andere.verknuepfteNormen || []).filter((id) => id !== norm.id);
+}
+
 function normVerwendungInPruefgrundlagen(norm) {
   const bloecke = [["normen", "Sicherheit & Norm"], ["ffuNormen", "FFU/Fitting"], ["stiwaNormen", "NGO/StiWa"]];
   const treffer = [];
@@ -7186,6 +7246,113 @@ function normVerwendungInPruefgrundlagen(norm) {
     });
   });
   return treffer;
+}
+
+/* Sammelt alle Normen, die laut Verknüpfung zu den bereits referenzierten Normen gehören, in dieser
+   Referenzliste aber noch FEHLEN - Grundlage für den Hinweis in der Prüfgrundlage-Bearbeitung
+   (siehe fehlendePartnerNormenHtml) und in der Warengruppen-Empfehlung des KVs. */
+function fehlendePartnerNormen(refs) {
+  const vorhanden = new Set((refs || []).map((r) => r.normId));
+  const fehlend = new Map();
+  (refs || []).forEach((r) => {
+    const norm = data.normen.find((n) => n.id === r.normId);
+    if (!norm) return;
+    verknuepfteNormenFuer(norm).forEach((partner) => {
+      if (!vorhanden.has(partner.id)) fehlend.set(partner.id, { partner, wegen: norm });
+    });
+  });
+  return [...fehlend.values()];
+}
+
+/* Hinweiszeile unter der Normen-Referenzliste einer Prüfgrundlage: nennt die noch fehlenden,
+   fachlich zugehörigen Normen und bietet an, sie direkt in denselben Block zu übernehmen. */
+function fehlendePartnerNormenHtml(refs) {
+  const fehlend = fehlendePartnerNormen(refs);
+  if (!fehlend.length) return "";
+  return `<div class="norm-partner-hinweis">
+    <strong>Gehört üblicherweise dazu:</strong> ${fehlend.map((f) => `${escapeHtml(f.partner.bezeichnung)} <span class="muted">(wegen ${escapeHtml(f.wegen.bezeichnung)})</span>`).join(" · ")}
+    <div class="toolbar-zeile">
+      ${fehlend.map((f) => `<button type="button" class="ghost small" data-rolle="partner-uebernehmen" data-normid="${escapeHtml(f.partner.id)}">+ ${escapeHtml(f.partner.bezeichnung)}</button>`).join("")}
+    </div>
+  </div>`;
+}
+
+/* Karte "Gemeinsam anzuwendende Normen" in der Normen-Detailansicht: zeigt die (in beide Richtungen
+   aufgelöste, siehe verknuepfteNormenFuer) Gruppe zusammengehöriger Normen, lässt weitere über ein
+   durchsuchbares Dropdown ergänzen und einzelne wieder lösen. Klick auf eine verknüpfte Norm springt
+   direkt dorthin. */
+function normVerknuepfungHtml(norm) {
+  const verknuepft = verknuepfteNormenFuer(norm);
+  return `<div class="card" id="norm-verknuepfung-karte">
+    <div class="toolbar-zeile">
+      <h2 style="margin:0">Gemeinsam anzuwendende Normen</h2>
+      <span class="zaehler">${verknuepft.length}</span>
+      <div class="spacer"></div>
+    </div>
+    <p class="hinweis" style="margin-top:0">Normen, die fachlich zusammengehören und in der Praxis gemeinsam angewendet werden (z. B. DIN EN 581-1 mit -2 und -3). Die Verknüpfung gilt immer <strong>in beide Richtungen</strong> — sie muss nur an einer der beteiligten Normen eingetragen werden und erscheint automatisch auch bei den anderen. Wird eine dieser Normen in einer Prüfgrundlage referenziert, weist das Tool dort auf die übrigen hin.</p>
+    <div id="norm-verknuepfung-liste">${verknuepft.length
+      ? verknuepft.map((n) => `<div class="norm-verknuepfung-zeile">
+          <button type="button" class="ghost small" data-action="norm-verknuepfung-oeffnen" data-id="${escapeHtml(n.id)}" title="Zu dieser Norm springen">${normTypBadgeHtml(n.typ)}${escapeHtml(n.bezeichnung || "(ohne Bezeichnung)")}</button>
+          <span class="muted norm-verknuepfung-titel" title="${escapeHtml(n.titel || "")}">${escapeHtml(n.titel || "")}</span>
+          <button type="button" class="ghost small" data-action="norm-verknuepfung-loesen" data-id="${escapeHtml(n.id)}" title="Verknüpfung lösen">✕</button>
+        </div>`).join("")
+      : '<p class="muted">Noch keine Verknüpfung — unten eine Norm auswählen.</p>'}</div>
+    <div class="ss-feld" style="max-width:480px;margin-top:0.7rem">
+      <button type="button" class="ms-btn" id="norm-verknuepfung-btn">+ Norm verknüpfen ▾</button>
+      <div class="ms-panel breit" id="norm-verknuepfung-panel" hidden>
+        <input type="text" class="ms-suche" placeholder="In der Normendatenbank suchen…">
+        <div class="ms-liste"></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function initialisiereNormVerknuepfung(panel, norm) {
+  panel.querySelectorAll('[data-action="norm-verknuepfung-oeffnen"]').forEach((btn) => {
+    btn.addEventListener("click", () => { aktiveNormId = btn.dataset.id; renderNormenTab(); });
+  });
+  panel.querySelectorAll('[data-action="norm-verknuepfung-loesen"]').forEach((btn) => {
+    btn.addEventListener("click", () => {
+      loeseNormVerknuepfung(norm, btn.dataset.id);
+      speichereInLocalStorage();
+      renderNormenTab();
+      zeigeStatus("Verknüpfung gelöst · " + jetzt(), "ok");
+    });
+  });
+
+  const auswahlBtn = panel.querySelector("#norm-verknuepfung-btn");
+  const auswahlPanel = panel.querySelector("#norm-verknuepfung-panel");
+  if (!auswahlBtn || !auswahlPanel) return;
+  const suche = auswahlPanel.querySelector(".ms-suche");
+  const liste = auswahlPanel.querySelector(".ms-liste");
+
+  function baueListe(q) {
+    /* Bereits verknüpfte Normen und die Norm selbst stehen nicht zur Auswahl. */
+    const schonVerknuepft = new Set(verknuepfteNormenFuer(norm).map((n) => n.id));
+    const norm_q = normalisiere(q);
+    const treffer = data.normen.filter((n) => n.id !== norm.id && !schonVerknuepft.has(n.id)
+      && (!norm_q || normalisiere(`${n.bezeichnung} ${n.titel}`).includes(norm_q)));
+    liste.innerHTML = treffer.length
+      ? treffer.slice(0, 200).map((n) => `<button type="button" class="ss-option" data-id="${escapeHtml(n.id)}">${normTypBadgeHtml(n.typ)}${escapeHtml(n.bezeichnung || "(ohne Bezeichnung)")}${n.titel ? ` <span class="muted">${escapeHtml(n.titel)}</span>` : ""}</button>`).join("")
+      : `<div class="ss-leer">Keine passende Norm gefunden.</div>`;
+    liste.querySelectorAll(".ss-option").forEach((o) => {
+      o.addEventListener("click", () => {
+        verknuepfeNormen(norm, o.dataset.id);
+        speichereInLocalStorage();
+        renderNormenTab();
+        zeigeStatus("Normen verknüpft · " + jetzt(), "ok");
+      });
+    });
+  }
+  auswahlBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const warOffen = !auswahlPanel.hidden;
+    document.querySelectorAll(".ms-panel").forEach((p) => (p.hidden = true));
+    auswahlPanel.hidden = warOffen;
+    if (!warOffen) { suche.value = ""; baueListe(""); suche.focus(); }
+  });
+  auswahlPanel.addEventListener("click", (e) => e.stopPropagation());
+  suche.addEventListener("input", () => baueListe(suche.value));
 }
 
 function normVerwendungHtml(norm) {
@@ -7268,7 +7435,10 @@ function renderNormDetail() {
         ? norm.anwendungsbereiche.map((b) => anwendungsbereichZeileHtml(b)).join("")
         : '<p class="muted">Noch keine Anwendungsbereiche - über „+ Anwendungsbereich hinzufügen" oben ergänzen.</p>'}</div>
     </div>
+    ${normVerknuepfungHtml(norm)}
     ${normVerwendungHtml(norm)}`;
+
+  initialisiereNormVerknuepfung(panel, norm);
 
   panel.querySelectorAll('[data-action="norm-pg-oeffnen"]').forEach((tr) => {
     tr.addEventListener("click", () => {
@@ -8262,7 +8432,7 @@ function schluesselArbeitsvorrat(r) { return normalisiere(r.ian); }
 function schluesselPa(p) { return normalisiere(p.ian); }
 function schluesselPruefgrundlage(e) { return normalisiereWarengruppe(e.warengruppeCode) + "|" + normalisiere(e.produkt); }
 function schluesselNorm(n) { return normalisiere(n.bezeichnung); }
-const NORM_FELDER = ["bezeichnung", "titel", "typ", "dateiname", "rohtext", "anwendungsbereiche", "bemerkung", "sapCode", "kennzeichnung", "bedienungsanleitung", "pruefungsart", "kosten", "lidlSpezifischBlock"];
+const NORM_FELDER = ["bezeichnung", "titel", "typ", "dateiname", "rohtext", "anwendungsbereiche", "bemerkung", "sapCode", "kennzeichnung", "bedienungsanleitung", "pruefungsart", "kosten", "lidlSpezifischBlock", "verknuepfteNormen"];
 function schluesselMak(m) { return normalisiere(m.id); }
 const MAK_FELDER = ["kategorie", "bereich", "parameter", "anforderung", "normEu", "normUs", "pruefnachweis", "schlagworte", "varianten", "kosten", "kostenWeiteresArtikel", "abrechnungsmodus", "bewertungsgrundlageErforderlich", "bemerkung"];
 function schluesselWarengruppe(w) { return normalisiereWarengruppe(w.code); }

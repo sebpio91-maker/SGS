@@ -993,6 +993,32 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   einem KV hinzugefügt wird (siehe oben); für andere Prüfungsarten ist er
   vorerst reine Datenerfassung ohne automatische Auswirkung im KV.
 
+  **Gemeinsam anzuwendende Normen (Verknüpfung)**: manche Normen gehören
+  fachlich zusammen und werden in der Praxis immer gemeinsam angewendet — z. B.
+  DIN EN 581-1 zusammen mit -2 (Stühle) bzw. -3 (Tische). In der Detailansicht
+  jeder Norm gibt es dafür die Karte **„Gemeinsam anzuwendende Normen"**: über
+  „+ Norm verknüpfen" lässt sich eine beliebige Anzahl weiterer Normen aus der
+  Normendatenbank zuordnen, ein Klick auf einen Eintrag springt direkt zu
+  dieser Norm, „✕" löst die Verknüpfung wieder.
+
+  Die Verknüpfung gilt **immer in beide Richtungen** und muss deshalb nur an
+  *einer* der beteiligten Normen eingetragen werden — sie erscheint automatisch
+  auch bei allen anderen. Technisch wird sie bewusst nur einseitig gespeichert
+  und die Gegenrichtung bei jeder Anzeige neu aufgelöst; dadurch kann sie nicht
+  „halb" existieren (A kennt B, B kennt A nicht). Auch das Lösen wirkt
+  beidseitig, unabhängig davon, an welcher Norm die Verknüpfung ursprünglich
+  eingetragen wurde.
+
+  **Praktischer Nutzen in der Prüfgrundlage:** wird eine verknüpfte Norm in
+  einem Prüfblock referenziert, ihre Partner-Norm(en) aber nicht, erscheint dort
+  automatisch ein Hinweis **„Gehört üblicherweise dazu: …"** — inklusive der
+  Angabe, wegen welcher Norm er erscheint, und je einer Schaltfläche, die die
+  fehlende Norm mit einem Klick in denselben Block übernimmt. Sind alle Partner
+  vorhanden, verschwindet der Hinweis. Beliebig große Gruppen sind möglich:
+  verknüpft man z. B. 581-1 mit -2 und -3, gilt 581-1 als gemeinsamer Bezug;
+  sollen zusätzlich -2 und -3 direkt zusammenhängen, verknüpft man diese beiden
+  ebenfalls miteinander.
+
   **Anwendungsbereiche**: manche Normen stellen je nach Verwendungszweck des
   Produkts unterschiedliche Anforderungen — z. B. hat DIN EN 581-2
   unterschiedliche Anforderungen für Camping-, Wohn- und Objektbereich. Über
