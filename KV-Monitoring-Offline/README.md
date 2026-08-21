@@ -1456,9 +1456,46 @@ sonst ausgeblendet wären).
   keine feste ID-Kopplung), damit auch KVs ohne (noch) vorhandene PA
   funktionieren.
 
+## Nicht ausgewertete Datenfelder
+
+Einige Felder werden zwar gespeichert, exportiert und beim Zusammenführen
+abgeglichen, im Tool selbst aber nirgends angezeigt oder verrechnet. Sie
+bleiben bewusst erhalten (die Daten sollen nicht verloren gehen), sind aber
+so einsortiert, dass sie nicht mehr zwischen den täglich gebrauchten Feldern
+stehen:
+
+- **Arbeitsvorrat: `link`, `versand`, `uvUndKlimawechsel`** – kommen aus dem
+  SAP-Export, werden nirgends gelesen. Zusammen mit **`bestellnummer`** (die
+  beim Excel-Import einmalig als Quelle für IAN und Charge dient, danach aber
+  nicht mehr gebraucht wird) stehen sie im Bearbeiten-Dialog in einem
+  zugeklappten Abschnitt **„Weitere Felder aus dem SAP-Export"**, der sich
+  automatisch öffnet, sobald mindestens eines davon befüllt ist.
+- **Kostenvoranschlag: `erstelltAm`** – wird beim Anlegen gesetzt, aber
+  nirgends angezeigt, sortiert oder exportiert.
+- **Trivialartikel-Preisliste: `preisChemie`, `preisLfgbStichprobe`,
+  `preisGesamt`, `preisAddSortierung`** – nur `preisVpKennzeichnung` wird
+  tatsächlich angewendet (siehe dort); die übrigen vier betreffen den
+  chemischen Teil der Prüfung und sind reines Nachschlagewerk.
+- **MAK: `kostenWeiteresArtikel`** – wird als „Staffelung je weiterem
+  Artikel" angezeigt, aber nicht verrechnet (anders als das Gegenstück
+  `kostenWeiteresProdukt` bei Normen, das über die Styles-Formel automatisch
+  einfließt).
+
 ## Technisch
 
 Eine einzelne Datei, keine Internetverbindung nötig. Enthält eingebettet:
 [SheetJS/xlsx](https://github.com/SheetJS/sheetjs) (Excel-Import) und
 [pdf.js](https://mozilla.github.io/pdf.js/) (PDF-Text-Extraktion) — beide
 komplett offline, keine Daten verlassen den Rechner.
+
+**Darstellung/CSS – zwei Regeln, auf die sich vieles stützt:** Formularfelder
+erben Schriftart und -größe über eine globale `input, select, textarea`-Regel
+(ohne sie fallen Felder außerhalb der Sonderfälle auf Browser-Defaults zurück,
+Textareas werden dann z. B. in Monospace dargestellt). Tabellen, die ihre
+Spaltenbreiten vollständig deklarieren, tragen zusätzlich die Klasse
+`tabelle-fest` (`table-layout: fixed`) — ohne sie behandelt der Browser die
+Breitenangaben nur als Vorschlag und verteilt am Ende nach Inhalt, wodurch
+dieselbe Tabelle je nach Datenbestand unterschiedlich aussieht. In der
+Arbeitsvorrat-Tabelle (17 Spalten) bleiben erste und letzte Spalte beim
+seitlichen Scrollen am Rand stehen, damit IAN und Aktions-Schaltflächen immer
+erreichbar sind.

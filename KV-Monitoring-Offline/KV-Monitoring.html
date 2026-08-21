@@ -19,6 +19,14 @@
 }
 * { box-sizing: border-box; }
 body { margin:0; font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--text); }
+/* Formularfelder erben grundsätzlich Schriftart/-größe des Dokuments. Ohne diese GLOBALE Regel
+   fallen alle Felder außerhalb der spezifischeren Scopes (.formular-grid, table.tabelle,
+   .anwendungsbereich-item, Filterzeile) auf die Browser-Defaults zurück - insbesondere <textarea>
+   wird dann in Monospace gerendert, während direkt daneben stehende Felder die normale Schrift
+   verwenden. Das war die Ursache für die uneinheitliche Feld-Darstellung in mehreren Dialogen
+   (z. B. Kommentarfeld je Prüfblock in "Prüfgrundlage bearbeiten"). */
+input, select, textarea { font-family:inherit; font-size:0.88rem; color:var(--text); }
+textarea { resize:vertical; }
 header.topbar { display:flex; flex-wrap:wrap; gap:0.6rem; align-items:center; padding:0.7rem 1rem; background:var(--card); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:5; }
 header.topbar h1 { font-size:1.1rem; margin:0 1rem 0 0; white-space:nowrap; }
 header.topbar .spacer { flex:1; }
@@ -99,7 +107,25 @@ nav.tabs button.aktiv { background:var(--card); color:var(--accent-dark); font-w
 .tabellen-wrapper { overflow-x:auto; border:1px solid var(--border); border-radius:8px; background:var(--card); max-height:70vh; overflow-y:auto; }
 table.tabelle { width:100%; border-collapse:collapse; }
 table.tabelle th, table.tabelle td { padding:0.4rem 0.5rem; border-bottom:1px solid var(--border); vertical-align:top; text-align:left; font-size:0.85rem; }
-table.tabelle thead th { background:#eef2f1; font-weight:600; white-space:nowrap; position:sticky; top:0; }
+/* Kopfzeile bleibt beim vertikalen Scrollen stehen. Hat eine Tabelle ZWEI thead-Zeilen (Arbeitsvorrat:
+   Spaltenüberschriften + Filterzeile), dürfen beide nicht auf top:0 kleben - sonst legen sie sich beim
+   Scrollen übereinander. Die zweite Zeile klebt deshalb genau unterhalb der ersten (--kopfzeilen-hoehe),
+   und die z-index-Staffelung sorgt dafür, dass die Überschrift über der Filterzeile liegt und beide
+   über den Zellinhalten. */
+table.tabelle { --kopfzeilen-hoehe:2.05rem; }
+/* Ohne table-layout:fixed sind die am <th> gesetzten width-Prozente für den Browser nur
+   Vorschläge - er verteilt die Breiten am Ende nach Inhalt. Dieselbe Tabelle sieht dadurch je nach
+   Datenbestand unterschiedlich aus, und lange Texte in einer Spalte quetschen alle anderen zusammen.
+   Tabellen, die ihre Spaltenbreiten vollständig deklarieren, bekommen deshalb zusätzlich die Klasse
+   "tabelle-fest" und halten sich damit exakt an die Vorgabe. Spalten ohne eigene Breitenangabe
+   teilen sich den Rest gleichmäßig auf. */
+table.tabelle.tabelle-fest { table-layout:fixed; }
+table.tabelle.tabelle-fest td { overflow:hidden; text-overflow:ellipsis; }
+/* Bei fester Spaltenbreite darf die Überschrift umbrechen statt abgeschnitten zu werden - sonst
+   verlieren lange Spaltentitel wie "Chemie ≥4 Risikoparameter €" ihr Ende. */
+table.tabelle.tabelle-fest thead th { white-space:normal; }
+table.tabelle thead th { background:#eef2f1; font-weight:600; white-space:nowrap; position:sticky; top:0; z-index:2; }
+table.tabelle thead tr:nth-child(2) th { top:var(--kopfzeilen-hoehe); z-index:1; }
 table.tabelle input[type=text], table.tabelle input[type=number], table.tabelle select, table.tabelle textarea {
   width:100%; min-width:7ch; border:1px solid transparent; border-radius:4px; padding:0.3rem; font-family:inherit; font-size:0.85rem; background:transparent; resize:vertical; min-height:2.2em;
 }
@@ -108,7 +134,22 @@ table.tabelle input:focus, table.tabelle select:focus, table.tabelle textarea:fo
 table.tabelle.readonly td { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px; }
 table.tabelle.readonly td.zentriert { text-align:center; }
 #arbeitsvorrat-tabelle td:first-child { overflow:visible; text-overflow:clip; }
+/* Die Arbeitsvorrat-Tabelle hat 17 Spalten und ist damit breiter als die meisten Bildschirme. Ohne
+   Sonderbehandlung landen ausgerechnet die Aktionsschaltflächen (Bearbeiten/PA hochladen/KV) im
+   nur per Horizontalscroll erreichbaren Bereich. Erste und letzte Spalte bleiben deshalb am
+   jeweiligen Rand stehen: links die IAN als Orientierung, rechts die Aktionen als Zugriff. */
+#arbeitsvorrat-tabelle th:first-child, #arbeitsvorrat-tabelle td:first-child { position:sticky; left:0; background:var(--card); z-index:1; }
+#arbeitsvorrat-tabelle thead th:first-child { background:#eef2f1; z-index:3; }
+#arbeitsvorrat-tabelle tr#arbeitsvorrat-filter-zeile th:first-child { background:#f7f9f8; }
+#arbeitsvorrat-tabelle th:last-child, #arbeitsvorrat-tabelle td:last-child { position:sticky; right:0; background:var(--card); z-index:1; box-shadow:-1px 0 0 var(--border); }
+#arbeitsvorrat-tabelle thead th:last-child { background:#eef2f1; z-index:3; }
+#arbeitsvorrat-tabelle tr#arbeitsvorrat-filter-zeile th:last-child { background:#f7f9f8; }
+#arbeitsvorrat-tabelle tr:hover td:first-child, #arbeitsvorrat-tabelle tr:hover td:last-child { background:#faf9f6; }
 tr#arbeitsvorrat-filter-zeile th { background:#f7f9f8; padding:0.25rem 0.4rem; }
+/* Zelle der durchsuchbaren Mehrfachauswahl in der Filterzeile - das ausklappbare .ms-panel darin ist
+   absolut positioniert und bezieht sich auf diese Zelle (position:sticky genügt dafür, siehe
+   renderArbeitsvorratFilterZeile). overflow:visible, damit das Panel aus der Zelle herausragen darf. */
+th.filter-zelle-multi { overflow:visible; }
 tr#arbeitsvorrat-filter-zeile select, tr#arbeitsvorrat-filter-zeile input[type=text] { width:100%; font-size:0.78rem; padding:0.15rem; border:1px solid var(--border); border-radius:4px; font-family:inherit; }
 .ms-btn { width:100%; text-align:left; font-size:0.78rem; padding:0.18rem 0.35rem; border:1px solid var(--border); border-radius:4px; background:#fff; cursor:pointer; color:var(--text); }
 .ms-btn:hover { border-color:var(--accent); }
@@ -130,9 +171,22 @@ tr#arbeitsvorrat-filter-zeile select, tr#arbeitsvorrat-filter-zeile input[type=t
 .stil-block { border-left:3px solid var(--border); padding:0.4rem 0.8rem; margin-bottom:0.5rem; background:#faf9f6; border-radius:0 4px 4px 0; }
 .stil-block .stil-name { font-weight:600; font-size:0.85rem; margin-bottom:0.25rem; color:var(--accent-dark); }
 .stil-block .stil-inhalt { white-space:pre-wrap; font-size:0.85rem; }
-.zeile-aktionen { display:flex; gap:0.25rem; white-space:nowrap; }
+/* overflow:visible hebt das Abschneiden aus .tabelle-fest gezielt für die Aktionsspalte wieder auf -
+   dort dürfen die Schaltflächen nie beschnitten werden, auch wenn sie zusammen minimal breiter
+   ausfallen als die Spalte. */
+.zeile-aktionen { display:flex; gap:0.25rem; white-space:nowrap; overflow:visible; }
 .leerzustand { padding:2rem; text-align:center; color:var(--muted); }
 .hinweis { font-size:0.8rem; color:var(--muted); margin:0.3rem 0 0.8rem; }
+/* Zugeklappter Abschnitt für selten gebrauchte Formularfelder (siehe arbeitsvorratFormularHtml). */
+.neben-felder { margin-top:0.9rem; border-top:1px solid var(--border); padding-top:0.6rem; }
+.neben-felder > summary { cursor:pointer; font-size:0.82rem; color:var(--muted); }
+.neben-felder > summary:hover { color:var(--accent-dark); }
+/* Langer Erklärtext oberhalb einer Tabelle: standardmäßig zugeklappt, damit der Blick sofort auf
+   den Daten liegt statt auf einer 10-zeiligen Textwand. */
+details.hinweis-block { margin:0.3rem 0 0.8rem; }
+details.hinweis-block > summary { cursor:pointer; font-size:0.8rem; color:var(--muted); }
+details.hinweis-block > summary:hover { color:var(--accent-dark); }
+details.hinweis-block .hinweis { margin-top:0.4rem; }
 .mak-feld { margin-bottom:0.8rem; }
 .mak-feld h3 { font-size:0.82rem; margin:0 0 0.2rem; color:var(--accent-dark); }
 .mak-feld p { margin:0; font-size:0.85rem; white-space:pre-wrap; }
@@ -168,8 +222,13 @@ tr.klickbar:hover td { background:#faf9f6; }
 .dokument-item summary button { margin-left:auto; }
 .dokument-text { white-space:pre-wrap; font-family:inherit; font-size:0.8rem; max-height:320px; overflow-y:auto; background:#faf9f6; border-top:1px solid var(--border); padding:0.6rem 0.8rem; margin:0; }
 
-.ss-feld { position:relative; margin-bottom:0.7rem; }
+/* Durchsuchbares Einfachauswahl-Feld (Warengruppe/Bereich). Steht in der KV-Detailansicht zwischen
+   zwei .formular-grid-Blöcken und muss deren vertikalen Rhythmus mittragen - ohne den oberen Abstand
+   klebte die Beschriftung sonst direkt am darüberliegenden Feld. */
+.ss-feld { position:relative; margin:0.7rem 0; }
 .ss-feld > label { display:block; font-size:0.85rem; font-weight:600; margin-bottom:0.25rem; }
+/* Innerhalb eines Rasters füllt das Feld eine ganze Zeile und bringt seinen Abstand nicht doppelt mit. */
+.formular-grid .ss-feld { grid-column:1 / -1; margin:0; }
 .ss-option { display:block; width:100%; text-align:left; padding:0.3rem 0.5rem; border:none; background:none; cursor:pointer; font-size:0.82rem; border-radius:4px; color:var(--text); font-family:inherit; }
 .ss-option:hover { background:#f0f4f3; }
 .ss-option.ss-neu { color:var(--accent-dark); font-weight:600; border-top:1px solid var(--border); margin-top:0.2rem; padding-top:0.4rem; }
@@ -184,7 +243,15 @@ tr.klickbar:hover td { background:#faf9f6; }
 .norm-ref-kopf button { border:none; background:none; color:var(--muted); cursor:pointer; font-size:0.85rem; padding:0.1rem 0.3rem; line-height:1; }
 .norm-ref-zeile { display:flex; align-items:center; gap:0.9rem; flex-wrap:wrap; font-size:0.78rem; font-weight:400; margin-bottom:0.35rem; }
 .norm-ref-zeile label { display:inline-flex; align-items:center; gap:0.25rem; white-space:nowrap; }
-.norm-ref-zeile input[type="number"] { width:80px; font-family:inherit; font-size:0.78rem; padding:0.2rem 0.35rem; border:1px solid var(--border); border-radius:4px; }
+/* 7rem statt der früheren 80px: bei 80px wurde der Platzhalter "wie Kosten" mitten im Wort
+   abgeschnitten ("wie Koste"). Gilt gleichermaßen für die Kostenfelder im Prüfgrundlage-Formular
+   und in der Warengruppen-Empfehlung des KVs (siehe .pg-kosten-feld). */
+.norm-ref-zeile input[type="number"] { width:7rem; font-family:inherit; font-size:0.78rem; padding:0.2rem 0.35rem; border:1px solid var(--border); border-radius:4px; }
+/* Gemeinsame Darstellung der beiden direkt in der KV-Warengruppen-Empfehlung editierbaren
+   Prüfgrundlage-Kostenfelder (siehe mechanikKostenBearbeitenHtml) - vorher als identischer
+   Inline-Style doppelt im JS gepflegt. */
+.pg-kosten-feld { display:inline-flex; align-items:center; gap:0.35rem; font-size:0.78rem; font-weight:400; color:var(--muted); margin-right:0.9rem; }
+.pg-kosten-feld input[type="number"] { width:7rem; font-size:0.82rem; padding:0.2rem 0.35rem; border:1px solid var(--border); border-radius:5px; }
 .norm-ref-zeile select { font-family:inherit; font-size:0.78rem; padding:0.2rem 0.35rem; border:1px solid var(--border); border-radius:4px; max-width:220px; }
 .norm-ref-item textarea[data-rolle="bemerkung"] { width:100%; font-family:inherit; font-size:0.8rem; padding:0.35rem 0.5rem; border:1px solid var(--border); border-radius:6px; resize:vertical; }
 .normen-summe { font-size:0.82rem; font-weight:600; margin:0 0 0.4rem 0; color:var(--accent-dark); }
@@ -218,7 +285,10 @@ tr.klickbar:hover td { background:#faf9f6; }
    übereinstimmt. Mit eigenem Scrollcontainer bleiben Sichtfenster und Klebe-Bezugsrahmen identisch. */
 #overlay { position:fixed; inset:0; background:rgba(0,0,0,0.35); display:none; align-items:flex-start; justify-content:center; padding:2rem 1rem; z-index:20; }
 #overlay.sichtbar { display:flex; }
-#overlay-box { background:var(--card); border-radius:10px; max-width:960px; width:100%; max-height:calc(100vh - 4rem); overflow-y:auto; padding:1.2rem 1.5rem; margin-bottom:2rem; }
+/* padding-bottom:0 - der untere Abstand kommt stattdessen aus .overlay-actions selbst (die als
+   letztes Element klebt); sonst entsteht unterhalb der Aktionsleiste ein leerer, mitscrollender
+   Streifen, durch den der darüberliegende Inhalt hindurchscheint. */
+#overlay-box { background:var(--card); border-radius:10px; max-width:960px; width:100%; max-height:calc(100vh - 4rem); overflow-y:auto; padding:1.2rem 1.5rem 0; margin-bottom:2rem; }
 #overlay-box h2 { margin-top:0; }
 .merge-section { margin-top:1.2rem; }
 .merge-section h3 { font-size:0.95rem; margin-bottom:0.4rem; }
@@ -227,7 +297,11 @@ tr.klickbar:hover td { background:#faf9f6; }
 .diff-cols { display:grid; grid-template-columns:1fr 1fr; gap:0.6rem; margin-top:0.4rem; }
 .diff-cols div h4 { margin:0 0 0.2rem; font-size:0.78rem; color:var(--muted); }
 .diff-cols textarea { width:100%; min-height:4em; font-family:inherit; font-size:0.82rem; border:1px solid var(--border); border-radius:4px; padding:0.3rem; }
-.overlay-actions { position:sticky; bottom:0; background:var(--card); padding-top:1rem; margin-top:1rem; border-top:1px solid var(--border); display:flex; gap:0.7rem; }
+/* Klebt am unteren Rand des #overlay-box-Scrollcontainers. padding-bottom (statt am Container) sorgt
+   dafür, dass die Leiste den darunterliegenden Inhalt vollständig abdeckt statt ihn durchscheinen zu
+   lassen; align-items:center richtet gemischte Inhalte (Buttons + erklärender Text, z. B. „Kein
+   Prüfauftrag mit dieser IAN gefunden.") auf einer gemeinsamen Grundlinie aus. */
+.overlay-actions { position:sticky; bottom:0; background:var(--card); padding:1rem 0 1.2rem; margin-top:1rem; border-top:1px solid var(--border); display:flex; flex-wrap:wrap; gap:0.7rem; align-items:center; z-index:3; }
 input[type=file] { display:none; }
 </style>
 </head>
@@ -272,7 +346,9 @@ input[type=file] { display:none; }
       <button type="button" data-ansicht="nein">Arbeitsvorrat (offene Mechanik)</button>
       <button type="button" data-ansicht="">Gesamtliste (alle jemals hochgeladenen)</button>
     </div>
+    <details class="hinweis-block"><summary>ℹ Wie diese Tabelle funktioniert (Ansichten, Spalten, Filter)</summary>
     <p class="hinweis"><strong>Arbeitsvorrat</strong> zeigt nur Einträge, bei denen die Mechanik noch offen ist (Standardansicht); <strong>Gesamtliste</strong> zeigt alle jemals hochgeladenen Aufträge unabhängig vom Mech.-Status — oben umschaltbar. Auftrag (Vertriebsbeleg), Bezeichnung, Lieferant, Angelegt am und Sachbearbeiter kommen aus dem SAP-Export. Die <strong>Charge</strong> wird aus der SAP-Export-Spalte „Bestellnummer" abgeleitet (der Teil hinter dem „_", z. B. aus „538616_2604" wird Charge „2604") — fehlt sie dort, wird ersatzweise die Charge aus dem verknüpften Prüfauftrag angezeigt (Feld „Initiale Charge" bzw. „IAN / Charge" der PDF). Warengruppe, Styles, LFGB? und Trivial? werden — wenn möglich — aus dem verknüpften Prüfauftrag übernommen (siehe Reiter „Prüfaufträge"). „Mech. erledigt" ist nur ein Haken, ob der KV von mechanischer Seite fertig ist; anklicken zum Umschalten. Die Spalte „PA" zeigt, sobald zu einer IAN ein Prüfauftrag vorliegt, dessen Stand (Datum der PDF) als klickbares Feld — Klick öffnet direkt den Prüfauftrag. Unter der Kopfzeile lässt sich die Tabelle filtern: IAN, Charge und Auftrag als Freitext; VK Büro, Lieferant und Warengruppe als durchsuchbare Mehrfachauswahl (anklicken, tippen zum Suchen, mehrere Häkchen setzen); Sachbearbeiter, LFGB?, Trivial? und Mech. erledigt als einfaches Dropdown. VK Büro wird unabhängig von führenden Nullen zusammengefasst (070 = 70), Warengruppe immer als ###.### angezeigt. „Filter zurücksetzen" setzt alle Filter außer der Arbeitsvorrat/Gesamtliste-Ansicht zurück.</p>
+    </details>
     <div class="tabellen-wrapper">
       <table class="tabelle readonly" id="arbeitsvorrat-tabelle">
         <thead>
@@ -333,6 +409,7 @@ input[type=file] { display:none; }
       <button type="button" data-ansicht="warengruppe" class="aktiv">Nach Warengruppe (LIDL)</button>
       <button type="button" data-ansicht="bereich">Nach Bereich (andere Kunden)</button>
     </div>
+    <details class="hinweis-block"><summary>ℹ Wie Prüfgrundlagen im Kostenvoranschlag verwendet werden</summary>
     <p class="hinweis">Referenzdaten für die Warengruppen-Empfehlung im Kostenvoranschlag (Norm, Anzahl
       Muster, Kosten Sicherheit &amp; Norm / FFU / NGO-StiWa). In der Ansicht „Nach Warengruppe" nach
       Warengruppe gruppiert; in der Ansicht „Nach Bereich" stattdessen nach Bereich (Reiter „Verwaltung" →
@@ -341,6 +418,7 @@ input[type=file] { display:none; }
       werden wie überall automatisch gespeichert. Über die Suche oben (aktueller Bereich) lässt sich nach
       Warengruppe, Produkt, Norm oder Bemerkung filtern. Wird der Warengruppen-Code eines Eintrags geändert,
       wandert die Zeile nach dem Verlassen des Feldes in die passende Gruppe.</p>
+    </details>
     <div id="pruefgrundlagen-gruppen"></div>
   </div>
 </section>
@@ -351,11 +429,13 @@ input[type=file] { display:none; }
     <button id="btn-norm-pdf-upload">📄 Norm(en)/Prüfprogramm(e) hochladen (.docx)</button>
     <input type="file" id="norm-pdf-upload-input" accept=".docx" multiple>
   </div>
-  <p class="hinweis">Word-Datei (.docx) hochladen — es wird nur der ausgelesene Text gespeichert, nicht
+  <details class="hinweis-block"><summary>ℹ Wie der Norm-Upload funktioniert</summary>
+    <p class="hinweis">Word-Datei (.docx) hochladen — es wird nur der ausgelesene Text gespeichert, nicht
     die Datei selbst. Eine automatische Erkennung einzelner Prüfpunkte findet beim Hochladen nicht statt;
     jeder Prüfpunkt lässt sich in der Detailansicht frei anlegen, bearbeiten, zusammenführen oder löschen —
     genauso wie bei Normen, die ganz ohne Datei-Upload nur manuell angelegt wurden. Mehrere Dateien auf
     einmal hochladen legt für jede eine eigene Norm an.</p>
+    </details>
   <div class="layout">
     <div class="liste-panel">
       <h2>Normen</h2>
@@ -424,6 +504,7 @@ input[type=file] { display:none; }
   </div>
   <div class="card" id="verwaltung-block-warengruppen" style="max-width:1000px">
     <h2 style="margin-top:0">Warengruppen</h2>
+    <details class="hinweis-block"><summary>ℹ Wie Warengruppen und die Neu-↔-Alt-Zuordnung zusammenhängen</summary>
     <p class="hinweis">Code und Bezeichnung speisen das Warengruppen-Dropdown in den Reitern
       „Prüfgrundlagen" und „Kostenvoranschläge" (dort als „Warengruppe (neu)") — hier anlegen,
       umbenennen oder löschen. Ändern von Code oder Bezeichnung aktualisiert automatisch alle
@@ -434,6 +515,7 @@ input[type=file] { display:none; }
       Platzhalter übernommen) zeigen die Bezeichnung als „– noch keine Bezeichnung –". „Bereich"
       ordnet die Warengruppe einem Bereich zu (offizielle Tabelle als Startbestand) — diese
       Zuordnung speist die Bereich-Ansicht im Reiter „Prüfgrundlagen" (siehe dort).</p>
+    </details>
     <div id="warengruppen-liste"></div>
     <div class="verwaltung-paginierung" id="warengruppen-paginierung"></div>
     <div class="toolbar-zeile" style="margin-top:0.6rem">
@@ -478,12 +560,14 @@ input[type=file] { display:none; }
   </div>
   <div class="card" id="verwaltung-block-pruefumfang" style="max-width:560px">
     <h2 style="margin-top:0">Prüfumfang je Artikelkategorie</h2>
+    <details class="hinweis-block"><summary>ℹ Wo dieser Prozentsatz überall wirkt</summary>
     <p class="hinweis">Legt fest, wie viel Prozent der Vollprüfung/des vollen Preises je
       Artikelkategorie für die Sicherheit-/Normprüfung gilt. Ein Wert steuert beides zugleich: den
       Rabattfaktor auf die aus der Prüfgrundlage berechneten Kosten (Warengruppen-Empfehlung im
       Reiter „Kostenvoranschläge") sowie den Hinweistext „Teilprüfung: X% der Vollprüfung" an der
       jeweiligen Position. „Grün" gilt dabei mit und ohne Sternchen („Grün*") gleichermaßen; nicht
       erkannte oder fehlende Artikelkategorien zählen als „Rot".</p>
+    </details>
     <div class="formular-grid" id="pruefumfang-formular"></div>
   </div>
   <div class="card" id="verwaltung-block-gefahrenzone" style="max-width:720px;border-color:#d98a8a">
@@ -2822,7 +2906,15 @@ const ARBEITSVORRAT_SELECT_FELDER = ["sachbearbeiter", "lfgb", "trivial", "mechE
 /* mechErledigt startet auf "nein" (= Ansicht "Arbeitsvorrat"), da das der tägliche Arbeitsmodus
    ist - alles, wo die Mechanik noch offen ist. "Gesamtliste" (alle jemals hochgeladenen Aufträge,
    unabhängig vom Mech.-Status) ist über den Ansicht-Umschalter erreichbar. */
-let arbeitsvorratFilter = { ian: "", charge: "", auftrag: "", bezeichnung: "", vkBuero: [], lieferant: [], warengruppe: [], sachbearbeiter: "", lfgb: "", trivial: "", mechErledigt: "nein" };
+/* EINE Quelle für den Startzustand der Arbeitsvorrat-Filter - wird sowohl beim Laden als auch beim
+   Zurücksetzen in der Gefahrenzone benutzt. Vorher stand die Objektliteral-Struktur an zwei Stellen
+   doppelt und war dadurch auseinandergelaufen: der Reset kannte die später ergänzten Felder
+   "charge"/"auftrag" nicht, wodurch deren Filter-Eingabefelder danach mit "undefined" gerendert
+   wurden. */
+function arbeitsvorratFilterStandard() {
+  return { ian: "", charge: "", auftrag: "", bezeichnung: "", vkBuero: [], lieferant: [], warengruppe: [], sachbearbeiter: "", lfgb: "", trivial: "", mechErledigt: "nein" };
+}
+let arbeitsvorratFilter = arbeitsvorratFilterStandard();
 
 /* Synchronisiert den Arbeitsvorrat/Gesamtliste-Umschalter (aktive Schaltfläche + Kartentitel)
    mit dem aktuellen mechErledigt-Filter - unabhängig davon, ob der über den Umschalter selbst
@@ -2981,7 +3073,11 @@ function renderArbeitsvorratFilterZeile() {
       return `<th><input type="text" data-filterfeld-text="${feld}" placeholder="Filtern…" value="${escapeHtml(arbeitsvorratFilter[feld])}"></th>`;
     }
     if (typ === "multi") {
-      return `<th style="position:relative">${mehrfachauswahlHtml(feld)}</th>`;
+      /* KEIN inline position:relative - das würde die Sticky-Positionierung der Filterzeile
+         überschreiben und die Zelle stattdessen um den top-Versatz nach unten verschieben. Die
+         geerbte position:sticky bildet für das absolut positionierte .ms-panel ebenso einen
+         Bezugsrahmen wie relative. */
+      return `<th class="filter-zelle-multi">${mehrfachauswahlHtml(feld)}</th>`;
     }
     const optionen = distinkteWerte(feld);
     const aktuell = arbeitsvorratFilter[feld];
@@ -3015,14 +3111,13 @@ document.getElementById("arbeitsvorrat-ansicht-toggle").querySelectorAll("button
 });
 
 document.getElementById("btn-arbeitsvorrat-filter-zuruecksetzen").addEventListener("click", () => {
-  ARBEITSVORRAT_MULTISELECT_FELDER.forEach((f) => (arbeitsvorratFilter[f] = []));
-  /* mechErledigt bewusst ausgenommen - das ist die Arbeitsvorrat/Gesamtliste-Ansicht, kein
-     "normaler" Filter, und soll beim Zurücksetzen der übrigen Filter erhalten bleiben. */
-  ARBEITSVORRAT_SELECT_FELDER.forEach((f) => { if (f !== "mechErledigt") arbeitsvorratFilter[f] = ""; });
-  arbeitsvorratFilter.ian = "";
-  arbeitsvorratFilter.charge = "";
-  arbeitsvorratFilter.auftrag = "";
-  arbeitsvorratFilter.bezeichnung = "";
+  /* Alles auf den Standard zurück, AUSSER mechErledigt - das ist die Arbeitsvorrat/Gesamtliste-
+     Ansicht, kein "normaler" Filter, und soll beim Zurücksetzen erhalten bleiben. Über den
+     gemeinsamen Standard (statt einer handgepflegten Feldliste) kann hier kein Feld mehr vergessen
+     werden, wenn später ein weiterer Filter dazukommt. */
+  const ansicht = arbeitsvorratFilter.mechErledigt;
+  arbeitsvorratFilter = arbeitsvorratFilterStandard();
+  arbeitsvorratFilter.mechErledigt = ansicht;
   suchbegriffe.arbeitsvorrat = "";
   if (aktiverTab === "arbeitsvorrat") document.getElementById("suche").value = "";
   renderArbeitsvorratTab();
@@ -3112,19 +3207,36 @@ function renderArbeitsvorratKoerper() {
   });
 }
 
+const ARBEITSVORRAT_FELD_LABEL = {
+  ian: "IAN", charge: "Charge", auftrag: "Auftrag", vkBuero: "VK Büro", bestellnummer: "Bestellnummer (SAP)", bezeichnung: "Bezeichnung (SAP)",
+  lieferant: "Lieferant (SAP)", angelegtAm: "Angelegt am (SAP)", sachbearbeiter: "Sachbearbeiter (SAP)", link: "Link",
+  warengruppe: "Warengruppe (aus PA)", anzahlStyles: "Anzahl Styles (aus PA)", lfgb: "LFGB? (manuell, bei KV-Erstellung)", trivial: "Trivial? (manuell, bei KV-Erstellung)",
+  alteWarengruppe: "ALTE Warengruppe", bemerkung: "Bemerkung", versand: "Versand", uvUndKlimawechsel: "UV und Klimawechsel"
+};
+
+/* Felder, die zwar aus dem SAP-Export übernommen und mitgespeichert/-exportiert werden, im Tool
+   selbst aber nirgends angezeigt oder ausgewertet werden: "Bestellnummer" dient ausschließlich
+   einmalig beim Excel-Import als Quelle für IAN und Charge (siehe parseArbeitsvorratExcel),
+   "Link"/"Versand"/"UV und Klimawechsel" werden gar nicht verwendet. Sie stehen deshalb nicht mehr
+   zwischen den täglich gebrauchten Feldern, sondern in einem zugeklappten Abschnitt - die Daten
+   bleiben dabei vollständig erhalten und weiterhin von Hand korrigierbar. */
+const ARBEITSVORRAT_NEBENFELDER = ["bestellnummer", "link", "versand", "uvUndKlimawechsel"];
+
 function arbeitsvorratFormularHtml(eintrag) {
-  const feldLabel = {
-    ian: "IAN", charge: "Charge", auftrag: "Auftrag", vkBuero: "VK Büro", bestellnummer: "Bestellnummer", bezeichnung: "Bezeichnung (SAP)",
-    lieferant: "Lieferant (SAP)", angelegtAm: "Angelegt am (SAP)", sachbearbeiter: "Sachbearbeiter (SAP)", link: "Link",
-    warengruppe: "Warengruppe (aus PA)", anzahlStyles: "Anzahl Styles (aus PA)", lfgb: "LFGB? (manuell, bei KV-Erstellung)", trivial: "Trivial? (manuell, bei KV-Erstellung)",
-    alteWarengruppe: "ALTE Warengruppe", bemerkung: "Bemerkung", versand: "Versand", uvUndKlimawechsel: "UV und Klimawechsel"
-  };
-  const textFelder = ARBEITSVORRAT_FELDER.filter((f) => f !== "mechErledigt").map((f) => {
+  const feldHtml = (f) => {
     const breit = (f === "bemerkung" || f === "bezeichnung") ? " volle-breite" : "";
-    return `<label class="${breit}">${feldLabel[f]}<input type="text" data-feld="${f}" value="${escapeHtml(eintrag[f])}"></label>`;
-  }).join("");
+    return `<label class="${breit}">${ARBEITSVORRAT_FELD_LABEL[f]}<input type="text" data-feld="${f}" value="${escapeHtml(eintrag[f])}"></label>`;
+  };
+  const hauptFelder = ARBEITSVORRAT_FELDER.filter((f) => f !== "mechErledigt" && !ARBEITSVORRAT_NEBENFELDER.includes(f)).map(feldHtml).join("");
+  const nebenFelder = ARBEITSVORRAT_NEBENFELDER.map(feldHtml).join("");
   const mechFeld = `<label class="checkbox-label">Mech. erledigt<input type="checkbox" data-feld="mechErledigt" ${eintrag.mechErledigt ? "checked" : ""}></label>`;
-  return `<div class="formular-grid" id="arbeitsvorrat-formular">${textFelder}${mechFeld}</div>`;
+  const gefuellt = ARBEITSVORRAT_NEBENFELDER.filter((f) => String(eintrag[f] || "").trim()).length;
+  return `<div class="formular-grid" id="arbeitsvorrat-formular">${hauptFelder}${mechFeld}</div>
+    <details class="neben-felder" ${gefuellt ? "open" : ""}>
+      <summary>Weitere Felder aus dem SAP-Export${gefuellt ? ` (${gefuellt} befüllt)` : " (leer)"}</summary>
+      <p class="hinweis">Werden mitgespeichert und exportiert, im Tool selbst aber nicht ausgewertet. „Bestellnummer" dient beim Excel-Import einmalig als Quelle für IAN und Charge.</p>
+      <div class="formular-grid" id="arbeitsvorrat-formular-neben">${nebenFelder}</div>
+    </details>`;
 }
 
 function oeffneArbeitsvorratModal(eintrag) {
@@ -3276,8 +3388,8 @@ function renderVorgaengerVergleichHtml(pa, vorgaengerPa) {
   return `<details style="margin-top:0.6rem">
     <summary class="muted" style="cursor:pointer">Vergleich mit Vorgänger anzeigen (${abweichungen} von ${zeilen.length} Feldern abweichend)</summary>
     <div class="tabellen-wrapper" style="margin-top:0.5rem">
-      <table class="tabelle">
-        <thead><tr><th style="width:14%">Feld</th><th>Aktuell (IAN ${escapeHtml(pa.ian)})</th><th>Vorgänger (IAN ${escapeHtml(vorgaengerPa.ian)})</th><th style="width:5%"></th></tr></thead>
+      <table class="tabelle tabelle-fest">
+        <thead><tr><th style="width:14%">Feld</th><th style="width:40%">Aktuell (IAN ${escapeHtml(pa.ian)})</th><th style="width:40%">Vorgänger (IAN ${escapeHtml(vorgaengerPa.ian)})</th><th style="width:6%"></th></tr></thead>
         <tbody>
           ${zeilen.map((z) => `<tr class="${z.gleich ? "" : "vergleich-abweichung"}">
             <td>${escapeHtml(z.label)}</td>
@@ -3782,7 +3894,7 @@ function renderPaDetail() {
         <div class="toolbar-zeile" style="margin-top:0.6rem"><div class="spacer"></div><button class="ghost" id="pa-feld-hinzufuegen">+ Feld hinzufügen</button></div>
         <p class="hinweis">Vollständige, editierbare Liste aller erkannten Felder (inkl. der oben hervorgehobenen) - hier korrigieren, falls die Erkennung daneben lag.</p>
         <div class="tabellen-wrapper">
-          <table class="tabelle">
+          <table class="tabelle tabelle-fest">
             <thead><tr><th style="width:28%">Schlüssel</th><th>Wert</th><th style="width:6%">Aktion</th></tr></thead>
             <tbody id="pa-felder-body"></tbody>
           </table>
@@ -4238,7 +4350,7 @@ function zeigePaUploadReview(felder, rohtext, erzwingeIan, stand) {
   const box = document.getElementById("overlay-box");
   let html = `<h2>PA-PDF: ${felder.length} erkannte Felder prüfen</h2>
     <p class="hinweis">Bitte prüfen/korrigieren. Nur angehakte Zeilen werden übernommen. Die Erkennung ist eine einfache Heuristik.${erzwingeIan ? ` Wird dem Arbeitsvorrat-Eintrag <strong>IAN ${escapeHtml(erzwingeIan)}</strong> zugeordnet, unabhängig davon, was in der PDF als IAN erkannt wird.` : ""}</p>
-    <table class="tabelle"><thead><tr><th style="width:4%">✓</th><th style="width:26%">Schlüssel</th><th>Wert</th></tr></thead><tbody>`;
+    <table class="tabelle tabelle-fest"><thead><tr><th style="width:4%">✓</th><th style="width:26%">Schlüssel</th><th>Wert</th></tr></thead><tbody>`;
   felder.forEach((f, i) => {
     html += `<tr>
       <td><input type="checkbox" checked data-idx="${i}" class="pa-review-check"></td>
@@ -4614,14 +4726,14 @@ function mechanikKostenBearbeitenHtml(pgId, feld, refs) {
   if (refs && refs.length === 1) {
     const kosten = refs[0].kosten;
     const kostenWeiteresProdukt = refs[0].kostenWeiteresProdukt;
-    return `<label style="display:inline-flex;align-items:center;gap:0.35rem;font-size:0.78rem;font-weight:400;color:var(--muted)">Kosten (Prüfgrundlage) €
-      <input type="number" step="1" style="width:80px;font-family:inherit;font-size:0.82rem;padding:0.2rem 0.35rem;border:1px solid var(--border);border-radius:5px"
+    return `<label class="pg-kosten-feld">Kosten (Prüfgrundlage) €
+      <input type="number" step="1"
         data-action="mechanik-kosten-bearbeiten" data-pg-id="${escapeHtml(pgId)}" data-feld="${feld}" data-idx="0" data-rolle="kosten"
         value="${kosten === null || kosten === undefined ? "" : kosten}" placeholder="Anfrage"></label>
-    <label style="display:inline-flex;align-items:center;gap:0.35rem;font-size:0.78rem;font-weight:400;color:var(--muted)" title="Kosten für jeden weiteren Style (Rüstzeiten fallen nur einmal an) - fließt über die Styleanzahl des KVs automatisch in den Vorschlagspreis ein: 1. Prüfung + (Styleanzahl - 1) × dieser Wert. Leer = wie 1. Prüfung.">Kosten je weiterem Produkt €
-      <input type="number" step="1" style="width:80px;font-family:inherit;font-size:0.82rem;padding:0.2rem 0.35rem;border:1px solid var(--border);border-radius:5px"
+    <label class="pg-kosten-feld" title="Kosten für jeden weiteren Style (Rüstzeiten fallen nur einmal an) - fließt über die Styleanzahl des KVs automatisch in den Vorschlagspreis ein: 1. Prüfung + (Styleanzahl - 1) × dieser Wert. Leer = wie 1. Prüfung.">Kosten je weiterem Produkt €
+      <input type="number" step="1"
         data-action="mechanik-kosten-bearbeiten" data-pg-id="${escapeHtml(pgId)}" data-feld="${feld}" data-idx="0" data-rolle="kostenWeiteresProdukt"
-        value="${kostenWeiteresProdukt === null || kostenWeiteresProdukt === undefined ? "" : kostenWeiteresProdukt}" placeholder="wie 1. Prüfung"></label>`;
+        value="${kostenWeiteresProdukt === null || kostenWeiteresProdukt === undefined ? "" : kostenWeiteresProdukt}" placeholder="wie Kosten"></label>`;
   }
   return `<button type="button" class="ghost small" data-action="mechanik-kosten-in-pg-bearbeiten" data-pg-id="${escapeHtml(pgId)}">→ Kosten in der Prüfgrundlage bearbeiten</button>`;
 }
@@ -5881,11 +5993,11 @@ function renderKvDetail() {
         <button class="ghost small" id="kv-freie-position">+ Freie Position</button>
       </div>
       <div class="tabellen-wrapper">
-        <table class="tabelle">
+        <table class="tabelle tabelle-fest">
           <thead><tr>
-            <th style="width:4%">Aktiv</th><th style="width:16%">Kategorie</th><th style="width:26%">Bezeichnung</th>
-            <th style="width:6%">Kürzel</th><th style="width:12%">SAP-Code</th><th style="width:8%">Kosten €</th>
-            <th style="width:6%">Anzahl</th><th style="width:8%">Summe €</th><th style="width:8%">Aktionen</th>
+            <th style="width:5%">Aktiv</th><th style="width:15%">Kategorie</th><th style="width:24%">Bezeichnung</th>
+            <th style="width:6%">Kürzel</th><th style="width:12%">SAP-Code</th><th style="width:9%">Kosten €</th>
+            <th style="width:7%">Anzahl</th><th style="width:9%">Summe €</th><th style="width:13%">Aktionen</th>
           </tr></thead>
           <tbody id="kv-positionen-body"></tbody>
         </table>
@@ -7801,12 +7913,12 @@ function renderTrivialpreislisteVerwaltung() {
   const alle = [...data.trivialPreisliste].sort((a, b) => a.code.localeCompare(b.code, "de", { numeric: true }));
   const { ausschnitt: zeilen, seiten, seite, gesamt } = paginiereListe(alle, "trivialpreisliste");
   container.innerHTML = `
-    <table class="tabelle">
+    <table class="tabelle tabelle-fest">
       <thead><tr>
-        <th style="width:11%">Code (alt)</th><th style="width:28%">Bezeichnung</th>
+        <th style="width:10%">Code (alt)</th><th style="width:25%">Bezeichnung</th>
         <th style="width:12%">Chemie ≥4 Risiko&shy;parameter €</th><th style="width:12%">VP &amp; Kennzeichnung €</th>
-        <th style="width:12%">LFGB Stichprobe €</th><th style="width:12%">Gesamtpreis €</th><th style="width:10%">Add Sortierung €</th>
-        <th style="width:3%">Aktion</th>
+        <th style="width:12%">LFGB Stichprobe €</th><th style="width:11%">Gesamtpreis €</th><th style="width:12%">Add Sortierung €</th>
+        <th style="width:6%">Aktion</th>
       </tr></thead>
       <tbody>${zeilen.length ? zeilen.map((z) => `
         <tr data-code="${escapeHtml(z.code)}">
@@ -7897,7 +8009,7 @@ document.getElementById("btn-testdaten-loeschen").addEventListener("click", () =
   data.kvs = [];
   aktivePaId = null;
   aktiveKvId = null;
-  arbeitsvorratFilter = { ian: "", bezeichnung: "", vkBuero: [], lieferant: [], warengruppe: [], sachbearbeiter: "", lfgb: "", trivial: "", mechErledigt: "nein" };
+  arbeitsvorratFilter = arbeitsvorratFilterStandard();
   suchbegriffe = { arbeitsvorrat: "", pruefauftraege: "", kvs: "", pruefgrundlagen: "", normen: "", mak: "" };
   speichereInLocalStorage();
   wechsleTab("arbeitsvorrat");
