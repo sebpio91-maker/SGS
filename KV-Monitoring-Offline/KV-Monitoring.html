@@ -4959,6 +4959,34 @@ function fixPositionenListeHtml(kat, pa, kv, filterFn) {
 }
 
 const KENNZEICHNUNG_FIXPOSITION_ID = (id) => id.startsWith("fix-kennz") || id === "fix-bda";
+
+/* Trägt die für die Sicherheit-/Normprüfung angewandte Prüfgrundlage Kennzeichnungs- bzw.
+   Bedienungsanleitung-Anforderungen (siehe pruefgrundlageKennzeichnungAktiv/-BedienungsanleitungAktiv),
+   soll das nicht nur als Badge im Kennzeichnung-Block stehen, sondern direkt als Bemerkung an der
+   Position, die diese Anforderung abdeckt: die Bedienungsanleitung-Anforderung beim 1000_PPM, die
+   Kennzeichnungs-Anforderung bei 1001_PPM/1002_PPM/1003_PPM/1005_PPM. Zuordnung über die
+   Katalog-IDs (siehe SICHERHEIT_NORM_FIXPOSITIONEN) statt über die PPM-Nummer im Text, damit eine
+   Umbenennung im Katalog die Zuordnung nicht stillschweigend zerreißt. */
+const KENNZEICHNUNG_ANFORDERUNG_FIXPOSITIONEN = ["fix-kennz-1001", "fix-kennz-1002", "fix-kennz-1003", "fix-kennz-1005"];
+const BEDIENUNGSANLEITUNG_ANFORDERUNG_FIXPOSITION = "fix-bda";
+/* Ordnet eine KV-Position ihrem Katalogeintrag zu. Positionen speichern keine Katalog-Referenz
+   (Kosten/Bezeichnung sind je KV frei editierbar), der Abgleich läuft deshalb - wie überall sonst -
+   über Kategorie + Bezeichnung. */
+function fixPositionIdFuerPosition(p) {
+  const treffer = ALLE_FIXPOSITIONEN.find((k) => normalisiere(k.bezeichnung) === normalisiere(p.bezeichnung) && normalisiere(k.kategorie) === normalisiere(p.kategorie));
+  return treffer ? treffer.id : "";
+}
+/* Einmal je Rendervorgang/Export berechnet und dann an positionBemerkungen durchgereicht - der
+   Kontext-Aufbau (mechanikKontext) durchsucht alle Prüfgrundlagen und wäre pro Position zu teuer. */
+function pruefgrundlageAnforderungenFuerKv(kv) {
+  const gewaehlt = kv ? mechanikKontext(kv).gewaehlt : null;
+  if (!gewaehlt) return null;
+  return {
+    produkt: gewaehlt.produkt,
+    kennzeichnung: normenMitAnforderung(gewaehlt, normRefKennzeichnungAktiv),
+    bedienungsanleitung: normenMitAnforderung(gewaehlt, normRefBedienungsanleitungAktiv)
+  };
+}
 /* Akkusicherheitskurzcheck und Optischer Abgleich wurden auf Wunsch aus "Weitere Positionen"
    entfernt - die Katalogeinträge selbst (fixPositionenFuerKategorie) bleiben unangetastet, nur die
    Anzeige/das Hinzufügen an dieser Stelle ist ausgeblendet, analog zu KENNZEICHNUNG_FIXPOSITION_ID. */
@@ -6254,8 +6282,11 @@ function renderKvDetail() {
    - MAK-Bemerkung (gilt für den Parameter überall, analog zur Norm-Bemerkung) und MAK-Hinweis (nur
      bei der gewählten Preisvariante, siehe kvMakVarianteBezeichnung): beide über kvMakBezeichnung/
      kvMakVarianteBezeichnung gegen die Bezeichnung abgeglichen - deckt sowohl Positionen ohne
-     Variante ("Parameter (ID)") als auch mit Variante ("Parameter / Variante") ab. */
-function positionBemerkungen(p, pa) {
+     Variante ("Parameter (ID)") als auch mit Variante ("Parameter / Variante") ab.
+   - Kennzeichnungs-/Bedienungsanleitung-Anforderung aus der angewandten Prüfgrundlage: nur an den
+     dafür zuständigen Katalogpositionen (1000_PPM bzw. 1001/1002/1003/1005_PPM), siehe
+     pruefgrundlageAnforderungenFuerKv - das dritte Argument wird vom Aufrufer einmal vorberechnet. */
+function positionBemerkungen(p, pa, anforderungen) {
   const ergebnisse = [];
   /* Teilprüfung der mechanischen Sicherheit ist laut Fachvorgabe IMMER gefordert (nie eine freie
      Wahl) - deshalb kein Ankreuzfeld, sondern automatisch für die Sicherheit-/Normprüfung-Position
@@ -6268,6 +6299,18 @@ function positionBemerkungen(p, pa) {
   }
   if (p.bewertungsgrundlage) ergebnisse.push({ label: "Bewertungsgrundlage/Grenzwert", text: p.bewertungsgrundlage });
   if (p.bemerkung) ergebnisse.push({ label: "Bemerkung (KV-spezifisch)", text: p.bemerkung });
+
+  /* Anforderungen der angewandten Prüfgrundlage genau an der Position, die sie abdeckt. */
+  if (anforderungen) {
+    const fixId = fixPositionIdFuerPosition(p);
+    const anforderungsText = (normen) => `Laut Prüfgrundlage „${anforderungen.produkt}" gefordert – aus ${normen.map((n) => n.bezeichnung).join(", ")}`;
+    if (fixId === BEDIENUNGSANLEITUNG_ANFORDERUNG_FIXPOSITION && anforderungen.bedienungsanleitung.length) {
+      ergebnisse.push({ label: "Anforderungen an die Bedienungsanleitung", text: anforderungsText(anforderungen.bedienungsanleitung) });
+    }
+    if (KENNZEICHNUNG_ANFORDERUNG_FIXPOSITIONEN.includes(fixId) && anforderungen.kennzeichnung.length) {
+      ergebnisse.push({ label: "Kennzeichnungsanforderungen", text: anforderungsText(anforderungen.kennzeichnung) });
+    }
+  }
 
   const bezNorm = normalisiere(p.bezeichnung || "");
   const norm = data.normen.find((n) => n.bezeichnung && bezNorm.includes(normalisiere(n.bezeichnung)));
@@ -6368,8 +6411,9 @@ function tsvSicher(text) {
 function mechanischePositionenAlsTsv(kv) {
   const pa = data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(kv.ian));
   const kopf = ["Aktiv", "Kategorie", "Bezeichnung", "Kürzel", "SAP-Code", "Kosten €", "Anzahl", "Summe €", "Bemerkung"];
+  const anforderungen = pruefgrundlageAnforderungenFuerKv(kv);
   const zeilen = kv.positionen.map((p) => {
-    const bemerkungsTeile = positionBemerkungen(p, pa).map((b) => `${b.label}: ${b.text}`);
+    const bemerkungsTeile = positionBemerkungen(p, pa, anforderungen).map((b) => `${b.label}: ${b.text}`);
     return [
       p.aktiv ? "Ja" : "Nein",
       tsvSicher(p.kategorie),
@@ -6396,11 +6440,14 @@ function renderKvPositionenTabelle(kv) {
      Teilprüfung-Prozentsatz (siehe teilpruefungProzentsatz) - beide hängen von der Artikelkategorie
      des verknüpften Prüfauftrags ab. */
   const pa = data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(kv.ian));
+  /* Kennzeichnungs-/Bedienungsanleitung-Anforderungen der angewandten Prüfgrundlage - einmal je
+     Rendervorgang, nicht je Position (siehe pruefgrundlageAnforderungenFuerKv). */
+  const anforderungen = pruefgrundlageAnforderungenFuerKv(kv);
   if (!kv.positionen.length) {
     tbody.innerHTML = '<tr><td colspan="9" class="leerzustand">Noch keine Positionen. Über die Prüfumfang-Vorschläge oben oder als freie Position hinzufügen.</td></tr>';
   } else {
     tbody.innerHTML = kv.positionen.map((p, idx) => {
-      const bemerkungen = positionBemerkungen(p, pa);
+      const bemerkungen = positionBemerkungen(p, pa, anforderungen);
       const bemerkungenZeile = bemerkungen.length ? `<tr data-bemerkungen-fuer="${p.id}">
         <td></td>
         <td colspan="8" style="padding-top:0;padding-bottom:0.6rem;font-size:0.8rem;color:var(--muted)">
@@ -6613,6 +6660,18 @@ function pruefgrundlageKennzeichnungAktiv(e) {
 }
 function pruefgrundlageBedienungsanleitungAktiv(e) {
   return pruefgrundlageNormRefsAlle(e).some(normRefBedienungsanleitungAktiv);
+}
+/* Welche Normen die Anforderung konkret beisteuern - für die Bemerkung an der zugehörigen
+   KV-Position (siehe pruefgrundlageAnforderungenFuerKv), damit dort nicht nur "gefordert" steht,
+   sondern auch WORAUS sich das ergibt. Dieselbe Norm kann in mehreren Blöcken referenziert sein,
+   deshalb über die Norm-ID entdoppelt. */
+function normenMitAnforderung(e, refAktivFn) {
+  const gesehen = new Set();
+  return pruefgrundlageNormRefsAlle(e).filter(refAktivFn).map((r) => {
+    if (gesehen.has(r.normId)) return null;
+    gesehen.add(r.normId);
+    return data.normen.find((n) => n.id === r.normId);
+  }).filter(Boolean);
 }
 
 function gefilterterPruefgrundlagen() {

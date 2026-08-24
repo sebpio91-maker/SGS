@@ -216,7 +216,29 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   MAK-Positionen direkt in der Übersicht „Bereits ausgewählte MAK-Parameter"
   editierbar). Da die Zuordnung über den
   Text läuft, kann sie bei manuell stark umbenannten oder freien Positionen
-  auch mal nichts finden — dann bleibt die Zusatzzeile schlicht weg. Die
+  auch mal nichts finden — dann bleibt die Zusatzzeile schlicht weg.
+
+  **Kennzeichnungs-/Bedienungsanleitung-Anforderungen der Prüfgrundlage
+  stehen direkt an der Position, die sie abdeckt.** Trägt die für die
+  Sicherheit-/Normprüfung angewandte Prüfgrundlage solche Anforderungen
+  (sie kommen von den referenzierten Normen, siehe „Kennzeichnung/
+  Bedienungsanleitung je Norm"), erscheinen sie nicht mehr nur als Badge
+  oben im Kennzeichnung-Block, sondern zusätzlich als Bemerkung genau dort,
+  wo sie bearbeitet werden:
+  - **Anforderungen an die Bedienungsanleitung** → bei **1000_PPM**
+    („Bedienungsanleitung E&E").
+  - **Kennzeichnungsanforderungen** → bei **1001_PPM, 1002_PPM, 1003_PPM
+    und 1005_PPM** („Kennzeichnung GER, Verpackung & Produkt").
+
+  Die Bemerkung nennt die angewandte Prüfgrundlage und die Norm(en), aus
+  denen sich die Anforderung ergibt — bei mehreren anfordernden Normen alle,
+  jede aber nur einmal, auch wenn dieselbe Norm in mehreren Blöcken
+  (Sicherheit & Norm/FFU/StiWa) referenziert ist. Eine Norm-Referenz, die
+  „in Anlehnung an" gesetzt und **nicht** per „trotzdem übernehmen"
+  eingeschaltet ist, zählt dabei nicht — dieselbe Regel wie beim Badge.
+  Die Zuordnung läuft über die Katalog-IDs dieser fünf Positionen, nicht
+  über die PPM-Nummer im Text, und die Bemerkungen landen wie alle anderen
+  auch in der Zwischenablage-/Excel-Kopie (Spalte „Bemerkung"). Die
   **Überschrift zeigt bevorzugt die Artikelbezeichnung aus dem verknüpften
   Prüfauftrag** (aussagekräftiger als die bloße IAN) — ohne verknüpften PA
   fällt sie auf das freie „Artikel"-Feld des KVs zurück, erst danach auf
