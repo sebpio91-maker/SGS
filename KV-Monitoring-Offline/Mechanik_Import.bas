@@ -62,16 +62,20 @@ Attribute VB_Name = "Modul1"
 ' zugehörigen Kategorie-Überschriften-Zeile (bzw. bei NGO als letzte Zeile ganz am Ende der
 ' Tabelle, da keine weitere Kategorie mehr folgt) - siehe Mec_ZeileEinfuegen.
 '
-' Spalte L (bisher komplett ungenutzt) wird für die "Bemerkung" jeder neuen Zeile verwendet - dort
-' landet die automatische Teilprüfung-Angabe der Sicherheit-/Normprüfung-Position (Prozentsatz je
-' nach Artikelkategorie - Grün 40 %, Gelb 50 %, Rot/unbekannt 60 %, siehe teilpruefungProzentsatz im
-' KV-Monitoring-Tool) sowie alle in der Prüfpositionstabelle automatisch aggregierten Bemerkungen
-' (siehe positionBemerkungen: frei eingetragene Bemerkung, Bewertungsgrundlage/Grenzwert,
-' Norm-Bemerkung, Prüfgrundlage-Kommentar, MAK-Hinweis, Kennzeichnungs-/Bedienungsanleitung-
-' Anforderung), damit diese Angaben auch in der Excel-Datei nicht verloren gehen.
-' Zusätzlich steht dieselbe Bemerkung nach einem Zeilenumbruch MIT in Spalte D, also in derselben
-' Zelle wie der Parameter/die Bezeichnung (Zeilenumbruch-Formatierung wird dafür gesetzt) - so ist
-' sie direkt beim Parameter sichtbar, auch wenn Spalte L ausgeblendet ist.
+' Die "Bemerkung" jeder neuen Zeile steht in Spalte D - nach einem Zeilenumbruch in DERSELBEN Zelle
+' wie der Parameter/die Bezeichnung (die Zeilenumbruch-Formatierung wird dafür gesetzt), damit sie
+' direkt beim Parameter sichtbar ist. Dort landet die automatische Teilprüfung-Angabe der
+' Sicherheit-/Normprüfung-Position (Prozentsatz je nach Artikelkategorie - Grün 40 %, Gelb 50 %,
+' Rot/unbekannt 60 %, siehe teilpruefungProzentsatz im KV-Monitoring-Tool) sowie alle in der
+' Prüfpositionstabelle automatisch aggregierten Bemerkungen (siehe positionBemerkungen: frei
+' eingetragene Bemerkung, Bewertungsgrundlage/Grenzwert, Norm-Bemerkung, Prüfgrundlage-Kommentar,
+' MAK-Hinweis, Kennzeichnungs-/Bedienungsanleitung-Anforderung).
+'
+' Spalte L wird NICHT mehr beschrieben - die Bemerkung stand dort früher zusätzlich, ist mit der
+' Ausgabe in Spalte D aber doppelt. Spalte D wird von diesem Makro nirgends ausgewertet (die
+' Kategorie-Zuordnung läuft über Spalte C, die Summen über E/F/G/H), der Zusatztext darin stört also
+' keine andere Logik. Hinweis: Werte, die frühere Importe schon in Spalte L geschrieben haben,
+' bleiben stehen - sie lassen sich gefahrlos von Hand löschen.
 '
 ' WICHTIG: Bitte zunächst an einer KOPIE der Datei testen und die Summen
 ' hinterher prüfen, bevor produktiv damit gearbeitet wird - das Makro wurde
@@ -93,8 +97,6 @@ Sub Mec()
 
     Dim tbl As ListObject
     Set tbl = ws.ListObjects("Mechanik_30SER")
-
-    If Len(Trim(ws.Cells(47, 12).Value & "")) = 0 Then ws.Cells(47, 12).Value = "Bemerkung"   ' L47: Spaltenkopf einmalig ergänzen
 
     Dim clipText As String
     clipText = Mec_Zwischenablage()
@@ -222,8 +224,8 @@ Private Sub Mec_ZeileEinfuegen(tbl As ListObject, kuerzel As String, bezeichnung
     r = neueZeile.Range.Row
 
     ' D: Bezeichnung - die Bemerkung steht nach einem Zeilenumbruch MIT in derselben Zelle, damit sie
-    ' im ausgedruckten/versendeten KV direkt beim Parameter steht und nicht nur in der (oft
-    ' ausgeblendeten) Spalte L. Dort landet sie zusätzlich unverändert.
+    ' im ausgedruckten/versendeten KV direkt beim Parameter steht. Sie ist damit die einzige Ausgabe
+    ' der Bemerkung; Spalte L wird bewusst nicht mehr beschrieben (siehe Kommentarblock oben).
     If Len(bemerkung) > 0 Then
         ws.Cells(r, 4).Value = bezeichnung & vbLf & bemerkung
         ws.Cells(r, 4).WrapText = True        ' ohne Zeilenumbruch-Formatierung wäre der Umbruch unsichtbar
@@ -235,7 +237,6 @@ Private Sub Mec_ZeileEinfuegen(tbl As ListObject, kuerzel As String, bezeichnung
     ws.Cells(r, 7).Value = kosten             ' G: Kosten
     ws.Cells(r, 8).Value = anzahl             ' H: Anzahl
     ws.Cells(r, 11).Value = sapCode           ' K: SAP Material
-    ws.Cells(r, 12).Value = bemerkung         ' L: Bemerkung
 End Sub
 
 ' Berechnet für jede der fünf Kategorien die Summe aller zugehörigen, mit "x" markierten

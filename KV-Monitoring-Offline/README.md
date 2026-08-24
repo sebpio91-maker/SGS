@@ -790,14 +790,17 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   „FILTER" = „x", sodass nur noch die Zeilen zählen/sichtbar sind, die
   tatsächlich aus dem aktuellen KV-Monitoring-Export stammen.
 
-  **Die Bemerkung steht in Excel an zwei Stellen**: in der bisher ungenutzten
-  Spalte L, und zusätzlich **nach einem Zeilenumbruch in derselben Zelle wie
-  die Bezeichnung (Spalte D)** — dafür setzt das Makro auf dieser Zelle den
-  Zeilenumbruch (`WrapText`). So steht sie direkt beim Parameter, auch wenn
-  Spalte L ausgeblendet ist. Die Zwischenablage selbst bleibt dabei sauber
-  tabulatorgetrennt mit genau neun Spalten je Zeile (ein Zeilenumbruch
-  mitten in einem Feld würde den Import zerreißen) — der Umbruch entsteht
-  erst im Makro.
+  **Die Bemerkung steht in Excel nach einem Zeilenumbruch in derselben Zelle
+  wie die Bezeichnung (Spalte D)** — dafür setzt das Makro auf dieser Zelle
+  den Zeilenumbruch (`WrapText`), sodass sie direkt beim Parameter sichtbar
+  ist. Die frühere zusätzliche Ausgabe in **Spalte L ist entfallen**, sie war
+  damit doppelt; Werte, die frühere Importe dort hinterlassen haben, bleiben
+  stehen und lassen sich gefahrlos von Hand löschen. Spalte D wird vom Makro
+  nirgends ausgewertet (die Kategorie-Zuordnung läuft über Spalte C, die
+  Summen über E/F/G/H), der Zusatztext stört dort also keine andere Logik.
+  Die Zwischenablage selbst bleibt sauber tabulatorgetrennt mit genau neun
+  Spalten je Zeile (ein Zeilenumbruch mitten in einem Feld würde den Import
+  zerreißen) — der Umbruch entsteht erst im Makro.
 
   **Eine Kategorie-Überschriften-Zeile erscheint nur noch, wenn dieser Block
   auch Positionen hat.** Sind für einen Block keine Prüfungen ausgewählt,
