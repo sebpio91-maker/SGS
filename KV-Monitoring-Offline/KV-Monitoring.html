@@ -27,6 +27,9 @@ body { margin:0; font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,san
    (z. B. Kommentarfeld je Prüfblock in "Prüfgrundlage bearbeiten"). */
 input, select, textarea { font-family:inherit; font-size:0.88rem; color:var(--text); }
 textarea { resize:vertical; }
+/* Selbstwachsende Mehrzeilenfelder (siehe passeTextareaHoeheAn): die Höhe wird exakt auf den Inhalt
+   gesetzt, ein Rollbalken wäre deshalb nur ein Flackern beim Tippen. */
+textarea.auto-hoehe { overflow-y:hidden; }
 header.topbar { display:flex; flex-wrap:wrap; gap:0.6rem; align-items:center; padding:0.7rem 1rem; background:var(--card); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:5; }
 header.topbar h1 { font-size:1.1rem; margin:0 1rem 0 0; white-space:nowrap; }
 header.topbar .spacer { flex:1; }
@@ -710,6 +713,32 @@ function sharepointSucheLink(ian, klasse) {
   return `<a class="sp-suche-link${klasse ? " " + klasse : ""}" href="${escapeHtml(sharepointSucheUrl(ian))}" target="_blank" rel="noopener noreferrer" title="Auf SharePoint nach IAN ${escapeHtml(ian)} suchen">${svg}</a>`;
 }
 function zahlOderLeer(v) { return (v === null || v === undefined || v === "") ? "" : v; }
+
+/* Mehrzeilige Felder auf ihren Inhalt wachsen lassen, statt den Text hinter einer festen Zeilenzahl
+   scrollen zu lassen: das rows-Attribut bleibt als Mindesthöhe erhalten, die tatsächliche Höhe
+   ergibt sich aus dem Inhalt (beim Aufbau und bei jeder Eingabe neu). */
+function passeTextareaHoeheAn(el) {
+  if (!el) return;
+  /* Die aus dem rows-Attribut entstehende Höhe einmal merken, BEVOR eine eigene Höhe gesetzt wird -
+     sie bleibt die Mindesthöhe, damit ein leeres Feld nicht auf eine einzelne Zeile zusammenfällt. */
+  if (!el.dataset.mindesthoehe && el.clientHeight) el.dataset.mindesthoehe = el.clientHeight;
+  const bisher = el.style.height;
+  el.style.height = "auto";
+  const inhaltsHoehe = el.scrollHeight;
+  /* In einem gerade ausgeblendeten Reiter ist scrollHeight 0 - dann die bisherige Höhe behalten,
+     sonst klappte das Feld auf null zusammen. */
+  if (!inhaltsHoehe) { el.style.height = bisher; return; }
+  /* +2 px für die Rahmenlinien (box-sizing:border-box, siehe ganz oben). */
+  el.style.height = Math.max(inhaltsHoehe + 2, Number(el.dataset.mindesthoehe) || 0) + "px";
+}
+/* Auf alle textarea.auto-hoehe innerhalb eines gerade neu aufgebauten Containers anwenden. */
+function macheTextareaSelbstwachsend(container) {
+  if (!container) return;
+  container.querySelectorAll("textarea.auto-hoehe").forEach((el) => {
+    passeTextareaHoeheAn(el);
+    el.addEventListener("input", () => passeTextareaHoeheAn(el));
+  });
+}
 
 /* ---------- PDF.js Worker aus eingebettetem Quelltext initialisieren ---------- */
 (function initPdfWorker() {
@@ -5136,7 +5165,7 @@ function renderKennzeichnungKarte(kv, pa, kontext) {
    ohne Treffer werden dabei automatisch ausgeblendet (leere optgroup entsteht gar nicht erst). */
 function makEintragTrifftSuche(m, q) {
   if (!q) return true;
-  return normalisiere([m.id, m.kategorie, m.bereich, m.parameter, m.anforderung, m.normEu, m.normUs, m.pruefnachweis, (m.schlagworte || []).join(" ")].join(" ")).includes(q);
+  return normalisiere([m.id, m.kategorie, m.bereich, m.parameter, m.anforderung, m.normEu, m.normUs, m.pruefnachweis, m.sapCode, (m.schlagworte || []).join(" ")].join(" ")).includes(q);
 }
 function makAuswahlOptionenHtml(filterText) {
   const q = normalisiere(filterText || "");
@@ -5157,6 +5186,14 @@ function makAuswahlOptionenHtml(filterText) {
    angezeigt zu werden. */
 function kvMakBezeichnung(eintrag) {
   return `${eintrag.parameter || "(ohne Parameter)"} (${eintrag.id})`;
+}
+/* SAP-Material einer MAK-Position: eine Laufzeit-Variante darf einen eigenen SAP-Code führen, sonst
+   gilt der am Parameter hinterlegte (Reiter "MAK" -> "SAP-Code (SAP-Material)"). Dasselbe Muster
+   wie der SAP-Code-Fallback bei Normen/Fixpositionen (siehe fixPositionSapCodeAktuell). */
+function makSapCode(eintrag, variante) {
+  const ausVariante = variante && variante.sapCode ? String(variante.sapCode).trim() : "";
+  if (ausVariante) return ausVariante;
+  return eintrag && eintrag.sapCode ? String(eintrag.sapCode).trim() : "";
 }
 function kvMakVarianteBezeichnung(eintrag, variante) {
   return `${eintrag.parameter || "(ohne Parameter)"} / ${variante.bezeichnung}`;
@@ -5184,7 +5221,7 @@ function renderKvMakDetail(makId, kv) {
         const varVorhanden = findeKvPosition(kv, PRODUKTSPEZI_KATEGORIE_NAME, varBezeichnung);
         return `<div class="pruefumfang-position" style="flex-direction:column;align-items:flex-start;gap:0.25rem">
           <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:0.5rem">
-            <span>${escapeHtml(v.bezeichnung)} <span class="muted">(${v.kosten} €)</span></span>
+            <span>${escapeHtml(v.bezeichnung)} <span class="muted">(${v.kosten} €)${makSapCode(eintrag, v) ? ` · SAP: ${escapeHtml(makSapCode(eintrag, v))}` : ""}</span></span>
             ${varVorhanden ? positionStatusHtml(varVorhanden) : `<button type="button" class="ghost small" data-action="mak-variante-hinzufuegen" data-varianten-id="${escapeHtml(v.id)}">+ hinzufügen</button>`}
           </div>
           ${v.hinweis ? `<p class="hinweis" style="margin:0">${escapeHtml(v.hinweis)}</p>` : ""}
@@ -5216,7 +5253,7 @@ function renderKvMakDetail(makId, kv) {
         <h3 style="margin:0">${escapeHtml(eintrag.id)} — ${escapeHtml(eintrag.parameter || "(ohne Parameter)")}${preisHinweis}</h3>
         ${varianteHinzufuegenBtn}
       </div>
-      <p class="muted" style="margin-top:-0.4rem">Kategorie: ${escapeHtml(eintrag.kategorie)} · Bereich: ${escapeHtml(eintrag.bereich)}</p>
+      <p class="muted" style="margin-top:-0.4rem">Kategorie: ${escapeHtml(eintrag.kategorie)} · Bereich: ${escapeHtml(eintrag.bereich)}${makSapCode(eintrag) ? ` · SAP-Material: <strong>${escapeHtml(makSapCode(eintrag))}</strong>` : ""}</p>
       ${staffelungHinweis}
       ${bewertungHinweisHtml}
     </div>
@@ -5242,7 +5279,7 @@ function renderKvMakDetail(makId, kv) {
       /* Doppelte Sicherung gegen Duplikate: die Schaltfläche wird zwar durch positionStatusHtml
          ersetzt, sobald die Position im KV steht, der Handler prüft es aber selbst noch einmal. */
       if (findeKvPosition(kv, PRODUKTSPEZI_KATEGORIE_NAME, bezeichnung)) { zeigeStatus("Dieser MAK-Parameter ist bereits im KV vorhanden.", ""); return; }
-      kv.positionen.push({ id: neueId(), kategorie: PRODUKTSPEZI_KATEGORIE_NAME, bezeichnung, kuerzel: "PS", sapCode: "", kosten: eintrag.kosten || 0, anzahl: 1, aktiv: true });
+      kv.positionen.push({ id: neueId(), kategorie: PRODUKTSPEZI_KATEGORIE_NAME, bezeichnung, kuerzel: "PS", sapCode: makSapCode(eintrag), kosten: eintrag.kosten || 0, anzahl: 1, aktiv: true });
       speichereInLocalStorage();
       renderKvDetail();
       zeigeStatus("Position hinzugefügt · " + jetzt(), "ok");
@@ -5254,7 +5291,7 @@ function renderKvMakDetail(makId, kv) {
       if (!variante) return;
       const varBezeichnung = kvMakVarianteBezeichnung(eintrag, variante);
       if (findeKvPosition(kv, PRODUKTSPEZI_KATEGORIE_NAME, varBezeichnung)) { zeigeStatus("Diese Laufzeit ist bereits im KV vorhanden.", ""); return; }
-      kv.positionen.push({ id: neueId(), kategorie: PRODUKTSPEZI_KATEGORIE_NAME, bezeichnung: varBezeichnung, kuerzel: "PS", sapCode: variante.sapCode || "", kosten: Number(variante.kosten) || 0, anzahl: 1, aktiv: true });
+      kv.positionen.push({ id: neueId(), kategorie: PRODUKTSPEZI_KATEGORIE_NAME, bezeichnung: varBezeichnung, kuerzel: "PS", sapCode: makSapCode(eintrag, variante), kosten: Number(variante.kosten) || 0, anzahl: 1, aktiv: true });
       speichereInLocalStorage();
       renderKvDetail();
       zeigeStatus("Position hinzugefügt · " + jetzt(), "ok");
@@ -5272,7 +5309,7 @@ function renderKvMakDetail(makId, kv) {
         zeigeStatus("Diese Laufzeit ist bereits im KV vorhanden.", "");
         return;
       }
-      kv.positionen.push({ id: neueId(), kategorie: PRODUKTSPEZI_KATEGORIE_NAME, bezeichnung: varBezeichnung, kuerzel: "PS", sapCode: "", kosten: kostenFeld.value === "" ? 0 : Number(kostenFeld.value), anzahl: 1, aktiv: true });
+      kv.positionen.push({ id: neueId(), kategorie: PRODUKTSPEZI_KATEGORIE_NAME, bezeichnung: varBezeichnung, kuerzel: "PS", sapCode: makSapCode(eintrag), kosten: kostenFeld.value === "" ? 0 : Number(kostenFeld.value), anzahl: 1, aktiv: true });
       speichereInLocalStorage();
       renderKvDetail();
       zeigeStatus("Position hinzugefügt · " + jetzt(), "ok");
@@ -7605,7 +7642,7 @@ function gefiltereMak() {
     if (makKategorieFilter && m.kategorie !== makKategorieFilter) return false;
     if (idFilter && !normalisiere(m.id).includes(idFilter)) return false;
     if (!q) return true;
-    return normalisiere([m.id, m.kategorie, m.bereich, m.parameter, m.anforderung, m.normEu, m.normUs, m.pruefnachweis, (m.schlagworte || []).join(" ")].join(" ")).includes(q);
+    return normalisiere([m.id, m.kategorie, m.bereich, m.parameter, m.anforderung, m.normEu, m.normUs, m.pruefnachweis, m.sapCode, (m.schlagworte || []).join(" ")].join(" ")).includes(q);
   }).sort((a, b) => (a.parameter || "").localeCompare(b.parameter || "", "de") || a.id.localeCompare(b.id, "de", { numeric: true }));
 }
 
@@ -7625,7 +7662,7 @@ function renderMakListe() {
   ul.innerHTML = liste.map((m) => `
     <li class="${m.id === aktiveMakId ? "aktiv" : ""}" data-id="${escapeHtml(m.id)}">
       <strong>${escapeHtml(m.parameter || "(ohne Parameter)")}</strong> <span class="muted">${escapeHtml(m.kategorie)}</span>
-      <div class="muted">${escapeHtml(m.id)}${m.bereich ? " · " + escapeHtml(m.bereich) : ""}</div>
+      <div class="muted">${escapeHtml(m.id)}${m.bereich ? " · " + escapeHtml(m.bereich) : ""}${m.sapCode ? " · SAP " + escapeHtml(m.sapCode) : ""}</div>
     </li>`).join("");
   ul.querySelectorAll("li[data-id]").forEach((li) => li.addEventListener("click", () => { aktiveMakId = li.dataset.id; renderMakDetail(); renderMakListeAktivMarkieren(); }));
 }
@@ -7641,7 +7678,7 @@ function renderMakListeAktivMarkieren() {
    damit sie sofort in Listen/Dropdowns eindeutig auffindbar ist, bis der Nutzer sie durch eine
    "echte" ID (z. B. im Stil "DU023") ersetzt. */
 function makEntwurfNeu() {
-  return { id: "NEU-" + neueId().slice(0, 6).toUpperCase(), kategorie: "", bereich: "", parameter: "Neue MAK-Position", anforderung: "", normEu: "", normUs: "", pruefnachweis: "", schlagworte: [], varianten: [], kosten: null, kostenWeiteresArtikel: null, abrechnungsmodus: "artikel", bewertungsgrundlageErforderlich: false, bemerkung: "" };
+  return { id: "NEU-" + neueId().slice(0, 6).toUpperCase(), kategorie: "", bereich: "", parameter: "Neue MAK-Position", anforderung: "", normEu: "", normUs: "", pruefnachweis: "", schlagworte: [], varianten: [], kosten: null, kostenWeiteresArtikel: null, abrechnungsmodus: "artikel", bewertungsgrundlageErforderlich: false, bemerkung: "", sapCode: "" };
 }
 
 /* Preisvariante ("Laufzeit"-Zeile, z. B. "1m³ Kammer (24h)" für 288,24 €) - editierbar analog zu
@@ -7654,7 +7691,7 @@ function makVarianteZeileHtml(v) {
       <button type="button" class="danger small" data-action="mak-variante-loeschen" title="Preisvariante löschen">🗑</button>
     </div>
     <div class="mak-variante-zusatz">
-      <input type="text" data-feld="sapCode" value="${escapeHtml(v.sapCode || "")}" placeholder="SAP-Code (optional)">
+      <input type="text" data-feld="sapCode" value="${escapeHtml(v.sapCode || "")}" placeholder="Eigener SAP-Code (sonst der des Parameters)">
       <input type="text" data-feld="hinweis" value="${escapeHtml(v.hinweis || "")}" placeholder="Hinweis, z. B. Norm/Standort (optional)">
     </div>
   </div>`;
@@ -7671,14 +7708,15 @@ function renderMakDetail() {
       <h2 style="margin-top:0">${escapeHtml(eintrag.parameter || "(ohne Parameter)")}</h2>
       <div class="formular-grid">
         <label>ID<input type="text" id="mak-id-input" value="${escapeHtml(eintrag.id)}"></label>
-        <label>Parameter<input type="text" data-feld="parameter" value="${escapeHtml(eintrag.parameter)}"></label>
+        <label title="SAP-Material/SAP-Code dieses Parameters - wird beim Hinzufügen zu einem KV automatisch in die Spalte „SAP-Code" der Prüfposition übernommen (genau wie der SAP-Code einer Norm).">SAP-Code (SAP-Material)<input type="text" data-feld="sapCode" value="${escapeHtml(eintrag.sapCode || "")}" placeholder="z. B. CHEM_AZO_TS"></label>
+        <label class="volle-breite">Parameter<input type="text" data-feld="parameter" value="${escapeHtml(eintrag.parameter)}"></label>
         <label>Kategorie<input type="text" data-feld="kategorie" value="${escapeHtml(eintrag.kategorie)}"></label>
         <label>Bereich<input type="text" data-feld="bereich" value="${escapeHtml(eintrag.bereich)}"></label>
-        <label class="volle-breite">Anforderung<textarea data-feld="anforderung" rows="3">${escapeHtml(eintrag.anforderung)}</textarea></label>
-        <label class="volle-breite">Norm/Standard EU<textarea data-feld="normEu" rows="2">${escapeHtml(eintrag.normEu)}</textarea></label>
-        <label class="volle-breite">Norm/Standard US (AATCC/ASTM)<textarea data-feld="normUs" rows="2">${escapeHtml(eintrag.normUs)}</textarea></label>
-        <label class="volle-breite">Mindest-Prüfnachweis<textarea data-feld="pruefnachweis" rows="2">${escapeHtml(eintrag.pruefnachweis)}</textarea></label>
-        <label class="volle-breite">Bemerkung <span class="muted" style="font-weight:400">– gilt für diesen Parameter überall (analog zur Bemerkung an einer Norm), erscheint in der Bemerkungen-Zeile jeder KV-Position mit diesem Parameter</span><textarea data-feld="bemerkung" rows="2">${escapeHtml(eintrag.bemerkung)}</textarea></label>
+        <label class="volle-breite">Anforderung<textarea class="auto-hoehe" data-feld="anforderung" rows="3">${escapeHtml(eintrag.anforderung)}</textarea></label>
+        <label class="volle-breite">Norm/Standard EU<textarea class="auto-hoehe" data-feld="normEu" rows="2">${escapeHtml(eintrag.normEu)}</textarea></label>
+        <label class="volle-breite">Norm/Standard US (AATCC/ASTM)<textarea class="auto-hoehe" data-feld="normUs" rows="2">${escapeHtml(eintrag.normUs)}</textarea></label>
+        <label class="volle-breite">Mindest-Prüfnachweis<textarea class="auto-hoehe" data-feld="pruefnachweis" rows="2">${escapeHtml(eintrag.pruefnachweis)}</textarea></label>
+        <label class="volle-breite">Bemerkung <span class="muted" style="font-weight:400">– gilt für diesen Parameter überall (analog zur Bemerkung an einer Norm), erscheint in der Bemerkungen-Zeile jeder KV-Position mit diesem Parameter</span><textarea class="auto-hoehe" data-feld="bemerkung" rows="2">${escapeHtml(eintrag.bemerkung)}</textarea></label>
         <label title="Legt fest, wie dieser Parameter abgerechnet wird - pro geprüftem Artikel (mit optionaler Staffelung für weitere Artikel) oder pro Laufzeit mit LIDL-seitig fest verhandelten Preisen (z. B. Korrosionsbeständigkeit nach 24h/48h/72h…).">Abrechnung<select data-feld="abrechnungsmodus">
           <option value="artikel" ${!proLaufzeit ? "selected" : ""}>Pro Artikel (mit Staffelung)</option>
           <option value="laufzeit" ${proLaufzeit ? "selected" : ""}>Pro Laufzeit (feste Preise)</option>
@@ -7710,6 +7748,7 @@ function renderMakDetail() {
         <button class="danger small" id="mak-loeschen" style="margin-left:auto">MAK-Eintrag löschen</button>
       </div>
     </div>`;
+  macheTextareaSelbstwachsend(panel);
   panel.querySelectorAll(".formular-grid [data-feld]").forEach((el) => {
     const ereignis = el.type === "checkbox" ? "change" : "input";
     el.addEventListener(ereignis, () => {
@@ -8484,8 +8523,8 @@ document.getElementById("btn-csv").addEventListener("click", () => {
     });
     csvHerunterladen(zeilen, "normen_export.csv");
   } else if (aktiverTab === "mak") {
-    const zeilen = [["ID", "Kategorie", "Bereich", "Parameter", "Anforderung", "Norm/Standard EU", "Norm/Standard US (AATCC/ASTM)", "Mindest-Prüfnachweis", "Schlagworte"]];
-    gefiltereMak().forEach((m) => zeilen.push([m.id, m.kategorie, m.bereich, m.parameter, m.anforderung, m.normEu, m.normUs, m.pruefnachweis, (m.schlagworte || []).join("; ")]));
+    const zeilen = [["ID", "SAP-Code (SAP-Material)", "Kategorie", "Bereich", "Parameter", "Anforderung", "Norm/Standard EU", "Norm/Standard US (AATCC/ASTM)", "Mindest-Prüfnachweis", "Schlagworte"]];
+    gefiltereMak().forEach((m) => zeilen.push([m.id, m.sapCode || "", m.kategorie, m.bereich, m.parameter, m.anforderung, m.normEu, m.normUs, m.pruefnachweis, (m.schlagworte || []).join("; ")]));
     csvHerunterladen(zeilen, "mak_export.csv");
   } else if (aktiverTab === "verwaltung") {
     const zeilen = [["Typ", "Code", "Wert", "Verwendungen"]];
@@ -8516,7 +8555,7 @@ function schluesselPruefgrundlage(e) { return normalisiereWarengruppe(e.warengru
 function schluesselNorm(n) { return normalisiere(n.bezeichnung); }
 const NORM_FELDER = ["bezeichnung", "titel", "typ", "dateiname", "rohtext", "anwendungsbereiche", "bemerkung", "sapCode", "kennzeichnung", "bedienungsanleitung", "pruefungsart", "kosten", "lidlSpezifischBlock", "verknuepfteNormen"];
 function schluesselMak(m) { return normalisiere(m.id); }
-const MAK_FELDER = ["kategorie", "bereich", "parameter", "anforderung", "normEu", "normUs", "pruefnachweis", "schlagworte", "varianten", "kosten", "kostenWeiteresArtikel", "abrechnungsmodus", "bewertungsgrundlageErforderlich", "bemerkung"];
+const MAK_FELDER = ["kategorie", "bereich", "parameter", "anforderung", "normEu", "normUs", "pruefnachweis", "schlagworte", "varianten", "kosten", "kostenWeiteresArtikel", "abrechnungsmodus", "bewertungsgrundlageErforderlich", "bemerkung", "sapCode"];
 function schluesselWarengruppe(w) { return normalisiereWarengruppe(w.code); }
 const WARENGRUPPE_FELDER = ["name", "bereich"];
 function schluesselWarengruppenZuordnung(z) { return normalisiereWarengruppe(z.neu); }

@@ -1153,7 +1153,31 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   bzw. Trennzeichen zwischen mehreren Normen/Werten (z. B. „2100 mAh / 2400
   mAh", „DIN EN ISO 105/X12") und bleibt daher unverändert. CSV-Export wie
   bei den anderen Reitern verfügbar (exportiert die aktuell gefilterte
-  Liste, inkl. Schlagworte-Spalte).
+  Liste, inkl. SAP-Code- und Schlagworte-Spalte).
+
+  **SAP-Code (SAP-Material) je Parameter** – wie bei einer Norm lässt sich
+  auch an jedem MAK-Parameter ein SAP-Material hinterlegen. Er wird beim
+  Hinzufügen zu einem Kostenvoranschlag automatisch in die Spalte
+  **„SAP-Code"** der Prüfposition übernommen — dieselbe Spalte, die die
+  übrigen Positionen (Normen, feste Katalogpositionen) schon füllen; vorher
+  blieb sie bei MAK-Positionen leer und musste von Hand nachgetragen werden.
+  Das gilt für alle drei Wege, auf denen ein MAK-Parameter im KV landet: den
+  Parameter selbst, eine feste Laufzeit-Variante und die freie Laufzeit-
+  Eingabe. Eine **Laufzeit-Variante darf einen eigenen SAP-Code führen** —
+  dann gilt dieser, sonst der des Parameters (gleiche Fallback-Logik wie bei
+  Normen/Fixpositionen). Der SAP-Code erscheint außerdem in der MAK-Liste
+  unter der ID, beim Nachschlagen im KV in der Kopfzeile des Parameters
+  bzw. neben dem Preis der jeweiligen Laufzeit, und die Textsuche findet
+  Einträge auch über ihn.
+
+  **Mehrzeilige Felder wachsen mit dem Inhalt** – Anforderung, Norm/Standard
+  EU, Norm/Standard US, Mindest-Prüfnachweis und Bemerkung zeigen immer den
+  **gesamten** Text, statt ihn hinter einer festen Zeilenzahl scrollen zu
+  lassen: die Feldhöhe passt sich beim Öffnen des Parameters und bei jeder
+  Eingabe automatisch an. Die ursprüngliche Zeilenzahl bleibt dabei die
+  Mindesthöhe, ein leeres Feld schrumpft also nicht auf eine einzelne Zeile.
+  „Parameter" steht jetzt außerdem über die volle Breite (statt in einer der
+  beiden Spalten), da die Bezeichnungen dafür oft zu lang waren.
 
   **Abrechnung: Pro Artikel oder pro Laufzeit** – jeder MAK-Parameter hat ein
   eigenes Dropdown **„Abrechnung"**, das festlegt, wie er bepreist wird:
@@ -1171,7 +1195,8 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     48h, 72h, 96h, 120h, 240h …, teils zusätzlich nach Kammergröße oder
     Paketpreis-Gruppe gestaffelt). Statt eines einzelnen Preisfelds gibt es
     hier eine frei editierbare Liste **„Laufzeiten/Preise"** — jede Zeile mit
-    eigener Bezeichnung, Preis, optionalem SAP-Code und Hinweis, per **„+
+    eigener Bezeichnung, Preis, optionalem eigenem SAP-Code (ohne Eintrag
+    gilt der SAP-Code des Parameters, siehe oben) und Hinweis, per **„+
     Laufzeit/Preis hinzufügen"** beliebig erweiterbar und einzeln löschbar
     (identisches Editier-Muster wie bei den Anwendungsbereichen im
     Normen-Tab). Im KV-Reiter erscheint dann statt eines einzelnen **„+
@@ -1579,3 +1604,10 @@ dieselbe Tabelle je nach Datenbestand unterschiedlich aussieht. In der
 Arbeitsvorrat-Tabelle (17 Spalten) bleiben erste und letzte Spalte beim
 seitlichen Scrollen am Rand stehen, damit IAN und Aktions-Schaltflächen immer
 erreichbar sind.
+
+Mehrzeilige Felder mit der Klasse `auto-hoehe` bekommen ihre Höhe aus dem
+Inhalt statt aus dem `rows`-Attribut (`passeTextareaHoeheAn`). Die aus `rows`
+entstehende Höhe wird dabei einmalig **vor** der ersten Anpassung gemerkt und
+bleibt die Mindesthöhe. Wichtig: Wird das Feld gemessen, während sein Reiter
+ausgeblendet ist, liefert `scrollHeight` 0 — dann bleibt die bisherige Höhe
+stehen, sonst klappte das Feld auf null zusammen.
