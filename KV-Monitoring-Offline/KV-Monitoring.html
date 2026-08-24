@@ -30,11 +30,6 @@ textarea { resize:vertical; }
 /* Selbstwachsende Mehrzeilenfelder (siehe passeTextareaHoeheAn): die Höhe wird exakt auf den Inhalt
    gesetzt, ein Rollbalken wäre deshalb nur ein Flackern beim Tippen. */
 textarea.auto-hoehe { overflow-y:hidden; }
-/* Freie Bemerkung je Prüfposition - eigene Spalte in der Positionstabelle, wächst mit dem Text. */
-.pos-bemerkung { width:100%; font-size:0.8rem; padding:0.25rem 0.35rem; border:1px solid var(--border); border-radius:6px; line-height:1.3; }
-/* Eine mehrzeilige Bemerkung macht die ganze Zeile hoch - die übrigen Zellen (vor allem die
-   Summe) sollen dann nicht oben kleben, sondern auf Höhe der Eingabefelder stehen. */
-#kv-positionen-body td { vertical-align:middle; }
 header.topbar { display:flex; flex-wrap:wrap; gap:0.6rem; align-items:center; padding:0.7rem 1rem; background:var(--card); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:5; }
 header.topbar h1 { font-size:1.1rem; margin:0 1rem 0 0; white-space:nowrap; }
 header.topbar .spacer { flex:1; }
@@ -5016,17 +5011,17 @@ const KENNZEICHNUNG_FIXPOSITION_ID = (id) => id.startsWith("fix-kennz") || id ==
    Bedienungsanleitung-Anforderungen (siehe pruefgrundlageKennzeichnungAktiv/-BedienungsanleitungAktiv),
    soll das nicht nur als Badge im Kennzeichnung-Block stehen, sondern direkt als Bemerkung an der
    Position, die diese Anforderung abdeckt: die Bedienungsanleitung-Anforderung beim 1000_PPM, die
-   Kennzeichnungs-Anforderung bei 1001_PPM/1002_PPM/1003_PPM/1005_PPM. Zuordnung über die
-   Katalog-IDs (siehe SICHERHEIT_NORM_FIXPOSITIONEN) statt über die PPM-Nummer im Text, damit eine
-   Umbenennung im Katalog die Zuordnung nicht stillschweigend zerreißt. */
-const KENNZEICHNUNG_ANFORDERUNG_FIXPOSITIONEN = ["fix-kennz-1001", "fix-kennz-1002", "fix-kennz-1003", "fix-kennz-1005"];
-const BEDIENUNGSANLEITUNG_ANFORDERUNG_FIXPOSITION = "fix-bda";
-/* Ordnet eine KV-Position ihrem Katalogeintrag zu. Positionen speichern keine Katalog-Referenz
-   (Kosten/Bezeichnung sind je KV frei editierbar), der Abgleich läuft deshalb - wie überall sonst -
-   über Kategorie + Bezeichnung. */
-function fixPositionIdFuerPosition(p) {
-  const treffer = ALLE_FIXPOSITIONEN.find((k) => normalisiere(k.bezeichnung) === normalisiere(p.bezeichnung) && normalisiere(k.kategorie) === normalisiere(p.kategorie));
-  return treffer ? treffer.id : "";
+   Kennzeichnungs-Anforderung bei 1001_PPM/1002_PPM/1003_PPM/1005_PPM.
+   Zuordnung über die PPM-Nummer IM TEXT der Bezeichnung, denn dieselbe Prüfung kommt auf zwei Wegen
+   in den KV: als feste Katalogposition ("Kennzeichnung GER, Verpackung & Produkt (1001_PPM)") und
+   als Norm mit Prüfungsart "Kennzeichnung", die im Reiter "Normen" oft schlicht "1001_PPM" heißt.
+   Eine Zuordnung über die Katalog-ID würde den zweiten Weg übersehen. Die Ziffernfolge wird nach
+   links abgegrenzt, damit z. B. "11000_PPM" nicht fälschlich als 1000_PPM zählt. */
+const BEDIENUNGSANLEITUNG_ANFORDERUNG_PPM = ["1000_PPM"];
+const KENNZEICHNUNG_ANFORDERUNG_PPM = ["1001_PPM", "1002_PPM", "1003_PPM", "1005_PPM"];
+function positionHatPpmCode(p, codes) {
+  const bezeichnung = String((p && p.bezeichnung) || "");
+  return codes.some((code) => new RegExp(`(^|[^0-9])${code}`, "i").test(bezeichnung));
 }
 /* Einmal je Rendervorgang/Export berechnet und dann an positionBemerkungen durchgereicht - der
    Kontext-Aufbau (mechanikKontext) durchsucht alle Prüfgrundlagen und wäre pro Position zu teuer. */
@@ -6216,11 +6211,9 @@ function renderKvDetail() {
       <div class="tabellen-wrapper">
         <table class="tabelle tabelle-fest">
           <thead><tr>
-            <th style="width:4%">Aktiv</th><th style="width:13%">Kategorie</th><th style="width:20%">Bezeichnung</th>
-            <th style="width:5%">Kürzel</th><th style="width:11%">SAP-Code</th><th style="width:8%">Kosten €</th>
-            <th style="width:6%">Anzahl</th><th style="width:8%">Summe €</th>
-            <th style="width:14%" title="Frei eintragbare Bemerkung zu dieser Position - landet in der Zwischenablage-/Excel-Kopie und in der Zusatzzeile darunter.">Bemerkung</th>
-            <th style="width:11%">Aktionen</th>
+            <th style="width:5%">Aktiv</th><th style="width:15%">Kategorie</th><th style="width:24%">Bezeichnung</th>
+            <th style="width:6%">Kürzel</th><th style="width:12%">SAP-Code</th><th style="width:9%">Kosten €</th>
+            <th style="width:7%">Anzahl</th><th style="width:9%">Summe €</th><th style="width:13%">Aktionen</th>
           </tr></thead>
           <tbody id="kv-positionen-body"></tbody>
         </table>
@@ -6360,19 +6353,15 @@ function positionBemerkungen(p, pa, anforderungen) {
     ergebnisse.push({ label: "Teilprüfung", text: `${prozent}% der Vollprüfung (Artikelkategorie ${kategorieText})` });
   }
   if (p.bewertungsgrundlage) ergebnisse.push({ label: "Bewertungsgrundlage/Grenzwert", text: p.bewertungsgrundlage });
-  /* eigenesFeld: steht in der Positionstabelle bereits in einer eigenen, editierbaren Spalte - in
-     der Zusatzzeile darunter wird sie deshalb weggelassen (doppelte Anzeige), in Exporte geht sie
-     wie alle anderen mit ein. */
-  if (p.bemerkung) ergebnisse.push({ label: "Bemerkung (KV-spezifisch)", text: p.bemerkung, eigenesFeld: true });
+  if (p.bemerkung) ergebnisse.push({ label: "Bemerkung (KV-spezifisch)", text: p.bemerkung });
 
   /* Anforderungen der angewandten Prüfgrundlage genau an der Position, die sie abdeckt. */
   if (anforderungen) {
-    const fixId = fixPositionIdFuerPosition(p);
     const anforderungsText = (normen) => `Laut Prüfgrundlage „${anforderungen.produkt}" gefordert – aus ${normen.map((n) => n.bezeichnung).join(", ")}`;
-    if (fixId === BEDIENUNGSANLEITUNG_ANFORDERUNG_FIXPOSITION && anforderungen.bedienungsanleitung.length) {
+    if (anforderungen.bedienungsanleitung.length && positionHatPpmCode(p, BEDIENUNGSANLEITUNG_ANFORDERUNG_PPM)) {
       ergebnisse.push({ label: "Anforderungen an die Bedienungsanleitung", text: anforderungsText(anforderungen.bedienungsanleitung) });
     }
-    if (KENNZEICHNUNG_ANFORDERUNG_FIXPOSITIONEN.includes(fixId) && anforderungen.kennzeichnung.length) {
+    if (anforderungen.kennzeichnung.length && positionHatPpmCode(p, KENNZEICHNUNG_ANFORDERUNG_PPM)) {
       ergebnisse.push({ label: "Kennzeichnungsanforderungen", text: anforderungsText(anforderungen.kennzeichnung) });
     }
   }
@@ -6501,8 +6490,11 @@ function renderKvPositionenTabelle(kv) {
   /* Sortiert die Positionen bei jedem Rendern fest nach Kategorie (siehe
      MECHANIK_KATEGORIE_SORTIERUNG) - stabil, d. h. mehrere Positionen derselben Kategorie behalten
      ihre bisherige relative Reihenfolge zueinander. Mutiert kv.positionen direkt (wie die "hoch"/
-     "runter"-Buttons auch), damit CSV-Export/Zwischenablage-Kopie dieselbe Reihenfolge zeigen. */
-  kv.positionen.sort((a, b) => mechanikKategorieSortierIndex(a.kategorie) - mechanikKategorieSortierIndex(b.kategorie));
+     "runter"-Buttons auch), damit CSV-Export/Zwischenablage-Kopie dieselbe Reihenfolge zeigen.
+     Zweites Kriterium: Mustereinlagerung/Projektkosten stehen ans Ende ihres Blocks - sie sind
+     keine Prüfung, sondern Beiwerk, und würden sonst über den eigentlichen Prüfpositionen stehen. */
+  kv.positionen.sort((a, b) => (mechanikKategorieSortierIndex(a.kategorie) - mechanikKategorieSortierIndex(b.kategorie))
+    || ((istPflichtposition(a) ? 1 : 0) - (istPflichtposition(b) ? 1 : 0)));
   const tbody = document.getElementById("kv-positionen-body");
   /* Für den Kennzeichnung-Paketpreis (siehe wendeKennzeichnungPaketpreisAn) und den
      Teilprüfung-Prozentsatz (siehe teilpruefungProzentsatz) - beide hängen von der Artikelkategorie
@@ -6512,17 +6504,13 @@ function renderKvPositionenTabelle(kv) {
      Rendervorgang, nicht je Position (siehe pruefgrundlageAnforderungenFuerKv). */
   const anforderungen = pruefgrundlageAnforderungenFuerKv(kv);
   if (!kv.positionen.length) {
-    tbody.innerHTML = '<tr><td colspan="10" class="leerzustand">Noch keine Positionen. Über die Prüfumfang-Vorschläge oben oder als freie Position hinzufügen.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="leerzustand">Noch keine Positionen. Über die Prüfumfang-Vorschläge oben oder als freie Position hinzufügen.</td></tr>';
   } else {
     tbody.innerHTML = kv.positionen.map((p, idx) => {
-      /* Zusatzzeile: die automatisch gefundenen Bemerkungen (Teilprüfung, Norm, Prüfgrundlage,
-         MAK, Kennzeichnungs-/BDA-Anforderung) - schreibgeschützt, weil sie aus ihren Quellen
-         stammen. Die frei eintragbare Bemerkung steht dagegen als eigene Spalte in der Zeile
-         selbst und erscheint hier zusätzlich mit den übrigen (siehe positionBemerkungen). */
-      const bemerkungen = positionBemerkungen(p, pa, anforderungen).filter((b) => !b.eigenesFeld);
+      const bemerkungen = positionBemerkungen(p, pa, anforderungen);
       const bemerkungenZeile = bemerkungen.length ? `<tr data-bemerkungen-fuer="${p.id}">
         <td></td>
-        <td colspan="9" style="padding-top:0;padding-bottom:0.6rem;font-size:0.8rem;color:var(--muted)">
+        <td colspan="8" style="padding-top:0;padding-bottom:0.6rem;font-size:0.8rem;color:var(--muted)">
           ${bemerkungen.map((b) => `<div><strong>${escapeHtml(b.label)}:</strong> ${escapeHtml(b.text)}</div>`).join("")}
         </td>
       </tr>` : "";
@@ -6535,7 +6523,6 @@ function renderKvPositionenTabelle(kv) {
         <td><input type="number" data-feld="kosten" value="${zahlOderLeer(p.kosten)}"></td>
         <td><input type="number" data-feld="anzahl" value="${zahlOderLeer(p.anzahl)}"></td>
         <td class="pos-summe">${((Number(p.kosten) || 0) * (Number(p.anzahl) || 0)).toFixed(2)}</td>
-        <td><textarea class="auto-hoehe pos-bemerkung" data-feld="bemerkung" rows="1" placeholder="Bemerkung…">${escapeHtml(p.bemerkung || "")}</textarea></td>
         <td class="zeile-aktionen">
           <button class="ghost small" data-action="hoch" ${idx === 0 ? "disabled" : ""}>↑</button>
           <button class="ghost small" data-action="runter" ${idx === kv.positionen.length - 1 ? "disabled" : ""}>↓</button>
@@ -6545,7 +6532,6 @@ function renderKvPositionenTabelle(kv) {
     }).join("");
   }
 
-  macheTextareaSelbstwachsend(tbody);
   tbody.querySelectorAll("tr[data-id]").forEach((tr) => {
     const pos = kv.positionen.find((p) => p.id === tr.dataset.id);
     tr.querySelectorAll("[data-feld]").forEach((el) => {

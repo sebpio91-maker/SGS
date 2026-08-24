@@ -236,9 +236,17 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   (Sicherheit & Norm/FFU/StiWa) referenziert ist. Eine Norm-Referenz, die
   „in Anlehnung an" gesetzt und **nicht** per „trotzdem übernehmen"
   eingeschaltet ist, zählt dabei nicht — dieselbe Regel wie beim Badge.
-  Die Zuordnung läuft über die Katalog-IDs dieser fünf Positionen, nicht
-  über die PPM-Nummer im Text, und die Bemerkungen landen wie alle anderen
-  auch in der Zwischenablage-/Excel-Kopie (Spalte „Bemerkung"). Die
+  Die Bemerkungen landen wie alle anderen auch in der Zwischenablage-/
+  Excel-Kopie (Spalte „Bemerkung").
+
+  Die Zuordnung läuft über die **PPM-Nummer in der Bezeichnung**, denn
+  dieselbe Prüfung kommt auf zwei Wegen in den Kostenvoranschlag: als feste
+  Katalogposition („Kennzeichnung GER, Verpackung & Produkt (1001_PPM)")
+  und als **Norm mit Prüfungsart „Kennzeichnung"**, die im Reiter „Normen"
+  meist schlicht „1001_PPM" heißt. Eine Zuordnung über die Katalog-ID würde
+  den zweiten (in der Praxis üblichen) Weg übersehen. Die Ziffernfolge wird
+  nach links abgegrenzt, damit z. B. „11000_PPM" nicht fälschlich als
+  1000_PPM zählt. Die
   **Überschrift zeigt bevorzugt die Artikelbezeichnung aus dem verknüpften
   Prüfauftrag** (aussagekräftiger als die bloße IAN) — ohne verknüpften PA
   fällt sie auf das freie „Artikel"-Feld des KVs zurück, erst danach auf
@@ -758,14 +766,8 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   zählen sie weder in die Gesamtsumme noch in den Excel-Import, bleiben aber
   sichtbar.
 
-  **Jede Position hat eine eigene Spalte „Bemerkung"** — frei eintragbar, für
-  jede Position (nicht mehr nur für MAK-Parameter). Das Feld wächst mit dem
-  Text mit, wird sofort gespeichert und landet in der Zwischenablage-/
-  Excel-Kopie. Die automatisch gefundenen Bemerkungen (Teilprüfung,
-  Norm-Bemerkung, Prüfgrundlage-Kommentar, MAK, Kennzeichnungs-/
-  Bedienungsanleitung-Anforderung) bleiben in der schreibgeschützten
-  Zusatzzeile darunter — die frei eingetragene Bemerkung erscheint dort
-  **nicht** zusätzlich, da sie ja schon in ihrer eigenen Spalte steht.
+  Beide stehen **am Ende ihres jeweiligen Blocks**, unterhalb der
+  eigentlichen Prüfpositionen — sie sind keine Prüfung, sondern Beiwerk.
 
   **Die Tabelle „Mechanische Prüfpositionen" ist immer nach Kategorie
   sortiert** (Sicherheit-/Normprüfung inkl. Kennzeichnung, dann
