@@ -30,6 +30,11 @@ textarea { resize:vertical; }
 /* Selbstwachsende Mehrzeilenfelder (siehe passeTextareaHoeheAn): die Höhe wird exakt auf den Inhalt
    gesetzt, ein Rollbalken wäre deshalb nur ein Flackern beim Tippen. */
 textarea.auto-hoehe { overflow-y:hidden; }
+/* Freie Bemerkung je Prüfposition - eigene Spalte in der Positionstabelle, wächst mit dem Text. */
+.pos-bemerkung { width:100%; font-size:0.8rem; padding:0.25rem 0.35rem; border:1px solid var(--border); border-radius:6px; line-height:1.3; }
+/* Eine mehrzeilige Bemerkung macht die ganze Zeile hoch - die übrigen Zellen (vor allem die
+   Summe) sollen dann nicht oben kleben, sondern auf Höhe der Eingabefelder stehen. */
+#kv-positionen-body td { vertical-align:middle; }
 header.topbar { display:flex; flex-wrap:wrap; gap:0.6rem; align-items:center; padding:0.7rem 1rem; background:var(--card); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:5; }
 header.topbar h1 { font-size:1.1rem; margin:0 1rem 0 0; white-space:nowrap; }
 header.topbar .spacer { flex:1; }
@@ -784,6 +789,53 @@ const FFU_FITTING_FIXPOSITION = { id: "fix-ffu", kategorie: "FFU/Fitting", bezei
 const NGO_FIXPOSITION = { id: "fix-ngo", kategorie: "NGO", bezeichnung: "NGO", kuerzel: "NGO", sapCode: "FFU_TS", standardKosten: 0 };
 const REFERENZPRUEFUNG_FIXPOSITION = { id: "fix-referenz", kategorie: "Referenzprüfung", bezeichnung: "Referenzprüfung", kuerzel: "REF", sapCode: "FFU_TS", standardKosten: 0 };
 const ALLE_FIXPOSITIONEN = [...SICHERHEIT_NORM_FIXPOSITIONEN, FFU_FITTING_FIXPOSITION, NGO_FIXPOSITION, REFERENZPRUEFUNG_FIXPOSITION];
+
+/* Zwei Zeilen stehen laut KV-Vorlage in JEDEM Kostenvoranschlag, unabhängig vom Prüfumfang - sie
+   werden deshalb nicht über die Prüfumfang-Blöcke angeboten, sondern automatisch angelegt (siehe
+   stellePflichtpositionenSicher). Beide haben bewusst KEINEN SAP-Code (sind keine SAP-Bestellzeile)
+   und deshalb auch keine gleichnamige Norm (siehe FIXPOSITIONEN_MIT_NORM).
+   Mustereinlagerung fällt je Style an - die Anzahl wird deshalb automatisch aus der Styleanzahl des
+   KVs gesetzt (jeStyle), Projektkosten sind eine einmalige Pauschale. */
+const PFLICHT_POSITIONEN = [
+  { kategorie: "Sicherheit & Norm / Sonder- & Funktionsparameter", bezeichnung: "Mustereinlagerung (18 Monate)", kuerzel: "MS", sapCode: "", standardKosten: 3, jeStyle: true },
+  { kategorie: "(physikalische-) Produktspezifikation", bezeichnung: "Projektkosten (nicht einsteuern)", kuerzel: "PS", sapCode: "", standardKosten: 330, jeStyle: false }
+];
+/* Styleanzahl des KVs als Multiplikator - leer/0/ungültig zählt als 1 (identisch zur Styles-Formel
+   der Prüfgrundlage-Kosten, siehe normenBlockSummeMitStyles). */
+function styleanzahlFuerKv(kv) {
+  return Math.max(1, Number(kv && kv.styleanzahl) || 1);
+}
+/* Erkennt die beiden automatisch angelegten Zeilen. Bewusst über Kategorie + Bezeichnung statt über
+   ein Kennzeichen an der Position: eine aus einem anderen Stand zusammengeführte oder aus einem
+   Vorgänger-KV übernommene Zeile trägt kein solches Kennzeichen, ist aber dieselbe Position.
+   Sie gehören NICHT zum Prüfumfang (keine ausgewählte Prüfung) und sind kein MAK-Parameter - beides
+   muss an den entsprechenden Stellen unterschieden werden. */
+function istPflichtposition(p) {
+  return PFLICHT_POSITIONEN.some((v) => normalisiere(v.kategorie) === normalisiere(p.kategorie) && normalisiere(v.bezeichnung) === normalisiere(p.bezeichnung));
+}
+/* Legt die Pflichtpositionen an, falls sie fehlen, und hält die Anzahl der je-Style-Position an der
+   Styleanzahl des KVs. Läuft vor jeder Anzeige und vor jedem Export, damit die Zeilen wirklich
+   IMMER dabei sind - wer sie nicht abrechnen will, nimmt den Haken "Aktiv" weg (dann zählen sie
+   weder in die Summe noch in den Excel-Import), statt sie zu löschen.
+   Gibt true zurück, wenn etwas geändert wurde (dann muss der Aufrufer speichern). */
+function stellePflichtpositionenSicher(kv) {
+  if (!kv || !Array.isArray(kv.positionen)) return false;
+  let geaendert = false;
+  PFLICHT_POSITIONEN.forEach((vorlage) => {
+    const anzahl = vorlage.jeStyle ? styleanzahlFuerKv(kv) : 1;
+    const vorhanden = findeKvPosition(kv, vorlage.kategorie, vorlage.bezeichnung);
+    if (!vorhanden) {
+      kv.positionen.push({ id: neueId(), kategorie: vorlage.kategorie, bezeichnung: vorlage.bezeichnung, kuerzel: vorlage.kuerzel, sapCode: vorlage.sapCode, kosten: vorlage.standardKosten, anzahl, aktiv: true });
+      geaendert = true;
+    } else if (vorlage.jeStyle && Number(vorhanden.anzahl) !== anzahl) {
+      /* Bewusst ohne Rücksicht auf eine Handeingabe: die Anzahl IST hier die Styleanzahl. Wer einen
+         anderen Betrag braucht, passt die Kosten je Style an. */
+      vorhanden.anzahl = anzahl;
+      geaendert = true;
+    }
+  });
+  return geaendert;
+}
 /* Diese festen Positionen haben (anders als "Projektkosten") einen echten SAP-Code - jede
    bekommt beim ersten Start eine gleichnamige Norm im Reiter "Normen" (Typ PPM), damit ihr
    SAP-Code dort zentral pflegbar ist (siehe migriereFixPositionenAlsNormen/fixPositionSapCodeAktuell). */
@@ -5403,7 +5455,9 @@ function makSchlagwortVorschlaege(pa) {
    Bemerkungen-Zeile (siehe positionBemerkungen). Inaktive (deaktivierte) Positionen werden mit
    angezeigt, aber als solche markiert, damit nichts versteckt bleibt. */
 function produktspezifikationenAusgewaehlteMakHtml(kv) {
-  const positionen = kv.positionen.filter((p) => normalisiere(p.kategorie) === normalisiere(PRODUKTSPEZI_KATEGORIE_NAME));
+  /* Projektkosten stehen zwar in dieser Kategorie, sind aber kein MAK-Parameter (siehe
+     PFLICHT_POSITIONEN) - sie gehören deshalb nicht in diese Übersicht. */
+  const positionen = kv.positionen.filter((p) => normalisiere(p.kategorie) === normalisiere(PRODUKTSPEZI_KATEGORIE_NAME) && !istPflichtposition(p));
   if (!positionen.length) return "";
   return `<div class="mak-feld">
     <h3>Bereits ausgewählte MAK-Parameter <span class="muted" style="font-weight:400">(${positionen.length})</span></h3>
@@ -5737,14 +5791,17 @@ function mechanikKategorieSortierIndex(kategorie) {
    Produkt-/Normtext), daher gilt dort: alles in der Kategorie, was nicht zu den anderen drei
    Unterpunkten, Mustereinlagerung oder Akkusicherheitskurzcheck gehört. */
 function kvPositionenFuerPruefumfangEintrag(kv, eintragId) {
+  /* Mustereinlagerung/Projektkosten stehen in jedem KV, sind aber keine ausgewählte Prüfung - sie
+     dürfen einen Prüfumfang-Punkt weder als "erledigt" markieren noch mitzählen. */
+  const aktive = kv.positionen.filter((p) => p.aktiv && !istPflichtposition(p));
   const kat = PA_PRUEFUMFANG_KATEGORIEN.find((k) => k.id === eintragId);
-  if (kat) return kv.positionen.filter((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere(kat.katalogKategorie));
+  if (kat) return aktive.filter((p) => normalisiere(p.kategorie) === normalisiere(kat.katalogKategorie));
   const unterpunkt = SICHERHEIT_NORM_UNTERPUNKTE.find((u) => u.id === eintragId);
   if (!unterpunkt) return [];
-  const inSicherheitNorm = kv.positionen.filter((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere(SICHERHEIT_NORM_KATEGORIE_NAME));
+  const inSicherheitNorm = aktive.filter((p) => normalisiere(p.kategorie) === normalisiere(SICHERHEIT_NORM_KATEGORIE_NAME));
   if (unterpunkt.id === "sicherheitNormpruefung") {
     const andereRegexe = SICHERHEIT_NORM_UNTERPUNKTE.filter((u) => u.id !== "sicherheitNormpruefung").map((u) => u.bezeichnungRegex);
-    return inSicherheitNorm.filter((p) => !andereRegexe.some((r) => r.test(p.bezeichnung)) && !/mustereinlagerung/i.test(p.bezeichnung) && !/akkusicherheitskurzcheck/i.test(p.bezeichnung));
+    return inSicherheitNorm.filter((p) => !andereRegexe.some((r) => r.test(p.bezeichnung)) && !/akkusicherheitskurzcheck/i.test(p.bezeichnung));
   }
   return inSicherheitNorm.filter((p) => unterpunkt.bezeichnungRegex.test(p.bezeichnung));
 }
@@ -6159,9 +6216,11 @@ function renderKvDetail() {
       <div class="tabellen-wrapper">
         <table class="tabelle tabelle-fest">
           <thead><tr>
-            <th style="width:5%">Aktiv</th><th style="width:15%">Kategorie</th><th style="width:24%">Bezeichnung</th>
-            <th style="width:6%">Kürzel</th><th style="width:12%">SAP-Code</th><th style="width:9%">Kosten €</th>
-            <th style="width:7%">Anzahl</th><th style="width:9%">Summe €</th><th style="width:13%">Aktionen</th>
+            <th style="width:4%">Aktiv</th><th style="width:13%">Kategorie</th><th style="width:20%">Bezeichnung</th>
+            <th style="width:5%">Kürzel</th><th style="width:11%">SAP-Code</th><th style="width:8%">Kosten €</th>
+            <th style="width:6%">Anzahl</th><th style="width:8%">Summe €</th>
+            <th style="width:14%" title="Frei eintragbare Bemerkung zu dieser Position - landet in der Zwischenablage-/Excel-Kopie und in der Zusatzzeile darunter.">Bemerkung</th>
+            <th style="width:11%">Aktionen</th>
           </tr></thead>
           <tbody id="kv-positionen-body"></tbody>
         </table>
@@ -6190,6 +6249,9 @@ function renderKvDetail() {
         badge.textContent = "Charge " + kv.charge;
         badge.hidden = !kv.charge;
       }
+      /* Die Mustereinlagerung wird je Style abgerechnet - ihre Anzahl muss der neuen Styleanzahl
+         sofort folgen (siehe stellePflichtpositionenSicher, läuft in renderKvPositionenTabelle). */
+      if (el.dataset.feld === "styleanzahl") renderKvPositionenTabelle(kv);
     });
   });
   /* Erst beim Verlassen des IAN-Felds (nicht bei jedem Tastendruck, sonst geht der Fokus mitten im
@@ -6298,7 +6360,10 @@ function positionBemerkungen(p, pa, anforderungen) {
     ergebnisse.push({ label: "Teilprüfung", text: `${prozent}% der Vollprüfung (Artikelkategorie ${kategorieText})` });
   }
   if (p.bewertungsgrundlage) ergebnisse.push({ label: "Bewertungsgrundlage/Grenzwert", text: p.bewertungsgrundlage });
-  if (p.bemerkung) ergebnisse.push({ label: "Bemerkung (KV-spezifisch)", text: p.bemerkung });
+  /* eigenesFeld: steht in der Positionstabelle bereits in einer eigenen, editierbaren Spalte - in
+     der Zusatzzeile darunter wird sie deshalb weggelassen (doppelte Anzeige), in Exporte geht sie
+     wie alle anderen mit ein. */
+  if (p.bemerkung) ergebnisse.push({ label: "Bemerkung (KV-spezifisch)", text: p.bemerkung, eigenesFeld: true });
 
   /* Anforderungen der angewandten Prüfgrundlage genau an der Position, die sie abdeckt. */
   if (anforderungen) {
@@ -6409,6 +6474,7 @@ function tsvSicher(text) {
    landet die Spalte in der bisher ungenutzten Spalte L der Tabelle "Mechanik_30SER", siehe
    Mechanik_Import.bas). */
 function mechanischePositionenAlsTsv(kv) {
+  if (stellePflichtpositionenSicher(kv)) speichereInLocalStorage();
   const pa = data.pruefauftraege.find((p) => normalisiere(p.ian) === normalisiere(kv.ian));
   const kopf = ["Aktiv", "Kategorie", "Bezeichnung", "Kürzel", "SAP-Code", "Kosten €", "Anzahl", "Summe €", "Bemerkung"];
   const anforderungen = pruefgrundlageAnforderungenFuerKv(kv);
@@ -6430,6 +6496,8 @@ function mechanischePositionenAlsTsv(kv) {
 }
 
 function renderKvPositionenTabelle(kv) {
+  /* Mustereinlagerung/Projektkosten gehören in jeden KV - siehe stellePflichtpositionenSicher. */
+  if (stellePflichtpositionenSicher(kv)) speichereInLocalStorage();
   /* Sortiert die Positionen bei jedem Rendern fest nach Kategorie (siehe
      MECHANIK_KATEGORIE_SORTIERUNG) - stabil, d. h. mehrere Positionen derselben Kategorie behalten
      ihre bisherige relative Reihenfolge zueinander. Mutiert kv.positionen direkt (wie die "hoch"/
@@ -6444,25 +6512,30 @@ function renderKvPositionenTabelle(kv) {
      Rendervorgang, nicht je Position (siehe pruefgrundlageAnforderungenFuerKv). */
   const anforderungen = pruefgrundlageAnforderungenFuerKv(kv);
   if (!kv.positionen.length) {
-    tbody.innerHTML = '<tr><td colspan="9" class="leerzustand">Noch keine Positionen. Über die Prüfumfang-Vorschläge oben oder als freie Position hinzufügen.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="leerzustand">Noch keine Positionen. Über die Prüfumfang-Vorschläge oben oder als freie Position hinzufügen.</td></tr>';
   } else {
     tbody.innerHTML = kv.positionen.map((p, idx) => {
-      const bemerkungen = positionBemerkungen(p, pa, anforderungen);
+      /* Zusatzzeile: die automatisch gefundenen Bemerkungen (Teilprüfung, Norm, Prüfgrundlage,
+         MAK, Kennzeichnungs-/BDA-Anforderung) - schreibgeschützt, weil sie aus ihren Quellen
+         stammen. Die frei eintragbare Bemerkung steht dagegen als eigene Spalte in der Zeile
+         selbst und erscheint hier zusätzlich mit den übrigen (siehe positionBemerkungen). */
+      const bemerkungen = positionBemerkungen(p, pa, anforderungen).filter((b) => !b.eigenesFeld);
       const bemerkungenZeile = bemerkungen.length ? `<tr data-bemerkungen-fuer="${p.id}">
         <td></td>
-        <td colspan="8" style="padding-top:0;padding-bottom:0.6rem;font-size:0.8rem;color:var(--muted)">
+        <td colspan="9" style="padding-top:0;padding-bottom:0.6rem;font-size:0.8rem;color:var(--muted)">
           ${bemerkungen.map((b) => `<div><strong>${escapeHtml(b.label)}:</strong> ${escapeHtml(b.text)}</div>`).join("")}
         </td>
       </tr>` : "";
       return `<tr data-id="${p.id}">
         <td style="text-align:center"><input type="checkbox" data-feld="aktiv" ${p.aktiv ? "checked" : ""}></td>
-        <td><input type="text" data-feld="kategorie" value="${escapeHtml(p.kategorie)}"></td>
+        <td><input type="text" data-feld="kategorie" value="${escapeHtml(p.kategorie)}" title="${escapeHtml(p.kategorie)}"></td>
         <td><input type="text" data-feld="bezeichnung" value="${escapeHtml(p.bezeichnung)}"></td>
         <td><input type="text" data-feld="kuerzel" value="${escapeHtml(p.kuerzel)}"></td>
         <td><input type="text" data-feld="sapCode" value="${escapeHtml(p.sapCode)}"></td>
         <td><input type="number" data-feld="kosten" value="${zahlOderLeer(p.kosten)}"></td>
         <td><input type="number" data-feld="anzahl" value="${zahlOderLeer(p.anzahl)}"></td>
         <td class="pos-summe">${((Number(p.kosten) || 0) * (Number(p.anzahl) || 0)).toFixed(2)}</td>
+        <td><textarea class="auto-hoehe pos-bemerkung" data-feld="bemerkung" rows="1" placeholder="Bemerkung…">${escapeHtml(p.bemerkung || "")}</textarea></td>
         <td class="zeile-aktionen">
           <button class="ghost small" data-action="hoch" ${idx === 0 ? "disabled" : ""}>↑</button>
           <button class="ghost small" data-action="runter" ${idx === kv.positionen.length - 1 ? "disabled" : ""}>↓</button>
@@ -6472,6 +6545,7 @@ function renderKvPositionenTabelle(kv) {
     }).join("");
   }
 
+  macheTextareaSelbstwachsend(tbody);
   tbody.querySelectorAll("tr[data-id]").forEach((tr) => {
     const pos = kv.positionen.find((p) => p.id === tr.dataset.id);
     tr.querySelectorAll("[data-feld]").forEach((el) => {

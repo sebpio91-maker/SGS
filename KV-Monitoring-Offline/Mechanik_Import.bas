@@ -32,8 +32,10 @@ Attribute VB_Name = "Modul1"
 ' "Referenzprüfung", "NGO"). So zählen nur noch die Positionen, die tatsächlich aus dem aktuellen
 ' KV-Monitoring-Export stammen - nicht mehr die als Vorlage vorbelegten Standard-Haken. Am Ende wird
 ' die Tabelle automatisch auf Spalte F = "x" gefiltert (bisher der separate Button/das separate
-' Makro "Spalte_Filter"), sodass nur die aktiven Zeilen sichtbar bleiben - die fünf
-' Kategorie-Überschriften-Zeilen bleiben dabei IMMER sichtbar (siehe Mec_KategorieSummeSchreiben).
+' Makro "Spalte_Filter"), sodass nur die aktiven Zeilen sichtbar bleiben. Eine
+' Kategorie-Überschriften-Zeile bleibt dabei nur sichtbar, wenn dieser Block auch tatsächlich
+' Positionen enthält - für einen Block ohne ausgewählte Prüfungen erscheint gar keine Überschrift
+' mehr (früher stand dort eine leere Überschrift mit Summe 0), siehe Mec_KategorieSummeSchreiben.
 '
 ' WICHTIG - Kategorie-Überschriften-Zeilen sind jetzt REINE Überschriften- UND Summenzeilen ohne
 ' eigene Formel: Die ursprünglichen Formeln in diesen fünf Zeilen (SUMPRODUCT für Sicherheit & Norm/
@@ -62,10 +64,14 @@ Attribute VB_Name = "Modul1"
 '
 ' Spalte L (bisher komplett ungenutzt) wird für die "Bemerkung" jeder neuen Zeile verwendet - dort
 ' landet die automatische Teilprüfung-Angabe der Sicherheit-/Normprüfung-Position (Prozentsatz je
-' nach Artikelkategorie - Grün 40 %, Gelb 50 %, Rot/unbekannt 70 %, siehe teilpruefungProzentsatz im
+' nach Artikelkategorie - Grün 40 %, Gelb 50 %, Rot/unbekannt 60 %, siehe teilpruefungProzentsatz im
 ' KV-Monitoring-Tool) sowie alle in der Prüfpositionstabelle automatisch aggregierten Bemerkungen
-' (siehe positionBemerkungen: Bewertungsgrundlage/Grenzwert, Norm-Bemerkung, Prüfgrundlage-
-' Kommentar, MAK-Hinweis), damit diese Angaben auch in der Excel-Datei nicht verloren gehen.
+' (siehe positionBemerkungen: frei eingetragene Bemerkung, Bewertungsgrundlage/Grenzwert,
+' Norm-Bemerkung, Prüfgrundlage-Kommentar, MAK-Hinweis, Kennzeichnungs-/Bedienungsanleitung-
+' Anforderung), damit diese Angaben auch in der Excel-Datei nicht verloren gehen.
+' Zusätzlich steht dieselbe Bemerkung nach einem Zeilenumbruch MIT in Spalte D, also in derselben
+' Zelle wie der Parameter/die Bezeichnung (Zeilenumbruch-Formatierung wird dafür gesetzt) - so ist
+' sie direkt beim Parameter sichtbar, auch wenn Spalte L ausgeblendet ist.
 '
 ' WICHTIG: Bitte zunächst an einer KOPIE der Datei testen und die Summen
 ' hinterher prüfen, bevor produktiv damit gearbeitet wird - das Makro wurde
@@ -215,7 +221,15 @@ Private Sub Mec_ZeileEinfuegen(tbl As ListObject, kuerzel As String, bezeichnung
     Dim r As Long
     r = neueZeile.Range.Row
 
-    ws.Cells(r, 4).Value = bezeichnung        ' D: Bezeichnung
+    ' D: Bezeichnung - die Bemerkung steht nach einem Zeilenumbruch MIT in derselben Zelle, damit sie
+    ' im ausgedruckten/versendeten KV direkt beim Parameter steht und nicht nur in der (oft
+    ' ausgeblendeten) Spalte L. Dort landet sie zusätzlich unverändert.
+    If Len(bemerkung) > 0 Then
+        ws.Cells(r, 4).Value = bezeichnung & vbLf & bemerkung
+        ws.Cells(r, 4).WrapText = True        ' ohne Zeilenumbruch-Formatierung wäre der Umbruch unsichtbar
+    Else
+        ws.Cells(r, 4).Value = bezeichnung
+    End If
     ws.Cells(r, 5).Value = kuerzel            ' E: Kategorie/Kürzel
     ws.Cells(r, 6).Value = "x"                ' F: aktiv (zählt in der Kategorie-Summe mit, bleibt beim Filter sichtbar)
     ws.Cells(r, 7).Value = kosten             ' G: Kosten
@@ -251,7 +265,9 @@ Private Sub Mec_KategorieSummeSchreiben(tbl As ListObject, ws As Worksheet, head
     headerRow = headerZelle.Row
 
     Dim summe As Double
+    Dim anzahlPositionen As Long
     summe = 0
+    anzahlPositionen = 0
     Dim zeile As ListRow
     For Each zeile In tbl.ListRows
         Dim r As Long
@@ -259,14 +275,22 @@ Private Sub Mec_KategorieSummeSchreiben(tbl As ListObject, ws As Worksheet, head
         If r <> headerRow Then
             If CStr(ws.Cells(r, 5).Value) = kuerzel And CStr(ws.Cells(r, 6).Value) = "x" Then
                 summe = summe + (Mec_ZahlAusZelle(ws.Cells(r, 7)) * Mec_ZahlAusZelle(ws.Cells(r, 8)))
+                anzahlPositionen = anzahlPositionen + 1
             End If
         End If
     Next zeile
 
-    ws.Cells(headerRow, 6).Value = "x"    ' F: Überschriften-Zeile bleibt beim Filter immer sichtbar
     ws.Cells(headerRow, 7).Value = summe  ' G: Kategorie-Summe (fester Wert, keine Formel mehr)
     ws.Cells(headerRow, 8).Value = 1      ' H: Anzahl (Multiplikator, unverändert 1)
     ws.Cells(headerRow, 9).Value = summe  ' I: Summe = G*H (fester Wert, keine Formel mehr)
+
+    ' F: Die Überschriften-Zeile ist nur sichtbar, wenn dieser Block überhaupt Positionen hat.
+    ' Sonst blieben im gefilterten KV leere Blocküberschriften mit Summe 0 stehen.
+    If anzahlPositionen > 0 Then
+        ws.Cells(headerRow, 6).Value = "x"
+    Else
+        ws.Cells(headerRow, 6).Value = ""
+    End If
 End Sub
 
 Private Function Mec_ZahlAusZelle(zelle As Range) As Double

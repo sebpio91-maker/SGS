@@ -624,7 +624,9 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     zugeordnet sind. Die früher hier fest verankerten Katalogpositionen
     **Akkusicherheitskurzcheck** und **Optischer Abgleich** wurden entfernt;
     **Mustereinlagerung** wird im Prüfumfang ebenfalls nicht mehr angezeigt
-    (weder als Vorschlag noch manuell hinzufügbar).
+    (weder als Vorschlag noch manuell hinzufügbar) — sie steht stattdessen
+    automatisch in jedem KV (siehe „Zwei Zeilen stehen in jedem
+    Kostenvoranschlag" weiter unten).
   - **Kennzeichnung** – eigener Block, erscheint sobald „Kennzeichnung
     (Verpackung & Produkt)" oder „Kennzeichnung (Bedienungsanleitung)"
     angehakt ist. Die zum Hinzufügen angebotenen Positionen sind **direkt die
@@ -737,6 +739,34 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   dann wie gewohnt Kosten/Anzahl anpassen, deaktivieren oder entfernen.
   Positionen lassen sich außerdem frei anlegen („+ Freie Position").
 
+  **Zwei Zeilen stehen in jedem Kostenvoranschlag**, unabhängig vom
+  Prüfumfang, und werden deshalb automatisch angelegt statt über einen der
+  Prüfumfang-Blöcke angeboten:
+  - **Mustereinlagerung (18 Monate)** — 3 € je Style, Kategorie Sicherheit &
+    Norm. Die **Anzahl folgt automatisch der Styleanzahl des KVs**: bei 4
+    Styles steht dort 4 × 3 € = 12 €. Ändert sich die Styleanzahl, zieht die
+    Zeile sofort nach; eine Handeingabe in der Anzahl wird dabei bewusst
+    überschrieben (wer einen anderen Betrag braucht, ändert die Kosten je
+    Style). Ohne hinterlegte Styleanzahl gilt 1 Style.
+  - **Projektkosten (nicht einsteuern)** — 330 € Pauschale, Kategorie
+    (physikalische-) Produktspezifikation, Anzahl immer 1.
+
+  Beide haben (wie schon früher) **keinen SAP-Code**, da sie keine
+  SAP-Bestellzeile sind. Löscht man sie, kommen sie beim nächsten Öffnen des
+  KVs wieder — sie gehören laut Vorlage immer dazu. Wer sie im konkreten Fall
+  nicht abrechnen will, nimmt stattdessen den Haken **„Aktiv"** weg: dann
+  zählen sie weder in die Gesamtsumme noch in den Excel-Import, bleiben aber
+  sichtbar.
+
+  **Jede Position hat eine eigene Spalte „Bemerkung"** — frei eintragbar, für
+  jede Position (nicht mehr nur für MAK-Parameter). Das Feld wächst mit dem
+  Text mit, wird sofort gespeichert und landet in der Zwischenablage-/
+  Excel-Kopie. Die automatisch gefundenen Bemerkungen (Teilprüfung,
+  Norm-Bemerkung, Prüfgrundlage-Kommentar, MAK, Kennzeichnungs-/
+  Bedienungsanleitung-Anforderung) bleiben in der schreibgeschützten
+  Zusatzzeile darunter — die frei eingetragene Bemerkung erscheint dort
+  **nicht** zusätzlich, da sie ja schon in ihrer eigenen Spalte steht.
+
   **Die Tabelle „Mechanische Prüfpositionen" ist immer nach Kategorie
   sortiert** (Sicherheit-/Normprüfung inkl. Kennzeichnung, dann
   Produktspezifikation, FFU/Fitting, NGO, Referenzprüfung — passend zur
@@ -751,12 +781,26 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   neue Zeilen in die Tabelle „Mechanik_30SER" auf dem Blatt „Inspection
   Booking", direkt hinter der jeweiligen Kategorie-Überschriften-Zeile
   (Sicherheit & Norm, Produktspezifikation, FFU/Fitting, Referenzprüfung,
-  NGO); die Spalte „Bemerkung" landet in der bisher ungenutzten Spalte L. Vor
+  NGO). Vor
   jedem Import setzt das Makro außerdem alle vorbelegten „x"-Haken in der
   „FILTER"-Spalte der bestehenden Standardzeilen zurück (außer bei den fünf
   Kategorie-Überschriften-Zeilen) und filtert am Ende automatisch auf
   „FILTER" = „x", sodass nur noch die Zeilen zählen/sichtbar sind, die
   tatsächlich aus dem aktuellen KV-Monitoring-Export stammen.
+
+  **Die Bemerkung steht in Excel an zwei Stellen**: in der bisher ungenutzten
+  Spalte L, und zusätzlich **nach einem Zeilenumbruch in derselben Zelle wie
+  die Bezeichnung (Spalte D)** — dafür setzt das Makro auf dieser Zelle den
+  Zeilenumbruch (`WrapText`). So steht sie direkt beim Parameter, auch wenn
+  Spalte L ausgeblendet ist. Die Zwischenablage selbst bleibt dabei sauber
+  tabulatorgetrennt mit genau neun Spalten je Zeile (ein Zeilenumbruch
+  mitten in einem Feld würde den Import zerreißen) — der Umbruch entsteht
+  erst im Makro.
+
+  **Eine Kategorie-Überschriften-Zeile erscheint nur noch, wenn dieser Block
+  auch Positionen hat.** Sind für einen Block keine Prüfungen ausgewählt,
+  bleibt seine Überschrift nach dem Filtern ausgeblendet, statt als leere
+  Überschrift mit Summe 0 im KV stehen zu bleiben.
 
   Die fünf Kategorie-Überschriften-Zeilen sind dabei **reine Überschriften-
   und Summenzeilen ohne eigene Excel-Formel** — die ursprünglichen
@@ -1426,8 +1470,9 @@ Norm im Reiter „Normen"** (Typ „PPM"), damit auch ihr SAP-Code dort zentral
 auffindbar und editierbar ist, statt nur „irgendwo im Code" zu stecken —
 wird eine solche Norm dort umbenannt, verliert sie diese Verknüpfung
 allerdings (der Abgleich läuft über die Bezeichnung); besser nur den
-SAP-Code ändern, nicht die Bezeichnung. Nur „Projektkosten" (Produktspezi-
-fikationen-Pauschale) hat mangels SAP-Code keine solche Norm. Die
+SAP-Code ändern, nicht die Bezeichnung. Nur die beiden automatisch
+angelegten Zeilen „Projektkosten (nicht einsteuern)" und
+„Mustereinlagerung (18 Monate)" haben mangels SAP-Code keine solche Norm. Die
 ursprünglichen SAP-Codes wurden gegen die reale SAP-Bestellzeilen-Liste
 (Blatt „SAP") korrigiert — u. a. „MECH_SICHERHEIT_TS" statt der zuvor
 angenommenen „MECH_S_NORM_TS", und „FFU_TS" als gemeinsamer Code für
