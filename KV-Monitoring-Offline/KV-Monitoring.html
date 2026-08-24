@@ -73,6 +73,13 @@ nav.tabs button.aktiv { background:var(--card); color:var(--accent-dark); font-w
 .norm-partner-hinweis { font-size:0.8rem; background:#fdf7e8; border:1px solid #e8d9a8; border-radius:6px; padding:0.45rem 0.6rem; margin:0.4rem 0; }
 .norm-partner-hinweis strong { color:var(--amber); }
 .norm-partner-hinweis .toolbar-zeile { margin:0.35rem 0 0; gap:0.35rem; }
+/* Einheitliche "bereits im KV"-Anzeige in ALLEN Prüfumfang-Blöcken (Sicherheit-/Normprüfung,
+   Kennzeichnung, Weitere Positionen/LIDL-spezifisch, MAK-Parameter, feste Katalogpositionen) -
+   ersetzt dort jeweils die Schaltfläche "+ hinzufügen". Bewusst farbig und fett statt "muted",
+   damit der Status auf einen Blick erkennbar ist. */
+.position-status { font-size:0.8rem; font-weight:600; white-space:nowrap; }
+.position-status.ist-drin { color:var(--green); }
+.position-status.ist-inaktiv { color:var(--amber); }
 .liste-panel .leer { padding:1rem 0.9rem; color:var(--muted); font-size:0.85rem; }
 
 #detail-panel-pa, #detail-panel-kv, #detail-panel-normen { flex:1; min-width:0; }
@@ -2485,6 +2492,12 @@ let aktivePaId = null;
 let aktiveKvId = null;
 let aktiveNormId = null;
 let aktiveMakId = null;
+/* Im KV nachgeschlagener MAK-Parameter (Block "Produktspezifikationen"). Bewusst als eigener
+   Zustand und nicht nur im <select>: renderKvDetail() baut die Karte komplett neu auf, sonst wäre
+   die Auswahl nach jedem Hinzufügen/Löschen einer Position wieder leer - und der "bereits im KV"-
+   Status des gerade hinzugefügten Parameters gar nicht sichtbar. Nicht Teil von data (reiner
+   Ansichtszustand, wird nicht gespeichert). */
+let aktiverKvMakId = "";
 let makKategorieFilter = "";
 let makIdFilter = "";
 let suchbegriffe = { arbeitsvorrat: "", pruefauftraege: "", kvs: "", pruefgrundlagen: "", normen: "", mak: "" };
@@ -4580,11 +4593,28 @@ function ermittleVorschlagsPositionen(kategorie, pa, kv) {
   return positionen;
 }
 
-/* Ist eine Katalog-Position (nach Kategorie+Bezeichnung) bereits als aktive Position im KV
-   vorhanden? kv.positionen speichert eine unabhängige Kopie (keine feste Katalog-Referenz), da
-   Kosten/Anzahl je KV frei editierbar sein sollen - der Abgleich erfolgt daher über den Text. */
+/* Zentrale Antwort auf die Frage "steht diese Position (Kategorie + Bezeichnung) schon im KV?".
+   kv.positionen speichert eine unabhängige Kopie (keine feste Katalog-Referenz), da Kosten/Anzahl
+   je KV frei editierbar sein sollen - der Abgleich erfolgt daher über den Text.
+   Bewusst OHNE aktiv-Prüfung: eine deaktivierte Position bleibt im KV stehen (sie zählt nur nicht
+   in die Summe). Würde sie hier als "nicht vorhanden" gelten, käme "+ hinzufügen" zurück und ein
+   Klick legte eine zweite, doppelte Zeile daneben an. Der Unterschied aktiv/inaktiv wird stattdessen
+   in der Statusanzeige sichtbar gemacht (siehe positionStatusHtml). */
+function findeKvPosition(kv, kategorie, bezeichnung) {
+  return kv.positionen.find((p) => normalisiere(p.bezeichnung) === normalisiere(bezeichnung) && normalisiere(p.kategorie) === normalisiere(kategorie)) || null;
+}
 function kvHatPosition(kv, katalogEintrag) {
-  return kv.positionen.some((p) => p.aktiv && normalisiere(p.bezeichnung) === normalisiere(katalogEintrag.bezeichnung) && normalisiere(p.kategorie) === normalisiere(katalogEintrag.kategorie));
+  return !!findeKvPosition(kv, katalogEintrag.kategorie, katalogEintrag.bezeichnung);
+}
+
+/* Einheitliche Statusanzeige für alle Prüfumfang-Blöcke: steht die Position bereits im KV, ersetzt
+   dieser Text die Schaltfläche "+ hinzufügen". Eine deaktivierte Position wird ausdrücklich anders
+   beschriftet, sonst wirkte sie fälschlich als voll übernommen. */
+function positionStatusHtml(vorhanden) {
+  if (!vorhanden) return "";
+  return vorhanden.aktiv
+    ? `<span class="position-status ist-drin">✓ bereits im KV</span>`
+    : `<span class="position-status ist-inaktiv">✓ im KV, aber inaktiv</span>`;
 }
 
 function fuegeKatalogPositionHinzu(kv, katalogEintrag) {
@@ -4863,6 +4893,7 @@ function mechanikKomponentenHtml(kontext, pa, feldName, kategorie, kuerzel, sapC
         ${styleAuswahlHtml}
         ${anwendungsbereichAuswahlHtml}
         <button type="button" class="ghost small" data-action="mechanik-komponente-hinzufuegen" data-kategorie="${escapeHtml(kategorie)}" data-kuerzel="${escapeHtml(kuerzel)}" data-bezeichnung-basis="${escapeHtml(bezeichnungBasis)}" data-kosten="${hatKosten ? kostenRabattiert : 0}" data-sapcode="${escapeHtml(sapCode || "")}">+ hinzufügen</button>
+        <span class="position-status" hidden></span>
         <div class="spacer"></div>
         ${k.entfernbar ? `<button type="button" class="ghost small" data-action="setbestandteil-entfernen" data-id="${escapeHtml(k.id)}" title="Set-Bestandteil entfernen">✕ entfernen</button>` : ""}
       </div>
@@ -4885,10 +4916,10 @@ function fixPositionenListeHtml(kat, pa, kv, filterFn) {
   const vorschlaege = new Set(ermittleVorschlagsPositionen(kat, pa, kv).map((k) => k.id));
   const positionenHtml = positionen.map((k) => {
     const istVorschlag = vorschlaege.has(k.id);
-    const schonDrin = kvHatPosition(kv, k);
+    const vorhanden = findeKvPosition(kv, k.kategorie, k.bezeichnung);
     return `<div class="pruefumfang-position${istVorschlag ? " pruefumfang-position-vorschlag" : ""}">
       <span>${escapeHtml(k.bezeichnung)} <span class="muted">(${k.standardKosten} €)</span>${istVorschlag ? ` <span class="badge ja">Vorschlag</span>` : ""}</span>
-      ${schonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="kat-position-hinzufuegen" data-katalog-id="${k.id}">+ hinzufügen</button>`}
+      ${vorhanden ? positionStatusHtml(vorhanden) : `<button type="button" class="ghost small" data-action="kat-position-hinzufuegen" data-katalog-id="${k.id}">+ hinzufügen</button>`}
     </div>`;
   }).join("") || `<p class="muted" style="margin:0.3rem 0">Keine Positionen in dieser Kategorie hinterlegt.</p>`;
   const vorschlagIdsHier = positionen.filter((p) => vorschlaege.has(p.id)).map((p) => p.id);
@@ -5034,10 +5065,10 @@ function kennzeichnungNormenAddableHtml(kv) {
   }
   const positionenHtml = normen.map((n) => {
     const istVorschlag = kennzeichnungNormIstVorschlag(n, kv);
-    const schonDrin = kvHatPosition(kv, { kategorie: SICHERHEIT_NORM_KATEGORIE_NAME, bezeichnung: n.bezeichnung });
+    const vorhanden = findeKvPosition(kv, SICHERHEIT_NORM_KATEGORIE_NAME, n.bezeichnung);
     return `<div class="pruefumfang-position${istVorschlag ? " pruefumfang-position-vorschlag" : ""}">
       <span>${normTypBadgeHtml(n.typ)}${escapeHtml(n.bezeichnung)}${n.titel ? ` <span class="muted">– ${escapeHtml(n.titel)}</span>` : ""}${istVorschlag ? ` <span class="badge ja">Vorschlag</span>` : ""}</span>
-      ${schonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="kennzeichnung-norm-hinzufuegen" data-norm-id="${escapeHtml(n.id)}">+ hinzufügen</button>`}
+      ${vorhanden ? positionStatusHtml(vorhanden) : `<button type="button" class="ghost small" data-action="kennzeichnung-norm-hinzufuegen" data-norm-id="${escapeHtml(n.id)}">+ hinzufügen</button>`}
     </div>`;
   }).join("");
   const vorschlagIds = normen
@@ -5061,10 +5092,10 @@ function lidlSpezifischNormenAddableHtml(kv, blockWert) {
   if (!block) return "";
   const normen = data.normen.filter((n) => n.pruefungsart === "LIDL-spezifisch" && (n.lidlSpezifischBlock || "sicherheitNorm") === blockWert).sort((a, b) => (a.bezeichnung || "").localeCompare(b.bezeichnung || "", "de"));
   return normen.map((n) => {
-    const schonDrin = kvHatPosition(kv, { kategorie: block.kategorie, bezeichnung: n.bezeichnung });
+    const vorhanden = findeKvPosition(kv, block.kategorie, n.bezeichnung);
     return `<div class="pruefumfang-position">
       <span>${normTypBadgeHtml(n.typ)}${escapeHtml(n.bezeichnung)}${n.titel ? ` <span class="muted">– ${escapeHtml(n.titel)}</span>` : ""}${n.kosten !== null && n.kosten !== undefined ? ` <span class="muted">(${n.kosten} €)</span>` : ""}</span>
-      ${schonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="lidl-spezifisch-norm-hinzufuegen" data-norm-id="${escapeHtml(n.id)}" data-kategorie="${escapeHtml(block.kategorie)}" data-kuerzel="${escapeHtml(block.kuerzel)}">+ hinzufügen</button>`}
+      ${vorhanden ? positionStatusHtml(vorhanden) : `<button type="button" class="ghost small" data-action="lidl-spezifisch-norm-hinzufuegen" data-norm-id="${escapeHtml(n.id)}" data-kategorie="${escapeHtml(block.kategorie)}" data-kuerzel="${escapeHtml(block.kuerzel)}">+ hinzufügen</button>`}
     </div>`;
   }).join("");
 }
@@ -5139,8 +5170,8 @@ function renderKvMakDetail(makId, kv) {
   const varianten = eintrag.varianten || [];
   const proLaufzeit = eintrag.abrechnungsmodus === "laufzeit";
   const bezeichnung = kvMakBezeichnung(eintrag);
-  const schonDrin = kv.positionen.some((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere(PRODUKTSPEZI_KATEGORIE_NAME) && normalisiere(p.bezeichnung) === normalisiere(bezeichnung));
-  const varianteHinzufuegenBtn = proLaufzeit ? "" : (schonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="mak-parameter-hinzufuegen">+ hinzufügen</button>`);
+  const vorhanden = findeKvPosition(kv, PRODUKTSPEZI_KATEGORIE_NAME, bezeichnung);
+  const varianteHinzufuegenBtn = proLaufzeit ? "" : (vorhanden ? positionStatusHtml(vorhanden) : `<button type="button" class="ghost small" data-action="mak-parameter-hinzufuegen">+ hinzufügen</button>`);
   /* Jede Laufzeit-Zeile zeigt jetzt ihren Hinweis sichtbar (nicht mehr nur als Hover-Tooltip),
      damit z. B. Prüfnorm/Standort direkt erkennbar sind. Zusätzlich gibt es darunter IMMER eine
      freie Laufzeit-Eingabe (Bezeichnung + Preis) für Laufzeiten, die nicht in der festen Liste
@@ -5150,11 +5181,11 @@ function renderKvMakDetail(makId, kv) {
       <h3>Laufzeiten/Preise <span class="muted" style="font-weight:400">– LIDL-spezifisch, fest verhandelt</span></h3>
       ${varianten.length ? varianten.map((v) => {
         const varBezeichnung = kvMakVarianteBezeichnung(eintrag, v);
-        const varSchonDrin = kv.positionen.some((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere(PRODUKTSPEZI_KATEGORIE_NAME) && normalisiere(p.bezeichnung) === normalisiere(varBezeichnung));
+        const varVorhanden = findeKvPosition(kv, PRODUKTSPEZI_KATEGORIE_NAME, varBezeichnung);
         return `<div class="pruefumfang-position" style="flex-direction:column;align-items:flex-start;gap:0.25rem">
           <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:0.5rem">
             <span>${escapeHtml(v.bezeichnung)} <span class="muted">(${v.kosten} €)</span></span>
-            ${varSchonDrin ? `<span class="muted">✓ bereits im KV</span>` : `<button type="button" class="ghost small" data-action="mak-variante-hinzufuegen" data-varianten-id="${escapeHtml(v.id)}">+ hinzufügen</button>`}
+            ${varVorhanden ? positionStatusHtml(varVorhanden) : `<button type="button" class="ghost small" data-action="mak-variante-hinzufuegen" data-varianten-id="${escapeHtml(v.id)}">+ hinzufügen</button>`}
           </div>
           ${v.hinweis ? `<p class="hinweis" style="margin:0">${escapeHtml(v.hinweis)}</p>` : ""}
         </div>`;
@@ -5208,6 +5239,9 @@ function renderKvMakDetail(makId, kv) {
   const addBtn = container.querySelector('[data-action="mak-parameter-hinzufuegen"]');
   if (addBtn) {
     addBtn.addEventListener("click", () => {
+      /* Doppelte Sicherung gegen Duplikate: die Schaltfläche wird zwar durch positionStatusHtml
+         ersetzt, sobald die Position im KV steht, der Handler prüft es aber selbst noch einmal. */
+      if (findeKvPosition(kv, PRODUKTSPEZI_KATEGORIE_NAME, bezeichnung)) { zeigeStatus("Dieser MAK-Parameter ist bereits im KV vorhanden.", ""); return; }
       kv.positionen.push({ id: neueId(), kategorie: PRODUKTSPEZI_KATEGORIE_NAME, bezeichnung, kuerzel: "PS", sapCode: "", kosten: eintrag.kosten || 0, anzahl: 1, aktiv: true });
       speichereInLocalStorage();
       renderKvDetail();
@@ -5218,7 +5252,9 @@ function renderKvMakDetail(makId, kv) {
     btn.addEventListener("click", () => {
       const variante = varianten.find((v) => v.id === btn.dataset.variantenId);
       if (!variante) return;
-      kv.positionen.push({ id: neueId(), kategorie: PRODUKTSPEZI_KATEGORIE_NAME, bezeichnung: kvMakVarianteBezeichnung(eintrag, variante), kuerzel: "PS", sapCode: variante.sapCode || "", kosten: Number(variante.kosten) || 0, anzahl: 1, aktiv: true });
+      const varBezeichnung = kvMakVarianteBezeichnung(eintrag, variante);
+      if (findeKvPosition(kv, PRODUKTSPEZI_KATEGORIE_NAME, varBezeichnung)) { zeigeStatus("Diese Laufzeit ist bereits im KV vorhanden.", ""); return; }
+      kv.positionen.push({ id: neueId(), kategorie: PRODUKTSPEZI_KATEGORIE_NAME, bezeichnung: varBezeichnung, kuerzel: "PS", sapCode: variante.sapCode || "", kosten: Number(variante.kosten) || 0, anzahl: 1, aktiv: true });
       speichereInLocalStorage();
       renderKvDetail();
       zeigeStatus("Position hinzugefügt · " + jetzt(), "ok");
@@ -5232,7 +5268,7 @@ function renderKvMakDetail(makId, kv) {
       const freieBezeichnung = bezeichnungFeld.value.trim();
       if (!freieBezeichnung) { zeigeStatus("Bitte eine Laufzeit-Bezeichnung eingeben.", ""); return; }
       const varBezeichnung = kvMakVarianteBezeichnung(eintrag, { bezeichnung: freieBezeichnung });
-      if (kv.positionen.some((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere(PRODUKTSPEZI_KATEGORIE_NAME) && normalisiere(p.bezeichnung) === normalisiere(varBezeichnung))) {
+      if (findeKvPosition(kv, PRODUKTSPEZI_KATEGORIE_NAME, varBezeichnung)) {
         zeigeStatus("Diese Laufzeit ist bereits im KV vorhanden.", "");
         return;
       }
@@ -5435,8 +5471,49 @@ function renderSetbestandteilListe(kv, filterText) {
   });
 }
 
+/* Bezeichnung, unter der eine Komponente aus der Warengruppen-Empfehlung im KV landen würde -
+   hängt von den beiden Auswahlfeldern der Zeile ab (Style, Anwendungsbereich), muss also aus dem
+   AKTUELLEN DOM-Zustand gelesen werden, nicht aus den Daten. Gemeinsam genutzt vom Klick-Handler
+   (mechanik-komponente-hinzufuegen) und von der Status-Anzeige (aktualisiereKomponentenStatus),
+   damit beide garantiert dieselbe Bezeichnung bilden. */
+function mechanikKomponenteBezeichnung(btn) {
+  const feld = btn.closest(".mechanik-komponente");
+  const stilSelect = feld ? feld.querySelector(".mechanik-komponente-stil") : null;
+  const stil = stilSelect ? stilSelect.value : "";
+  const bereichSelect = feld ? feld.querySelector(".mechanik-anwendungsbereich-auswahl") : null;
+  const bereichName = bereichSelect && bereichSelect.value ? bereichSelect.selectedOptions[0].textContent : "";
+  return btn.dataset.bezeichnungBasis + (stil ? ` (${stil})` : "") + (bereichName ? ` [${bereichName}]` : "");
+}
+
+/* Zeigt je Komponente an, ob genau diese Kombination (Produkt/Norm + Style + Anwendungsbereich)
+   bereits als Position im KV steht - dann statt "+ hinzufügen" ein deutliches "✓ bereits im KV"
+   (dasselbe Muster wie bei Kennzeichnung, LIDL-spezifisch und MAK). Wird nicht nur beim Aufbau
+   aufgerufen, sondern auch bei jeder Änderung der beiden Auswahlfelder - eine andere Style-/
+   Anwendungsbereich-Wahl ergibt eine eigenständige Position und ist deshalb wieder hinzufügbar. */
+function aktualisiereKomponentenStatus(panel, kv) {
+  panel.querySelectorAll('[data-action="mechanik-komponente-hinzufuegen"]').forEach((btn) => {
+    const bezeichnung = mechanikKomponenteBezeichnung(btn);
+    const kategorie = btn.dataset.kategorie || SICHERHEIT_NORM_KATEGORIE_NAME;
+    const vorhanden = findeKvPosition(kv, kategorie, bezeichnung);
+    const status = btn.parentElement.querySelector(".position-status");
+    if (!status) return;
+    btn.hidden = !!vorhanden;
+    status.hidden = !vorhanden;
+    /* Dieselbe Beschriftung/Farbgebung wie in allen anderen Blöcken (positionStatusHtml) - hier nur
+       nicht als HTML-String, weil die Anzeige ohne Neu-Rendern umgeschaltet wird. */
+    if (vorhanden) {
+      status.className = "position-status " + (vorhanden.aktiv ? "ist-drin" : "ist-inaktiv");
+      status.textContent = vorhanden.aktiv ? "✓ bereits im KV" : "✓ im KV, aber inaktiv";
+    }
+  });
+}
+
 function initialisiereMechanikEmpfehlungKarte(panel, kv) {
   kv.mechanikSetbestandteile = kv.mechanikSetbestandteile || [];
+  aktualisiereKomponentenStatus(panel, kv);
+  panel.querySelectorAll(".mechanik-komponente-stil, .mechanik-anwendungsbereich-auswahl").forEach((sel) => {
+    sel.addEventListener("change", () => aktualisiereKomponentenStatus(panel, kv));
+  });
   const neuePgBtn = panel.querySelector('[data-action="mechanik-neue-pruefgrundlage"]');
   if (neuePgBtn) {
     neuePgBtn.addEventListener("click", () => {
@@ -5508,15 +5585,9 @@ function initialisiereMechanikEmpfehlungKarte(panel, kv) {
      gleichermaßen funktioniert. */
   panel.querySelectorAll('[data-action="mechanik-komponente-hinzufuegen"]').forEach((btn) => {
     btn.addEventListener("click", () => {
-      const feld = btn.closest(".mechanik-komponente");
-      const stilSelect = feld ? feld.querySelector(".mechanik-komponente-stil") : null;
-      const stil = stilSelect ? stilSelect.value : "";
-      const bereichSelect = feld ? feld.querySelector(".mechanik-anwendungsbereich-auswahl") : null;
-      const bereichName = bereichSelect && bereichSelect.value ? bereichSelect.selectedOptions[0].textContent : "";
-      const bezeichnung = btn.dataset.bezeichnungBasis + (stil ? ` (${stil})` : "") + (bereichName ? ` [${bereichName}]` : "");
+      const bezeichnung = mechanikKomponenteBezeichnung(btn);
       const kategorie = btn.dataset.kategorie || SICHERHEIT_NORM_KATEGORIE_NAME;
-      const schonDrin = kv.positionen.some((p) => p.aktiv && normalisiere(p.kategorie) === normalisiere(kategorie) && normalisiere(p.bezeichnung) === normalisiere(bezeichnung));
-      if (schonDrin) { zeigeStatus("Bereits im KV vorhanden (mit dieser Style-/Anwendungsbereich-Zuordnung) · " + jetzt(), ""); return; }
+      if (findeKvPosition(kv, kategorie, bezeichnung)) { zeigeStatus("Bereits im KV vorhanden (mit dieser Style-/Anwendungsbereich-Zuordnung) · " + jetzt(), ""); return; }
       kv.positionen.push({
         id: neueId(), kategorie, bezeichnung,
         kuerzel: btn.dataset.kuerzel || "MS", sapCode: btn.dataset.sapcode || "MECH_SICHERHEIT_TS", kosten: Number(btn.dataset.kosten) || 0, anzahl: 1, aktiv: true,
@@ -5821,7 +5892,16 @@ function initialisierePruefumfangUebersicht(panel, kv, pa) {
   });
   const makAuswahl = panel.querySelector("#kv-mak-auswahl");
   if (makAuswahl) {
-    makAuswahl.addEventListener("change", () => renderKvMakDetail(makAuswahl.value, kv));
+    /* Nach einem Neuaufbau der Karte (renderKvDetail) die zuletzt nachgeschlagene Auswahl wieder
+       herstellen - siehe aktiverKvMakId. Existiert der Eintrag nicht mehr, bleibt es beim leeren
+       Dropdown. */
+    if (aktiverKvMakId && [...makAuswahl.options].some((o) => o.value === aktiverKvMakId)) {
+      makAuswahl.value = aktiverKvMakId;
+      renderKvMakDetail(aktiverKvMakId, kv);
+    } else {
+      aktiverKvMakId = "";
+    }
+    makAuswahl.addEventListener("change", () => { aktiverKvMakId = makAuswahl.value; renderKvMakDetail(makAuswahl.value, kv); });
   }
   const makSuche = panel.querySelector("#kv-mak-suche");
   if (makSuche && makAuswahl) {
@@ -5835,6 +5915,7 @@ function initialisierePruefumfangUebersicht(panel, kv, pa) {
         makAuswahl.value = bisherigeAuswahl;
       } else {
         makAuswahl.value = "";
+        aktiverKvMakId = "";
         renderKvMakDetail("", kv);
       }
     });
@@ -5842,6 +5923,7 @@ function initialisierePruefumfangUebersicht(panel, kv, pa) {
   panel.querySelectorAll('[data-action="mak-vorschlag-waehlen"]').forEach((btn) => {
     btn.addEventListener("click", () => {
       if (makAuswahl) makAuswahl.value = btn.dataset.makId;
+      aktiverKvMakId = btn.dataset.makId;
       renderKvMakDetail(btn.dataset.makId, kv);
     });
   });

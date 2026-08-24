@@ -381,6 +381,16 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     aufgenommen wird (z. B. „… (Style_A)") und damit automatisch eine
     eigenständige, nicht doppelt anlegbare Position ergibt. Bei einstiligen
     Artikeln erscheint kein Style-Dropdown.
+  - **„✓ bereits im KV" statt „+ hinzufügen"** (gilt einheitlich in **allen**
+    Prüfumfang-Blöcken, siehe „Einheitlicher Status …" weiter unten): sobald
+    ein Block als Position im Kostenvoranschlag steht, verschwindet dort die
+    Schaltfläche „+ hinzufügen" und an ihrer Stelle steht deutlich sichtbar
+    **„✓ bereits im KV"**. Der Status bezieht sich hier immer auf die
+    **konkrete Kombination** aus Produkt/Norm, gewähltem Style und gewähltem
+    Anwendungsbereich: eine andere Style- oder Anwendungsbereich-Wahl ergibt
+    eine eigenständige Position und ist deshalb weiterhin hinzufügbar — der
+    Status aktualisiert sich dabei sofort beim Umschalten der beiden
+    Auswahlfelder, ohne dass die Karte neu aufgebaut werden muss.
   - **Artikelkategorie-Rabattfaktor**: die Kosten jedes einzelnen Blocks
     (Hauptprodukt wie auch jedes Set-Bestandteil) werden automatisch mit
     einem Prozentsatz je nach Artikelkategorie des verknüpften Prüfauftrags
@@ -541,7 +551,35 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
   Positionen schon vor dem PA-Upload grob vorzubereiten). Jede einzelne
   Position steht dabei in einer eigenen, klar umrandeten Zeile statt nur
   durch eine dünne Trennlinie abgesetzt zu sein — Vorschläge zusätzlich grün
-  hinterlegt. Die einzelnen Blöcke:
+  hinterlegt.
+
+  **Einheitlicher Status „bereits im KV" in allen Blöcken.** Jede Zeile, die
+  sich über „+ hinzufügen" in den Kostenvoranschlag übernehmen lässt, zeigt
+  nach demselben Muster an, ob sie dort schon steht — gleiche Beschriftung,
+  gleiche Farbe, in **jedem** Block (Sicherheit-/Normprüfung inkl. Set-
+  Bestandteile, feste Katalogpositionen, Kennzeichnung, „Weitere Positionen"
+  /LIDL-spezifisch, MAK-Parameter samt Laufzeit-Varianten und freier
+  Laufzeit, FFU/Fitting, NGO, Referenzprüfung):
+
+  - Position **noch nicht im KV** → Schaltfläche **„+ hinzufügen"**.
+  - Position **im KV und aktiv** → statt der Schaltfläche steht dort grün
+    **„✓ bereits im KV"**.
+  - Position **im KV, aber deaktiviert** (Haken „Aktiv" entfernt, zählt also
+    nicht in die Summe) → orange **„✓ im KV, aber inaktiv"**. Eine
+    deaktivierte Position gilt bewusst weiterhin als vorhanden und ist
+    deshalb **nicht** erneut hinzufügbar — sonst entstünde beim nächsten
+    Klick eine zweite, doppelte Zeile neben der abgewählten. Wer die Position
+    wirklich loswerden will, entfernt sie in der Prüfpositionstabelle.
+  - **Entfernt** man die Position in der Prüfpositionstabelle (oder über
+    „Alle entfernen"), wird der Status in allen Blöcken **sofort
+    zurückgesetzt** und „+ hinzufügen" kommt zurück.
+
+  Der MAK-Parameter-Block behält dabei den gerade nachgeschlagenen Parameter
+  im Dropdown, wenn eine Position hinzugefügt, deaktiviert oder gelöscht wird
+  — sonst wäre die Detailansicht (und damit auch der Status) nach jedem Klick
+  wieder leer.
+
+  Die einzelnen Blöcke:
   - **Sicherheit-/Normprüfung** (siehe oben, immer sichtbar sobald eine
     Warengruppe hinterlegt ist) — der Abschnitt „Weitere Positionen" enthält
     hier (im Standardfall) alle **Normen mit Prüfungsart „LIDL-spezifisch"**
@@ -587,9 +625,10 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     immer überschreibt. Dieser Gesamtpreis wird automatisch auf die gerade
     **aktiven** Kennzeichnung-Positionen im KV verteilt — **löscht** oder
     **deaktiviert** man eine davon in der Prüfpositionstabelle, verteilt sich
-    der Preis sofort neu auf die verbleibenden aktiven Positionen, und die
-    gelöschte/deaktivierte Norm erscheint hier wieder als „+ hinzufügen"
-    statt „bereits im KV".
+    der Preis sofort neu auf die verbleibenden aktiven Positionen. Eine
+    **gelöschte** Norm erscheint hier wieder als „+ hinzufügen", eine nur
+    **deaktivierte** dagegen als „✓ im KV, aber inaktiv" (siehe
+    „Einheitlicher Status …" oben).
 
     Trägt die im Sicherheit-/Normprüfung-Block für
     dieses Produkt gewählte Norm selbst Kennzeichnungs- und/oder
