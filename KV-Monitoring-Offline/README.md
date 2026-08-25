@@ -1,11 +1,31 @@
 # KV-Monitoring (Offline, ohne Installation)
 
-Eine einzelne HTML-Datei zur Verwaltung von Arbeitsvorrat, Prüfaufträgen (PA)
-und Kostenvoranschlägen (KV) für mechanische Prüfungen. Läuft komplett im
-Browser, ohne Server, ohne Python, ohne Installation, ohne besondere
+Eine einzelne HTML-Datei zur Verwaltung von Arbeitsvorrat, Prüfaufträgen (PA),
+Kostenvoranschlägen (KV) und Angeboten für mechanische Prüfungen. Läuft komplett
+im Browser, ohne Server, ohne Python, ohne Installation, ohne besondere
 Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
 
-## Die sechs Reiter
+## Zwei Wege: LIDL und alle übrigen Kunden
+
+Die Reiterleiste ist in drei Gruppen unterteilt:
+
+- **LIDL** — `Arbeitsvorrat`, `Prüfaufträge (PA)`, `Kostenvoranschläge (KV)`,
+  `MAK`. Diese vier bilden den LIDL-Prozess ab: LIDL-SAP-Export,
+  LIDL-Prüfauftrags-PDF, LIDL-Kostenvoranschlagsvorlage und der
+  LIDL-Materialanforderungskatalog. Alles darin (Artikelkategorie-Rabatt,
+  PPM-Codes, Trivialartikel-Paketpreis, Prüfumfang-Checkliste) ist auf diesen
+  einen Kunden zugeschnitten.
+- **Übrige Kunden** — `Angebote`. Ein klassisches Angebot mit Anschrift,
+  Ansprechpartner, Angebotstexten, SAP-Export und Kunden-PDF. Standardfall ist
+  hier die **Vollprüfung**, deshalb gibt es bewusst **keinen**
+  Artikelkategorie-Rabattfaktor: es gilt der volle Preis der Prüfgrundlage.
+  Ein Nachlass lässt sich stattdessen je Angebot als Prozentsatz eintragen.
+- **Stammdaten** — `Prüfgrundlagen`, `Normen`, `Verwaltung`. Diese werden von
+  **beiden** Wegen genutzt: dieselbe Prüfgrundlage, die im KV den
+  LIDL-Vorschlag speist, ist im Angebot die Preisquelle. Eine Norm, ihr
+  SAP-Code und ihre Kosten müssen also nur einmal gepflegt werden.
+
+## Die Reiter im Einzelnen
 
 - **Arbeitsvorrat** – der Arbeitsvorrat aus dem SAP-Export. Startet leer
   (keine Beispieldaten mehr vorbefüllt). Oben lässt sich zwischen zwei
@@ -1449,6 +1469,112 @@ Berechtigungen — einfach **`KV-Monitoring.html`** doppelklicken.
     sich dieser Schritt nur über diesen Button hier im Tool selbst auslösen
     — von außen kann niemand auf diese Daten zugreifen.
 
+## Reiter „Angebote" (alle Kunden außer LIDL)
+
+Ein Angebot entsteht in fünf Schritten, alle auf einer Seite:
+
+1. **Kopfdaten** — Angebotsnummer, Datum, Gültigkeit und Status sind beim
+   Anlegen bereits gefüllt. Die **Nummer** wird als
+   `<Präfix>-<Jahr>-<laufende Nummer>` vergeben und leitet sich aus den bereits
+   vergebenen Nummern *desselben Jahres* ab, nicht aus der Anzahl der Angebote —
+   nach dem Löschen eines Angebots entsteht dadurch keine doppelte Nummer.
+   Präfix und Gültigkeitsdauer stehen in der Verwaltung.
+2. **Kunde** — entweder aus dem Kundenstamm übernehmen oder direkt eintippen.
+   **„↑ In Kundenstamm übernehmen"** legt den Kunden an bzw. aktualisiert ihn,
+   sodass man für einen neuen Kunden den Reiter nicht verlassen muss. Die
+   Anschrift wird **als Kopie im Angebot** gespeichert: eine spätere Änderung
+   im Kundenstamm verändert bereits geschriebene Angebote nicht.
+3. **Ansprechpartner** — wer im Angebot als Kontakt und Unterzeichner steht.
+   Der in der Verwaltung als „Standard" markierte ist vorausgewählt.
+4. **Positionen** — Warengruppe eintippen (Tippsuche über alle Warengruppen),
+   Produkt wählen, dann **„Alle N übernehmen"** oder je Prüfung einzeln
+   „+ übernehmen". Übernommen werden die Normen aller drei Blöcke der
+   Prüfgrundlage (Sicherheits-/Normprüfung, FFU/Fitting, NGO/StiWa) mit
+   Bezeichnung, Norm-Titel als Beschreibung, SAP-Code und Preis. Bereits
+   übernommene Prüfungen sind als „✓ im Angebot" markiert. Daneben gibt es
+   **„+ Freie Position"** für alles, was nicht aus einer Prüfgrundlage kommt.
+5. **Texte und Ausgabe** — Einleitung und Schlusstext sind aus den
+   Textbausteinen vorbelegt und frei überschreibbar.
+
+**Preise und die Staffelung je Prüfmuster.** Jede Position hat *Menge*,
+*Einzelpreis* und optional *„je weiterem"*. Gerechnet wird
+`Einzelpreis + (Menge − 1) × Preis je weiterem` — bei leerem Folgepreis ist das
+schlicht `Menge × Einzelpreis`, die Formel ist also eine Verallgemeinerung und
+kein Sonderfall. Die Menge wird beim Übernehmen mit „Anzahl Prüfmuster/Styles"
+aus dem Kopf vorbelegt, der Folgepreis kommt aus „Kosten je weiterem Produkt"
+der Norm. Im Kunden-PDF steht bei einer gestaffelten Position eine erklärende
+Zeile („1. Prüfmuster 400,00 EUR, jedes weitere 150,00 EUR"), damit die Summe
+für den Kunden nachvollziehbar ist. Ein **Nachlass** in Prozent wirkt auf die
+Summe und lässt die Positionspreise unangetastet — er erscheint als eigene
+Zeile, nicht eingerechnet in die Einzelpreise.
+
+**„Noch offen"-Prüfung.** Über den Ausgabe-Schaltflächen steht, was für ein
+vollständiges Angebot noch fehlt (Firma, Anschrift, Betreff, Ansprechpartner,
+mindestens eine aktive Position, Preis bei allen Positionen). Erst wenn dort
+„✓ vollständig" steht, ist das Angebot versandfertig.
+
+**SAP-Export.** „📋 SAP-Positionen in Zwischenablage" (tabulatorgetrennt) und
+„⬇ SAP-Positionen als CSV" liefern je Zeile: Position, SAP-Material,
+Bezeichnung, Menge, Einheit, Einzelpreis, Preis ab 2. Muster, Positionssumme,
+Währung. Nur **aktive** Positionen; ein Nachlass steht als eigene Schlusszeile.
+Welche Felder eine SAP-Angebotsposition genau braucht, hängt vom Mandanten ab —
+der Spaltensatz steht deshalb als eine Konstante (`ANGEBOT_SAP_SPALTEN`) im
+Code und lässt sich dort an einer Stelle anpassen.
+
+**Kunden-PDF.** „🖨 Angebots-PDF" öffnet den Druckdialog; mit „Als PDF
+speichern" entsteht die Datei. Ein echtes Binär-PDF wird bewusst **nicht**
+erzeugt — dafür bräuchte es eine eingebettete PDF-Bibliothek, die die Datei
+deutlich vergrößern würde. Der Dateiname wird aus Angebotsnummer und Kunde
+vorbelegt. Die **Vorschau** unten im Reiter nutzt exakt dieselbe Funktion wie
+der Druck, Bildschirm und PDF können also nicht auseinanderlaufen.
+
+### Word-Vorlage für Kopf-/Fußzeile
+
+Unter „Verwaltung → Angebote: Absender & Texte" lässt sich eine **.docx**
+hochladen, in der Kopf- und Fußzeile im Corporate Design gepflegt sind.
+Übernommen werden **Logo/Bilder und die Texte** aus Kopf- und Fußzeile; sie
+erscheinen auf **jeder Seite** des Angebots-PDFs (im Druck über `position:
+fixed`, dem üblichen Weg für laufende Kopf-/Fußzeilen).
+
+Bewusst **nicht** übernommen werden Schriftarten, Farben und die exakte
+Word-Positionierung: das wäre ein halber Word-Renderer und sähe am Ende doch
+anders aus als das Original. Stattdessen entsteht eine saubere HTML-Kopf-/
+Fußzeile mit Ihrem Logo und Ihren Texten, deren **Logohöhe und Texte sich
+direkt in der Verwaltung nachjustieren** lassen — inklusive Vorschau.
+
+Weitere Punkte:
+
+- Steht der Absender bereits in der Kopfzeile der Vorlage, wird der manuell
+  gepflegte Absenderblock im Angebot **weggelassen** — sonst stünde die Firma
+  zweimal im Briefkopf.
+- Bilder werden als `data:`-URI im Datenbestand gespeichert und wandern damit
+  beim JSON-Export mit. Weil der Browser-Speicher begrenzt ist, gilt eine
+  Obergrenze von **400 KB je Bild** und **900 KB gesamt**; was darüber liegt,
+  wird übersprungen und im Vorlagen-Block namentlich aufgeführt.
+- Word legt je nach Einstellung mehrere Kopf-/Fußzeilen an (erste Seite,
+  gerade/ungerade Seiten). Genommen wird die **erste mit Inhalt** — in aller
+  Regel die Standardzeile, die auf jeder Seite erscheinen soll.
+- Nur `.docx` — das alte `.doc`-Binärformat kann nicht gelesen werden.
+
+### Stammdaten in der Verwaltung
+
+- **Angebote: Absender & Texte** — Absenderfirma und -anschrift (nur relevant,
+  solange keine Word-Vorlage hochgeladen ist), Währung, Gültigkeitsdauer,
+  Nummernpräfix und die Word-Vorlage. Darunter die **Textbausteine**: je
+  Baustein Typ (Einleitung/Schlusstext) und ein Haken **„immer"** — ist er
+  gesetzt, steht der Text bei jedem neuen Angebot automatisch drin. Im Angebot
+  lassen sich Bausteine zusätzlich per Auswahl einfügen; sie werden **angehängt**
+  statt zu ersetzen, damit bereits Getipptes nicht verloren geht.
+- **Ansprechpartner** — Name, Funktion, Telefon, Mobil, E-Mail. Genau einer ist
+  „Standard" und wird bei neuen Angeboten vorausgewählt.
+- **Kunden** — Firma, Kundennummer, Anschrift, Ansprechpartner. Je Kunde ist
+  vermerkt, wie viele Angebote darauf verweisen; beim Löschen wird darauf
+  hingewiesen, dass diese Angebote ihre gespeicherte Anschrift behalten.
+
+Der **CSV-Export** im Reiter „Angebote" liefert eine Zeile je Position über
+alle (gefilterten) Angebote — für Auswertungen; der SAP-Export eines einzelnen
+Angebots steckt dagegen im Angebot selbst.
+
 ## Datenquelle der Warengruppen-Empfehlung und SAP-Codes
 
 Die Warengruppen-Mechanik-Referenz (185 Zeilen, jetzt der Reiter
@@ -1676,6 +1802,19 @@ dieselbe Tabelle je nach Datenbestand unterschiedlich aussieht. In der
 Arbeitsvorrat-Tabelle (17 Spalten) bleiben erste und letzte Spalte beim
 seitlichen Scrollen am Rand stehen, damit IAN und Aktions-Schaltflächen immer
 erreichbar sind.
+
+Der **Reiter „Angebote"** bringt zwei technische Besonderheiten mit. Erstens
+liest das Tool aus einer hochgeladenen `.docx` nicht nur `word/document.xml`,
+sondern auch `word/header*.xml`, `word/footer*.xml` und die Bilder in
+`word/media/` — dafür wurde der vorhandene, minimale ZIP-Reader zu
+`liesZipEintraege(datei, filter)` verallgemeinert, den sich jetzt beide
+Word-Funktionen teilen. Welches Bild zu welcher Kopf-/Fußzeile gehört, ergibt
+sich erst aus deren `.rels`-Datei (`r:embed` → `word/media/...`); ohne diesen
+Umweg wüsste man nur, *dass* Bilder eingebettet sind. Zweitens erzeugen Vorschau
+und Druck ihr Markup aus **derselben** Funktion (`angebotDruckHtml`) — ein
+Auseinanderlaufen von Bildschirm und PDF ist damit ausgeschlossen. Die
+Druckansicht liegt als direktes Kind von `<body>`, damit die Regel
+`body > *:not(#angebot-druck) { display:none }` ohne Sonderfälle greift.
 
 Mehrzeilige Felder mit der Klasse `auto-hoehe` bekommen ihre Höhe aus dem
 Inhalt statt aus dem `rows`-Attribut (`passeTextareaHoeheAn`). Die aus `rows`

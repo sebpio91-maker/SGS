@@ -48,6 +48,10 @@ button:disabled { opacity:0.4; cursor:default; }
 nav.tabs { display:flex; gap:0.3rem; padding:0 1rem; background:var(--card); border-bottom:1px solid var(--border); flex-wrap:wrap; }
 nav.tabs button { border-radius:6px 6px 0 0; border:1px solid var(--border); border-bottom:none; background:#eef2f1; color:var(--text); margin-bottom:-1px; }
 nav.tabs button.aktiv { background:var(--card); color:var(--accent-dark); font-weight:600; border-bottom:1px solid var(--card); }
+/* Gruppen-Beschriftung in der Reiterleiste: trennt den LIDL-Prozess von den Angeboten für die
+   übrigen Kunden und von den gemeinsamen Stammdaten. */
+nav.tabs .tab-gruppe { align-self:center; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--muted); padding:0 0.35rem 0 0.7rem; border-left:1px solid var(--border); margin:0.35rem 0 0.5rem; }
+nav.tabs .tab-gruppe:first-child { border-left:none; padding-left:0; }
 
 .seite { padding:1rem; }
 .seite[hidden] { display:none; }
@@ -84,6 +88,74 @@ nav.tabs button.aktiv { background:var(--card); color:var(--accent-dark); font-w
 .position-status.ist-drin { color:var(--green); }
 .position-status.ist-inaktiv { color:var(--amber); }
 .liste-panel .leer { padding:1rem 0.9rem; color:var(--muted); font-size:0.85rem; }
+
+/* ---------- Angebote: Summenblock, Vorschau und Druckansicht ----------
+   Die Vorschau im Reiter und das gedruckte PDF nutzen dieselbe Markup-Funktion (angebotDruckHtml)
+   und deshalb auch dieselben Regeln - ein Auseinanderlaufen von Bildschirm und PDF ist damit
+   ausgeschlossen. */
+.angebot-summenblock { margin-top:0.8rem; margin-left:auto; max-width:360px; font-size:0.9rem; }
+.angebot-summenblock > div { display:flex; justify-content:space-between; align-items:center; gap:1rem; padding:0.25rem 0; }
+.angebot-summenblock .angebot-summe-gesamt { border-top:2px solid var(--border); margin-top:0.3rem; padding-top:0.45rem; font-size:1.05rem; }
+.angebot-summenblock .angebot-summe-gesamt strong { color:var(--accent-dark); }
+.angebot-vorschau { background:#f4f6f5; padding:1rem; border-radius:8px; overflow-x:auto; }
+.angebot-vorschau .ang-blatt { background:#fff; box-shadow:0 1px 6px rgba(0,0,0,0.12); padding:2rem 2.2rem; max-width:800px; margin:0 auto; }
+
+.ang-blatt { font-size:0.86rem; line-height:1.5; color:#1a1a1a; }
+.ang-blatt p { margin:0 0 0.7rem; }
+.ang-kopf { display:flex; justify-content:space-between; gap:2rem; align-items:flex-start; margin-bottom:1.6rem; }
+.ang-absender { font-size:0.8rem; color:#444; }
+.ang-absender-firma { font-weight:700; font-size:0.95rem; color:#111; }
+.ang-meta { font-size:0.8rem; min-width:220px; }
+.ang-meta > div { display:flex; justify-content:space-between; gap:1rem; padding:0.1rem 0; }
+.ang-meta span { color:#666; }
+.ang-empfaenger { margin-bottom:1.8rem; line-height:1.45; }
+.ang-dokumentart { font-size:0.72rem; text-transform:uppercase; letter-spacing:0.14em; color:#777; margin-bottom:0.15rem; }
+.ang-betreff { font-size:1.15rem; margin:0 0 0.3rem; }
+.ang-artikel { color:#444; }
+.ang-anrede { margin-top:1rem; }
+.ang-tabelle { width:100%; border-collapse:collapse; margin:1.1rem 0 1.2rem; font-size:0.84rem; }
+.ang-tabelle th { text-align:left; border-bottom:2px solid #333; padding:0.4rem 0.5rem; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.03em; }
+.ang-tabelle td { border-bottom:1px solid #ddd; padding:0.5rem; vertical-align:top; }
+.ang-tabelle .ang-pos { width:3.2rem; }
+.ang-tabelle .ang-zahl { text-align:right; white-space:nowrap; }
+.ang-tabelle .ang-beschreibung { color:#555; font-size:0.8rem; margin-top:0.15rem; }
+.ang-tabelle tfoot td { border-bottom:none; padding-top:0.4rem; }
+.ang-tabelle tfoot .ang-gesamt td { border-top:2px solid #333; font-weight:700; font-size:0.95rem; }
+.ang-leer { color:#777; font-style:italic; }
+.ang-signatur { margin-top:1.6rem; }
+.ang-partner { margin-top:1.4rem; line-height:1.45; }
+
+/* Kopf-/Fußzeile aus der hochgeladenen Word-Vorlage (siehe leseWordVorlage). Im Druck wiederholen
+   sie sich auf jeder Seite - dafür sorgt position:fixed innerhalb von @media print, der übliche
+   Weg für laufende Kopf-/Fußzeilen ohne eigene Druck-Engine. Der Seitenrand oben/unten (@page)
+   hält den Platz dafür frei. */
+.ang-vorlage-kopf { display:flex; justify-content:space-between; align-items:flex-start; gap:1.5rem; padding-bottom:0.6rem; border-bottom:1px solid #ccc; margin-bottom:1.4rem; }
+.ang-vorlage-fuss { display:flex; justify-content:space-between; align-items:flex-end; gap:1.5rem; padding-top:0.6rem; border-top:1px solid #ccc; margin-top:2rem; font-size:0.72rem; color:#555; }
+.ang-vorlage-bilder { display:flex; gap:0.8rem; align-items:center; flex-shrink:0; }
+.ang-vorlage-bilder img { max-width:60mm; object-fit:contain; }
+.ang-vorlage-kopf .ang-vorlage-text { font-size:0.75rem; color:#555; text-align:right; line-height:1.35; }
+.ang-vorlage-fuss .ang-vorlage-text { line-height:1.35; }
+
+/* Druckansicht: alles außer dem Angebotsblatt ausblenden. Der Container liegt direkt unter <body>,
+   damit die :not()-Regel greift, ohne jede Zwischenebene einzeln behandeln zu müssen. */
+#angebot-druck { display:none; }
+@media print {
+  /* Oberer/unterer Rand großzügig, damit die laufende Kopf-/Fußzeile der Word-Vorlage Platz hat,
+     ohne in den Text zu laufen. */
+  @page { size:A4; margin:32mm 16mm 28mm; }
+  body > *:not(#angebot-druck) { display:none !important; }
+  #angebot-druck { display:block !important; }
+  .ang-blatt { font-size:10.5pt; }
+  /* Auf JEDER Seite wiederholen: fixierte Elemente werden vom Browser pro Druckseite neu gesetzt.
+     Die Ränder ragen bewusst in den @page-Rand hinein (negatives top/bottom über die Positionierung
+     am Seitenrand), damit der Fließtext nicht darunter verschwindet. */
+  .ang-vorlage-kopf { position:fixed; top:0; left:0; right:0; margin:0; background:#fff; }
+  .ang-vorlage-fuss { position:fixed; bottom:0; left:0; right:0; margin:0; background:#fff; }
+  /* Eine Position soll nicht mitten in der Zeile umbrochen werden; die Kopfzeile wiederholt sich
+     auf Folgeseiten von selbst, sobald thead als Tabellenkopf erkannt wird. */
+  .ang-tabelle tr { break-inside:avoid; }
+  .ang-signatur { break-inside:avoid; }
+}
 
 #detail-panel-pa, #detail-panel-kv, #detail-panel-normen { flex:1; min-width:0; }
 .card { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:1rem 1.2rem; margin-bottom:1rem; }
@@ -347,12 +419,16 @@ input[type=file] { display:none; }
 </header>
 
 <nav class="tabs">
+  <span class="tab-gruppe" title="Diese Reiter bilden den LIDL-Prozess ab (LIDL-SAP-Export, LIDL-Prüfauftrag, LIDL-Kostenvoranschlagsvorlage, LIDL-Materialanforderungskatalog).">LIDL</span>
   <button data-tab="arbeitsvorrat" class="aktiv">Arbeitsvorrat</button>
   <button data-tab="pruefauftraege">Prüfaufträge (PA)</button>
   <button data-tab="kvs">Kostenvoranschläge (KV)</button>
+  <button data-tab="mak">MAK</button>
+  <span class="tab-gruppe" title="Angebote für alle übrigen Kunden - dieselben Prüfgrundlagen und Normen als Preisquelle.">Übrige Kunden</span>
+  <button data-tab="angebote">Angebote</button>
+  <span class="tab-gruppe" title="Gemeinsame Stammdaten, die von beiden Wegen genutzt werden.">Stammdaten</span>
   <button data-tab="pruefgrundlagen">Prüfgrundlagen</button>
   <button data-tab="normen">Normen</button>
-  <button data-tab="mak">MAK</button>
   <button data-tab="verwaltung">Verwaltung</button>
 </nav>
 
@@ -420,6 +496,19 @@ input[type=file] { display:none; }
       <ul id="kv-liste"></ul>
     </div>
     <div id="detail-panel-kv"></div>
+  </div>
+</section>
+
+<section class="seite" id="seite-angebote" hidden>
+  <div class="toolbar-zeile" style="margin-bottom:0.6rem">
+    <button id="btn-neues-angebot">+ Neues Angebot</button>
+  </div>
+  <div class="layout">
+    <div class="liste-panel">
+      <h2>Angebote</h2>
+      <ul id="angebot-liste"></ul>
+    </div>
+    <div id="detail-panel-angebot"></div>
   </div>
 </section>
 
@@ -514,7 +603,55 @@ input[type=file] { display:none; }
     <button type="button" data-ansicht="pruefungsarten">Prüfungsarten</button>
     <button type="button" data-ansicht="trivialpreisliste">Trivialartikel-Preisliste</button>
     <button type="button" data-ansicht="pruefumfang">Prüfumfang je Artikelkategorie</button>
+    <button type="button" data-ansicht="angebot">Angebote: Absender & Texte</button>
+    <button type="button" data-ansicht="ansprechpartner">Ansprechpartner</button>
+    <button type="button" data-ansicht="kunden">Kunden</button>
     <button type="button" data-ansicht="gefahrenzone">Gefahrenzone</button>
+  </div>
+  <div class="card" id="verwaltung-block-angebot" style="max-width:820px">
+    <h2 style="margin-top:0">Angebote: Absender &amp; Textbausteine</h2>
+    <p class="hinweis">Gilt für den Reiter „Angebote" (alle Kunden außer LIDL). Der Absender steht im
+      Briefkopf des Angebots-PDFs, Präfix und Gültigkeit belegen jedes neue Angebot vor.
+      <strong>Textbausteine</strong> lassen sich im Angebot per Auswahl einfügen; ist „immer"
+      angehakt, steht der Text bei jedem neuen Angebot schon drin.</p>
+    <div class="formular-grid" id="angebot-einstellungen-formular" style="max-width:700px"></div>
+    <h3 style="margin:1rem 0 0.3rem;font-size:0.9rem">Word-Vorlage (Kopf-/Fußzeile im Corporate Design)</h3>
+    <p class="hinweis">Laden Sie eine <strong>.docx</strong> hoch, in der Kopf- und Fußzeile im
+      Corporate Design gepflegt sind. Übernommen werden <strong>Logo/Bilder und die Texte</strong>
+      aus Kopf- und Fußzeile — sie stehen dann auf jeder Seite des Angebots-PDFs. Schriftarten,
+      Farben und die exakte Word-Positionierung werden bewusst <strong>nicht</strong> nachgebaut
+      (das ergäbe einen halben Word-Renderer, der am Ende doch abweicht); Logohöhe und Texte lassen
+      sich hier stattdessen direkt nachjustieren.</p>
+    <div class="toolbar-zeile" style="margin-bottom:0.5rem">
+      <input type="file" id="angebot-vorlage-upload" accept=".docx">
+    </div>
+    <div id="angebot-vorlage-block"></div>
+    <h3 style="margin:1rem 0 0.3rem;font-size:0.9rem">Textbausteine</h3>
+    <div id="angebotstexte-liste"></div>
+    <div class="toolbar-zeile" style="margin-top:0.6rem">
+      <button type="button" class="ghost small" data-neuer-text="einleitung">+ Einleitungstext</button>
+      <button type="button" class="ghost small" data-neuer-text="schluss">+ Schlusstext</button>
+    </div>
+  </div>
+  <div class="card" id="verwaltung-block-ansprechpartner" style="max-width:900px">
+    <h2 style="margin-top:0">Ansprechpartner</h2>
+    <p class="hinweis">Wer im Angebot als Kontakt/Unterzeichner erscheint. „Standard" wird bei jedem
+      neuen Angebot vorausgewählt — je nach Bedarf im Angebot selbst umstellbar.</p>
+    <div id="ansprechpartner-liste"></div>
+    <div class="toolbar-zeile" style="margin-top:0.6rem">
+      <button type="button" id="ansprechpartner-hinzufuegen">+ Ansprechpartner</button>
+    </div>
+  </div>
+  <div class="card" id="verwaltung-block-kunden" style="max-width:900px">
+    <h2 style="margin-top:0">Kunden</h2>
+    <p class="hinweis">Stammdaten für den Reiter „Angebote" — im Angebot per Auswahl übernehmbar.
+      Ein im Angebot neu eingetragener Kunde landet über „↑ In Kundenstamm übernehmen" hier.
+      Änderungen hier wirken sich <strong>nicht</strong> rückwirkend auf bereits geschriebene
+      Angebote aus: dort ist die Anschrift bewusst als Kopie gespeichert.</p>
+    <div id="kunden-liste"></div>
+    <div class="toolbar-zeile" style="margin-top:0.6rem">
+      <button type="button" id="kunde-hinzufuegen">+ Kunde</button>
+    </div>
   </div>
   <div class="card" id="verwaltung-block-bereiche" style="max-width:520px">
     <h2 style="margin-top:0">Bereiche</h2>
@@ -2568,6 +2705,7 @@ let aktivePaId = null;
 let aktiveKvId = null;
 let aktiveNormId = null;
 let aktiveMakId = null;
+let aktivesAngebotId = null;
 /* Im KV nachgeschlagener MAK-Parameter (Block "Produktspezifikationen"). Bewusst als eigener
    Zustand und nicht nur im <select>: renderKvDetail() baut die Karte komplett neu auf, sonst wäre
    die Auswahl nach jedem Hinzufügen/Löschen einer Position wieder leer - und der "bereits im KV"-
@@ -2576,7 +2714,7 @@ let aktiveMakId = null;
 let aktiverKvMakId = "";
 let makKategorieFilter = "";
 let makIdFilter = "";
-let suchbegriffe = { arbeitsvorrat: "", pruefauftraege: "", kvs: "", pruefgrundlagen: "", normen: "", mak: "" };
+let suchbegriffe = { arbeitsvorrat: "", pruefauftraege: "", kvs: "", angebote: "", pruefgrundlagen: "", normen: "", mak: "" };
 /* Aktuelle Seite je paginierter Liste im Reiter "Verwaltung" - bei sehr vielen Einträgen (z. B.
    730 Warengruppen) sonst zu viel Scrollen; 1-basiert wie in der UI angezeigt. */
 let verwaltungSeite = { bereiche: 1, warengruppen: 1, pruefungsarten: 1, trivialpreisliste: 1 };
@@ -2843,6 +2981,49 @@ function seedMak() {
   ].map((m) => ({ ...m, schlagworte: [] }));
 }
 
+/* ================= ANGEBOTE (kundenübergreifend, NICHT LIDL) =================
+   Arbeitsvorrat/Prüfaufträge/Kostenvoranschläge/MAK bilden den LIDL-Prozess ab (SAP-Export aus dem
+   LIDL-Arbeitsvorrat, LIDL-Prüfauftrags-PDF, LIDL-Kostenvoranschlagsvorlage, LIDL-Material-
+   anforderungskatalog). Für alle anderen Kunden gibt es diesen eigenen Reiter: dieselben
+   Prüfgrundlagen/Normen als Preisquelle, aber ein klassisches Angebot mit Anschrift, Ansprech-
+   partner, Angebotstexten, SAP-Export und einem Kunden-PDF.
+   Standardfall ist hier die VOLLPRÜFUNG - es gibt deshalb bewusst keinen Artikelkategorie-
+   Rabattfaktor wie im KV (siehe pruefumfangFuerArtikelkategorie), sondern den vollen Preis der
+   Prüfgrundlage; ein Nachlass lässt sich stattdessen als Prozentsatz je Angebot eintragen. */
+function seedAnsprechpartner() {
+  return [];
+}
+function seedAngebotstexte() {
+  return [
+    { id: "text-einleitung", bezeichnung: "Standard-Einleitung", typ: "einleitung", immer: true,
+      text: "vielen Dank für Ihre Anfrage und Ihr Interesse an unseren Prüfleistungen.\nGerne unterbreiten wir Ihnen nachfolgend unser Angebot." },
+    { id: "text-schluss", bezeichnung: "Standard-Schlusstext", typ: "schluss", immer: true,
+      text: "Alle Preise verstehen sich netto zzgl. der gesetzlichen Mehrwertsteuer.\nDie Prüfkosten werden je Prüfmuster berechnet. Muster und Versandkosten gehen zu Lasten des Auftraggebers.\nSollten sich während der Prüfung Abweichungen ergeben, die eine Wiederholungsprüfung erforderlich machen, wird diese gesondert berechnet.\n\nWir freuen uns auf Ihre Rückmeldung und stehen für Rückfragen jederzeit zur Verfügung." }
+  ];
+}
+const ANGEBOT_STATUS = ["Entwurf", "Versendet", "Angenommen", "Abgelehnt"];
+const DEFAULT_ANGEBOT_EINSTELLUNGEN = {
+  absenderFirma: "",
+  absenderAnschrift: "",
+  waehrung: "EUR",
+  gueltigkeitTage: 30,
+  nummernPraefix: "ANG"
+};
+function migriereAngebotsdaten() {
+  data.angebotEinstellungen = { ...DEFAULT_ANGEBOT_EINSTELLUNGEN, ...(data.angebotEinstellungen || {}) };
+  data.angebote.forEach((a) => {
+    if (!Array.isArray(a.positionen)) a.positionen = [];
+    a.positionen.forEach((p) => {
+      if (p.aktiv === undefined) p.aktiv = true;
+      if (p.menge === undefined || p.menge === null) p.menge = 1;
+      if (p.einheit === undefined) p.einheit = "Prüfung";
+    });
+    if (a.rabattProzent === undefined) a.rabattProzent = null;
+    if (a.status === undefined) a.status = ANGEBOT_STATUS[0];
+    if (a.waehrung === undefined) a.waehrung = data.angebotEinstellungen.waehrung;
+  });
+}
+
 /* Stellt sicher, dass jeder MAK-Eintrag ein schlagworte-Array besitzt - additiv/idempotent,
    damit auch aus localStorage geladene Altbestände (vor Einführung der Schlagworte) nachgerüstet
    werden, ohne bereits gepflegte Schlagworte zu berühren. */
@@ -2880,7 +3061,17 @@ function init() {
     kennzeichnungFixPositionenPruefungsartMigriert: !!(geladen && geladen.kennzeichnungFixPositionenPruefungsartMigriert),
     makVariantenMigriert: !!(geladen && geladen.makVariantenMigriert),
     geloeschteEintraege: (geladen && Array.isArray(geladen.geloeschteEintraege)) ? geladen.geloeschteEintraege : [],
-    artikelkategoriePruefumfang: (geladen && geladen.artikelkategoriePruefumfang) ? geladen.artikelkategoriePruefumfang : { ...DEFAULT_ARTIKELKATEGORIE_PRUEFUMFANG }
+    artikelkategoriePruefumfang: (geladen && geladen.artikelkategoriePruefumfang) ? geladen.artikelkategoriePruefumfang : { ...DEFAULT_ARTIKELKATEGORIE_PRUEFUMFANG },
+    angebote: (geladen && Array.isArray(geladen.angebote)) ? geladen.angebote : [],
+    kunden: (geladen && Array.isArray(geladen.kunden)) ? geladen.kunden : [],
+    ansprechpartner: (geladen && Array.isArray(geladen.ansprechpartner)) ? geladen.ansprechpartner : seedAnsprechpartner(),
+    /* Textbausteine bewusst nur beim ALLERERSTEN Start vorbelegen (leeres Array bleibt leer) -
+       sonst käme ein bewusst gelöschter Standardtext bei jedem Neuladen zurück. */
+    angebotstexte: (geladen && Array.isArray(geladen.angebotstexte)) ? geladen.angebotstexte : seedAngebotstexte(),
+    angebotEinstellungen: (geladen && geladen.angebotEinstellungen) ? geladen.angebotEinstellungen : { ...DEFAULT_ANGEBOT_EINSTELLUNGEN },
+    /* Kopf-/Fußzeile aus einer hochgeladenen Word-Vorlage (siehe leseWordVorlage) - null, solange
+       keine hochgeladen wurde. Enthält Bilder als data:-URI, wandert also beim JSON-Export mit. */
+    angebotVorlage: (geladen && geladen.angebotVorlage) ? geladen.angebotVorlage : null
   };
   data.normen.forEach(migriereNorm);
   data.pruefgrundlagen.forEach(migrierePruefgrundlage);
@@ -2893,6 +3084,7 @@ function init() {
   migriereMakVarianten();
   migriereMak();
   migriereArtikelkategoriePruefumfang();
+  migriereAngebotsdaten();
 
   document.querySelectorAll("nav.tabs button[data-tab]").forEach((btn) => {
     btn.addEventListener("click", () => wechsleTab(btn.dataset.tab));
@@ -2908,9 +3100,9 @@ function init() {
 function wechsleTab(tab) {
   aktiverTab = tab;
   document.querySelectorAll("nav.tabs button[data-tab]").forEach((btn) => btn.classList.toggle("aktiv", btn.dataset.tab === tab));
-  ["arbeitsvorrat", "pruefauftraege", "kvs", "pruefgrundlagen", "normen", "mak", "verwaltung"].forEach((t) => { document.getElementById("seite-" + t).hidden = t !== tab; });
+  ["arbeitsvorrat", "pruefauftraege", "kvs", "angebote", "pruefgrundlagen", "normen", "mak", "verwaltung"].forEach((t) => { document.getElementById("seite-" + t).hidden = t !== tab; });
   document.getElementById("suche").value = suchbegriffe[tab] || "";
-  const labels = { arbeitsvorrat: "Arbeitsvorrat", pruefauftraege: "Prüfaufträge", kvs: "Kostenvoranschläge", pruefgrundlagen: "Prüfgrundlagen", normen: "Normen", mak: "MAK", verwaltung: "Verwaltung" };
+  const labels = { arbeitsvorrat: "Arbeitsvorrat", pruefauftraege: "Prüfaufträge", kvs: "Kostenvoranschläge", angebote: "Angebote", pruefgrundlagen: "Prüfgrundlagen", normen: "Normen", mak: "MAK", verwaltung: "Verwaltung" };
   document.getElementById("btn-csv").textContent = "📄 CSV-Export (" + labels[tab] + ")";
   renderAktivenTab();
 }
@@ -2918,6 +3110,7 @@ function renderAktivenTab() {
   if (aktiverTab === "arbeitsvorrat") renderArbeitsvorratTab();
   else if (aktiverTab === "pruefauftraege") renderPaTab();
   else if (aktiverTab === "kvs") renderKvTab();
+  else if (aktiverTab === "angebote") renderAngeboteTab();
   else if (aktiverTab === "pruefgrundlagen") renderPruefgrundlagenTab();
   else if (aktiverTab === "normen") renderNormenTab();
   else if (aktiverTab === "mak") renderMakTab();
@@ -2927,6 +3120,7 @@ function renderAlles() {
   renderArbeitsvorratTab();
   renderPaTab();
   renderKvTab();
+  renderAngeboteTab();
   renderPruefgrundlagenTab();
   renderNormenTab();
   renderMakTab();
@@ -6590,6 +6784,780 @@ document.getElementById("btn-neuer-kv").addEventListener("click", () => {
   renderKvTab();
 });
 
+/* ================= ANGEBOTE (kundenübergreifend) =================
+   Aufbau bewusst parallel zu den übrigen Reitern: Liste links, Detail rechts, alle Felder speichern
+   sofort. Preisquelle sind dieselben Prüfgrundlagen/Normen wie im KV - nur ohne den LIDL-
+   Artikelkategorie-Rabatt, da hier der Regelfall die Vollprüfung ist. */
+
+/* Reiner Ansichtszustand der Positions-Auswahl (Warengruppe/Produkt) - gehört nicht ins Angebot,
+   da es nur bestimmt, aus welcher Prüfgrundlage gerade Positionen übernommen werden. */
+let angebotAuswahl = { warengruppe: "", produktId: "" };
+
+function angebotWaehrung(a) { return (a && a.waehrung) || (data.angebotEinstellungen || {}).waehrung || "EUR"; }
+function betrag(wert, waehrung) {
+  return (Number(wert) || 0).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " " + (waehrung || "EUR");
+}
+/* Angebotsnummer: <Präfix>-<Jahr>-<laufende Nummer>. Die laufende Nummer ergibt sich aus den bereits
+   vergebenen Nummern DESSELBEN Jahres, nicht aus der Anzahl der Angebote - so entstehen nach dem
+   Löschen eines Angebots keine doppelten Nummern. */
+function naechsteAngebotsnummer() {
+  const praefix = (data.angebotEinstellungen.nummernPraefix || "ANG").trim() || "ANG";
+  const jahr = new Date().getFullYear();
+  const muster = new RegExp(`^${praefix}-${jahr}-(\\d+)$`, "i");
+  const hoechste = data.angebote.reduce((max, a) => {
+    const treffer = muster.exec(String(a.nummer || "").trim());
+    return treffer ? Math.max(max, Number(treffer[1])) : max;
+  }, 0);
+  return `${praefix}-${jahr}-${String(hoechste + 1).padStart(4, "0")}`;
+}
+function datumPlusTage(tage) {
+  const d = new Date();
+  d.setDate(d.getDate() + (Number(tage) || 0));
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+function datumAnzeige(iso) {
+  if (!iso) return "";
+  const teile = String(iso).split("-");
+  return teile.length === 3 ? `${teile[2]}.${teile[1]}.${teile[0]}` : String(iso);
+}
+
+/* Summe einer Position: der Erstprüfungspreis gilt einmal, jeder weitere Style/Artikel zum
+   (meist günstigeren) Folgepreis. Ohne Folgepreis ist es die normale Menge × Einzelpreis-Rechnung -
+   die Formel ist also eine Verallgemeinerung, kein Sonderfall. */
+function angebotPositionSumme(p) {
+  const menge = Math.max(0, Number(p.menge) || 0);
+  if (!menge) return 0;
+  const erst = Number(p.einzelpreis) || 0;
+  const weitere = (p.einzelpreisWeitere === null || p.einzelpreisWeitere === undefined || p.einzelpreisWeitere === "")
+    ? erst : (Number(p.einzelpreisWeitere) || 0);
+  return erst + (menge - 1) * weitere;
+}
+function angebotZwischensumme(a) {
+  return (a.positionen || []).filter((p) => p.aktiv).reduce((s, p) => s + angebotPositionSumme(p), 0);
+}
+function angebotRabattBetrag(a) {
+  const prozent = Number(a.rabattProzent) || 0;
+  return prozent ? angebotZwischensumme(a) * (prozent / 100) : 0;
+}
+function angebotGesamtsumme(a) {
+  return angebotZwischensumme(a) - angebotRabattBetrag(a);
+}
+
+function angebotEntwurfNeu() {
+  const standard = data.ansprechpartner.find((x) => x.standard) || data.ansprechpartner[0] || null;
+  const einleitung = data.angebotstexte.filter((t) => t.typ === "einleitung" && t.immer).map((t) => t.text).join("\n\n");
+  const schluss = data.angebotstexte.filter((t) => t.typ === "schluss" && t.immer).map((t) => t.text).join("\n\n");
+  return {
+    id: neueId(),
+    nummer: naechsteAngebotsnummer(),
+    datum: heutigesDatumLokal(),
+    gueltigBis: datumPlusTage(data.angebotEinstellungen.gueltigkeitTage),
+    status: ANGEBOT_STATUS[0],
+    kundeId: "", kundeName: "", kundeAnschrift: "", kundeAnsprechpartner: "", kundeNummer: "", kundeReferenz: "",
+    ansprechpartnerId: standard ? standard.id : "",
+    betreff: "", artikel: "", anzahlMuster: "",
+    einleitungstext: einleitung, schlusstext: schluss,
+    positionen: [], rabattProzent: null, waehrung: data.angebotEinstellungen.waehrung,
+    notiz: "", erstelltAm: heutigesDatumLokal()
+  };
+}
+
+function gefilterteAngebote() {
+  const q = normalisiere(suchbegriffe.angebote);
+  if (!q) return data.angebote;
+  return data.angebote.filter((a) => normalisiere([a.nummer, a.kundeName, a.betreff, a.artikel, a.kundeReferenz, a.status].join(" ")).includes(q));
+}
+
+function renderAngebotListe() {
+  const ul = document.getElementById("angebot-liste");
+  const liste = gefilterteAngebote();
+  if (!liste.length) {
+    ul.innerHTML = '<li class="leer">Noch keine Angebote. Über „+ Neues Angebot" anlegen.</li>';
+    return;
+  }
+  ul.innerHTML = liste.map((a) => `
+    <li class="${a.id === aktivesAngebotId ? "aktiv" : ""}" data-id="${escapeHtml(a.id)}">
+      <strong>${escapeHtml(a.kundeName || "(noch kein Kunde)")}</strong>
+      <span class="badge ${a.status === "Angenommen" ? "ja" : a.status === "Abgelehnt" ? "nein" : ""}">${escapeHtml(a.status || "")}</span>
+      <div class="muted">${escapeHtml(a.nummer || "")}${a.betreff ? " · " + escapeHtml(a.betreff) : ""}</div>
+      <div class="muted">${datumAnzeige(a.datum)} · ${betrag(angebotGesamtsumme(a), angebotWaehrung(a))}</div>
+    </li>`).join("");
+  ul.querySelectorAll("li[data-id]").forEach((li) => li.addEventListener("click", () => {
+    aktivesAngebotId = li.dataset.id;
+    renderAngeboteTab();
+  }));
+}
+
+/* Prüfungen einer Prüfgrundlage als Angebotspositionen: alle drei Blöcke (Sicherheit&Norm, FFU,
+   NGO/StiWa) hintereinander, je Norm eine Zeile mit Erst- und Folgepreis. Vollprüfung = voller
+   Preis der Prüfgrundlage, kein Rabattfaktor. */
+function angebotPruefungenAusPruefgrundlage(eintrag) {
+  const bloecke = [
+    { feld: "normen", label: "Sicherheits-/Normprüfung" },
+    { feld: "ffuNormen", label: "FFU/Fitting" },
+    { feld: "stiwaNormen", label: "NGO/StiWa" }
+  ];
+  const raus = [];
+  bloecke.forEach((block) => {
+    (eintrag[block.feld] || []).forEach((ref) => {
+      const norm = data.normen.find((n) => n.id === ref.normId);
+      if (!norm) return;
+      raus.push({
+        block: block.label,
+        normId: norm.id,
+        bezeichnung: norm.bezeichnung,
+        beschreibung: norm.titel || "",
+        sapMaterial: (norm.sapCode || "").trim(),
+        einzelpreis: (ref.kosten === null || ref.kosten === undefined || ref.kosten === "") ? null : Number(ref.kosten),
+        einzelpreisWeitere: (ref.kostenWeiteresProdukt === null || ref.kostenWeiteresProdukt === undefined || ref.kostenWeiteresProdukt === "") ? null : Number(ref.kostenWeiteresProdukt),
+        inAnlehnungAn: !!ref.inAnlehnungAn
+      });
+    });
+  });
+  return raus;
+}
+function angebotHatPosition(a, bezeichnung) {
+  return (a.positionen || []).some((p) => normalisiere(p.bezeichnung) === normalisiere(bezeichnung));
+}
+function angebotPositionAusPruefung(pruefung, menge) {
+  return {
+    id: neueId(),
+    bezeichnung: pruefung.bezeichnung + (pruefung.inAnlehnungAn ? " (in Anlehnung an)" : ""),
+    beschreibung: pruefung.beschreibung || "",
+    sapMaterial: pruefung.sapMaterial || "",
+    menge: Math.max(1, Number(menge) || 1),
+    einheit: "Prüfung",
+    einzelpreis: pruefung.einzelpreis === null ? 0 : pruefung.einzelpreis,
+    einzelpreisWeitere: pruefung.einzelpreisWeitere,
+    aktiv: true,
+    quelle: pruefung.block
+  };
+}
+
+/* ---------- Detailansicht ---------- */
+
+function angebotKundeOptionenHtml(a) {
+  return `<option value="">— aus Kundenstamm übernehmen —</option>` +
+    data.kunden.slice().sort((x, y) => (x.name || "").localeCompare(y.name || "", "de"))
+      .map((k) => `<option value="${escapeHtml(k.id)}" ${k.id === a.kundeId ? "selected" : ""}>${escapeHtml(k.name || "(ohne Namen)")}${k.kundennummer ? " · " + escapeHtml(k.kundennummer) : ""}</option>`).join("");
+}
+function angebotAnsprechpartnerOptionenHtml(a) {
+  return `<option value="">— kein Ansprechpartner —</option>` +
+    data.ansprechpartner.map((x) => `<option value="${escapeHtml(x.id)}" ${x.id === a.ansprechpartnerId ? "selected" : ""}>${escapeHtml(x.name || "(ohne Namen)")}${x.funktion ? " · " + escapeHtml(x.funktion) : ""}</option>`).join("");
+}
+function angebotAnsprechpartner(a) {
+  return data.ansprechpartner.find((x) => x.id === a.ansprechpartnerId) || null;
+}
+
+/* Warengruppen-Auswahl als natives datalist-Feld: gibt dieselbe Tippsuche über alle ~730
+   Warengruppen wie das aufwendigere Panel im KV, kommt aber ohne eigene Panel-Logik aus - hier
+   genügt das, weil im Angebot nur EINE Warengruppe zur Positionsauswahl gebraucht wird. */
+function angebotWarengruppeDatalistHtml() {
+  return `<datalist id="angebot-wg-liste">${data.warengruppen
+    .map((w) => `<option value="${escapeHtml(warengruppeAnzeige(w))}"></option>`).join("")}</datalist>`;
+}
+function warengruppeAusAnzeigetext(text) {
+  const roh = String(text || "").split("–")[0].trim();
+  return data.warengruppen.find((w) => normalisiereWarengruppe(w.code) === normalisiereWarengruppe(roh)) || null;
+}
+
+function angebotPositionsquelleHtml(a) {
+  const wg = angebotAuswahl.warengruppe ? warengruppeAusAnzeigetext(angebotAuswahl.warengruppe) : null;
+  const treffer = wg ? mechanikTrefferFuerWarengruppe(wg.code) : [];
+  const gewaehlt = treffer.find((e) => mechanikEintragId(e) === angebotAuswahl.produktId) || (treffer.length === 1 ? treffer[0] : null);
+  const menge = Math.max(1, Number(a.anzahlMuster) || 1);
+
+  let auswahlHtml = "";
+  if (!wg) {
+    auswahlHtml = `<p class="hinweis">Warengruppe eingeben oder aus der Liste wählen, um die hinterlegten Prüfungen zu übernehmen.</p>`;
+  } else if (!treffer.length) {
+    auswahlHtml = `<p class="hinweis">Für „${escapeHtml(warengruppeAnzeige(wg))}" ist noch keine Prüfgrundlage hinterlegt (Reiter „Prüfgrundlagen").</p>`;
+  } else {
+    const produktSelect = `<label style="display:flex;flex-direction:column;gap:0.2rem;font-size:0.8rem;font-weight:600;max-width:420px">Produkt
+      <select id="angebot-produkt-auswahl" style="font-family:inherit;font-size:0.85rem;padding:0.35rem 0.5rem;border:1px solid var(--border);border-radius:6px;font-weight:400">
+        <option value="">— Produkt wählen (${treffer.length} in dieser Warengruppe) —</option>
+        ${treffer.map((e) => `<option value="${escapeHtml(mechanikEintragId(e))}" ${gewaehlt && mechanikEintragId(e) === mechanikEintragId(gewaehlt) ? "selected" : ""}>${escapeHtml(e.produkt)}</option>`).join("")}
+      </select></label>`;
+    let pruefungenHtml = "";
+    if (gewaehlt) {
+      const pruefungen = angebotPruefungenAusPruefgrundlage(gewaehlt);
+      if (!pruefungen.length) {
+        pruefungenHtml = `<p class="hinweis">In dieser Prüfgrundlage sind noch keine Normen hinterlegt.</p>`;
+      } else {
+        const offen = pruefungen.filter((pr) => !angebotHatPosition(a, pr.bezeichnung + (pr.inAnlehnungAn ? " (in Anlehnung an)" : "")));
+        pruefungenHtml = `
+          <div class="pruefumfang-kat-kopf" style="margin-top:0.5rem">
+            <strong>Prüfungen der Prüfgrundlage „${escapeHtml(gewaehlt.produkt)}"</strong>
+            ${offen.length ? `<button type="button" class="ghost small" id="angebot-alle-uebernehmen">Alle ${offen.length} übernehmen</button>` : `<span class="position-status ist-drin">✓ alle bereits im Angebot</span>`}
+          </div>
+          ${pruefungen.map((pr, i) => {
+            const bez = pr.bezeichnung + (pr.inAnlehnungAn ? " (in Anlehnung an)" : "");
+            const drin = angebotHatPosition(a, bez);
+            const preisText = pr.einzelpreis === null ? `<span class="muted">(kein Preis hinterlegt)</span>`
+              : `<span class="muted">(${betrag(pr.einzelpreis, angebotWaehrung(a))}${pr.einzelpreisWeitere !== null ? ` · je weiterem ${betrag(pr.einzelpreisWeitere, angebotWaehrung(a))}` : ""})</span>`;
+            return `<div class="pruefumfang-position">
+              <span><span class="badge">${escapeHtml(pr.block)}</span> ${escapeHtml(bez)}${pr.beschreibung ? ` <span class="muted">– ${escapeHtml(pr.beschreibung)}</span>` : ""} ${preisText}</span>
+              ${drin ? `<span class="position-status ist-drin">✓ im Angebot</span>` : `<button type="button" class="ghost small" data-action="angebot-pruefung-uebernehmen" data-idx="${i}">+ übernehmen</button>`}
+            </div>`;
+          }).join("")}`;
+      }
+    }
+    auswahlHtml = produktSelect + pruefungenHtml;
+  }
+
+  return `<div class="card">
+    <h2 style="margin-top:0">Prüfungen übernehmen <span class="muted" style="font-weight:400;font-size:0.85rem">– Vollprüfung zum vollen Preis der Prüfgrundlage</span></h2>
+    <p class="hinweis" style="margin-top:0">Die Menge jeder übernommenen Position wird mit <strong>${menge}</strong> vorbelegt (Feld „Anzahl Prüfmuster/Styles" oben). Ist an der Norm ein Preis „je weiterem Produkt" hinterlegt, gilt er automatisch ab dem zweiten Muster.</p>
+    <label style="display:flex;flex-direction:column;gap:0.2rem;font-size:0.8rem;font-weight:600;max-width:420px;margin-bottom:0.5rem">Warengruppe
+      <input type="text" id="angebot-warengruppe-eingabe" list="angebot-wg-liste" value="${escapeHtml(angebotAuswahl.warengruppe || "")}" placeholder="Code oder Name tippen…" style="font-family:inherit;font-size:0.85rem;padding:0.35rem 0.5rem;border:1px solid var(--border);border-radius:6px;font-weight:400"></label>
+    ${angebotWarengruppeDatalistHtml()}
+    ${auswahlHtml}
+  </div>`;
+}
+
+
+function angebotPositionenTabelleHtml(a) {
+  const waehrung = angebotWaehrung(a);
+  const zeilen = (a.positionen || []).map((p, idx) => `
+    <tr data-id="${escapeHtml(p.id)}">
+      <td style="text-align:center"><input type="checkbox" data-feld="aktiv" ${p.aktiv ? "checked" : ""}></td>
+      <td>${idx + 1}</td>
+      <td><input type="text" data-feld="bezeichnung" value="${escapeHtml(p.bezeichnung || "")}"></td>
+      <td><textarea class="auto-hoehe" data-feld="beschreibung" rows="1" placeholder="Ergänzung für den Kunden…">${escapeHtml(p.beschreibung || "")}</textarea></td>
+      <td><input type="text" data-feld="sapMaterial" value="${escapeHtml(p.sapMaterial || "")}" placeholder="SAP-Material"></td>
+      <td><input type="number" min="0" step="1" data-feld="menge" value="${zahlOderLeer(p.menge)}"></td>
+      <td><input type="number" step="0.01" data-feld="einzelpreis" value="${zahlOderLeer(p.einzelpreis)}"></td>
+      <td><input type="number" step="0.01" data-feld="einzelpreisWeitere" value="${zahlOderLeer(p.einzelpreisWeitere)}" placeholder="wie oben" title="Preis ab dem zweiten Prüfmuster/Style. Leer = derselbe Preis wie links."></td>
+      <td class="angebot-pos-summe">${betrag(angebotPositionSumme(p), waehrung)}</td>
+      <td class="zeile-aktionen">
+        <button class="ghost small" data-action="hoch" ${idx === 0 ? "disabled" : ""}>↑</button>
+        <button class="ghost small" data-action="runter" ${idx === a.positionen.length - 1 ? "disabled" : ""}>↓</button>
+        <button class="danger small" data-action="loeschen">🗑</button>
+      </td>
+    </tr>`).join("");
+  return `<div class="tabellen-wrapper">
+    <table class="tabelle tabelle-fest" id="angebot-positionen-tabelle">
+      <thead><tr>
+        <th style="width:4%">Aktiv</th><th style="width:4%">Pos.</th><th style="width:20%">Bezeichnung</th>
+        <th style="width:20%">Beschreibung</th><th style="width:11%">SAP-Material</th>
+        <th style="width:6%" title="Anzahl Prüfmuster/Styles">Menge</th>
+        <th style="width:9%">Einzelpreis</th>
+        <th style="width:9%" title="Preis ab dem zweiten Prüfmuster/Style - leer heißt: derselbe Preis">je weiterem</th>
+        <th style="width:9%">Summe</th><th style="width:8%">Aktionen</th>
+      </tr></thead>
+      <tbody id="angebot-positionen-body">${zeilen || '<tr><td colspan="10" class="leerzustand">Noch keine Positionen. Oben aus einer Prüfgrundlage übernehmen oder als freie Position anlegen.</td></tr>'}</tbody>
+    </table>
+  </div>`;
+}
+
+function angebotTextbausteinOptionenHtml(typ) {
+  const passende = data.angebotstexte.filter((t) => t.typ === typ);
+  if (!passende.length) return "";
+  return `<select data-baustein-fuer="${typ}" style="font-family:inherit;font-size:0.8rem;padding:0.25rem 0.4rem;border:1px solid var(--border);border-radius:6px">
+    <option value="">— Textbaustein einfügen —</option>
+    ${passende.map((t) => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.bezeichnung)}</option>`).join("")}
+  </select>`;
+}
+
+function renderAngebotDetail() {
+  const panel = document.getElementById("detail-panel-angebot");
+  const a = data.angebote.find((x) => x.id === aktivesAngebotId);
+  if (!a) {
+    panel.innerHTML = '<div class="card leerzustand">Kein Angebot ausgewählt.</div>';
+    return;
+  }
+  const waehrung = angebotWaehrung(a);
+  const partner = angebotAnsprechpartner(a);
+  panel.innerHTML = `
+    <div class="card">
+      <div class="toolbar-zeile">
+        <h2 style="margin:0">${escapeHtml(a.kundeName || "Neues Angebot")}</h2>
+        <span class="badge">${escapeHtml(a.nummer || "")}</span>
+        <div class="spacer"></div>
+        <button class="danger small" id="angebot-loeschen">Angebot löschen</button>
+      </div>
+      <div class="formular-grid" id="angebot-kopf">
+        <label>Angebotsnummer<input type="text" data-feld="nummer" value="${escapeHtml(a.nummer || "")}"></label>
+        <label>Status<select data-feld="status">${ANGEBOT_STATUS.map((s) => `<option value="${s}" ${a.status === s ? "selected" : ""}>${s}</option>`).join("")}</select></label>
+        <label>Angebotsdatum<input type="date" data-feld="datum" value="${escapeHtml(a.datum || "")}"></label>
+        <label>Gültig bis<input type="date" data-feld="gueltigBis" value="${escapeHtml(a.gueltigBis || "")}"></label>
+        <label class="volle-breite">Betreff <span class="muted" style="font-weight:400">– steht als Überschrift im Angebot, z. B. „Prüfung Gartenstuhl Modell XY"</span><input type="text" data-feld="betreff" value="${escapeHtml(a.betreff || "")}"></label>
+        <label>Artikel/Modell<input type="text" data-feld="artikel" value="${escapeHtml(a.artikel || "")}"></label>
+        <label title="Wird beim Übernehmen von Prüfungen als Menge vorbelegt.">Anzahl Prüfmuster/Styles<input type="number" min="1" step="1" data-feld="anzahlMuster" value="${escapeHtml(a.anzahlMuster || "")}"></label>
+        <label>Ihre Anfrage/Referenz<input type="text" data-feld="kundeReferenz" value="${escapeHtml(a.kundeReferenz || "")}"></label>
+        <label>Währung<input type="text" data-feld="waehrung" value="${escapeHtml(waehrung)}"></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="toolbar-zeile">
+        <h2 style="margin:0">Kunde</h2>
+        <div class="spacer"></div>
+        <select id="angebot-kunde-auswahl" style="font-family:inherit;font-size:0.85rem;padding:0.3rem 0.5rem;border:1px solid var(--border);border-radius:6px">${angebotKundeOptionenHtml(a)}</select>
+        <button type="button" class="ghost small" id="angebot-kunde-speichern" title="Legt die hier eingetragenen Kundendaten als Stammdatensatz an bzw. aktualisiert ihn.">↑ In Kundenstamm übernehmen</button>
+      </div>
+      <div class="formular-grid" id="angebot-kunde">
+        <label>Firma<input type="text" data-feld="kundeName" value="${escapeHtml(a.kundeName || "")}"></label>
+        <label>Kundennummer<input type="text" data-feld="kundeNummer" value="${escapeHtml(a.kundeNummer || "")}"></label>
+        <label class="volle-breite">Anschrift <span class="muted" style="font-weight:400">– so, wie sie im Angebot stehen soll (mehrzeilig)</span><textarea class="auto-hoehe" data-feld="kundeAnschrift" rows="3">${escapeHtml(a.kundeAnschrift || "")}</textarea></label>
+        <label class="volle-breite">Ansprechpartner beim Kunden <span class="muted" style="font-weight:400">– wird in der Anrede verwendet, z. B. „Frau Müller"</span><input type="text" data-feld="kundeAnsprechpartner" value="${escapeHtml(a.kundeAnsprechpartner || "")}"></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="toolbar-zeile">
+        <h2 style="margin:0">Ihr Ansprechpartner <span class="muted" style="font-weight:400;font-size:0.85rem">– steht im Angebot als Absender/Kontakt</span></h2>
+        <div class="spacer"></div>
+        <select id="angebot-partner-auswahl" style="font-family:inherit;font-size:0.85rem;padding:0.3rem 0.5rem;border:1px solid var(--border);border-radius:6px">${angebotAnsprechpartnerOptionenHtml(a)}</select>
+      </div>
+      ${partner
+        ? `<p class="hinweis" style="margin:0">${escapeHtml(partner.name || "")}${partner.funktion ? " · " + escapeHtml(partner.funktion) : ""}${partner.telefon ? " · " + escapeHtml(partner.telefon) : ""}${partner.email ? " · " + escapeHtml(partner.email) : ""}</p>`
+        : `<p class="hinweis" style="margin:0">Noch kein Ansprechpartner gewählt – im Reiter „Verwaltung" unter „Ansprechpartner" anlegen.</p>`}
+    </div>
+
+    ${angebotPositionsquelleHtml(a)}
+
+    <div class="card">
+      <div class="toolbar-zeile">
+        <h2 style="margin:0">Positionen</h2>
+        <div class="spacer"></div>
+        <button class="ghost small" id="angebot-freie-position">+ Freie Position</button>
+      </div>
+      ${angebotPositionenTabelleHtml(a)}
+      <div class="angebot-summenblock">
+        <div><span>Zwischensumme</span><strong id="angebot-zwischensumme">${betrag(angebotZwischensumme(a), waehrung)}</strong></div>
+        <div><span>Nachlass
+          <input type="number" step="0.1" min="0" max="100" id="angebot-rabatt" value="${zahlOderLeer(a.rabattProzent)}" placeholder="0" style="width:70px;font-family:inherit;font-size:0.85rem;padding:0.2rem 0.35rem;border:1px solid var(--border);border-radius:6px"> %
+        </span><strong id="angebot-rabattbetrag">− ${betrag(angebotRabattBetrag(a), waehrung)}</strong></div>
+        <div class="angebot-summe-gesamt"><span>Angebotssumme netto</span><strong id="angebot-gesamtsumme">${betrag(angebotGesamtsumme(a), waehrung)}</strong></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0">Angebotstexte</h2>
+      <div class="formular-grid" id="angebot-texte">
+        <label class="volle-breite">Einleitung <span class="muted" style="font-weight:400">– steht über den Positionen, nach der Anrede</span>
+          <div class="toolbar-zeile" style="margin:0.2rem 0">${angebotTextbausteinOptionenHtml("einleitung")}</div>
+          <textarea class="auto-hoehe" data-feld="einleitungstext" rows="3">${escapeHtml(a.einleitungstext || "")}</textarea></label>
+        <label class="volle-breite">Schlusstext <span class="muted" style="font-weight:400">– steht unter den Positionen, z. B. Zahlungs-/Prüfbedingungen</span>
+          <div class="toolbar-zeile" style="margin:0.2rem 0">${angebotTextbausteinOptionenHtml("schluss")}</div>
+          <textarea class="auto-hoehe" data-feld="schlusstext" rows="5">${escapeHtml(a.schlusstext || "")}</textarea></label>
+        <label class="volle-breite">Interne Notiz <span class="muted" style="font-weight:400">– erscheint NICHT im Angebot</span><textarea class="auto-hoehe" data-feld="notiz" rows="2">${escapeHtml(a.notiz || "")}</textarea></label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0">Ausgabe</h2>
+      ${angebotFehlendeAngabenHtml(a)}
+      <div class="toolbar-zeile">
+        <button class="ghost" id="angebot-sap-kopieren">📋 SAP-Positionen in Zwischenablage</button>
+        <button class="ghost" id="angebot-sap-csv">⬇ SAP-Positionen als CSV</button>
+        <button id="angebot-pdf">🖨 Angebots-PDF (Drucken → Als PDF speichern)</button>
+      </div>
+      <details class="hinweis-block" style="margin-top:0.6rem"><summary>ℹ Was genau exportiert wird</summary>
+        <p class="hinweis">Der SAP-Export enthält nur <strong>aktive</strong> Positionen, je Zeile:
+          Position, SAP-Material, Bezeichnung, Menge, Einheit, Einzelpreis, Preis ab 2. Muster, Positionssumme, Währung.
+          Tabulatorgetrennt bzw. als CSV mit Semikolon — beides direkt in eine SAP-Angebotsmaske
+          bzw. Excel einfügbar. Der Nachlass steckt bewusst NICHT in den Einzelpreisen, sondern
+          steht als eigene Zeile am Ende, damit die Positionspreise unverändert bleiben.</p>
+      </details>
+    </div>
+
+    <div class="card">
+      <div class="toolbar-zeile">
+        <h2 style="margin:0">Vorschau <span class="muted" style="font-weight:400;font-size:0.85rem">– so sieht der Kunde das Angebot</span></h2>
+      </div>
+      <div class="angebot-vorschau" id="angebot-vorschau">${angebotDruckHtml(a)}</div>
+    </div>`;
+
+  initialisiereAngebotDetail(panel, a);
+}
+
+/* Prüft vor der Ausgabe, was für ein vollständiges Angebot noch fehlt - lieber ein sichtbarer
+   Hinweis als ein PDF, in dem der Kunde eine Lücke findet. */
+function angebotFehlendeAngaben(a) {
+  const fehlt = [];
+  if (!String(a.kundeName || "").trim()) fehlt.push("Firma des Kunden");
+  if (!String(a.kundeAnschrift || "").trim()) fehlt.push("Anschrift");
+  if (!String(a.betreff || "").trim()) fehlt.push("Betreff");
+  if (!angebotAnsprechpartner(a)) fehlt.push("Ihr Ansprechpartner");
+  const aktive = (a.positionen || []).filter((p) => p.aktiv);
+  if (!aktive.length) fehlt.push("mindestens eine aktive Position");
+  if (aktive.some((p) => !(Number(p.einzelpreis) > 0))) fehlt.push("Preis bei allen Positionen");
+  return fehlt;
+}
+function angebotFehlendeAngabenHtml(a) {
+  const fehlt = angebotFehlendeAngaben(a);
+  if (!fehlt.length) return `<p class="hinweis" id="angebot-vollstaendig" style="margin-top:0"><span class="position-status ist-drin">✓ vollständig</span> – alle Angaben für Angebot und Export sind gefüllt.</p>`;
+  return `<div class="norm-partner-hinweis" id="angebot-fehlt">
+    <strong>Noch offen:</strong> ${fehlt.map((f) => escapeHtml(f)).join(" · ")}
+  </div>`;
+}
+
+/* ---------- Kunden-PDF ----------
+   Erzeugt wird kein Binär-PDF (dafür bräuchte es eine eingebettete PDF-Bibliothek), sondern eine
+   druckfertige Ansicht: der Browser-Druckdialog schreibt daraus mit "Als PDF speichern" die Datei.
+   Dieselbe Funktion füllt die Vorschau im Reiter, damit Bildschirm und PDF garantiert identisch
+   sind - keine zweite, nachziehende Vorlage. */
+/* Anrede aus dem Feld "Ansprechpartner beim Kunden". Enthält der Eintrag bereits eine Anrede
+   ("Herr Müller", "Frau Dr. Schmitt"), wird korrekt gebeugt - ein "Sehr geehrte/r ..." mit
+   Schrägstrich sieht in einem Angebot unfertig aus. Ohne erkennbare Anrede oder ganz ohne Eintrag
+   bleibt es bei der neutralen Form. */
+function angebotAnrede(a) {
+  const roh = String(a.kundeAnsprechpartner || "").trim();
+  if (!roh) return "Sehr geehrte Damen und Herren,";
+  const frau = /^(frau|fr\.)\s+/i.exec(roh);
+  if (frau) return `Sehr geehrte Frau ${roh.slice(frau[0].length).trim()},`;
+  const herr = /^(herr|hr\.)\s+/i.exec(roh);
+  if (herr) return `Sehr geehrter Herr ${roh.slice(herr[0].length).trim()},`;
+  return `Sehr geehrte Damen und Herren,`;
+}
+function angebotDruckHtml(a) {
+  const waehrung = angebotWaehrung(a);
+  const partner = angebotAnsprechpartner(a);
+  const einst = data.angebotEinstellungen || {};
+  const aktive = (a.positionen || []).filter((p) => p.aktiv);
+  const anrede = angebotAnrede(a);
+  const rabatt = angebotRabattBetrag(a);
+  const absatz = (text) => String(text || "").split(/\n{2,}/).map((abs) =>
+    `<p>${abs.split("\n").map((z) => escapeHtml(z)).join("<br>")}</p>`).join("");
+  /* Steht der Absender schon in der Kopfzeile der Word-Vorlage, wird der manuell gepflegte
+     Absenderblock weggelassen - sonst stünde die Firma zweimal im Briefkopf. */
+  const vorlageKopf = angebotVorlageKopfHtml();
+  return `<div class="ang-blatt">
+    ${vorlageKopf}
+    <div class="ang-kopf">
+      <div class="ang-absender">
+        ${vorlageKopf ? "" : `
+          ${einst.absenderFirma ? `<div class="ang-absender-firma">${escapeHtml(einst.absenderFirma)}</div>` : ""}
+          ${einst.absenderAnschrift ? `<div>${escapeHtml(einst.absenderAnschrift).replace(/\n/g, "<br>")}</div>` : ""}`}
+      </div>
+      <div class="ang-meta">
+        <div><span>Angebotsnummer</span><strong>${escapeHtml(a.nummer || "")}</strong></div>
+        <div><span>Datum</span><strong>${datumAnzeige(a.datum)}</strong></div>
+        ${a.gueltigBis ? `<div><span>Gültig bis</span><strong>${datumAnzeige(a.gueltigBis)}</strong></div>` : ""}
+        ${a.kundeNummer ? `<div><span>Kundennummer</span><strong>${escapeHtml(a.kundeNummer)}</strong></div>` : ""}
+        ${a.kundeReferenz ? `<div><span>Ihre Anfrage</span><strong>${escapeHtml(a.kundeReferenz)}</strong></div>` : ""}
+      </div>
+    </div>
+
+    <div class="ang-empfaenger">
+      ${a.kundeName ? `<strong>${escapeHtml(a.kundeName)}</strong><br>` : ""}
+      ${escapeHtml(a.kundeAnschrift || "").replace(/\n/g, "<br>")}
+    </div>
+
+    <div class="ang-dokumentart">Angebot</div>
+    <h1 class="ang-betreff">${escapeHtml(a.betreff || "Prüfleistungen")}</h1>
+    ${a.artikel ? `<p class="ang-artikel">Artikel/Modell: <strong>${escapeHtml(a.artikel)}</strong></p>` : ""}
+
+    <p class="ang-anrede">${escapeHtml(anrede)}</p>
+    ${absatz(a.einleitungstext)}
+
+    <table class="ang-tabelle">
+      <thead><tr>
+        <th class="ang-pos">Pos.</th>
+        <th>Leistung</th>
+        <th class="ang-zahl">Menge</th>
+        <th class="ang-zahl">Einzelpreis</th>
+        <th class="ang-zahl">Gesamt</th>
+      </tr></thead>
+      <tbody>
+        ${aktive.length ? aktive.map((p, i) => `<tr>
+          <td class="ang-pos">${i + 1}</td>
+          <td>
+            <strong>${escapeHtml(p.bezeichnung || "")}</strong>
+            ${p.beschreibung ? `<div class="ang-beschreibung">${escapeHtml(p.beschreibung).replace(/\n/g, "<br>")}</div>` : ""}
+            ${(p.einzelpreisWeitere !== null && p.einzelpreisWeitere !== undefined && p.einzelpreisWeitere !== "" && Number(p.menge) > 1)
+              ? `<div class="ang-beschreibung">1. Prüfmuster ${betrag(p.einzelpreis, waehrung)}, jedes weitere ${betrag(p.einzelpreisWeitere, waehrung)}</div>` : ""}
+          </td>
+          <td class="ang-zahl">${Number(p.menge) || 0} ${escapeHtml(p.einheit || "")}</td>
+          <td class="ang-zahl">${betrag(p.einzelpreis, waehrung)}</td>
+          <td class="ang-zahl">${betrag(angebotPositionSumme(p), waehrung)}</td>
+        </tr>`).join("") : `<tr><td colspan="5" class="ang-leer">Noch keine Positionen.</td></tr>`}
+      </tbody>
+      <tfoot>
+        ${rabatt ? `<tr><td colspan="4" class="ang-zahl">Zwischensumme</td><td class="ang-zahl">${betrag(angebotZwischensumme(a), waehrung)}</td></tr>
+        <tr><td colspan="4" class="ang-zahl">Nachlass ${Number(a.rabattProzent)} %</td><td class="ang-zahl">− ${betrag(rabatt, waehrung)}</td></tr>` : ""}
+        <tr class="ang-gesamt"><td colspan="4" class="ang-zahl">Angebotssumme netto</td><td class="ang-zahl">${betrag(angebotGesamtsumme(a), waehrung)}</td></tr>
+      </tfoot>
+    </table>
+
+    ${absatz(a.schlusstext)}
+
+    ${partner ? `<div class="ang-signatur">
+      <div>Mit freundlichen Grüßen</div>
+      <div class="ang-partner">
+        <strong>${escapeHtml(partner.name || "")}</strong>
+        ${partner.funktion ? `<div>${escapeHtml(partner.funktion)}</div>` : ""}
+        ${partner.telefon ? `<div>Telefon: ${escapeHtml(partner.telefon)}</div>` : ""}
+        ${partner.mobil ? `<div>Mobil: ${escapeHtml(partner.mobil)}</div>` : ""}
+        ${partner.email ? `<div>E-Mail: ${escapeHtml(partner.email)}</div>` : ""}
+      </div>
+    </div>` : ""}
+    ${angebotVorlageFussHtml()}
+  </div>`;
+}
+
+function druckeAngebot(a) {
+  const container = document.getElementById("angebot-druck");
+  container.innerHTML = angebotDruckHtml(a);
+  /* Der Dateiname des PDFs kommt in allen Browsern aus dem Dokumenttitel - deshalb kurzzeitig
+     umbenennen und danach wieder zurücksetzen. */
+  const titelVorher = document.title;
+  document.title = `Angebot ${a.nummer || ""}${a.kundeName ? " " + a.kundeName : ""}`.trim();
+  window.print();
+  document.title = titelVorher;
+}
+
+/* ---------- SAP-Export ----------
+   Spaltensatz bewusst explizit und dokumentiert: welche Felder eine SAP-Angebotsposition genau
+   braucht, hängt vom jeweiligen Mandanten ab - so lässt sich die Reihenfolge bei Bedarf an einer
+   Stelle anpassen, statt sie im Code zu suchen. */
+const ANGEBOT_SAP_SPALTEN = ["Position", "SAP-Material", "Bezeichnung", "Menge", "Einheit", "Einzelpreis", "Preis ab 2. Muster", "Positionssumme", "Währung"];
+function angebotSapZeilen(a) {
+  const waehrung = angebotWaehrung(a);
+  return (a.positionen || []).filter((p) => p.aktiv).map((p, i) => [
+    String(i + 1),
+    tsvSicher(p.sapMaterial || ""),
+    tsvSicher(p.bezeichnung || ""),
+    String(Number(p.menge) || 0),
+    tsvSicher(p.einheit || ""),
+    (Number(p.einzelpreis) || 0).toFixed(2),
+    (p.einzelpreisWeitere === null || p.einzelpreisWeitere === undefined || p.einzelpreisWeitere === "") ? "" : (Number(p.einzelpreisWeitere) || 0).toFixed(2),
+    angebotPositionSumme(p).toFixed(2),
+    waehrung
+  ]);
+}
+function angebotSapTsv(a) {
+  const zeilen = angebotSapZeilen(a);
+  const rabatt = angebotRabattBetrag(a);
+  const fuss = rabatt
+    ? [["", "", `Nachlass ${Number(a.rabattProzent)} %`, "1", "", (-rabatt).toFixed(2), "", (-rabatt).toFixed(2), angebotWaehrung(a)]]
+    : [];
+  return [ANGEBOT_SAP_SPALTEN, ...zeilen, ...fuss].map((z) => z.join("\t")).join("\n");
+}
+
+function initialisiereAngebotDetail(panel, a) {
+  macheTextareaSelbstwachsend(panel);
+
+  /* Kopf-, Kunden- und Textfelder schreiben direkt ins Angebot. Neu gerendert wird nur dort, wo
+     sich andere Teile der Ansicht mitändern müssen (Liste, Summen, Vorschau, Vollständigkeit) -
+     sonst ginge beim Tippen der Fokus verloren. */
+  panel.querySelectorAll("#angebot-kopf [data-feld], #angebot-kunde [data-feld], #angebot-texte [data-feld]").forEach((el) => {
+    el.addEventListener("input", () => {
+      a[el.dataset.feld] = el.type === "number" ? (el.value === "" ? "" : el.value) : el.value;
+      speichereInLocalStorage();
+      renderAngebotListe();
+      aktualisiereAngebotVorschau(a);
+    });
+    if (el.tagName === "SELECT") {
+      el.addEventListener("change", () => { a[el.dataset.feld] = el.value; speichereInLocalStorage(); renderAngebotListe(); aktualisiereAngebotVorschau(a); });
+    }
+  });
+
+  const kundeAuswahl = panel.querySelector("#angebot-kunde-auswahl");
+  kundeAuswahl.addEventListener("change", () => {
+    const k = data.kunden.find((x) => x.id === kundeAuswahl.value);
+    if (!k) { a.kundeId = ""; speichereInLocalStorage(); return; }
+    a.kundeId = k.id;
+    a.kundeName = k.name || "";
+    a.kundeNummer = k.kundennummer || "";
+    a.kundeAnschrift = k.anschrift || "";
+    a.kundeAnsprechpartner = k.ansprechpartner || "";
+    speichereInLocalStorage();
+    renderAngeboteTab();
+    zeigeStatus("Kundendaten übernommen · " + jetzt(), "ok");
+  });
+  panel.querySelector("#angebot-kunde-speichern").addEventListener("click", () => {
+    const name = String(a.kundeName || "").trim();
+    if (!name) { zeigeStatus("Bitte zuerst eine Firma eintragen.", ""); return; }
+    const vorhanden = data.kunden.find((k) => k.id === a.kundeId) || data.kunden.find((k) => normalisiere(k.name) === normalisiere(name));
+    const werte = { name, kundennummer: a.kundeNummer || "", anschrift: a.kundeAnschrift || "", ansprechpartner: a.kundeAnsprechpartner || "" };
+    if (vorhanden) {
+      Object.assign(vorhanden, werte);
+      a.kundeId = vorhanden.id;
+      zeigeStatus(`Kundenstamm „${name}" aktualisiert · ${jetzt()}`, "ok");
+    } else {
+      const neu = { id: neueId(), ...werte, notiz: "" };
+      data.kunden.push(neu);
+      a.kundeId = neu.id;
+      zeigeStatus(`Kunde „${name}" neu im Stamm angelegt · ${jetzt()}`, "ok");
+    }
+    speichereInLocalStorage();
+    renderAngeboteTab();
+    renderVerwaltungTab();
+  });
+
+  const partnerAuswahl = panel.querySelector("#angebot-partner-auswahl");
+  partnerAuswahl.addEventListener("change", () => {
+    a.ansprechpartnerId = partnerAuswahl.value;
+    speichereInLocalStorage();
+    renderAngeboteTab();
+  });
+
+  /* Textbaustein einfügen: hängt an den vorhandenen Text an, statt ihn zu ersetzen - so lassen sich
+     mehrere Bausteine kombinieren, ohne bereits Getipptes zu verlieren. */
+  panel.querySelectorAll("[data-baustein-fuer]").forEach((sel) => {
+    sel.addEventListener("change", () => {
+      const baustein = data.angebotstexte.find((t) => t.id === sel.value);
+      sel.value = "";
+      if (!baustein) return;
+      const feld = baustein.typ === "einleitung" ? "einleitungstext" : "schlusstext";
+      a[feld] = [String(a[feld] || "").trim(), baustein.text].filter(Boolean).join("\n\n");
+      speichereInLocalStorage();
+      renderAngeboteTab();
+      zeigeStatus(`Textbaustein „${baustein.bezeichnung}" eingefügt · ${jetzt()}`, "ok");
+    });
+  });
+
+  const wgEingabe = panel.querySelector("#angebot-warengruppe-eingabe");
+  if (wgEingabe) {
+    /* "change" statt "input": erst wenn die Eingabe fertig ist (Auswahl aus der Liste oder Verlassen
+       des Felds) neu aufbauen, sonst rendert die Karte bei jedem Tastendruck neu. */
+    wgEingabe.addEventListener("change", () => {
+      angebotAuswahl.warengruppe = wgEingabe.value;
+      angebotAuswahl.produktId = "";
+      renderAngeboteTab();
+    });
+  }
+  const produktAuswahl = panel.querySelector("#angebot-produkt-auswahl");
+  if (produktAuswahl) {
+    produktAuswahl.addEventListener("change", () => {
+      angebotAuswahl.produktId = produktAuswahl.value;
+      renderAngeboteTab();
+    });
+  }
+
+  const aktuellePruefungen = () => {
+    const wg = warengruppeAusAnzeigetext(angebotAuswahl.warengruppe);
+    if (!wg) return [];
+    const treffer = mechanikTrefferFuerWarengruppe(wg.code);
+    const gewaehlt = treffer.find((e) => mechanikEintragId(e) === angebotAuswahl.produktId) || (treffer.length === 1 ? treffer[0] : null);
+    return gewaehlt ? angebotPruefungenAusPruefgrundlage(gewaehlt) : [];
+  };
+  panel.querySelectorAll('[data-action="angebot-pruefung-uebernehmen"]').forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const pruefung = aktuellePruefungen()[Number(btn.dataset.idx)];
+      if (!pruefung) return;
+      a.positionen.push(angebotPositionAusPruefung(pruefung, a.anzahlMuster));
+      speichereInLocalStorage();
+      renderAngeboteTab();
+      zeigeStatus("Position übernommen · " + jetzt(), "ok");
+    });
+  });
+  const alleBtn = panel.querySelector("#angebot-alle-uebernehmen");
+  if (alleBtn) {
+    alleBtn.addEventListener("click", () => {
+      let anzahl = 0;
+      aktuellePruefungen().forEach((pruefung) => {
+        const bez = pruefung.bezeichnung + (pruefung.inAnlehnungAn ? " (in Anlehnung an)" : "");
+        if (angebotHatPosition(a, bez)) return;
+        a.positionen.push(angebotPositionAusPruefung(pruefung, a.anzahlMuster));
+        anzahl++;
+      });
+      speichereInLocalStorage();
+      renderAngeboteTab();
+      zeigeStatus(`${anzahl} Position(en) übernommen · ${jetzt()}`, "ok");
+    });
+  }
+
+  panel.querySelector("#angebot-freie-position").addEventListener("click", () => {
+    a.positionen.push({ id: neueId(), bezeichnung: "", beschreibung: "", sapMaterial: "",
+      menge: Math.max(1, Number(a.anzahlMuster) || 1), einheit: "Prüfung", einzelpreis: 0,
+      einzelpreisWeitere: null, aktiv: true, quelle: "frei" });
+    speichereInLocalStorage();
+    renderAngeboteTab();
+  });
+
+  panel.querySelectorAll("#angebot-positionen-body tr[data-id]").forEach((tr) => {
+    const pos = a.positionen.find((p) => p.id === tr.dataset.id);
+    if (!pos) return;
+    tr.querySelectorAll("[data-feld]").forEach((el) => {
+      el.addEventListener(el.type === "checkbox" ? "change" : "input", () => {
+        if (el.type === "checkbox") pos[el.dataset.feld] = el.checked;
+        else if (el.type === "number") pos[el.dataset.feld] = el.value === "" ? (el.dataset.feld === "einzelpreisWeitere" ? null : 0) : Number(el.value);
+        else pos[el.dataset.feld] = el.value;
+        speichereInLocalStorage();
+        tr.querySelector(".angebot-pos-summe").textContent = betrag(angebotPositionSumme(pos), angebotWaehrung(a));
+        aktualisiereAngebotSummen(a);
+        renderAngebotListe();
+      });
+    });
+    tr.querySelectorAll("button[data-action]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const idx = a.positionen.findIndex((p) => p.id === pos.id);
+        const aktion = btn.dataset.action;
+        if (aktion === "loeschen") a.positionen.splice(idx, 1);
+        else if (aktion === "hoch" && idx > 0) { [a.positionen[idx - 1], a.positionen[idx]] = [a.positionen[idx], a.positionen[idx - 1]]; }
+        else if (aktion === "runter" && idx < a.positionen.length - 1) { [a.positionen[idx + 1], a.positionen[idx]] = [a.positionen[idx], a.positionen[idx + 1]]; }
+        speichereInLocalStorage();
+        renderAngeboteTab();
+      });
+    });
+  });
+
+  const rabattFeld = panel.querySelector("#angebot-rabatt");
+  rabattFeld.addEventListener("input", () => {
+    a.rabattProzent = rabattFeld.value === "" ? null : Number(rabattFeld.value);
+    speichereInLocalStorage();
+    aktualisiereAngebotSummen(a);
+    renderAngebotListe();
+  });
+
+  panel.querySelector("#angebot-sap-kopieren").addEventListener("click", async () => {
+    const ok = await kopiereTextInZwischenablage(angebotSapTsv(a));
+    zeigeStatus(ok ? "SAP-Positionen kopiert · " + jetzt() : "Kopieren nicht möglich – bitte manuell markieren.", ok ? "ok" : "");
+  });
+  panel.querySelector("#angebot-sap-csv").addEventListener("click", () => {
+    csvHerunterladen([ANGEBOT_SAP_SPALTEN, ...angebotSapZeilen(a)], `angebot_${(a.nummer || "ohne-nummer").replace(/[^\w.-]+/g, "_")}_sap.csv`);
+  });
+  panel.querySelector("#angebot-pdf").addEventListener("click", () => druckeAngebot(a));
+
+  panel.querySelector("#angebot-loeschen").addEventListener("click", () => {
+    if (!confirm(`Angebot „${a.nummer || ""}“${a.kundeName ? ` für ${a.kundeName}` : ""} wirklich löschen?`)) return;
+    merkeGeloescht("angebote", a.id);
+    data.angebote = data.angebote.filter((x) => x.id !== a.id);
+    aktivesAngebotId = data.angebote.length ? data.angebote[0].id : null;
+    speichereInLocalStorage();
+    renderAngeboteTab();
+  });
+}
+
+/* Summen, Vollständigkeits-Hinweis und Vorschau ohne kompletten Neuaufbau aktualisieren - damit
+   bleibt beim Tippen der Fokus im Feld. */
+function aktualisiereAngebotSummen(a) {
+  const waehrung = angebotWaehrung(a);
+  const setze = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+  setze("angebot-zwischensumme", betrag(angebotZwischensumme(a), waehrung));
+  setze("angebot-rabattbetrag", "− " + betrag(angebotRabattBetrag(a), waehrung));
+  setze("angebot-gesamtsumme", betrag(angebotGesamtsumme(a), waehrung));
+  aktualisiereAngebotVorschau(a);
+}
+function aktualisiereAngebotVorschau(a) {
+  /* Bewusst über die ID: dieselbe Klasse trägt auch die Vorlagen-Vorschau im Reiter "Verwaltung",
+     ein querySelector nach Klasse träfe je nach DOM-Reihenfolge die falsche. */
+  const vorschau = document.getElementById("angebot-vorschau");
+  if (vorschau) vorschau.innerHTML = angebotDruckHtml(a);
+  const ausgabe = document.getElementById("angebot-vollstaendig") || document.getElementById("angebot-fehlt");
+  if (ausgabe) ausgabe.outerHTML = angebotFehlendeAngabenHtml(a);
+}
+
+function renderAngeboteTab() {
+  if (aktivesAngebotId && !data.angebote.some((a) => a.id === aktivesAngebotId)) aktivesAngebotId = null;
+  renderAngebotListe();
+  renderAngebotDetail();
+}
+
+document.getElementById("btn-neues-angebot").addEventListener("click", () => {
+  const a = angebotEntwurfNeu();
+  data.angebote.unshift(a);
+  aktivesAngebotId = a.id;
+  angebotAuswahl = { warengruppe: "", produktId: "" };
+  speichereInLocalStorage();
+  wechsleTab("angebote");
+  zeigeStatus(`Angebot ${a.nummer} angelegt · ${jetzt()}`, "ok");
+});
+
 /* ================= PRÜFGRUNDLAGEN (Warengruppe -> Produkt -> Norm/Kosten) ================= */
 
 /* PRUEFGRUNDLAGE_FELDER: Felder, die beim Zusammenführen (Konflikt-/Neu-Erkennung) verglichen
@@ -6605,7 +7573,10 @@ const PRUEFGRUNDLAGE_FELDER = ["bereich", "warengruppeCode", "warengruppeName", 
    DecompressionStream("deflate-raw") und liest den reinen Text aus den <w:t>-Knoten je Absatz.
    Alte .doc-Dateien (binäres Format vor Office 2007) werden nicht unterstützt - dafür bräuchte es
    einen vollständigen Parser, den wir hier bewusst nicht nachbauen. */
-async function extrahiereDocxRohtext(datei) {
+/* Liest die ausgewählten Einträge eines ZIP-Archivs (und damit einer .docx) als Rohbytes. Ein
+   einziger, gemeinsamer Reader für alle Word-Funktionen: Normen-/Prüfprogramm-Dokumente lesen
+   daraus word/document.xml, die Angebotsvorlage zusätzlich Kopf-/Fußzeilen und deren Bilder. */
+async function liesZipEintraege(datei, nameFilter) {
   if (typeof DecompressionStream === "undefined") {
     throw new Error("Dieser Browser unterstützt das Lesen von .docx-Dateien nicht (zu alt) - bitte als PDF hochladen oder Browser aktualisieren.");
   }
@@ -6624,7 +7595,8 @@ async function extrahiereDocxRohtext(datei) {
   const cdOffset = dv.getUint32(eocdOffset + 16, true);
   const cdEntries = dv.getUint16(eocdOffset + 10, true);
 
-  let pos = cdOffset, ziel = null;
+  let pos = cdOffset;
+  const treffer = [];
   for (let i = 0; i < cdEntries && pos < bytes.length; i++) {
     if (dv.getUint32(pos, true) !== 0x02014b50) break;
     const methode = dv.getUint16(pos + 10, true);
@@ -6634,30 +7606,40 @@ async function extrahiereDocxRohtext(datei) {
     const commentLen = dv.getUint16(pos + 32, true);
     const localOffset = dv.getUint32(pos + 42, true);
     const name = new TextDecoder().decode(bytes.subarray(pos + 46, pos + 46 + nameLen));
-    if (name === "word/document.xml") ziel = { methode, compSize, localOffset };
+    if (nameFilter(name)) treffer.push({ name, methode, compSize, localOffset });
     pos += 46 + nameLen + extraLen + commentLen;
   }
-  if (!ziel) throw new Error("word/document.xml nicht in der Datei gefunden - keine gültige .docx-Datei?");
 
-  const lfhNameLen = dv.getUint16(ziel.localOffset + 26, true);
-  const lfhExtraLen = dv.getUint16(ziel.localOffset + 28, true);
-  const datenStart = ziel.localOffset + 30 + lfhNameLen + lfhExtraLen;
-  const komprimiert = bytes.subarray(datenStart, datenStart + ziel.compSize);
-
-  let xmlBytes;
-  if (ziel.methode === 0) {
-    xmlBytes = komprimiert;
-  } else if (ziel.methode === 8) {
-    const stream = new Blob([komprimiert]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
-    xmlBytes = new Uint8Array(await new Response(stream).arrayBuffer());
-  } else {
-    throw new Error("Unbekannte ZIP-Komprimierung (Methode " + ziel.methode + ") - Datei kann nicht gelesen werden.");
+  const raus = new Map();
+  for (const eintrag of treffer) {
+    const lfhNameLen = dv.getUint16(eintrag.localOffset + 26, true);
+    const lfhExtraLen = dv.getUint16(eintrag.localOffset + 28, true);
+    const datenStart = eintrag.localOffset + 30 + lfhNameLen + lfhExtraLen;
+    const komprimiert = bytes.subarray(datenStart, datenStart + eintrag.compSize);
+    if (eintrag.methode === 0) {
+      raus.set(eintrag.name, komprimiert);
+    } else if (eintrag.methode === 8) {
+      const stream = new Blob([komprimiert]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+      raus.set(eintrag.name, new Uint8Array(await new Response(stream).arrayBuffer()));
+    } else {
+      throw new Error("Unbekannte ZIP-Komprimierung (Methode " + eintrag.methode + ") in „" + eintrag.name + "“ - Datei kann nicht gelesen werden.");
+    }
   }
-
-  const xmlText = new TextDecoder("utf-8").decode(xmlBytes);
-  const dom = new DOMParser().parseFromString(xmlText, "application/xml");
-  const absaetze = [...dom.getElementsByTagName("w:p")];
-  return absaetze.map((p) => [...p.getElementsByTagName("w:t")].map((t) => t.textContent).join("")).filter((z) => z.trim()).join("\n");
+  return raus;
+}
+/* Reiner Text eines Word-XML-Teils, absatzweise (w:p -> Zeile, w:t -> Textstücke). */
+function wordXmlText(bytes) {
+  const dom = new DOMParser().parseFromString(new TextDecoder("utf-8").decode(bytes), "application/xml");
+  return [...dom.getElementsByTagName("w:p")]
+    .map((p) => [...p.getElementsByTagName("w:t")].map((t) => t.textContent).join(""))
+    .filter((z) => z.trim())
+    .join("\n");
+}
+async function extrahiereDocxRohtext(datei) {
+  const eintraege = await liesZipEintraege(datei, (name) => name === "word/document.xml");
+  const xml = eintraege.get("word/document.xml");
+  if (!xml) throw new Error("word/document.xml nicht in der Datei gefunden - keine gültige .docx-Datei?");
+  return wordXmlText(xml);
 }
 
 /* Anzeigetext einer einzelnen Norm-Referenz {normId, inAnlehnungAn} bzw. einer ganzen Liste davon -
@@ -7985,13 +8967,378 @@ function renderVerwaltungTab() {
   document.getElementById("verwaltung-block-pruefungsarten").hidden = verwaltungAnsicht !== "pruefungsarten";
   document.getElementById("verwaltung-block-trivialpreisliste").hidden = verwaltungAnsicht !== "trivialpreisliste";
   document.getElementById("verwaltung-block-pruefumfang").hidden = verwaltungAnsicht !== "pruefumfang";
+  document.getElementById("verwaltung-block-angebot").hidden = verwaltungAnsicht !== "angebot";
+  document.getElementById("verwaltung-block-ansprechpartner").hidden = verwaltungAnsicht !== "ansprechpartner";
+  document.getElementById("verwaltung-block-kunden").hidden = verwaltungAnsicht !== "kunden";
   document.getElementById("verwaltung-block-gefahrenzone").hidden = verwaltungAnsicht !== "gefahrenzone";
   renderBereicheVerwaltung();
   renderWarengruppenVerwaltung();
   renderPruefungsartenVerwaltung();
   renderTrivialpreislisteVerwaltung();
   renderPruefumfangVerwaltung();
+  renderAngebotEinstellungenVerwaltung();
+  renderAngebotVorlageVerwaltung();
+  renderAngebotstexteVerwaltung();
+  renderAnsprechpartnerVerwaltung();
+  renderKundenVerwaltung();
 }
+
+/* ---------- Verwaltung: Angebots-Stammdaten ----------
+   Alle vier Blöcke folgen demselben, bewusst simplen Muster: Liste neu aufbauen, jedes Feld
+   schreibt bei "input" direkt in den Datensatz und speichert. Kein Speichern-Button, wie überall
+   sonst im Tool auch. Neu-Rendern passiert nur beim Anlegen/Löschen, damit der Fokus beim Tippen
+   nicht springt. */
+function renderAngebotEinstellungenVerwaltung() {
+  const box = document.getElementById("angebot-einstellungen-formular");
+  if (!box) return;
+  const e = data.angebotEinstellungen;
+  box.innerHTML = `
+    <label class="volle-breite">Absender (Firma)<input type="text" data-feld="absenderFirma" value="${escapeHtml(e.absenderFirma || "")}" placeholder="z. B. SGS Institut Fresenius GmbH"></label>
+    <label class="volle-breite">Absender-Anschrift <span class="muted" style="font-weight:400">– mehrzeilig, steht im Briefkopf</span><textarea class="auto-hoehe" data-feld="absenderAnschrift" rows="3">${escapeHtml(e.absenderAnschrift || "")}</textarea></label>
+    <label>Währung<input type="text" data-feld="waehrung" value="${escapeHtml(e.waehrung || "EUR")}"></label>
+    <label>Gültigkeit neuer Angebote (Tage)<input type="number" min="0" step="1" data-feld="gueltigkeitTage" value="${escapeHtml(String(e.gueltigkeitTage ?? 30))}"></label>
+    <label>Nummernpräfix<input type="text" data-feld="nummernPraefix" value="${escapeHtml(e.nummernPraefix || "ANG")}" placeholder="ANG"></label>
+    <label class="volle-breite"><span class="muted" style="font-weight:400">Nächste Nummer: <strong>${escapeHtml(naechsteAngebotsnummer())}</strong></span></label>`;
+  macheTextareaSelbstwachsend(box);
+  box.querySelectorAll("[data-feld]").forEach((el) => {
+    el.addEventListener("input", () => {
+      data.angebotEinstellungen[el.dataset.feld] = el.type === "number" ? (el.value === "" ? 0 : Number(el.value)) : el.value;
+      speichereInLocalStorage();
+    });
+  });
+}
+
+function renderAngebotstexteVerwaltung() {
+  const box = document.getElementById("angebotstexte-liste");
+  if (!box) return;
+  const typLabel = { einleitung: "Einleitung", schluss: "Schlusstext" };
+  box.innerHTML = data.angebotstexte.length ? data.angebotstexte.map((t) => `
+    <div class="mak-variante-item" data-id="${escapeHtml(t.id)}">
+      <div class="mak-variante-kopf">
+        <input type="text" data-feld="bezeichnung" value="${escapeHtml(t.bezeichnung || "")}" placeholder="Bezeichnung des Bausteins">
+        <span class="badge">${escapeHtml(typLabel[t.typ] || t.typ)}</span>
+        <label class="checkbox-label" style="display:flex;align-items:center;gap:0.3rem;font-size:0.8rem;white-space:nowrap" title="Ist das angehakt, steht dieser Text bei jedem NEUEN Angebot automatisch drin.">
+          <input type="checkbox" data-feld="immer" ${t.immer ? "checked" : ""}> immer
+        </label>
+        <button type="button" class="danger small" data-action="text-loeschen" title="Textbaustein löschen">🗑</button>
+      </div>
+      <textarea class="auto-hoehe" data-feld="text" rows="3" style="width:100%;font-family:inherit;font-size:0.85rem;padding:0.35rem 0.5rem;border:1px solid var(--border);border-radius:6px">${escapeHtml(t.text || "")}</textarea>
+    </div>`).join("") : '<p class="muted">Noch keine Textbausteine hinterlegt.</p>';
+  macheTextareaSelbstwachsend(box);
+  box.querySelectorAll(".mak-variante-item").forEach((div) => {
+    const t = data.angebotstexte.find((x) => x.id === div.dataset.id);
+    if (!t) return;
+    div.querySelectorAll("[data-feld]").forEach((el) => {
+      el.addEventListener(el.type === "checkbox" ? "change" : "input", () => {
+        t[el.dataset.feld] = el.type === "checkbox" ? el.checked : el.value;
+        speichereInLocalStorage();
+      });
+    });
+    div.querySelector('[data-action="text-loeschen"]').addEventListener("click", () => {
+      if (!confirm(`Textbaustein „${t.bezeichnung || ""}" wirklich löschen?`)) return;
+      merkeGeloescht("angebotstexte", t.id);
+      data.angebotstexte = data.angebotstexte.filter((x) => x.id !== t.id);
+      speichereInLocalStorage();
+      renderVerwaltungTab();
+    });
+  });
+}
+
+function renderAnsprechpartnerVerwaltung() {
+  const box = document.getElementById("ansprechpartner-liste");
+  if (!box) return;
+  box.innerHTML = data.ansprechpartner.length ? data.ansprechpartner.map((p) => `
+    <div class="mak-variante-item" data-id="${escapeHtml(p.id)}">
+      <div class="mak-variante-kopf">
+        <input type="text" data-feld="name" value="${escapeHtml(p.name || "")}" placeholder="Name">
+        <input type="text" data-feld="funktion" value="${escapeHtml(p.funktion || "")}" placeholder="Funktion/Abteilung">
+        <label class="checkbox-label" style="display:flex;align-items:center;gap:0.3rem;font-size:0.8rem;white-space:nowrap">
+          <input type="radio" name="ansprechpartner-standard" data-feld="standard" ${p.standard ? "checked" : ""}> Standard
+        </label>
+        <button type="button" class="danger small" data-action="partner-loeschen" title="Ansprechpartner löschen">🗑</button>
+      </div>
+      <div class="mak-variante-zusatz">
+        <input type="text" data-feld="telefon" value="${escapeHtml(p.telefon || "")}" placeholder="Telefon">
+        <input type="text" data-feld="mobil" value="${escapeHtml(p.mobil || "")}" placeholder="Mobil">
+        <input type="text" data-feld="email" value="${escapeHtml(p.email || "")}" placeholder="E-Mail">
+      </div>
+    </div>`).join("") : '<p class="muted">Noch keine Ansprechpartner hinterlegt.</p>';
+  box.querySelectorAll(".mak-variante-item").forEach((div) => {
+    const p = data.ansprechpartner.find((x) => x.id === div.dataset.id);
+    if (!p) return;
+    div.querySelectorAll("[data-feld]").forEach((el) => {
+      el.addEventListener(el.type === "radio" ? "change" : "input", () => {
+        if (el.type === "radio") {
+          /* Genau EIN Standard - die übrigen werden mit zurückgesetzt. */
+          data.ansprechpartner.forEach((x) => { x.standard = x.id === p.id; });
+        } else {
+          p[el.dataset.feld] = el.value;
+        }
+        speichereInLocalStorage();
+        renderAngeboteTab();
+      });
+    });
+    div.querySelector('[data-action="partner-loeschen"]').addEventListener("click", () => {
+      if (!confirm(`Ansprechpartner „${p.name || ""}" wirklich löschen?`)) return;
+      merkeGeloescht("ansprechpartner", p.id);
+      data.ansprechpartner = data.ansprechpartner.filter((x) => x.id !== p.id);
+      speichereInLocalStorage();
+      renderVerwaltungTab();
+      renderAngeboteTab();
+    });
+  });
+}
+
+function renderKundenVerwaltung() {
+  const box = document.getElementById("kunden-liste");
+  if (!box) return;
+  const sortiert = data.kunden.slice().sort((a, b) => (a.name || "").localeCompare(b.name || "", "de"));
+  box.innerHTML = sortiert.length ? sortiert.map((k) => {
+    const anzahl = data.angebote.filter((a) => a.kundeId === k.id).length;
+    return `<div class="mak-variante-item" data-id="${escapeHtml(k.id)}">
+      <div class="mak-variante-kopf">
+        <input type="text" data-feld="name" value="${escapeHtml(k.name || "")}" placeholder="Firma">
+        <input type="text" data-feld="kundennummer" value="${escapeHtml(k.kundennummer || "")}" placeholder="Kundennummer" style="max-width:160px">
+        <span class="muted" style="white-space:nowrap;font-size:0.8rem">${anzahl ? `${anzahl} Angebot${anzahl === 1 ? "" : "e"}` : "kein Angebot"}</span>
+        <button type="button" class="danger small" data-action="kunde-loeschen" title="Kunde löschen">🗑</button>
+      </div>
+      <div class="mak-variante-zusatz" style="flex-direction:column;align-items:stretch;gap:0.35rem">
+        <textarea class="auto-hoehe" data-feld="anschrift" rows="3" placeholder="Anschrift (mehrzeilig)" style="font-family:inherit;font-size:0.85rem;padding:0.35rem 0.5rem;border:1px solid var(--border);border-radius:6px">${escapeHtml(k.anschrift || "")}</textarea>
+        <input type="text" data-feld="ansprechpartner" value="${escapeHtml(k.ansprechpartner || "")}" placeholder="Ansprechpartner beim Kunden (für die Anrede)">
+      </div>
+    </div>`;
+  }).join("") : '<p class="muted">Noch keine Kunden hinterlegt.</p>';
+  macheTextareaSelbstwachsend(box);
+  box.querySelectorAll(".mak-variante-item").forEach((div) => {
+    const k = data.kunden.find((x) => x.id === div.dataset.id);
+    if (!k) return;
+    div.querySelectorAll("[data-feld]").forEach((el) => {
+      el.addEventListener("input", () => { k[el.dataset.feld] = el.value; speichereInLocalStorage(); });
+    });
+    div.querySelector('[data-action="kunde-loeschen"]').addEventListener("click", () => {
+      const anzahl = data.angebote.filter((a) => a.kundeId === k.id).length;
+      const zusatz = anzahl ? `\n\n${anzahl} Angebot(e) verweisen darauf - sie behalten ihre gespeicherte Anschrift und bleiben unverändert.` : "";
+      if (!confirm(`Kunde „${k.name || ""}" wirklich löschen?${zusatz}`)) return;
+      merkeGeloescht("kunden", k.id);
+      data.kunden = data.kunden.filter((x) => x.id !== k.id);
+      speichereInLocalStorage();
+      renderVerwaltungTab();
+      renderAngeboteTab();
+    });
+  });
+}
+
+
+/* ---------- Word-Vorlage für Kopf-/Fußzeile des Angebots ----------
+   Aus einer hochgeladenen .docx werden die KOPF- und FUSSZEILE übernommen: ihre Texte und die dort
+   eingebetteten Bilder (Logo) als data:-URI. Bewusst NICHT übernommen werden Schriftarten, Farben,
+   Tabellen-/Positionsangaben aus Word - das wäre ein halber Word-Renderer und würde am Ende doch
+   anders aussehen als im Original. Was hier entsteht, ist eine saubere HTML-Kopf-/Fußzeile mit
+   Ihrem Logo und Ihren Texten; die Feinausrichtung (Größe, Ausrichtung) lässt sich danach im
+   Reiter „Verwaltung" einstellen.
+   Alles landet als data:-URI im normalen Datenbestand, damit die Vorlage beim JSON-Export
+   mitwandert und die Datei offline bleibt - deshalb die harte Größenbegrenzung unten. */
+const VORLAGE_MAX_BILD_BYTES = 400 * 1024;
+const VORLAGE_MAX_GESAMT_BYTES = 900 * 1024;
+const VORLAGE_BILD_TYPEN = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", svg: "image/svg+xml" };
+
+function bytesAlsDataUri(bytes, dateiname) {
+  const endung = String(dateiname).split(".").pop().toLowerCase();
+  const typ = VORLAGE_BILD_TYPEN[endung];
+  if (!typ) return null;
+  let binaer = "";
+  const block = 0x8000;
+  for (let i = 0; i < bytes.length; i += block) {
+    binaer += String.fromCharCode.apply(null, bytes.subarray(i, i + block));
+  }
+  return `data:${typ};base64,${btoa(binaer)}`;
+}
+
+/* Welche Bilder eine bestimmte Kopf-/Fußzeile verwendet: die r:embed-IDs im XML werden über die
+   zugehörige .rels-Datei auf die Dateien in word/media/ aufgelöst. Ohne diesen Umweg wüsste man
+   nur, DASS ein Bild eingebettet ist, aber nicht welches - und ein Dokument mit mehreren Bildern
+   (Logo + Signatur + Icons) würde beliebig gemischt. */
+function bildnamenAusTeil(xmlBytes, relsBytes) {
+  if (!relsBytes) return [];
+  const dom = new DOMParser().parseFromString(new TextDecoder("utf-8").decode(xmlBytes), "application/xml");
+  const relsDom = new DOMParser().parseFromString(new TextDecoder("utf-8").decode(relsBytes), "application/xml");
+  const zuordnung = new Map();
+  [...relsDom.getElementsByTagName("Relationship")].forEach((r) => {
+    const ziel = r.getAttribute("Target") || "";
+    zuordnung.set(r.getAttribute("Id"), "word/" + ziel.replace(/^\.\//, "").replace(/^\/word\//, ""));
+  });
+  const ids = [];
+  [...dom.getElementsByTagName("a:blip")].forEach((b) => {
+    const id = b.getAttribute("r:embed") || b.getAttribute("r:link");
+    if (id && !ids.includes(id)) ids.push(id);
+  });
+  return ids.map((id) => zuordnung.get(id)).filter(Boolean);
+}
+
+async function leseWordVorlage(datei) {
+  const relevant = (name) => /^word\/(header|footer)\d*\.xml$/.test(name)
+    || /^word\/_rels\/(header|footer)\d*\.xml\.rels$/.test(name)
+    || /^word\/media\//.test(name);
+  const eintraege = await liesZipEintraege(datei, relevant);
+  const teile = [...eintraege.keys()].filter((n) => /^word\/(header|footer)\d*\.xml$/.test(n)).sort();
+  if (!teile.length) {
+    throw new Error("In dieser Datei sind keine Kopf-/Fußzeilen enthalten. Bitte eine Word-Vorlage hochladen, in der Kopf- und Fußzeile gepflegt sind.");
+  }
+
+  const sammle = (art) => {
+    /* Word legt je nach Einstellung mehrere Kopf-/Fußzeilen an (erste Seite, gerade/ungerade
+       Seiten). Genommen wird die erste, die überhaupt Inhalt hat - das ist in aller Regel die
+       Standardzeile, die auf jeder Seite erscheinen soll. */
+    const kandidaten = teile.filter((n) => n.startsWith("word/" + art));
+    for (const name of kandidaten) {
+      const xml = eintraege.get(name);
+      const text = wordXmlText(xml);
+      const bildnamen = bildnamenAusTeil(xml, eintraege.get(name.replace("word/", "word/_rels/") + ".rels"));
+      if (text.trim() || bildnamen.length) return { text: text.trim(), bildnamen, quelle: name };
+    }
+    return { text: "", bildnamen: [], quelle: "" };
+  };
+
+  const kopf = sammle("header");
+  const fuss = sammle("footer");
+
+  let gesamt = 0;
+  const uebersprungen = [];
+  const alsUris = (bildnamen) => bildnamen.map((name) => {
+    const bytes = eintraege.get(name);
+    if (!bytes) return null;
+    if (bytes.length > VORLAGE_MAX_BILD_BYTES) { uebersprungen.push(`${name.split("/").pop()} (${Math.round(bytes.length / 1024)} KB)`); return null; }
+    const uri = bytesAlsDataUri(bytes, name);
+    if (!uri) { uebersprungen.push(`${name.split("/").pop()} (Format nicht unterstützt)`); return null; }
+    if (gesamt + uri.length > VORLAGE_MAX_GESAMT_BYTES) { uebersprungen.push(`${name.split("/").pop()} (Vorlage sonst zu groß)`); return null; }
+    gesamt += uri.length;
+    return uri;
+  }).filter(Boolean);
+
+  return {
+    dateiname: datei.name,
+    hochgeladenAm: jetzt(),
+    kopfText: kopf.text,
+    kopfBilder: alsUris(kopf.bildnamen),
+    fussText: fuss.text,
+    fussBilder: alsUris(fuss.bildnamen),
+    logoHoeheMm: 18,
+    uebersprungen,
+    groesseBytes: gesamt
+  };
+}
+
+function angebotVorlage() { return data.angebotVorlage || null; }
+function angebotVorlageKopfHtml() {
+  const v = angebotVorlage();
+  if (!v) return "";
+  const bilder = (v.kopfBilder || []).map((uri) => `<img src="${uri}" alt="" style="height:${Number(v.logoHoeheMm) || 18}mm">`).join("");
+  if (!bilder && !v.kopfText) return "";
+  return `<div class="ang-vorlage-kopf">
+    ${bilder ? `<div class="ang-vorlage-bilder">${bilder}</div>` : ""}
+    ${v.kopfText ? `<div class="ang-vorlage-text">${escapeHtml(v.kopfText).replace(/\n/g, "<br>")}</div>` : ""}
+  </div>`;
+}
+function angebotVorlageFussHtml() {
+  const v = angebotVorlage();
+  if (!v) return "";
+  const bilder = (v.fussBilder || []).map((uri) => `<img src="${uri}" alt="" style="height:10mm">`).join("");
+  if (!bilder && !v.fussText) return "";
+  return `<div class="ang-vorlage-fuss">
+    ${v.fussText ? `<div class="ang-vorlage-text">${escapeHtml(v.fussText).replace(/\n/g, "<br>")}</div>` : ""}
+    ${bilder ? `<div class="ang-vorlage-bilder">${bilder}</div>` : ""}
+  </div>`;
+}
+
+function renderAngebotVorlageVerwaltung() {
+  const box = document.getElementById("angebot-vorlage-block");
+  if (!box) return;
+  const v = angebotVorlage();
+  box.innerHTML = !v
+    ? `<p class="muted">Noch keine Word-Vorlage hochgeladen – das Angebot erscheint dann ohne Kopf-/Fußzeile.</p>`
+    : `<div class="toolbar-zeile">
+        <span class="badge ja">${escapeHtml(v.dateiname || "Vorlage")}</span>
+        <span class="muted" style="font-size:0.8rem">übernommen am ${escapeHtml(v.hochgeladenAm || "")} · ${Math.round((v.groesseBytes || 0) / 1024)} KB Bilddaten</span>
+        <div class="spacer"></div>
+        <label style="display:flex;align-items:center;gap:0.35rem;font-size:0.8rem;font-weight:600">Logohöhe
+          <input type="number" min="5" max="40" step="1" id="angebot-vorlage-logohoehe" value="${Number(v.logoHoeheMm) || 18}" style="width:70px;font-family:inherit;font-size:0.85rem;padding:0.25rem 0.35rem;border:1px solid var(--border);border-radius:6px"> mm</label>
+        <button type="button" class="danger small" id="angebot-vorlage-entfernen">Vorlage entfernen</button>
+      </div>
+      ${(v.uebersprungen || []).length ? `<div class="norm-partner-hinweis"><strong>Nicht übernommen:</strong> ${v.uebersprungen.map((u) => escapeHtml(u)).join(" · ")}</div>` : ""}
+      <div class="angebot-vorschau" style="margin-top:0.6rem"><div class="ang-blatt" style="padding:1rem 1.2rem">
+        ${angebotVorlageKopfHtml() || '<p class="muted">Kopfzeile: kein Inhalt gefunden.</p>'}
+        <p class="muted" style="text-align:center;margin:1.2rem 0">— hier steht später das Angebot —</p>
+        ${angebotVorlageFussHtml() || '<p class="muted">Fußzeile: kein Inhalt gefunden.</p>'}
+      </div></div>
+      <div class="formular-grid" style="margin-top:0.6rem">
+        <label class="volle-breite">Kopfzeilen-Text <span class="muted" style="font-weight:400">– aus der Vorlage übernommen, hier frei anpassbar</span><textarea class="auto-hoehe" id="angebot-vorlage-kopftext" rows="2">${escapeHtml(v.kopfText || "")}</textarea></label>
+        <label class="volle-breite">Fußzeilen-Text<textarea class="auto-hoehe" id="angebot-vorlage-fusstext" rows="3">${escapeHtml(v.fussText || "")}</textarea></label>
+      </div>`;
+  macheTextareaSelbstwachsend(box);
+  const hoehe = box.querySelector("#angebot-vorlage-logohoehe");
+  if (hoehe) hoehe.addEventListener("input", () => {
+    data.angebotVorlage.logoHoeheMm = Number(hoehe.value) || 18;
+    speichereInLocalStorage();
+    renderAngebotVorlageVerwaltung();
+    renderAngeboteTab();
+  });
+  ["kopftext", "fusstext"].forEach((welches) => {
+    const feld = box.querySelector("#angebot-vorlage-" + welches);
+    if (!feld) return;
+    feld.addEventListener("input", () => {
+      data.angebotVorlage[welches === "kopftext" ? "kopfText" : "fussText"] = feld.value;
+      speichereInLocalStorage();
+      renderAngeboteTab();
+    });
+  });
+  const entfernen = box.querySelector("#angebot-vorlage-entfernen");
+  if (entfernen) entfernen.addEventListener("click", () => {
+    if (!confirm("Word-Vorlage entfernen? Angebote erscheinen danach ohne Kopf-/Fußzeile.")) return;
+    data.angebotVorlage = null;
+    speichereInLocalStorage();
+    renderVerwaltungTab();
+    renderAngeboteTab();
+  });
+}
+
+document.getElementById("angebot-vorlage-upload").addEventListener("change", async (e) => {
+  const datei = e.target.files[0];
+  if (!datei) return;
+  try {
+    if (!/\.docx$/i.test(datei.name)) throw new Error("Bitte eine .docx-Datei wählen (das alte .doc-Format kann nicht gelesen werden).");
+    const vorlage = await leseWordVorlage(datei);
+    data.angebotVorlage = vorlage;
+    speichereInLocalStorage();
+    renderVerwaltungTab();
+    renderAngeboteTab();
+    const hinweis = vorlage.uebersprungen.length ? ` (${vorlage.uebersprungen.length} Bild(er) übersprungen)` : "";
+    zeigeStatus(`Vorlage „${datei.name}" übernommen${hinweis} · ${jetzt()}`, "ok");
+  } catch (err) {
+    alert("Vorlage konnte nicht gelesen werden: " + err.message);
+  } finally {
+    e.target.value = "";
+  }
+});
+
+document.querySelectorAll("#verwaltung-block-angebot [data-neuer-text]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const typ = btn.dataset.neuerText;
+    data.angebotstexte.push({ id: neueId(), bezeichnung: typ === "einleitung" ? "Neue Einleitung" : "Neuer Schlusstext", typ, immer: false, text: "" });
+    speichereInLocalStorage();
+    renderVerwaltungTab();
+  });
+});
+document.getElementById("ansprechpartner-hinzufuegen").addEventListener("click", () => {
+  data.ansprechpartner.push({ id: neueId(), name: "", funktion: "", telefon: "", mobil: "", email: "", standard: !data.ansprechpartner.length });
+  speichereInLocalStorage();
+  renderVerwaltungTab();
+  renderAngeboteTab();
+});
+document.getElementById("kunde-hinzufuegen").addEventListener("click", () => {
+  data.kunden.push({ id: neueId(), name: "", kundennummer: "", anschrift: "", ansprechpartner: "", notiz: "" });
+  speichereInLocalStorage();
+  renderVerwaltungTab();
+});
 
 /* Editierbare Prozentsätze je Artikelkategorie (siehe pruefumfangFuerArtikelkategorie) - drei
    einfache Zahlenfelder, sofort beim Verlassen des Felds gespeichert (kein separater
@@ -8641,6 +9988,21 @@ document.getElementById("btn-csv").addEventListener("click", () => {
       n.anwendungsbereiche.forEach((b) => zeilen.push([...basis, b.name, b.text]));
     });
     csvHerunterladen(zeilen, "normen_export.csv");
+  } else if (aktiverTab === "angebote") {
+    /* Eine Zeile je Position über ALLE (gefilterten) Angebote - für Auswertungen; der SAP-Export
+       eines einzelnen Angebots steckt dagegen im Angebot selbst (siehe angebotSapZeilen). */
+    const zeilen = [["Angebotsnummer", "Datum", "Gültig bis", "Status", "Kunde", "Kundennummer", "Betreff", "Artikel",
+      "Pos.", "Aktiv", "SAP-Material", "Bezeichnung", "Beschreibung", "Menge", "Einheit", "Einzelpreis", "Preis ab 2. Muster",
+      "Positionssumme", "Nachlass %", "Angebotssumme netto", "Währung"]];
+    gefilterteAngebote().forEach((a) => {
+      const basis = [a.nummer || "", a.datum || "", a.gueltigBis || "", a.status || "", a.kundeName || "", a.kundeNummer || "", a.betreff || "", a.artikel || ""];
+      const abschluss = [zahlOderLeer(a.rabattProzent), angebotGesamtsumme(a).toFixed(2), angebotWaehrung(a)];
+      if (!(a.positionen || []).length) { zeilen.push([...basis, "", "", "", "", "", "", "", "", "", "", ...abschluss]); return; }
+      a.positionen.forEach((p, i) => zeilen.push([...basis, String(i + 1), p.aktiv ? "Ja" : "Nein",
+        p.sapMaterial || "", p.bezeichnung || "", p.beschreibung || "", zahlOderLeer(p.menge), p.einheit || "",
+        zahlOderLeer(p.einzelpreis), zahlOderLeer(p.einzelpreisWeitere), angebotPositionSumme(p).toFixed(2), ...abschluss]));
+    });
+    csvHerunterladen(zeilen, "angebote_export.csv");
   } else if (aktiverTab === "mak") {
     const zeilen = [["ID", "SAP-Code (SAP-Material)", "Kategorie", "Bereich", "Parameter", "Anforderung", "Norm/Standard EU", "Norm/Standard US (AATCC/ASTM)", "Mindest-Prüfnachweis", "Schlagworte"]];
     gefiltereMak().forEach((m) => zeilen.push([m.id, m.sapCode || "", m.kategorie, m.bereich, m.parameter, m.anforderung, m.normEu, m.normUs, m.pruefnachweis, (m.schlagworte || []).join("; ")]));
@@ -8674,6 +10036,16 @@ function schluesselPruefgrundlage(e) { return normalisiereWarengruppe(e.warengru
 function schluesselNorm(n) { return normalisiere(n.bezeichnung); }
 const NORM_FELDER = ["bezeichnung", "titel", "typ", "dateiname", "rohtext", "anwendungsbereiche", "bemerkung", "sapCode", "kennzeichnung", "bedienungsanleitung", "pruefungsart", "kosten", "lidlSpezifischBlock", "verknuepfteNormen"];
 function schluesselMak(m) { return normalisiere(m.id); }
+/* Vergleichsfelder für das Zusammenführen der Angebots-Stammdaten (siehe planFlacheListe). Die
+   Positionsliste wird als Ganzes verglichen (JSON.stringify in feldweiseGleich) - eine einzelne
+   geänderte Position macht das Angebot damit zu einem Konflikt, was hier richtig ist: ein Angebot
+   ist ein Dokument, keine Sammlung unabhängiger Zeilen. */
+const ANGEBOT_FELDER = ["nummer", "datum", "gueltigBis", "status", "kundeId", "kundeName", "kundeNummer", "kundeAnschrift",
+  "kundeAnsprechpartner", "kundeReferenz", "ansprechpartnerId", "betreff", "artikel", "anzahlMuster",
+  "einleitungstext", "schlusstext", "positionen", "rabattProzent", "waehrung", "notiz"];
+const KUNDE_FELDER = ["name", "kundennummer", "anschrift", "ansprechpartner", "notiz"];
+const ANSPRECHPARTNER_FELDER = ["name", "funktion", "telefon", "mobil", "email", "standard"];
+const ANGEBOTSTEXT_FELDER = ["bezeichnung", "typ", "immer", "text"];
 const MAK_FELDER = ["kategorie", "bereich", "parameter", "anforderung", "normEu", "normUs", "pruefnachweis", "schlagworte", "varianten", "kosten", "kostenWeiteresArtikel", "abrechnungsmodus", "bewertungsgrundlageErforderlich", "bemerkung", "sapCode"];
 function schluesselWarengruppe(w) { return normalisiereWarengruppe(w.code); }
 const WARENGRUPPE_FELDER = ["name", "bereich"];
@@ -8748,6 +10120,10 @@ function berechneMergePlan(importData) {
   const warengruppenPlan = planFlacheListe(data.warengruppen, importData.warengruppen || [], schluesselWarengruppe, WARENGRUPPE_FELDER);
   const warengruppenZuordnungPlan = planFlacheListe(data.warengruppenZuordnung, importData.warengruppenZuordnung || [], schluesselWarengruppenZuordnung, WARENGRUPPENZUORDNUNG_FELDER);
   const trivialpreislistePlan = planFlacheListe(data.trivialPreisliste, importData.trivialPreisliste || [], schluesselTrivialpreisliste, TRIVIALPREISLISTE_FELDER, lokalGeloescht("trivialPreisliste"));
+  const angebotePlan = planFlacheListe(data.angebote, importData.angebote || [], (a) => a.id, ANGEBOT_FELDER, lokalGeloescht("angebote"));
+  const kundenPlan = planFlacheListe(data.kunden, importData.kunden || [], (k) => k.id, KUNDE_FELDER, lokalGeloescht("kunden"));
+  const ansprechpartnerPlan = planFlacheListe(data.ansprechpartner, importData.ansprechpartner || [], (x) => x.id, ANSPRECHPARTNER_FELDER, lokalGeloescht("ansprechpartner"));
+  const angebotstextePlan = planFlacheListe(data.angebotstexte, importData.angebotstexte || [], (t) => t.id, ANGEBOTSTEXT_FELDER, lokalGeloescht("angebotstexte"));
   const neueBereiche = planFlacheStringListe(data.bereiche, importData.bereiche || []);
   const neuePruefungsarten = planFlacheStringListe(data.pruefungsarten, importData.pruefungsarten || []);
 
@@ -8758,7 +10134,11 @@ function berechneMergePlan(importData) {
     pruefgrundlagen: planGeloeschteAusImport(data.pruefgrundlagen, importGeloescht, "pruefgrundlagen", schluesselPruefgrundlage),
     normen: planGeloeschteAusImport(data.normen, importGeloescht, "normen", schluesselNorm),
     mak: planGeloeschteAusImport(data.mak, importGeloescht, "mak", schluesselMak),
-    trivialPreisliste: planGeloeschteAusImport(data.trivialPreisliste, importGeloescht, "trivialPreisliste", schluesselTrivialpreisliste)
+    trivialPreisliste: planGeloeschteAusImport(data.trivialPreisliste, importGeloescht, "trivialPreisliste", schluesselTrivialpreisliste),
+    angebote: planGeloeschteAusImport(data.angebote, importGeloescht, "angebote", (a) => a.id),
+    kunden: planGeloeschteAusImport(data.kunden, importGeloescht, "kunden", (k) => k.id),
+    ansprechpartner: planGeloeschteAusImport(data.ansprechpartner, importGeloescht, "ansprechpartner", (x) => x.id),
+    angebotstexte: planGeloeschteAusImport(data.angebotstexte, importGeloescht, "angebotstexte", (t) => t.id)
   };
 
   return {
@@ -8771,6 +10151,10 @@ function berechneMergePlan(importData) {
     neueWarengruppen: warengruppenPlan.neue, warengruppenKonflikte: warengruppenPlan.konflikte,
     neueWarengruppenZuordnung: warengruppenZuordnungPlan.neue, warengruppenZuordnungKonflikte: warengruppenZuordnungPlan.konflikte,
     neueTrivialpreisliste: trivialpreislistePlan.neue, trivialpreislisteKonflikte: trivialpreislistePlan.konflikte,
+    neueAngebote: angebotePlan.neue, angeboteKonflikte: angebotePlan.konflikte,
+    neueKunden: kundenPlan.neue, kundenKonflikte: kundenPlan.konflikte,
+    neueAnsprechpartner: ansprechpartnerPlan.neue, ansprechpartnerKonflikte: ansprechpartnerPlan.konflikte,
+    neueAngebotstexte: angebotstextePlan.neue, angebotstexteKonflikte: angebotstextePlan.konflikte,
     neueBereiche, neuePruefungsarten,
     geloeschtVorschlaege, importGeloescht
   };
@@ -8959,5 +10343,8 @@ document.getElementById("datei-merge-input").addEventListener("change", async (e
 
 init();
 </script>
+<!-- Wird erst beim Klick auf "Angebots-PDF" gefüllt (siehe druckeAngebot) und ist nur im Druck
+     sichtbar - deshalb bewusst ein direktes Kind von <body>, siehe @media print oben. -->
+<div id="angebot-druck"></div>
 </body>
 </html>
