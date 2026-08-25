@@ -97,6 +97,14 @@ nav.tabs .tab-gruppe:first-child { border-left:none; padding-left:0; }
 .angebot-summenblock > div { display:flex; justify-content:space-between; align-items:center; gap:1rem; padding:0.25rem 0; }
 .angebot-summenblock .angebot-summe-gesamt { border-top:2px solid var(--border); margin-top:0.3rem; padding-top:0.45rem; font-size:1.05rem; }
 .angebot-summenblock .angebot-summe-gesamt strong { color:var(--accent-dark); }
+/* Blockcheckliste "Umfang der Anfrage" und die Filterkette der Prüfgrundlagen-Auswahl. */
+.angebot-blockliste { display:flex; flex-wrap:wrap; gap:0.5rem; }
+.angebot-blockzeile { display:flex; align-items:center; gap:0.5rem; padding:0.45rem 0.7rem; border:1px solid var(--border); border-radius:8px; font-size:0.88rem; cursor:pointer; background:#fbfcfc; }
+.angebot-blockzeile.ist-gewaehlt { border-color:var(--accent); background:#eef4f2; }
+.angebot-blockzeile .angebot-blockname { font-weight:600; }
+.angebot-pg-filter { display:flex; flex-direction:column; gap:0.5rem; margin-bottom:0.6rem; padding:0.7rem 0.8rem; background:#f7f9f8; border:1px solid var(--border); border-radius:8px; }
+.angebot-pg-filterzeile { display:flex; flex-wrap:wrap; gap:0.6rem; align-items:flex-end; }
+.angebot-blockquelle { margin-top:0.9rem; }
 .angebot-vorschau { background:#f4f6f5; padding:1rem; border-radius:8px; overflow-x:auto; }
 .angebot-vorschau .ang-blatt { background:#fff; box-shadow:0 1px 6px rgba(0,0,0,0.12); padding:2rem 2.2rem; max-width:800px; margin:0 auto; }
 
@@ -122,6 +130,12 @@ nav.tabs .tab-gruppe:first-child { border-left:none; padding-left:0; }
 .ang-tabelle tfoot td { border-bottom:none; padding-top:0.4rem; }
 .ang-tabelle tfoot .ang-gesamt td { border-top:2px solid #333; font-weight:700; font-size:0.95rem; }
 .ang-leer { color:#777; font-style:italic; }
+/* Blockweise Zwischenüberschrift in der Positionstabelle des Angebots. */
+.ang-tabelle .ang-blockkopf td { background:#f2f5f4; font-weight:700; font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em; padding:0.4rem 0.5rem; border-bottom:1px solid #bbb; }
+/* Eckdaten (Bearbeitungsdauer, Musteranzahl) zwischen Positionen und Schlusstext. */
+.ang-eckdaten { margin:0 0 1.1rem; font-size:0.84rem; }
+.ang-eckdaten > div { display:flex; gap:1rem; padding:0.12rem 0; }
+.ang-eckdaten span { color:#666; min-width:11rem; }
 .ang-signatur { margin-top:1.6rem; }
 .ang-partner { margin-top:1.4rem; line-height:1.45; }
 
@@ -2606,6 +2620,7 @@ function migriereBemerkungen(e) {
 function migrierePruefgrundlage(e) {
   delete e.kennzeichnung;
   delete e.kez;
+  if (e.bearbeitungsdauerTage === undefined) e.bearbeitungsdauerTage = null;
   if (!Array.isArray(e.normen)) e.normen = e.norm ? [e.norm] : [];
   delete e.norm;
   if (e.normen.length && typeof e.normen[0] === "string") e.normen = e.normen.flatMap(normRefListeAusText);
@@ -2636,7 +2651,7 @@ function seedPruefgrundlagen() {
 function pruefgrundlageEntwurfNeu() {
   return {
     id: neueId(), bereich: "", warengruppeCode: "", warengruppeName: "", produkt: "",
-    anzahlMuster: "", trivial: false,
+    anzahlMuster: "", bearbeitungsdauerTage: null, trivial: false,
     normen: [], ffuNormen: [], stiwaNormen: [],
     normenKommentar: "", ffuNormenKommentar: "", stiwaNormenKommentar: ""
   };
@@ -2997,6 +3012,10 @@ function seedAngebotstexte() {
   return [
     { id: "text-einleitung", bezeichnung: "Standard-Einleitung", typ: "einleitung", immer: true,
       text: "vielen Dank für Ihre Anfrage und Ihr Interesse an unseren Prüfleistungen.\nGerne unterbreiten wir Ihnen nachfolgend unser Angebot." },
+    { id: "text-einleitung-en", bezeichnung: "Standard introduction (EN)", typ: "einleitung", immer: true, sprache: "en",
+      text: "thank you for your enquiry and your interest in our testing services.\nWe are pleased to submit our quotation below." },
+    { id: "text-schluss-en", bezeichnung: "Standard closing text (EN)", typ: "schluss", immer: true, sprache: "en",
+      text: "All prices are net and exclusive of statutory VAT.\nTesting costs are charged per test sample. Samples and shipping costs are borne by the client.\nShould deviations occur during testing that require a retest, this will be charged separately.\n\nWe look forward to hearing from you and remain available for any questions." },
     { id: "text-schluss", bezeichnung: "Standard-Schlusstext", typ: "schluss", immer: true,
       text: "Alle Preise verstehen sich netto zzgl. der gesetzlichen Mehrwertsteuer.\nDie Prüfkosten werden je Prüfmuster berechnet. Muster und Versandkosten gehen zu Lasten des Auftraggebers.\nSollten sich während der Prüfung Abweichungen ergeben, die eine Wiederholungsprüfung erforderlich machen, wird diese gesondert berechnet.\n\nWir freuen uns auf Ihre Rückmeldung und stehen für Rückfragen jederzeit zur Verfügung." }
   ];
@@ -3017,11 +3036,49 @@ function migriereAngebotsdaten() {
       if (p.aktiv === undefined) p.aktiv = true;
       if (p.menge === undefined || p.menge === null) p.menge = 1;
       if (p.einheit === undefined) p.einheit = "Prüfung";
+      /* Vor der Block-Einteilung gab es nur eine Positionsliste - alles landet im Regelblock. */
+      if (!p.block || !angebotBlock(p.block)) p.block = "normSicherheit";
+      delete p.quelle;
     });
     if (a.rabattProzent === undefined) a.rabattProzent = null;
     if (a.status === undefined) a.status = ANGEBOT_STATUS[0];
     if (a.waehrung === undefined) a.waehrung = data.angebotEinstellungen.waehrung;
+    if (a.sprache !== "en") a.sprache = "de";
+    if (a.bearbeitungsdauerTage === undefined) a.bearbeitungsdauerTage = null;
+    /* Blockauswahl aus den vorhandenen Positionen ableiten, damit ein Altbestand nichts versteckt. */
+    if (!a.bloecke || typeof a.bloecke !== "object") {
+      a.bloecke = {};
+      ANGEBOT_BLOECKE.forEach((b) => { a.bloecke[b.id] = a.positionen.some((p) => p.block === b.id) || b.id === "normSicherheit"; });
+    }
+    /* Früher stand der Kunden-Ansprechpartner als ein Freitextfeld im Angebot. */
+    if (a.kundeAnsprechpartner !== undefined) {
+      if (!a.kundeNachname && String(a.kundeAnsprechpartner).trim()) {
+        const teile = String(a.kundeAnsprechpartner).trim().split(/\s+/);
+        const anrede = /^(herr|frau)$/i.test(teile[0]) ? teile.shift() : "";
+        a.kundeAnrede = a.kundeAnrede || (anrede ? anrede.charAt(0).toUpperCase() + anrede.slice(1).toLowerCase() : "");
+        a.kundeNachname = teile.pop() || "";
+        a.kundeVorname = a.kundeVorname || teile.join(" ");
+      }
+      delete a.kundeAnsprechpartner;
+    }
+    if (a.kundeAnrede === undefined) a.kundeAnrede = "";
+    if (a.kundeVorname === undefined) a.kundeVorname = "";
+    if (a.kundeNachname === undefined) a.kundeNachname = "";
+    if (a.kundeKontaktId === undefined) a.kundeKontaktId = "";
   });
+  data.kunden.forEach((k) => {
+    if (!Array.isArray(k.kontakte)) k.kontakte = [];
+    /* Alter Freitext-Ansprechpartner wird zum ersten Kontakt der Liste. */
+    if (typeof k.ansprechpartner === "string" && k.ansprechpartner.trim() && !k.kontakte.length) {
+      const teile = k.ansprechpartner.trim().split(/\s+/);
+      const anrede = /^(herr|frau)$/i.test(teile[0]) ? teile.shift() : "";
+      k.kontakte.push({ id: neueId(), anrede: anrede ? anrede.charAt(0).toUpperCase() + anrede.slice(1).toLowerCase() : "",
+        nachname: teile.pop() || "", vorname: teile.join(" "), standard: true });
+    }
+    delete k.ansprechpartner;
+    if (k.sprache !== "en") k.sprache = "de";
+  });
+  data.angebotstexte.forEach((t) => { if (t.sprache !== "en") t.sprache = "de"; });
 }
 
 /* Stellt sicher, dass jeder MAK-Eintrag ein schlagworte-Array besitzt - additiv/idempotent,
@@ -6791,11 +6848,67 @@ document.getElementById("btn-neuer-kv").addEventListener("click", () => {
 
 /* Reiner Ansichtszustand der Positions-Auswahl (Warengruppe/Produkt) - gehört nicht ins Angebot,
    da es nur bestimmt, aus welcher Prüfgrundlage gerade Positionen übernommen werden. */
-let angebotAuswahl = { warengruppe: "", produktId: "" };
+let angebotAuswahl = { suche: "", bereich: "", warengruppeCode: "", produktId: "" };
+
+/* Die vier Prüfblöcke, in denen ein Angebot gedacht wird - dieselbe Einteilung, nach der auch eine
+   Kundenanfrage kommt ("wir brauchen Kennzeichnung und FFU"). Je Block ist hinterlegt, WOHER die
+   angebotenen Prüfungen stammen:
+   - pgFeld: eine der drei Normlisten der Prüfgrundlage (Warengruppe -> Produkt),
+   - pruefungsart: alle Normen mit dieser Prüfungsart (Reiter "Normen"), unabhängig vom Produkt.
+   Ein Block darf beides haben; die Treffer werden zusammengelegt und über die Norm-ID entdoppelt. */
+const ANGEBOT_BLOECKE = [
+  { id: "kennzeichnung", label: "Kennzeichnung", labelEn: "Labelling", pgFeld: null, pruefungsart: "Kennzeichnung" },
+  /* Bewusst OHNE Prüfungsart-Quelle: Sicherheits-/Normprüfungen sind produktspezifisch und stehen
+     genau deshalb in der Prüfgrundlage. Würde hier zusätzlich jede Norm mit dieser Prüfungsart
+     erscheinen, stünden in der Auswahl Hunderte fachfremder Normen. */
+  { id: "normSicherheit", label: "Norm-/Sicherheitsprüfung", labelEn: "Standard and safety testing", pgFeld: "normen", pruefungsart: null },
+  { id: "produktspezifikation", label: "Produktspezifikation", labelEn: "Product specification", pgFeld: "stiwaNormen", pruefungsart: "Produktspezifikation" },
+  { id: "ffu", label: "FFU/Fitting", labelEn: "Fit, form and function", pgFeld: "ffuNormen", pruefungsart: null }
+];
+function angebotBlock(id) { return ANGEBOT_BLOECKE.find((b) => b.id === id) || null; }
+function angebotBlockLabel(id, sprache) {
+  const b = angebotBlock(id);
+  if (!b) return "";
+  return sprache === "en" ? b.labelEn : b.label;
+}
+
+/* Angebotssprache: alle festen Beschriftungen des Kunden-PDFs an einer Stelle, damit ein Angebot
+   vollständig auf Deutsch ODER Englisch erscheint - nicht halb übersetzt. Die frei eingegebenen
+   Texte (Einleitung/Schluss) kommen aus den Textbausteinen, die selbst eine Sprache tragen. */
+const ANGEBOT_SPRACHEN = [{ wert: "de", label: "Deutsch" }, { wert: "en", label: "English" }];
+const ANGEBOT_BESCHRIFTUNGEN = {
+  de: { dokumentart: "Angebot", angebotsnummer: "Angebotsnummer", datum: "Datum", gueltigBis: "Gültig bis",
+        kundennummer: "Kundennummer", referenz: "Ihre Anfrage", artikel: "Artikel/Modell",
+        pos: "Pos.", leistung: "Leistung", menge: "Menge", einzelpreis: "Einzelpreis", gesamt: "Gesamt",
+        zwischensumme: "Zwischensumme", nachlass: "Nachlass", summe: "Angebotssumme netto",
+        keinePositionen: "Noch keine Positionen.", gruss: "Mit freundlichen Grüßen",
+        telefon: "Telefon", mobil: "Mobil", email: "E-Mail",
+        anredeNeutral: "Sehr geehrte Damen und Herren,", anredeFrau: "Sehr geehrte Frau", anredeHerr: "Sehr geehrter Herr",
+        einheit: "Prüfung", bearbeitungsdauer: "Bearbeitungsdauer", arbeitstage: "Arbeitstage",
+        muster: "Benötigte Prüfmuster", erstesMuster: "1. Prüfmuster", jedesWeitere: "jedes weitere" },
+  en: { dokumentart: "Quotation", angebotsnummer: "Quotation number", datum: "Date", gueltigBis: "Valid until",
+        kundennummer: "Customer number", referenz: "Your enquiry", artikel: "Article/model",
+        pos: "Item", leistung: "Service", menge: "Qty", einzelpreis: "Unit price", gesamt: "Total",
+        zwischensumme: "Subtotal", nachlass: "Discount", summe: "Total net",
+        keinePositionen: "No items yet.", gruss: "Kind regards",
+        telefon: "Phone", mobil: "Mobile", email: "E-mail",
+        anredeNeutral: "Dear Sir or Madam,", anredeFrau: "Dear Ms", anredeHerr: "Dear Mr",
+        einheit: "test", bearbeitungsdauer: "Turnaround time", arbeitstage: "working days",
+        muster: "Samples required", erstesMuster: "1st sample", jedesWeitere: "each additional" }
+};
+function angebotSprache(a) { return (a && a.sprache) === "en" ? "en" : "de"; }
+function t(a, schluessel) { return ANGEBOT_BESCHRIFTUNGEN[angebotSprache(a)][schluessel]; }
 
 function angebotWaehrung(a) { return (a && a.waehrung) || (data.angebotEinstellungen || {}).waehrung || "EUR"; }
-function betrag(wert, waehrung) {
-  return (Number(wert) || 0).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " " + (waehrung || "EUR");
+function betrag(wert, waehrung, sprache) {
+  const gebiet = sprache === "en" ? "en-GB" : "de-DE";
+  return (Number(wert) || 0).toLocaleString(gebiet, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " " + (waehrung || "EUR");
+}
+function datumAnzeigeSprache(iso, sprache) {
+  if (!iso) return "";
+  const teile = String(iso).split("-");
+  if (teile.length !== 3) return String(iso);
+  return sprache === "en" ? `${teile[2]}/${teile[1]}/${teile[0]}` : `${teile[2]}.${teile[1]}.${teile[0]}`;
 }
 /* Angebotsnummer: <Präfix>-<Jahr>-<laufende Nummer>. Die laufende Nummer ergibt sich aus den bereits
    vergebenen Nummern DESSELBEN Jahres, nicht aus der Anzahl der Angebote - so entstehen nach dem
@@ -6843,23 +6956,46 @@ function angebotGesamtsumme(a) {
   return angebotZwischensumme(a) - angebotRabattBetrag(a);
 }
 
-function angebotEntwurfNeu() {
+/* Textbausteine der passenden Sprache, die auf "immer" stehen. Ohne Treffer in der gewählten
+   Sprache bleibt das Feld leer statt auf die andere Sprache zurückzufallen - ein deutscher
+   Standardtext in einem englischen Angebot wäre schlimmer als gar keiner. */
+function angebotStandardtext(typ, sprache) {
+  return data.angebotstexte
+    .filter((t) => t.typ === typ && t.immer && (t.sprache || "de") === sprache)
+    .map((t) => t.text).join("\n\n");
+}
+function angebotEntwurfNeu(sprache) {
+  const spr = sprache === "en" ? "en" : "de";
   const standard = data.ansprechpartner.find((x) => x.standard) || data.ansprechpartner[0] || null;
-  const einleitung = data.angebotstexte.filter((t) => t.typ === "einleitung" && t.immer).map((t) => t.text).join("\n\n");
-  const schluss = data.angebotstexte.filter((t) => t.typ === "schluss" && t.immer).map((t) => t.text).join("\n\n");
+  const bloecke = {};
+  ANGEBOT_BLOECKE.forEach((b) => { bloecke[b.id] = b.id === "normSicherheit"; });
   return {
     id: neueId(),
     nummer: naechsteAngebotsnummer(),
     datum: heutigesDatumLokal(),
     gueltigBis: datumPlusTage(data.angebotEinstellungen.gueltigkeitTage),
     status: ANGEBOT_STATUS[0],
-    kundeId: "", kundeName: "", kundeAnschrift: "", kundeAnsprechpartner: "", kundeNummer: "", kundeReferenz: "",
+    sprache: spr,
+    kundeId: "", kundeName: "", kundeAnschrift: "", kundeNummer: "", kundeReferenz: "",
+    kundeKontaktId: "", kundeAnrede: "", kundeVorname: "", kundeNachname: "",
     ansprechpartnerId: standard ? standard.id : "",
-    betreff: "", artikel: "", anzahlMuster: "",
-    einleitungstext: einleitung, schlusstext: schluss,
+    betreff: "", artikel: "", anzahlMuster: "", bearbeitungsdauerTage: null,
+    /* Welche Blöcke die Kundenanfrage umfasst. Norm-/Sicherheitsprüfung ist der Regelfall und
+       deshalb vorausgewählt; die übrigen hakt man je Anfrage dazu. */
+    bloecke,
+    einleitungstext: angebotStandardtext("einleitung", spr),
+    schlusstext: angebotStandardtext("schluss", spr),
     positionen: [], rabattProzent: null, waehrung: data.angebotEinstellungen.waehrung,
     notiz: "", erstelltAm: heutigesDatumLokal()
   };
+}
+/* Anzeigename eines Kunden-Ansprechpartners: "Frau Dr. Anna Schmitt". */
+function kundeKontaktName(k) {
+  if (!k) return "";
+  return [k.anrede, k.vorname, k.nachname].map((x) => String(x || "").trim()).filter(Boolean).join(" ");
+}
+function kundeKontakte(kunde) {
+  return (kunde && Array.isArray(kunde.kontakte)) ? kunde.kontakte : [];
 }
 
 function gefilterteAngebote() {
@@ -6879,6 +7015,7 @@ function renderAngebotListe() {
     <li class="${a.id === aktivesAngebotId ? "aktiv" : ""}" data-id="${escapeHtml(a.id)}">
       <strong>${escapeHtml(a.kundeName || "(noch kein Kunde)")}</strong>
       <span class="badge ${a.status === "Angenommen" ? "ja" : a.status === "Abgelehnt" ? "nein" : ""}">${escapeHtml(a.status || "")}</span>
+      ${angebotSprache(a) === "en" ? `<span class="badge">EN</span>` : ""}
       <div class="muted">${escapeHtml(a.nummer || "")}${a.betreff ? " · " + escapeHtml(a.betreff) : ""}</div>
       <div class="muted">${datumAnzeige(a.datum)} · ${betrag(angebotGesamtsumme(a), angebotWaehrung(a))}</div>
     </li>`).join("");
@@ -6891,46 +7028,65 @@ function renderAngebotListe() {
 /* Prüfungen einer Prüfgrundlage als Angebotspositionen: alle drei Blöcke (Sicherheit&Norm, FFU,
    NGO/StiWa) hintereinander, je Norm eine Zeile mit Erst- und Folgepreis. Vollprüfung = voller
    Preis der Prüfgrundlage, kein Rabattfaktor. */
-function angebotPruefungenAusPruefgrundlage(eintrag) {
-  const bloecke = [
-    { feld: "normen", label: "Sicherheits-/Normprüfung" },
-    { feld: "ffuNormen", label: "FFU/Fitting" },
-    { feld: "stiwaNormen", label: "NGO/StiWa" }
-  ];
+function pruefungAusNorm(norm, ref, blockId) {
+  return {
+    block: blockId,
+    normId: norm.id,
+    bezeichnung: norm.bezeichnung,
+    beschreibung: norm.titel || "",
+    sapMaterial: (norm.sapCode || "").trim(),
+    einzelpreis: (ref && ref.kosten !== null && ref.kosten !== undefined && ref.kosten !== "") ? Number(ref.kosten)
+      : (norm.kosten !== null && norm.kosten !== undefined && norm.kosten !== "" ? Number(norm.kosten) : null),
+    einzelpreisWeitere: (ref && ref.kostenWeiteresProdukt !== null && ref.kostenWeiteresProdukt !== undefined && ref.kostenWeiteresProdukt !== "")
+      ? Number(ref.kostenWeiteresProdukt) : null,
+    inAnlehnungAn: !!(ref && ref.inAnlehnungAn)
+  };
+}
+/* Welche Prüfungen ein Block anbietet: die Normlisten der gewählten Prüfgrundlage UND die Normen
+   mit der Prüfungsart des Blocks. Letztere hängen nicht am Produkt (z. B. Kennzeichnung gilt
+   überall) und stehen deshalb auch ohne gewählte Prüfgrundlage bereit. Über die Norm-ID entdoppelt:
+   steht dieselbe Norm in der Prüfgrundlage UND trägt die Prüfungsart, gewinnt die Prüfgrundlage,
+   weil dort der produktspezifische Preis hinterlegt ist. */
+function angebotPruefungenFuerBlock(blockId, pruefgrundlage) {
+  const block = angebotBlock(blockId);
+  if (!block) return [];
   const raus = [];
-  bloecke.forEach((block) => {
-    (eintrag[block.feld] || []).forEach((ref) => {
+  const gesehen = new Set();
+  if (block.pgFeld && pruefgrundlage) {
+    (pruefgrundlage[block.pgFeld] || []).forEach((ref) => {
       const norm = data.normen.find((n) => n.id === ref.normId);
-      if (!norm) return;
-      raus.push({
-        block: block.label,
-        normId: norm.id,
-        bezeichnung: norm.bezeichnung,
-        beschreibung: norm.titel || "",
-        sapMaterial: (norm.sapCode || "").trim(),
-        einzelpreis: (ref.kosten === null || ref.kosten === undefined || ref.kosten === "") ? null : Number(ref.kosten),
-        einzelpreisWeitere: (ref.kostenWeiteresProdukt === null || ref.kostenWeiteresProdukt === undefined || ref.kostenWeiteresProdukt === "") ? null : Number(ref.kostenWeiteresProdukt),
-        inAnlehnungAn: !!ref.inAnlehnungAn
-      });
+      if (!norm || gesehen.has(norm.id)) return;
+      gesehen.add(norm.id);
+      raus.push(pruefungAusNorm(norm, ref, blockId));
     });
-  });
+  }
+  if (block.pruefungsart) {
+    data.normen.filter((n) => n.pruefungsart === block.pruefungsart).forEach((norm) => {
+      if (gesehen.has(norm.id)) return;
+      gesehen.add(norm.id);
+      raus.push(pruefungAusNorm(norm, null, blockId));
+    });
+  }
   return raus;
+}
+function angebotPruefungBezeichnung(pruefung) {
+  return pruefung.bezeichnung + (pruefung.inAnlehnungAn ? " (in Anlehnung an)" : "");
 }
 function angebotHatPosition(a, bezeichnung) {
   return (a.positionen || []).some((p) => normalisiere(p.bezeichnung) === normalisiere(bezeichnung));
 }
-function angebotPositionAusPruefung(pruefung, menge) {
+function angebotPositionAusPruefung(pruefung, menge, sprache) {
   return {
     id: neueId(),
-    bezeichnung: pruefung.bezeichnung + (pruefung.inAnlehnungAn ? " (in Anlehnung an)" : ""),
+    block: pruefung.block || "normSicherheit",
+    bezeichnung: angebotPruefungBezeichnung(pruefung),
     beschreibung: pruefung.beschreibung || "",
     sapMaterial: pruefung.sapMaterial || "",
     menge: Math.max(1, Number(menge) || 1),
-    einheit: "Prüfung",
+    einheit: ANGEBOT_BESCHRIFTUNGEN[sprache === "en" ? "en" : "de"].einheit,
     einzelpreis: pruefung.einzelpreis === null ? 0 : pruefung.einzelpreis,
     einzelpreisWeitere: pruefung.einzelpreisWeitere,
-    aktiv: true,
-    quelle: pruefung.block
+    aktiv: true
   };
 }
 
@@ -6949,72 +7105,164 @@ function angebotAnsprechpartner(a) {
   return data.ansprechpartner.find((x) => x.id === a.ansprechpartnerId) || null;
 }
 
-/* Warengruppen-Auswahl als natives datalist-Feld: gibt dieselbe Tippsuche über alle ~730
-   Warengruppen wie das aufwendigere Panel im KV, kommt aber ohne eigene Panel-Logik aus - hier
-   genügt das, weil im Angebot nur EINE Warengruppe zur Positionsauswahl gebraucht wird. */
-function angebotWarengruppeDatalistHtml() {
-  return `<datalist id="angebot-wg-liste">${data.warengruppen
-    .map((w) => `<option value="${escapeHtml(warengruppeAnzeige(w))}"></option>`).join("")}</datalist>`;
+/* ---------- Prüfgrundlage finden: Volltextsuche + Filterkette Bereich -> Warengruppe -> Produkt ----------
+   Die Warengruppen-Codes sind für die Angebotserstellung ohne Bedeutung (sie sind eine
+   LIDL-Systematik), deshalb erscheint hier ausschließlich der Warengruppen-NAME. Gesucht wird über
+   Produktname UND die Normen der Prüfgrundlage - man findet ein Produkt also auch dann, wenn man
+   nur die Norm kennt, nach der geprüft werden soll. */
+function pruefgrundlageBereich(e) {
+  return bereichFuerWarengruppe(e.warengruppeCode) || "";
 }
-function warengruppeAusAnzeigetext(text) {
-  const roh = String(text || "").split("–")[0].trim();
-  return data.warengruppen.find((w) => normalisiereWarengruppe(w.code) === normalisiereWarengruppe(roh)) || null;
+function pruefgrundlageSuchtext(e) {
+  const normen = pruefgrundlageNormRefsAlle(e)
+    .map((r) => data.normen.find((n) => n.id === r.normId))
+    .filter(Boolean)
+    .map((n) => `${n.bezeichnung} ${n.titel || ""}`)
+    .join(" ");
+  return normalisiere([e.produkt, e.warengruppeName, pruefgrundlageBereich(e), normen].join(" "));
+}
+/* Kandidaten nach den jeweils VORGELAGERTEN Filtern - so lassen sich die Auswahlfelder befüllen,
+   ohne dass eine Ebene Werte anbietet, die durch die Ebene darüber schon ausgeschlossen sind. */
+function angebotPgKandidaten(bisEbene) {
+  const q = normalisiere(angebotAuswahl.suche);
+  return data.pruefgrundlagen.filter((e) => {
+    if (q && !pruefgrundlageSuchtext(e).includes(q)) return false;
+    if (bisEbene === "bereich") return true;
+    if (angebotAuswahl.bereich && pruefgrundlageBereich(e) !== angebotAuswahl.bereich) return false;
+    if (bisEbene === "warengruppe") return true;
+    if (angebotAuswahl.warengruppeCode && normalisiereWarengruppe(e.warengruppeCode) !== normalisiereWarengruppe(angebotAuswahl.warengruppeCode)) return false;
+    return true;
+  });
+}
+function angebotPgAuswahlHtml() {
+  const nachBereich = angebotPgKandidaten("bereich");
+  const bereiche = [...new Set(nachBereich.map(pruefgrundlageBereich).filter(Boolean))].sort((a, b) => a.localeCompare(b, "de"));
+  const nachWg = angebotPgKandidaten("warengruppe");
+  const warengruppen = [...new Map(nachWg.filter((e) => e.warengruppeCode)
+    .map((e) => [normalisiereWarengruppe(e.warengruppeCode), { code: e.warengruppeCode, name: e.warengruppeName || e.warengruppeCode }])).values()]
+    .sort((a, b) => a.name.localeCompare(b.name, "de"));
+  const produkte = angebotPgKandidaten("produkt").slice().sort((a, b) => (a.produkt || "").localeCompare(b.produkt || "", "de"));
+
+  const feld = (id, label, optionen, wert, hinweis) => `<label style="display:flex;flex-direction:column;gap:0.2rem;font-size:0.8rem;font-weight:600;flex:1;min-width:180px">${label}
+    <select id="${id}" style="font-family:inherit;font-size:0.85rem;padding:0.35rem 0.5rem;border:1px solid var(--border);border-radius:6px;font-weight:400">
+      <option value="">${hinweis}</option>${optionen}
+    </select></label>`;
+
+  return `<div class="angebot-pg-filter">
+    <label style="display:flex;flex-direction:column;gap:0.2rem;font-size:0.8rem;font-weight:600">Suche <span class="muted" style="font-weight:400">– Produkt, Warengruppe, Bereich oder Norm</span>
+      <input type="text" id="angebot-pg-suche" value="${escapeHtml(angebotAuswahl.suche || "")}" placeholder="z. B. „Gartenstuhl" oder „DIN EN 581"" style="font-family:inherit;font-size:0.9rem;padding:0.4rem 0.55rem;border:1px solid var(--border);border-radius:6px;font-weight:400"></label>
+    <div class="angebot-pg-filterzeile">
+      ${feld("angebot-pg-bereich", "Bereich",
+        bereiche.map((b) => `<option value="${escapeHtml(b)}" ${b === angebotAuswahl.bereich ? "selected" : ""}>${escapeHtml(b)}</option>`).join(""),
+        angebotAuswahl.bereich, `— alle Bereiche (${bereiche.length}) —`)}
+      ${feld("angebot-pg-warengruppe", "Warengruppe",
+        warengruppen.map((w) => `<option value="${escapeHtml(w.code)}" ${normalisiereWarengruppe(w.code) === normalisiereWarengruppe(angebotAuswahl.warengruppeCode) ? "selected" : ""}>${escapeHtml(w.name)}</option>`).join(""),
+        angebotAuswahl.warengruppeCode, `— alle Warengruppen (${warengruppen.length}) —`)}
+      ${feld("angebot-produkt-auswahl", "Produkt",
+        produkte.map((e) => `<option value="${escapeHtml(mechanikEintragId(e))}" ${mechanikEintragId(e) === angebotAuswahl.produktId ? "selected" : ""}>${escapeHtml(e.produkt)}${e.warengruppeName ? " · " + escapeHtml(e.warengruppeName) : ""}</option>`).join(""),
+        angebotAuswahl.produktId, `— Produkt wählen (${produkte.length}) —`)}
+      <button type="button" class="ghost small" id="angebot-pg-zuruecksetzen" style="align-self:flex-end;margin-bottom:0.1rem">Filter zurücksetzen</button>
+    </div>
+    ${(angebotAuswahl.suche && !angebotAuswahl.produktId) ? `<p class="hinweis" style="margin:0.3rem 0 0">${produkte.length
+      ? `${produkte.length} Prüfgrundlage${produkte.length === 1 ? "" : "n"} passen zur Suche – oben ein Produkt wählen.`
+      : "Keine Prüfgrundlage passt zur Suche."}</p>` : ""}
+  </div>`;
+}
+
+/* Die aktuell gewählte Prüfgrundlage. Bleibt nach einer Filteränderung nur noch EIN Kandidat übrig,
+   gilt der automatisch als gewählt - ein Dropdown mit genau einem Eintrag noch einmal anklicken zu
+   müssen wäre reine Klickarbeit. */
+function angebotGewaehltePruefgrundlage() {
+  const kandidaten = angebotPgKandidaten("produkt");
+  const gewaehlt = kandidaten.find((e) => mechanikEintragId(e) === angebotAuswahl.produktId)
+    || (kandidaten.length === 1 ? kandidaten[0] : null);
+  return { kandidaten, gewaehlt };
+}
+function angebotBlockIstGewaehlt(a, blockId) {
+  return !!(a.bloecke && a.bloecke[blockId]);
+}
+function angebotPositionenImBlock(a, blockId) {
+  return (a.positionen || []).filter((p) => (p.block || "normSicherheit") === blockId);
+}
+
+/* Checkliste der vier Prüfblöcke - dieselbe Einteilung, in der eine Kundenanfrage kommt. Nur
+   angehakte Blöcke bieten unten Prüfungen zum Übernehmen an. Ein Block, in dem bereits Positionen
+   stehen, lässt sich nicht abwählen, ohne dass es auffällt: die Anzahl steht direkt daneben. */
+function angebotBlockChecklisteHtml(a) {
+  return `<div class="card">
+    <h2 style="margin-top:0">Umfang der Anfrage <span class="muted" style="font-weight:400;font-size:0.85rem">– welche Blöcke fragt der Kunde an?</span></h2>
+    <div class="angebot-blockliste">
+      ${ANGEBOT_BLOECKE.map((b) => {
+        const anzahl = angebotPositionenImBlock(a, b.id).length;
+        return `<label class="angebot-blockzeile${angebotBlockIstGewaehlt(a, b.id) ? " ist-gewaehlt" : ""}">
+          <input type="checkbox" data-block="${b.id}" ${angebotBlockIstGewaehlt(a, b.id) ? "checked" : ""}>
+          <span class="angebot-blockname">${escapeHtml(b.label)}</span>
+          ${anzahl ? `<span class="badge ja">${anzahl} Position${anzahl === 1 ? "" : "en"}</span>` : `<span class="muted" style="font-size:0.8rem">–</span>`}
+        </label>`;
+      }).join("")}
+    </div>
+  </div>`;
 }
 
 function angebotPositionsquelleHtml(a) {
-  const wg = angebotAuswahl.warengruppe ? warengruppeAusAnzeigetext(angebotAuswahl.warengruppe) : null;
-  const treffer = wg ? mechanikTrefferFuerWarengruppe(wg.code) : [];
-  const gewaehlt = treffer.find((e) => mechanikEintragId(e) === angebotAuswahl.produktId) || (treffer.length === 1 ? treffer[0] : null);
+  const { gewaehlt } = angebotGewaehltePruefgrundlage();
   const menge = Math.max(1, Number(a.anzahlMuster) || 1);
+  const aktiveBloecke = ANGEBOT_BLOECKE.filter((b) => angebotBlockIstGewaehlt(a, b.id));
 
-  let auswahlHtml = "";
-  if (!wg) {
-    auswahlHtml = `<p class="hinweis">Warengruppe eingeben oder aus der Liste wählen, um die hinterlegten Prüfungen zu übernehmen.</p>`;
-  } else if (!treffer.length) {
-    auswahlHtml = `<p class="hinweis">Für „${escapeHtml(warengruppeAnzeige(wg))}" ist noch keine Prüfgrundlage hinterlegt (Reiter „Prüfgrundlagen").</p>`;
-  } else {
-    const produktSelect = `<label style="display:flex;flex-direction:column;gap:0.2rem;font-size:0.8rem;font-weight:600;max-width:420px">Produkt
-      <select id="angebot-produkt-auswahl" style="font-family:inherit;font-size:0.85rem;padding:0.35rem 0.5rem;border:1px solid var(--border);border-radius:6px;font-weight:400">
-        <option value="">— Produkt wählen (${treffer.length} in dieser Warengruppe) —</option>
-        ${treffer.map((e) => `<option value="${escapeHtml(mechanikEintragId(e))}" ${gewaehlt && mechanikEintragId(e) === mechanikEintragId(gewaehlt) ? "selected" : ""}>${escapeHtml(e.produkt)}</option>`).join("")}
-      </select></label>`;
-    let pruefungenHtml = "";
-    if (gewaehlt) {
-      const pruefungen = angebotPruefungenAusPruefgrundlage(gewaehlt);
-      if (!pruefungen.length) {
-        pruefungenHtml = `<p class="hinweis">In dieser Prüfgrundlage sind noch keine Normen hinterlegt.</p>`;
-      } else {
-        const offen = pruefungen.filter((pr) => !angebotHatPosition(a, pr.bezeichnung + (pr.inAnlehnungAn ? " (in Anlehnung an)" : "")));
-        pruefungenHtml = `
-          <div class="pruefumfang-kat-kopf" style="margin-top:0.5rem">
-            <strong>Prüfungen der Prüfgrundlage „${escapeHtml(gewaehlt.produkt)}"</strong>
-            ${offen.length ? `<button type="button" class="ghost small" id="angebot-alle-uebernehmen">Alle ${offen.length} übernehmen</button>` : `<span class="position-status ist-drin">✓ alle bereits im Angebot</span>`}
+  /* Was die gewählte Prüfgrundlage über Muster und Dauer sagt - direkt übernehmbar, damit beides
+     nicht von Hand nachgeschlagen werden muss. */
+  const pgAngabenHtml = gewaehlt ? `<div class="norm-partner-hinweis" style="background:#eef4f2;border-color:#c9dcd5">
+      <strong>Aus der Prüfgrundlage „${escapeHtml(gewaehlt.produkt)}":</strong>
+      ${gewaehlt.anzahlMuster ? ` benötigte Muster <strong>${escapeHtml(String(gewaehlt.anzahlMuster))}</strong>` : " keine Musteranzahl hinterlegt"}
+      ·
+      ${(gewaehlt.bearbeitungsdauerTage !== null && gewaehlt.bearbeitungsdauerTage !== undefined && gewaehlt.bearbeitungsdauerTage !== "")
+        ? `Bearbeitungsdauer <strong>${escapeHtml(String(gewaehlt.bearbeitungsdauerTage))} Arbeitstage</strong>` : "keine Bearbeitungsdauer hinterlegt"}
+      <div class="toolbar-zeile">
+        <button type="button" class="ghost small" id="angebot-pg-angaben-uebernehmen">In das Angebot übernehmen</button>
+      </div>
+    </div>` : "";
+
+  const bloeckeHtml = !aktiveBloecke.length
+    ? `<p class="hinweis">Oben mindestens einen Block anhaken, um Prüfungen zu übernehmen.</p>`
+    : aktiveBloecke.map((block) => {
+        const pruefungen = angebotPruefungenFuerBlock(block.id, gewaehlt);
+        if (!pruefungen.length) {
+          return `<div class="angebot-blockquelle">
+            <div class="pruefumfang-kat-kopf"><strong>${escapeHtml(block.label)}</strong></div>
+            <p class="hinweis" style="margin:0.2rem 0 0">${block.pgFeld && !gewaehlt
+              ? "Erst ein Produkt wählen – die Prüfungen dieses Blocks stehen in der Prüfgrundlage."
+              : "Keine Prüfungen hinterlegt. Normen mit Prüfungsart „" + escapeHtml(block.pruefungsart || "") + "“ erscheinen hier automatisch."}</p>
+          </div>`;
+        }
+        const offen = pruefungen.filter((pr) => !angebotHatPosition(a, angebotPruefungBezeichnung(pr)));
+        return `<div class="angebot-blockquelle">
+          <div class="pruefumfang-kat-kopf">
+            <strong>${escapeHtml(block.label)}</strong>
+            ${offen.length ? `<button type="button" class="ghost small" data-action="angebot-block-uebernehmen" data-block="${block.id}">Alle ${offen.length} übernehmen</button>`
+                           : `<span class="position-status ist-drin">✓ alle bereits im Angebot</span>`}
           </div>
           ${pruefungen.map((pr, i) => {
-            const bez = pr.bezeichnung + (pr.inAnlehnungAn ? " (in Anlehnung an)" : "");
+            const bez = angebotPruefungBezeichnung(pr);
             const drin = angebotHatPosition(a, bez);
             const preisText = pr.einzelpreis === null ? `<span class="muted">(kein Preis hinterlegt)</span>`
-              : `<span class="muted">(${betrag(pr.einzelpreis, angebotWaehrung(a))}${pr.einzelpreisWeitere !== null ? ` · je weiterem ${betrag(pr.einzelpreisWeitere, angebotWaehrung(a))}` : ""})</span>`;
+              : `<span class="muted">(${betrag(pr.einzelpreis, angebotWaehrung(a), "de")}${pr.einzelpreisWeitere !== null ? ` · je weiterem ${betrag(pr.einzelpreisWeitere, angebotWaehrung(a), "de")}` : ""})</span>`;
             return `<div class="pruefumfang-position">
-              <span><span class="badge">${escapeHtml(pr.block)}</span> ${escapeHtml(bez)}${pr.beschreibung ? ` <span class="muted">– ${escapeHtml(pr.beschreibung)}</span>` : ""} ${preisText}</span>
-              ${drin ? `<span class="position-status ist-drin">✓ im Angebot</span>` : `<button type="button" class="ghost small" data-action="angebot-pruefung-uebernehmen" data-idx="${i}">+ übernehmen</button>`}
+              <span>${escapeHtml(bez)}${pr.beschreibung ? ` <span class="muted">– ${escapeHtml(pr.beschreibung)}</span>` : ""} ${preisText}</span>
+              ${drin ? `<span class="position-status ist-drin">✓ im Angebot</span>`
+                     : `<button type="button" class="ghost small" data-action="angebot-pruefung-uebernehmen" data-block="${block.id}" data-idx="${i}">+ übernehmen</button>`}
             </div>`;
-          }).join("")}`;
-      }
-    }
-    auswahlHtml = produktSelect + pruefungenHtml;
-  }
+          }).join("")}
+        </div>`;
+      }).join("");
 
   return `<div class="card">
     <h2 style="margin-top:0">Prüfungen übernehmen <span class="muted" style="font-weight:400;font-size:0.85rem">– Vollprüfung zum vollen Preis der Prüfgrundlage</span></h2>
     <p class="hinweis" style="margin-top:0">Die Menge jeder übernommenen Position wird mit <strong>${menge}</strong> vorbelegt (Feld „Anzahl Prüfmuster/Styles" oben). Ist an der Norm ein Preis „je weiterem Produkt" hinterlegt, gilt er automatisch ab dem zweiten Muster.</p>
-    <label style="display:flex;flex-direction:column;gap:0.2rem;font-size:0.8rem;font-weight:600;max-width:420px;margin-bottom:0.5rem">Warengruppe
-      <input type="text" id="angebot-warengruppe-eingabe" list="angebot-wg-liste" value="${escapeHtml(angebotAuswahl.warengruppe || "")}" placeholder="Code oder Name tippen…" style="font-family:inherit;font-size:0.85rem;padding:0.35rem 0.5rem;border:1px solid var(--border);border-radius:6px;font-weight:400"></label>
-    ${angebotWarengruppeDatalistHtml()}
-    ${auswahlHtml}
+    ${angebotPgAuswahlHtml()}
+    ${pgAngabenHtml}
+    ${bloeckeHtml}
   </div>`;
 }
-
 
 function angebotPositionenTabelleHtml(a) {
   const waehrung = angebotWaehrung(a);
@@ -7022,13 +7270,14 @@ function angebotPositionenTabelleHtml(a) {
     <tr data-id="${escapeHtml(p.id)}">
       <td style="text-align:center"><input type="checkbox" data-feld="aktiv" ${p.aktiv ? "checked" : ""}></td>
       <td>${idx + 1}</td>
+      <td><select data-feld="block">${ANGEBOT_BLOECKE.map((b) => `<option value="${b.id}" ${(p.block || "normSicherheit") === b.id ? "selected" : ""}>${escapeHtml(b.label)}</option>`).join("")}</select></td>
       <td><input type="text" data-feld="bezeichnung" value="${escapeHtml(p.bezeichnung || "")}"></td>
       <td><textarea class="auto-hoehe" data-feld="beschreibung" rows="1" placeholder="Ergänzung für den Kunden…">${escapeHtml(p.beschreibung || "")}</textarea></td>
       <td><input type="text" data-feld="sapMaterial" value="${escapeHtml(p.sapMaterial || "")}" placeholder="SAP-Material"></td>
       <td><input type="number" min="0" step="1" data-feld="menge" value="${zahlOderLeer(p.menge)}"></td>
       <td><input type="number" step="0.01" data-feld="einzelpreis" value="${zahlOderLeer(p.einzelpreis)}"></td>
       <td><input type="number" step="0.01" data-feld="einzelpreisWeitere" value="${zahlOderLeer(p.einzelpreisWeitere)}" placeholder="wie oben" title="Preis ab dem zweiten Prüfmuster/Style. Leer = derselbe Preis wie links."></td>
-      <td class="angebot-pos-summe">${betrag(angebotPositionSumme(p), waehrung)}</td>
+      <td class="angebot-pos-summe">${betrag(angebotPositionSumme(p), waehrung, "de")}</td>
       <td class="zeile-aktionen">
         <button class="ghost small" data-action="hoch" ${idx === 0 ? "disabled" : ""}>↑</button>
         <button class="ghost small" data-action="runter" ${idx === a.positionen.length - 1 ? "disabled" : ""}>↓</button>
@@ -7038,20 +7287,24 @@ function angebotPositionenTabelleHtml(a) {
   return `<div class="tabellen-wrapper">
     <table class="tabelle tabelle-fest" id="angebot-positionen-tabelle">
       <thead><tr>
-        <th style="width:4%">Aktiv</th><th style="width:4%">Pos.</th><th style="width:20%">Bezeichnung</th>
-        <th style="width:20%">Beschreibung</th><th style="width:11%">SAP-Material</th>
+        <th style="width:4%">Aktiv</th><th style="width:3%">Pos.</th>
+        <th style="width:12%" title="Unter dieser Überschrift erscheint die Position im Angebot">Block</th>
+        <th style="width:17%">Bezeichnung</th>
+        <th style="width:16%">Beschreibung</th><th style="width:10%">SAP-Material</th>
         <th style="width:6%" title="Anzahl Prüfmuster/Styles">Menge</th>
-        <th style="width:9%">Einzelpreis</th>
-        <th style="width:9%" title="Preis ab dem zweiten Prüfmuster/Style - leer heißt: derselbe Preis">je weiterem</th>
-        <th style="width:9%">Summe</th><th style="width:8%">Aktionen</th>
+        <th style="width:8%">Einzelpreis</th>
+        <th style="width:8%" title="Preis ab dem zweiten Prüfmuster/Style - leer heißt: derselbe Preis">je weiterem</th>
+        <th style="width:8%">Summe</th><th style="width:8%">Aktionen</th>
       </tr></thead>
-      <tbody id="angebot-positionen-body">${zeilen || '<tr><td colspan="10" class="leerzustand">Noch keine Positionen. Oben aus einer Prüfgrundlage übernehmen oder als freie Position anlegen.</td></tr>'}</tbody>
+      <tbody id="angebot-positionen-body">${zeilen || '<tr><td colspan="11" class="leerzustand">Noch keine Positionen. Oben aus einer Prüfgrundlage übernehmen oder als freie Position anlegen.</td></tr>'}</tbody>
     </table>
   </div>`;
 }
 
-function angebotTextbausteinOptionenHtml(typ) {
-  const passende = data.angebotstexte.filter((t) => t.typ === typ);
+function angebotTextbausteinOptionenHtml(typ, sprache) {
+  /* Nur Bausteine der Angebotssprache - ein deutscher Baustein in einem englischen Angebot wäre
+     eine stille Falle. */
+  const passende = data.angebotstexte.filter((t) => t.typ === typ && (t.sprache || "de") === sprache);
   if (!passende.length) return "";
   return `<select data-baustein-fuer="${typ}" style="font-family:inherit;font-size:0.8rem;padding:0.25rem 0.4rem;border:1px solid var(--border);border-radius:6px">
     <option value="">— Textbaustein einfügen —</option>
@@ -7067,7 +7320,9 @@ function renderAngebotDetail() {
     return;
   }
   const waehrung = angebotWaehrung(a);
+  const sprache = angebotSprache(a);
   const partner = angebotAnsprechpartner(a);
+  const kunde = data.kunden.find((k) => k.id === a.kundeId) || null;
   panel.innerHTML = `
     <div class="card">
       <div class="toolbar-zeile">
@@ -7079,11 +7334,13 @@ function renderAngebotDetail() {
       <div class="formular-grid" id="angebot-kopf">
         <label>Angebotsnummer<input type="text" data-feld="nummer" value="${escapeHtml(a.nummer || "")}"></label>
         <label>Status<select data-feld="status">${ANGEBOT_STATUS.map((s) => `<option value="${s}" ${a.status === s ? "selected" : ""}>${s}</option>`).join("")}</select></label>
+        <label title="Bestimmt alle festen Beschriftungen im Kunden-PDF sowie die angebotenen Textbausteine.">Angebotssprache<select data-feld="sprache">${ANGEBOT_SPRACHEN.map((x) => `<option value="${x.wert}" ${sprache === x.wert ? "selected" : ""}>${x.label}</option>`).join("")}</select></label>
         <label>Angebotsdatum<input type="date" data-feld="datum" value="${escapeHtml(a.datum || "")}"></label>
         <label>Gültig bis<input type="date" data-feld="gueltigBis" value="${escapeHtml(a.gueltigBis || "")}"></label>
         <label class="volle-breite">Betreff <span class="muted" style="font-weight:400">– steht als Überschrift im Angebot, z. B. „Prüfung Gartenstuhl Modell XY"</span><input type="text" data-feld="betreff" value="${escapeHtml(a.betreff || "")}"></label>
         <label>Artikel/Modell<input type="text" data-feld="artikel" value="${escapeHtml(a.artikel || "")}"></label>
-        <label title="Wird beim Übernehmen von Prüfungen als Menge vorbelegt.">Anzahl Prüfmuster/Styles<input type="number" min="1" step="1" data-feld="anzahlMuster" value="${escapeHtml(a.anzahlMuster || "")}"></label>
+        <label title="Wird beim Übernehmen von Prüfungen als Menge vorbelegt und dem Kunden im Angebot genannt.">Anzahl Prüfmuster/Styles<input type="number" min="1" step="1" data-feld="anzahlMuster" value="${escapeHtml(a.anzahlMuster || "")}"></label>
+        <label title="Erscheint im Angebot. Wird beim Übernehmen einer Prüfgrundlage automatisch aus deren Bearbeitungsdauer gefüllt (bei mehreren gilt die längste).">Bearbeitungsdauer (Arbeitstage)<input type="number" min="0" step="1" data-feld="bearbeitungsdauerTage" value="${zahlOderLeer(a.bearbeitungsdauerTage)}"></label>
         <label>Ihre Anfrage/Referenz<input type="text" data-feld="kundeReferenz" value="${escapeHtml(a.kundeReferenz || "")}"></label>
         <label>Währung<input type="text" data-feld="waehrung" value="${escapeHtml(waehrung)}"></label>
       </div>
@@ -7100,7 +7357,17 @@ function renderAngebotDetail() {
         <label>Firma<input type="text" data-feld="kundeName" value="${escapeHtml(a.kundeName || "")}"></label>
         <label>Kundennummer<input type="text" data-feld="kundeNummer" value="${escapeHtml(a.kundeNummer || "")}"></label>
         <label class="volle-breite">Anschrift <span class="muted" style="font-weight:400">– so, wie sie im Angebot stehen soll (mehrzeilig)</span><textarea class="auto-hoehe" data-feld="kundeAnschrift" rows="3">${escapeHtml(a.kundeAnschrift || "")}</textarea></label>
-        <label class="volle-breite">Ansprechpartner beim Kunden <span class="muted" style="font-weight:400">– wird in der Anrede verwendet, z. B. „Frau Müller"</span><input type="text" data-feld="kundeAnsprechpartner" value="${escapeHtml(a.kundeAnsprechpartner || "")}"></label>
+        <label class="volle-breite">Ansprechpartner beim Kunden <span class="muted" style="font-weight:400">– bestimmt die Anrede im Angebot</span>
+          ${kundeKontakte(kunde).length ? `<select id="angebot-kundekontakt-auswahl" style="font-family:inherit;font-size:0.88rem;padding:0.4rem 0.5rem;border:1px solid var(--border);border-radius:6px;font-weight:400;margin-bottom:0.35rem">
+              <option value="">— aus dem Kundenstamm wählen —</option>
+              ${kundeKontakte(kunde).map((kk) => `<option value="${escapeHtml(kk.id)}" ${kk.id === a.kundeKontaktId ? "selected" : ""}>${escapeHtml(kundeKontaktName(kk))}</option>`).join("")}
+            </select>` : ""}
+        </label>
+        <label>Anrede<select data-feld="kundeAnrede">
+          ${["", "Herr", "Frau"].map((x) => `<option value="${x}" ${(a.kundeAnrede || "") === x ? "selected" : ""}>${x || "— ohne —"}</option>`).join("")}
+        </select></label>
+        <label>Vorname<input type="text" data-feld="kundeVorname" value="${escapeHtml(a.kundeVorname || "")}"></label>
+        <label class="volle-breite">Nachname <span class="muted" style="font-weight:400">– „${escapeHtml(angebotAnrede(a))}"</span><input type="text" data-feld="kundeNachname" value="${escapeHtml(a.kundeNachname || "")}"></label>
       </div>
     </div>
 
@@ -7115,6 +7382,8 @@ function renderAngebotDetail() {
         : `<p class="hinweis" style="margin:0">Noch kein Ansprechpartner gewählt – im Reiter „Verwaltung" unter „Ansprechpartner" anlegen.</p>`}
     </div>
 
+    ${angebotBlockChecklisteHtml(a)}
+
     ${angebotPositionsquelleHtml(a)}
 
     <div class="card">
@@ -7125,11 +7394,11 @@ function renderAngebotDetail() {
       </div>
       ${angebotPositionenTabelleHtml(a)}
       <div class="angebot-summenblock">
-        <div><span>Zwischensumme</span><strong id="angebot-zwischensumme">${betrag(angebotZwischensumme(a), waehrung)}</strong></div>
+        <div><span>Zwischensumme</span><strong id="angebot-zwischensumme">${betrag(angebotZwischensumme(a), waehrung, "de")}</strong></div>
         <div><span>Nachlass
           <input type="number" step="0.1" min="0" max="100" id="angebot-rabatt" value="${zahlOderLeer(a.rabattProzent)}" placeholder="0" style="width:70px;font-family:inherit;font-size:0.85rem;padding:0.2rem 0.35rem;border:1px solid var(--border);border-radius:6px"> %
-        </span><strong id="angebot-rabattbetrag">− ${betrag(angebotRabattBetrag(a), waehrung)}</strong></div>
-        <div class="angebot-summe-gesamt"><span>Angebotssumme netto</span><strong id="angebot-gesamtsumme">${betrag(angebotGesamtsumme(a), waehrung)}</strong></div>
+        </span><strong id="angebot-rabattbetrag">− ${betrag(angebotRabattBetrag(a), waehrung, "de")}</strong></div>
+        <div class="angebot-summe-gesamt"><span>Angebotssumme netto</span><strong id="angebot-gesamtsumme">${betrag(angebotGesamtsumme(a), waehrung, "de")}</strong></div>
       </div>
     </div>
 
@@ -7137,10 +7406,10 @@ function renderAngebotDetail() {
       <h2 style="margin-top:0">Angebotstexte</h2>
       <div class="formular-grid" id="angebot-texte">
         <label class="volle-breite">Einleitung <span class="muted" style="font-weight:400">– steht über den Positionen, nach der Anrede</span>
-          <div class="toolbar-zeile" style="margin:0.2rem 0">${angebotTextbausteinOptionenHtml("einleitung")}</div>
+          <div class="toolbar-zeile" style="margin:0.2rem 0">${angebotTextbausteinOptionenHtml("einleitung", sprache)}</div>
           <textarea class="auto-hoehe" data-feld="einleitungstext" rows="3">${escapeHtml(a.einleitungstext || "")}</textarea></label>
         <label class="volle-breite">Schlusstext <span class="muted" style="font-weight:400">– steht unter den Positionen, z. B. Zahlungs-/Prüfbedingungen</span>
-          <div class="toolbar-zeile" style="margin:0.2rem 0">${angebotTextbausteinOptionenHtml("schluss")}</div>
+          <div class="toolbar-zeile" style="margin:0.2rem 0">${angebotTextbausteinOptionenHtml("schluss", sprache)}</div>
           <textarea class="auto-hoehe" data-feld="schlusstext" rows="5">${escapeHtml(a.schlusstext || "")}</textarea></label>
         <label class="volle-breite">Interne Notiz <span class="muted" style="font-weight:400">– erscheint NICHT im Angebot</span><textarea class="auto-hoehe" data-feld="notiz" rows="2">${escapeHtml(a.notiz || "")}</textarea></label>
       </div>
@@ -7199,31 +7468,71 @@ function angebotFehlendeAngabenHtml(a) {
    druckfertige Ansicht: der Browser-Druckdialog schreibt daraus mit "Als PDF speichern" die Datei.
    Dieselbe Funktion füllt die Vorschau im Reiter, damit Bildschirm und PDF garantiert identisch
    sind - keine zweite, nachziehende Vorlage. */
-/* Anrede aus dem Feld "Ansprechpartner beim Kunden". Enthält der Eintrag bereits eine Anrede
-   ("Herr Müller", "Frau Dr. Schmitt"), wird korrekt gebeugt - ein "Sehr geehrte/r ..." mit
-   Schrägstrich sieht in einem Angebot unfertig aus. Ohne erkennbare Anrede oder ganz ohne Eintrag
-   bleibt es bei der neutralen Form. */
+/* Anrede aus Anrede + Nachname des gewählten Kundenkontakts, in der Angebotssprache. Fehlt eines
+   von beiden, bleibt es bei der neutralen Form - ein "Sehr geehrter Herr ," wäre schlimmer als
+   "Sehr geehrte Damen und Herren,". */
 function angebotAnrede(a) {
-  const roh = String(a.kundeAnsprechpartner || "").trim();
-  if (!roh) return "Sehr geehrte Damen und Herren,";
-  const frau = /^(frau|fr\.)\s+/i.exec(roh);
-  if (frau) return `Sehr geehrte Frau ${roh.slice(frau[0].length).trim()},`;
-  const herr = /^(herr|hr\.)\s+/i.exec(roh);
-  if (herr) return `Sehr geehrter Herr ${roh.slice(herr[0].length).trim()},`;
-  return `Sehr geehrte Damen und Herren,`;
+  const sprache = angebotSprache(a);
+  const b = ANGEBOT_BESCHRIFTUNGEN[sprache];
+  const nachname = String(a.kundeNachname || "").trim();
+  const anrede = String(a.kundeAnrede || "").trim().toLowerCase();
+  if (!nachname || !anrede) return b.anredeNeutral;
+  if (anrede === "frau") return `${b.anredeFrau} ${nachname},`;
+  if (anrede === "herr") return `${b.anredeHerr} ${nachname},`;
+  return b.anredeNeutral;
 }
+
 function angebotDruckHtml(a) {
+  const sprache = angebotSprache(a);
+  const b = ANGEBOT_BESCHRIFTUNGEN[sprache];
   const waehrung = angebotWaehrung(a);
+  const geld = (wert) => betrag(wert, waehrung, sprache);
   const partner = angebotAnsprechpartner(a);
   const einst = data.angebotEinstellungen || {};
   const aktive = (a.positionen || []).filter((p) => p.aktiv);
-  const anrede = angebotAnrede(a);
   const rabatt = angebotRabattBetrag(a);
   const absatz = (text) => String(text || "").split(/\n{2,}/).map((abs) =>
     `<p>${abs.split("\n").map((z) => escapeHtml(z)).join("<br>")}</p>`).join("");
   /* Steht der Absender schon in der Kopfzeile der Word-Vorlage, wird der manuell gepflegte
      Absenderblock weggelassen - sonst stünde die Firma zweimal im Briefkopf. */
   const vorlageKopf = angebotVorlageKopfHtml();
+
+  /* Positionen blockweise: je Block eine Zwischenüberschrift in der Tabelle, in der festen
+     Reihenfolge der Blöcke (Kennzeichnung, Norm-/Sicherheit, Produktspezifikation, FFU) - nicht in
+     der Eingabereihenfolge. Blöcke ohne aktive Position erscheinen gar nicht. Die laufende
+     Positionsnummer zählt über alle Blöcke hinweg weiter, wie es der Kunde erwartet. */
+  let nummer = 0;
+  const positionsZeilen = ANGEBOT_BLOECKE.map((block) => {
+    const imBlock = aktive.filter((p) => (p.block || "normSicherheit") === block.id);
+    if (!imBlock.length) return "";
+    const kopf = `<tr class="ang-blockkopf"><td colspan="5">${escapeHtml(sprache === "en" ? block.labelEn : block.label)}</td></tr>`;
+    return kopf + imBlock.map((p) => {
+      nummer++;
+      const staffelung = (p.einzelpreisWeitere !== null && p.einzelpreisWeitere !== undefined && p.einzelpreisWeitere !== "" && Number(p.menge) > 1)
+        ? `<div class="ang-beschreibung">${b.erstesMuster} ${geld(p.einzelpreis)}, ${b.jedesWeitere} ${geld(p.einzelpreisWeitere)}</div>` : "";
+      return `<tr>
+        <td class="ang-pos">${nummer}</td>
+        <td>
+          <strong>${escapeHtml(p.bezeichnung || "")}</strong>
+          ${p.beschreibung ? `<div class="ang-beschreibung">${escapeHtml(p.beschreibung).replace(/\n/g, "<br>")}</div>` : ""}
+          ${staffelung}
+        </td>
+        <td class="ang-zahl">${Number(p.menge) || 0} ${escapeHtml(p.einheit || "")}</td>
+        <td class="ang-zahl">${geld(p.einzelpreis)}</td>
+        <td class="ang-zahl">${geld(angebotPositionSumme(p))}</td>
+      </tr>`;
+    }).join("");
+  }).join("");
+
+  /* Bearbeitungsdauer und Musteranzahl stehen zwischen Positionen und Schlusstext - beides sind
+     Angaben, nach denen der Kunde als Erstes fragt. */
+  const eckdaten = [
+    (a.bearbeitungsdauerTage !== null && a.bearbeitungsdauerTage !== undefined && a.bearbeitungsdauerTage !== "")
+      ? `<div><span>${b.bearbeitungsdauer}</span><strong>${escapeHtml(String(a.bearbeitungsdauerTage))} ${b.arbeitstage}</strong></div>` : "",
+    String(a.anzahlMuster || "").trim()
+      ? `<div><span>${b.muster}</span><strong>${escapeHtml(String(a.anzahlMuster))}</strong></div>` : ""
+  ].filter(Boolean).join("");
+
   return `<div class="ang-blatt">
     ${vorlageKopf}
     <div class="ang-kopf">
@@ -7233,65 +7542,57 @@ function angebotDruckHtml(a) {
           ${einst.absenderAnschrift ? `<div>${escapeHtml(einst.absenderAnschrift).replace(/\n/g, "<br>")}</div>` : ""}`}
       </div>
       <div class="ang-meta">
-        <div><span>Angebotsnummer</span><strong>${escapeHtml(a.nummer || "")}</strong></div>
-        <div><span>Datum</span><strong>${datumAnzeige(a.datum)}</strong></div>
-        ${a.gueltigBis ? `<div><span>Gültig bis</span><strong>${datumAnzeige(a.gueltigBis)}</strong></div>` : ""}
-        ${a.kundeNummer ? `<div><span>Kundennummer</span><strong>${escapeHtml(a.kundeNummer)}</strong></div>` : ""}
-        ${a.kundeReferenz ? `<div><span>Ihre Anfrage</span><strong>${escapeHtml(a.kundeReferenz)}</strong></div>` : ""}
+        <div><span>${b.angebotsnummer}</span><strong>${escapeHtml(a.nummer || "")}</strong></div>
+        <div><span>${b.datum}</span><strong>${datumAnzeigeSprache(a.datum, sprache)}</strong></div>
+        ${a.gueltigBis ? `<div><span>${b.gueltigBis}</span><strong>${datumAnzeigeSprache(a.gueltigBis, sprache)}</strong></div>` : ""}
+        ${a.kundeNummer ? `<div><span>${b.kundennummer}</span><strong>${escapeHtml(a.kundeNummer)}</strong></div>` : ""}
+        ${a.kundeReferenz ? `<div><span>${b.referenz}</span><strong>${escapeHtml(a.kundeReferenz)}</strong></div>` : ""}
       </div>
     </div>
 
     <div class="ang-empfaenger">
       ${a.kundeName ? `<strong>${escapeHtml(a.kundeName)}</strong><br>` : ""}
       ${escapeHtml(a.kundeAnschrift || "").replace(/\n/g, "<br>")}
+      ${(a.kundeVorname || a.kundeNachname) ? `<br>${escapeHtml([a.kundeAnrede, a.kundeVorname, a.kundeNachname].filter(Boolean).join(" "))}` : ""}
     </div>
 
-    <div class="ang-dokumentart">Angebot</div>
-    <h1 class="ang-betreff">${escapeHtml(a.betreff || "Prüfleistungen")}</h1>
-    ${a.artikel ? `<p class="ang-artikel">Artikel/Modell: <strong>${escapeHtml(a.artikel)}</strong></p>` : ""}
+    <div class="ang-dokumentart">${b.dokumentart}</div>
+    <h1 class="ang-betreff">${escapeHtml(a.betreff || b.dokumentart)}</h1>
+    ${a.artikel ? `<p class="ang-artikel">${b.artikel}: <strong>${escapeHtml(a.artikel)}</strong></p>` : ""}
 
-    <p class="ang-anrede">${escapeHtml(anrede)}</p>
+    <p class="ang-anrede">${escapeHtml(angebotAnrede(a))}</p>
     ${absatz(a.einleitungstext)}
 
     <table class="ang-tabelle">
       <thead><tr>
-        <th class="ang-pos">Pos.</th>
-        <th>Leistung</th>
-        <th class="ang-zahl">Menge</th>
-        <th class="ang-zahl">Einzelpreis</th>
-        <th class="ang-zahl">Gesamt</th>
+        <th class="ang-pos">${b.pos}</th>
+        <th>${b.leistung}</th>
+        <th class="ang-zahl">${b.menge}</th>
+        <th class="ang-zahl">${b.einzelpreis}</th>
+        <th class="ang-zahl">${b.gesamt}</th>
       </tr></thead>
       <tbody>
-        ${aktive.length ? aktive.map((p, i) => `<tr>
-          <td class="ang-pos">${i + 1}</td>
-          <td>
-            <strong>${escapeHtml(p.bezeichnung || "")}</strong>
-            ${p.beschreibung ? `<div class="ang-beschreibung">${escapeHtml(p.beschreibung).replace(/\n/g, "<br>")}</div>` : ""}
-            ${(p.einzelpreisWeitere !== null && p.einzelpreisWeitere !== undefined && p.einzelpreisWeitere !== "" && Number(p.menge) > 1)
-              ? `<div class="ang-beschreibung">1. Prüfmuster ${betrag(p.einzelpreis, waehrung)}, jedes weitere ${betrag(p.einzelpreisWeitere, waehrung)}</div>` : ""}
-          </td>
-          <td class="ang-zahl">${Number(p.menge) || 0} ${escapeHtml(p.einheit || "")}</td>
-          <td class="ang-zahl">${betrag(p.einzelpreis, waehrung)}</td>
-          <td class="ang-zahl">${betrag(angebotPositionSumme(p), waehrung)}</td>
-        </tr>`).join("") : `<tr><td colspan="5" class="ang-leer">Noch keine Positionen.</td></tr>`}
+        ${positionsZeilen || `<tr><td colspan="5" class="ang-leer">${b.keinePositionen}</td></tr>`}
       </tbody>
       <tfoot>
-        ${rabatt ? `<tr><td colspan="4" class="ang-zahl">Zwischensumme</td><td class="ang-zahl">${betrag(angebotZwischensumme(a), waehrung)}</td></tr>
-        <tr><td colspan="4" class="ang-zahl">Nachlass ${Number(a.rabattProzent)} %</td><td class="ang-zahl">− ${betrag(rabatt, waehrung)}</td></tr>` : ""}
-        <tr class="ang-gesamt"><td colspan="4" class="ang-zahl">Angebotssumme netto</td><td class="ang-zahl">${betrag(angebotGesamtsumme(a), waehrung)}</td></tr>
+        ${rabatt ? `<tr><td colspan="4" class="ang-zahl">${b.zwischensumme}</td><td class="ang-zahl">${geld(angebotZwischensumme(a))}</td></tr>
+        <tr><td colspan="4" class="ang-zahl">${b.nachlass} ${Number(a.rabattProzent)} %</td><td class="ang-zahl">− ${geld(rabatt)}</td></tr>` : ""}
+        <tr class="ang-gesamt"><td colspan="4" class="ang-zahl">${b.summe}</td><td class="ang-zahl">${geld(angebotGesamtsumme(a))}</td></tr>
       </tfoot>
     </table>
+
+    ${eckdaten ? `<div class="ang-eckdaten">${eckdaten}</div>` : ""}
 
     ${absatz(a.schlusstext)}
 
     ${partner ? `<div class="ang-signatur">
-      <div>Mit freundlichen Grüßen</div>
+      <div>${b.gruss}</div>
       <div class="ang-partner">
         <strong>${escapeHtml(partner.name || "")}</strong>
         ${partner.funktion ? `<div>${escapeHtml(partner.funktion)}</div>` : ""}
-        ${partner.telefon ? `<div>Telefon: ${escapeHtml(partner.telefon)}</div>` : ""}
-        ${partner.mobil ? `<div>Mobil: ${escapeHtml(partner.mobil)}</div>` : ""}
-        ${partner.email ? `<div>E-Mail: ${escapeHtml(partner.email)}</div>` : ""}
+        ${partner.telefon ? `<div>${b.telefon}: ${escapeHtml(partner.telefon)}</div>` : ""}
+        ${partner.mobil ? `<div>${b.mobil}: ${escapeHtml(partner.mobil)}</div>` : ""}
+        ${partner.email ? `<div>${b.email}: ${escapeHtml(partner.email)}</div>` : ""}
       </div>
     </div>` : ""}
     ${angebotVorlageFussHtml()}
@@ -7363,7 +7664,14 @@ function initialisiereAngebotDetail(panel, a) {
     a.kundeName = k.name || "";
     a.kundeNummer = k.kundennummer || "";
     a.kundeAnschrift = k.anschrift || "";
-    a.kundeAnsprechpartner = k.ansprechpartner || "";
+    if (k.sprache) a.sprache = k.sprache;
+    /* Standard-Kontakt des Kunden gleich mitnehmen - der häufigste Fall, und sonst müsste man ihn
+       gleich danach von Hand wählen. */
+    const kontakt = kundeKontakte(k).find((x) => x.standard) || kundeKontakte(k)[0] || null;
+    a.kundeKontaktId = kontakt ? kontakt.id : "";
+    a.kundeAnrede = kontakt ? (kontakt.anrede || "") : "";
+    a.kundeVorname = kontakt ? (kontakt.vorname || "") : "";
+    a.kundeNachname = kontakt ? (kontakt.nachname || "") : "";
     speichereInLocalStorage();
     renderAngeboteTab();
     zeigeStatus("Kundendaten übernommen · " + jetzt(), "ok");
@@ -7372,20 +7680,42 @@ function initialisiereAngebotDetail(panel, a) {
     const name = String(a.kundeName || "").trim();
     if (!name) { zeigeStatus("Bitte zuerst eine Firma eintragen.", ""); return; }
     const vorhanden = data.kunden.find((k) => k.id === a.kundeId) || data.kunden.find((k) => normalisiere(k.name) === normalisiere(name));
-    const werte = { name, kundennummer: a.kundeNummer || "", anschrift: a.kundeAnschrift || "", ansprechpartner: a.kundeAnsprechpartner || "" };
-    if (vorhanden) {
-      Object.assign(vorhanden, werte);
-      a.kundeId = vorhanden.id;
-      zeigeStatus(`Kundenstamm „${name}" aktualisiert · ${jetzt()}`, "ok");
-    } else {
-      const neu = { id: neueId(), ...werte, notiz: "" };
-      data.kunden.push(neu);
-      a.kundeId = neu.id;
-      zeigeStatus(`Kunde „${name}" neu im Stamm angelegt · ${jetzt()}`, "ok");
+    const werte = { name, kundennummer: a.kundeNummer || "", anschrift: a.kundeAnschrift || "", sprache: angebotSprache(a) };
+    const kunde = vorhanden || { id: neueId(), kontakte: [], notiz: "" };
+    Object.assign(kunde, werte);
+    kunde.kontakte = Array.isArray(kunde.kontakte) ? kunde.kontakte : [];
+    /* Den im Angebot eingetragenen Kontakt in den Stamm spiegeln - über den Nachnamen abgeglichen,
+       damit derselbe Kontakt bei jedem Angebot nicht erneut angelegt wird. */
+    const nachname = String(a.kundeNachname || "").trim();
+    if (nachname) {
+      let kontakt = kunde.kontakte.find((x) => x.id === a.kundeKontaktId)
+        || kunde.kontakte.find((x) => normalisiere(x.nachname) === normalisiere(nachname) && normalisiere(x.vorname) === normalisiere(a.kundeVorname || ""));
+      if (!kontakt) { kontakt = { id: neueId(), standard: !kunde.kontakte.length }; kunde.kontakte.push(kontakt); }
+      kontakt.anrede = a.kundeAnrede || "";
+      kontakt.vorname = a.kundeVorname || "";
+      kontakt.nachname = nachname;
+      a.kundeKontaktId = kontakt.id;
     }
+    if (!vorhanden) data.kunden.push(kunde);
+    a.kundeId = kunde.id;
+    zeigeStatus(vorhanden ? `Kundenstamm „${name}" aktualisiert · ${jetzt()}` : `Kunde „${name}" neu im Stamm angelegt · ${jetzt()}`, "ok");
     speichereInLocalStorage();
     renderAngeboteTab();
     renderVerwaltungTab();
+  });
+
+  const kontaktAuswahl = panel.querySelector("#angebot-kundekontakt-auswahl");
+  if (kontaktAuswahl) kontaktAuswahl.addEventListener("change", () => {
+    const kunde = data.kunden.find((k) => k.id === a.kundeId);
+    const kontakt = kundeKontakte(kunde).find((x) => x.id === kontaktAuswahl.value);
+    a.kundeKontaktId = kontakt ? kontakt.id : "";
+    if (kontakt) {
+      a.kundeAnrede = kontakt.anrede || "";
+      a.kundeVorname = kontakt.vorname || "";
+      a.kundeNachname = kontakt.nachname || "";
+    }
+    speichereInLocalStorage();
+    renderAngeboteTab();
   });
 
   const partnerAuswahl = panel.querySelector("#angebot-partner-auswahl");
@@ -7397,6 +7727,23 @@ function initialisiereAngebotDetail(panel, a) {
 
   /* Textbaustein einfügen: hängt an den vorhandenen Text an, statt ihn zu ersetzen - so lassen sich
      mehrere Bausteine kombinieren, ohne bereits Getipptes zu verlieren. */
+  /* Sprache umschalten baut die Ansicht neu auf (alle Beschriftungen ändern sich) und bietet an,
+     die Standardtexte der neuen Sprache zu laden - überschrieben wird nur nach Rückfrage, sonst
+     wäre ein bereits formulierter Text weg. */
+  const sprachFeld = panel.querySelector('#angebot-kopf [data-feld="sprache"]');
+  if (sprachFeld) sprachFeld.addEventListener("change", () => {
+    a.sprache = sprachFeld.value;
+    const neueEinleitung = angebotStandardtext("einleitung", a.sprache);
+    const neuerSchluss = angebotStandardtext("schluss", a.sprache);
+    if ((neueEinleitung || neuerSchluss)
+        && confirm("Sprache umgestellt. Sollen die Standardtexte dieser Sprache geladen werden?\n\nBereits eingetragene Einleitung/Schlusstext werden dabei überschrieben.")) {
+      a.einleitungstext = neueEinleitung;
+      a.schlusstext = neuerSchluss;
+    }
+    speichereInLocalStorage();
+    renderAngeboteTab();
+  });
+
   panel.querySelectorAll("[data-baustein-fuer]").forEach((sel) => {
     sel.addEventListener("change", () => {
       const baustein = data.angebotstexte.find((t) => t.id === sel.value);
@@ -7410,61 +7757,110 @@ function initialisiereAngebotDetail(panel, a) {
     });
   });
 
-  const wgEingabe = panel.querySelector("#angebot-warengruppe-eingabe");
-  if (wgEingabe) {
-    /* "change" statt "input": erst wenn die Eingabe fertig ist (Auswahl aus der Liste oder Verlassen
-       des Felds) neu aufbauen, sonst rendert die Karte bei jedem Tastendruck neu. */
-    wgEingabe.addEventListener("change", () => {
-      angebotAuswahl.warengruppe = wgEingabe.value;
-      angebotAuswahl.produktId = "";
+  /* Blockcheckliste: bestimmt, welche Blöcke unten Prüfungen anbieten. */
+  panel.querySelectorAll("[data-block]").forEach((cb) => {
+    if (cb.type !== "checkbox") return;
+    cb.addEventListener("change", () => {
+      a.bloecke = a.bloecke || {};
+      a.bloecke[cb.dataset.block] = cb.checked;
+      speichereInLocalStorage();
       renderAngeboteTab();
     });
-  }
-  const produktAuswahl = panel.querySelector("#angebot-produkt-auswahl");
-  if (produktAuswahl) {
-    produktAuswahl.addEventListener("change", () => {
-      angebotAuswahl.produktId = produktAuswahl.value;
-      renderAngeboteTab();
-    });
-  }
+  });
 
-  const aktuellePruefungen = () => {
-    const wg = warengruppeAusAnzeigetext(angebotAuswahl.warengruppe);
-    if (!wg) return [];
-    const treffer = mechanikTrefferFuerWarengruppe(wg.code);
-    const gewaehlt = treffer.find((e) => mechanikEintragId(e) === angebotAuswahl.produktId) || (treffer.length === 1 ? treffer[0] : null);
-    return gewaehlt ? angebotPruefungenAusPruefgrundlage(gewaehlt) : [];
+  /* Volltextsuche + Filterkette Bereich -> Warengruppe -> Produkt. Bei der Suche wird die
+     Produktauswahl zurückgesetzt, bei Bereich/Warengruppe ebenfalls - eine Auswahl, die durch den
+     neuen Filter gar nicht mehr sichtbar ist, wäre eine stille Falle. */
+  const suchfeld = panel.querySelector("#angebot-pg-suche");
+  if (suchfeld) {
+    suchfeld.addEventListener("input", () => {
+      angebotAuswahl.suche = suchfeld.value;
+      angebotAuswahl.produktId = "";
+      renderAngebotDetail();
+      /* Fokus und Cursorposition wiederherstellen, damit sich das Feld beim Tippen normal anfühlt. */
+      const neu = document.getElementById("angebot-pg-suche");
+      if (neu) { neu.focus(); neu.setSelectionRange(neu.value.length, neu.value.length); }
+    });
+  }
+  const bereichAuswahl = panel.querySelector("#angebot-pg-bereich");
+  if (bereichAuswahl) bereichAuswahl.addEventListener("change", () => {
+    angebotAuswahl.bereich = bereichAuswahl.value;
+    angebotAuswahl.warengruppeCode = "";
+    angebotAuswahl.produktId = "";
+    renderAngeboteTab();
+  });
+  const wgAuswahl = panel.querySelector("#angebot-pg-warengruppe");
+  if (wgAuswahl) wgAuswahl.addEventListener("change", () => {
+    angebotAuswahl.warengruppeCode = wgAuswahl.value;
+    angebotAuswahl.produktId = "";
+    renderAngeboteTab();
+  });
+  const produktAuswahl = panel.querySelector("#angebot-produkt-auswahl");
+  if (produktAuswahl) produktAuswahl.addEventListener("change", () => {
+    angebotAuswahl.produktId = produktAuswahl.value;
+    renderAngeboteTab();
+  });
+  const filterReset = panel.querySelector("#angebot-pg-zuruecksetzen");
+  if (filterReset) filterReset.addEventListener("click", () => {
+    angebotAuswahl = { suche: "", bereich: "", warengruppeCode: "", produktId: "" };
+    renderAngeboteTab();
+  });
+
+  /* Musteranzahl und Bearbeitungsdauer aus der Prüfgrundlage übernehmen. Bei der Dauer gilt der
+     GRÖSSERE Wert: umfasst ein Angebot mehrere Prüfgrundlagen, ist die längste Prüfung die, auf die
+     der Kunde warten muss. */
+  const pgAngabenBtn = panel.querySelector("#angebot-pg-angaben-uebernehmen");
+  if (pgAngabenBtn) pgAngabenBtn.addEventListener("click", () => {
+    const { gewaehlt } = angebotGewaehltePruefgrundlage();
+    if (!gewaehlt) return;
+    const meldungen = [];
+    if (String(gewaehlt.anzahlMuster || "").trim()) { a.anzahlMuster = String(gewaehlt.anzahlMuster).trim(); meldungen.push("Musteranzahl"); }
+    const dauer = Number(gewaehlt.bearbeitungsdauerTage);
+    if (gewaehlt.bearbeitungsdauerTage !== null && gewaehlt.bearbeitungsdauerTage !== "" && !Number.isNaN(dauer)) {
+      const bisher = Number(a.bearbeitungsdauerTage) || 0;
+      a.bearbeitungsdauerTage = Math.max(bisher, dauer);
+      meldungen.push(bisher > dauer ? `Bearbeitungsdauer (bisherige ${bisher} Tage bleiben, da länger)` : "Bearbeitungsdauer");
+    }
+    speichereInLocalStorage();
+    renderAngeboteTab();
+    zeigeStatus(meldungen.length ? `${meldungen.join(" und ")} übernommen · ${jetzt()}` : "In der Prüfgrundlage sind weder Muster noch Dauer hinterlegt.", meldungen.length ? "ok" : "");
+  });
+
+  const pruefungenDesBlocks = (blockId) => {
+    const { gewaehlt } = angebotGewaehltePruefgrundlage();
+    return angebotPruefungenFuerBlock(blockId, gewaehlt);
   };
   panel.querySelectorAll('[data-action="angebot-pruefung-uebernehmen"]').forEach((btn) => {
     btn.addEventListener("click", () => {
-      const pruefung = aktuellePruefungen()[Number(btn.dataset.idx)];
+      const pruefung = pruefungenDesBlocks(btn.dataset.block)[Number(btn.dataset.idx)];
       if (!pruefung) return;
-      a.positionen.push(angebotPositionAusPruefung(pruefung, a.anzahlMuster));
+      a.positionen.push(angebotPositionAusPruefung(pruefung, a.anzahlMuster, angebotSprache(a)));
       speichereInLocalStorage();
       renderAngeboteTab();
       zeigeStatus("Position übernommen · " + jetzt(), "ok");
     });
   });
-  const alleBtn = panel.querySelector("#angebot-alle-uebernehmen");
-  if (alleBtn) {
-    alleBtn.addEventListener("click", () => {
+  panel.querySelectorAll('[data-action="angebot-block-uebernehmen"]').forEach((btn) => {
+    btn.addEventListener("click", () => {
       let anzahl = 0;
-      aktuellePruefungen().forEach((pruefung) => {
-        const bez = pruefung.bezeichnung + (pruefung.inAnlehnungAn ? " (in Anlehnung an)" : "");
-        if (angebotHatPosition(a, bez)) return;
-        a.positionen.push(angebotPositionAusPruefung(pruefung, a.anzahlMuster));
+      pruefungenDesBlocks(btn.dataset.block).forEach((pruefung) => {
+        if (angebotHatPosition(a, angebotPruefungBezeichnung(pruefung))) return;
+        a.positionen.push(angebotPositionAusPruefung(pruefung, a.anzahlMuster, angebotSprache(a)));
         anzahl++;
       });
       speichereInLocalStorage();
       renderAngeboteTab();
       zeigeStatus(`${anzahl} Position(en) übernommen · ${jetzt()}`, "ok");
     });
-  }
+  });
 
   panel.querySelector("#angebot-freie-position").addEventListener("click", () => {
-    a.positionen.push({ id: neueId(), bezeichnung: "", beschreibung: "", sapMaterial: "",
-      menge: Math.max(1, Number(a.anzahlMuster) || 1), einheit: "Prüfung", einzelpreis: 0,
-      einzelpreisWeitere: null, aktiv: true, quelle: "frei" });
+    /* Freie Position landet in dem Block, der als einziger angehakt ist - sonst im Regelblock. */
+    const angehakt = ANGEBOT_BLOECKE.filter((x) => angebotBlockIstGewaehlt(a, x.id));
+    a.positionen.push({ id: neueId(), block: angehakt.length === 1 ? angehakt[0].id : "normSicherheit",
+      bezeichnung: "", beschreibung: "", sapMaterial: "",
+      menge: Math.max(1, Number(a.anzahlMuster) || 1), einheit: ANGEBOT_BESCHRIFTUNGEN[angebotSprache(a)].einheit,
+      einzelpreis: 0, einzelpreisWeitere: null, aktiv: true });
     speichereInLocalStorage();
     renderAngeboteTab();
   });
@@ -7564,7 +7960,7 @@ document.getElementById("btn-neues-angebot").addEventListener("click", () => {
    werden. Normen/FFU/StiWa sind jetzt Referenzlisten ({normId, inAnlehnungAn}) auf data.normen
    statt Freitext - der generische JSON.stringify-Vergleich in feldweiseGleich() funktioniert dafür
    unverändert. */
-const PRUEFGRUNDLAGE_FELDER = ["bereich", "warengruppeCode", "warengruppeName", "produkt", "normen", "anzahlMuster", "trivial", "ffuNormen", "stiwaNormen", "normenKommentar", "ffuNormenKommentar", "stiwaNormenKommentar"];
+const PRUEFGRUNDLAGE_FELDER = ["bereich", "warengruppeCode", "warengruppeName", "produkt", "normen", "anzahlMuster", "bearbeitungsdauerTage", "trivial", "ffuNormen", "stiwaNormen", "normenKommentar", "ffuNormenKommentar", "stiwaNormenKommentar"];
 
 /* ---------- Normen-/Prüfprogramm-Dokumente: Text auslesen, NICHT als Binärdatei speichern ----------
    Wird ausschließlich vom Reiter "Normen" genutzt (verarbeiteNormDatei). Eigener, minimaler
@@ -8201,7 +8597,8 @@ function pruefgrundlageVerwendungHtml(entwurf) {
 function pruefgrundlageFormularHtml(entwurf) {
   return `<div class="formular-grid">
       <label>Produkt<input type="text" data-feld="produkt" value="${escapeHtml(entwurf.produkt)}"></label>
-      <label>Anzahl Muster<input type="text" data-feld="anzahlMuster" value="${escapeHtml(entwurf.anzahlMuster)}"></label>
+      <label title="Wie viele Prüfmuster diese Prüfgrundlage benötigt - wird im Angebot als „Anzahl Prüfmuster" vorbelegt und dem Kunden dort genannt.">Anzahl Muster<input type="text" data-feld="anzahlMuster" value="${escapeHtml(entwurf.anzahlMuster)}"></label>
+      <label title="Übliche Bearbeitungsdauer dieser Prüfung in Arbeitstagen - erscheint im Angebot. Umfasst ein Angebot mehrere Prüfgrundlagen, gilt die längste Dauer.">Bearbeitungsdauer (Arbeitstage)<input type="number" min="0" step="1" data-feld="bearbeitungsdauerTage" value="${zahlOderLeer(entwurf.bearbeitungsdauerTage)}"></label>
     </div>
     ${warengruppeAuswahlHtml(entwurf)}
     ${bereichAuswahlHtml(entwurf)}
@@ -9017,6 +9414,9 @@ function renderAngebotstexteVerwaltung() {
       <div class="mak-variante-kopf">
         <input type="text" data-feld="bezeichnung" value="${escapeHtml(t.bezeichnung || "")}" placeholder="Bezeichnung des Bausteins">
         <span class="badge">${escapeHtml(typLabel[t.typ] || t.typ)}</span>
+        <select data-feld="sprache" style="font-family:inherit;font-size:0.8rem;padding:0.25rem 0.35rem;border:1px solid var(--border);border-radius:6px">
+          ${ANGEBOT_SPRACHEN.map((x) => `<option value="${x.wert}" ${(t.sprache || "de") === x.wert ? "selected" : ""}>${x.label}</option>`).join("")}
+        </select>
         <label class="checkbox-label" style="display:flex;align-items:center;gap:0.3rem;font-size:0.8rem;white-space:nowrap" title="Ist das angehakt, steht dieser Text bei jedem NEUEN Angebot automatisch drin.">
           <input type="checkbox" data-feld="immer" ${t.immer ? "checked" : ""}> immer
         </label>
@@ -9104,7 +9504,23 @@ function renderKundenVerwaltung() {
       </div>
       <div class="mak-variante-zusatz" style="flex-direction:column;align-items:stretch;gap:0.35rem">
         <textarea class="auto-hoehe" data-feld="anschrift" rows="3" placeholder="Anschrift (mehrzeilig)" style="font-family:inherit;font-size:0.85rem;padding:0.35rem 0.5rem;border:1px solid var(--border);border-radius:6px">${escapeHtml(k.anschrift || "")}</textarea>
-        <input type="text" data-feld="ansprechpartner" value="${escapeHtml(k.ansprechpartner || "")}" placeholder="Ansprechpartner beim Kunden (für die Anrede)">
+        <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.8rem;font-weight:600">Angebotssprache
+          <select data-feld="sprache" style="font-family:inherit;font-size:0.85rem;padding:0.25rem 0.4rem;border:1px solid var(--border);border-radius:6px;font-weight:400">
+            ${ANGEBOT_SPRACHEN.map((x) => `<option value="${x.wert}" ${(k.sprache || "de") === x.wert ? "selected" : ""}>${x.label}</option>`).join("")}
+          </select>
+          <span class="muted" style="font-weight:400">– belegt neue Angebote für diesen Kunden vor</span></label>
+        <div class="kunde-kontakte">
+          <strong style="font-size:0.8rem">Ansprechpartner</strong>
+          ${kundeKontakte(k).length ? kundeKontakte(k).map((kk) => `<div class="kunde-kontakt" data-kontakt="${escapeHtml(kk.id)}">
+            <select data-kfeld="anrede">${["", "Herr", "Frau"].map((x) => `<option value="${x}" ${(kk.anrede || "") === x ? "selected" : ""}>${x || "—"}</option>`).join("")}</select>
+            <input type="text" data-kfeld="vorname" value="${escapeHtml(kk.vorname || "")}" placeholder="Vorname">
+            <input type="text" data-kfeld="nachname" value="${escapeHtml(kk.nachname || "")}" placeholder="Nachname">
+            <input type="text" data-kfeld="email" value="${escapeHtml(kk.email || "")}" placeholder="E-Mail">
+            <label class="checkbox-label" style="display:flex;align-items:center;gap:0.25rem;font-size:0.78rem;white-space:nowrap"><input type="radio" name="kontakt-standard-${escapeHtml(k.id)}" data-kfeld="standard" ${kk.standard ? "checked" : ""}> Standard</label>
+            <button type="button" class="danger small" data-action="kontakt-loeschen" title="Ansprechpartner löschen">🗑</button>
+          </div>`).join("") : '<p class="muted" style="margin:0.2rem 0">Noch kein Ansprechpartner hinterlegt.</p>'}
+          <button type="button" class="ghost small" data-action="kontakt-hinzufuegen" style="margin-top:0.3rem">+ Ansprechpartner</button>
+        </div>
       </div>
     </div>`;
   }).join("") : '<p class="muted">Noch keine Kunden hinterlegt.</p>';
@@ -9113,7 +9529,32 @@ function renderKundenVerwaltung() {
     const k = data.kunden.find((x) => x.id === div.dataset.id);
     if (!k) return;
     div.querySelectorAll("[data-feld]").forEach((el) => {
-      el.addEventListener("input", () => { k[el.dataset.feld] = el.value; speichereInLocalStorage(); });
+      el.addEventListener(el.tagName === "SELECT" ? "change" : "input", () => { k[el.dataset.feld] = el.value; speichereInLocalStorage(); });
+    });
+    div.querySelectorAll(".kunde-kontakt").forEach((zeile) => {
+      const kk = kundeKontakte(k).find((x) => x.id === zeile.dataset.kontakt);
+      if (!kk) return;
+      zeile.querySelectorAll("[data-kfeld]").forEach((el) => {
+        el.addEventListener(el.type === "radio" ? "change" : (el.tagName === "SELECT" ? "change" : "input"), () => {
+          if (el.type === "radio") k.kontakte.forEach((x) => { x.standard = x.id === kk.id; });
+          else kk[el.dataset.kfeld] = el.value;
+          speichereInLocalStorage();
+          renderAngeboteTab();
+        });
+      });
+      zeile.querySelector('[data-action="kontakt-loeschen"]').addEventListener("click", () => {
+        if (!confirm(`Ansprechpartner „${kundeKontaktName(kk)}" wirklich löschen?`)) return;
+        k.kontakte = k.kontakte.filter((x) => x.id !== kk.id);
+        speichereInLocalStorage();
+        renderVerwaltungTab();
+        renderAngeboteTab();
+      });
+    });
+    div.querySelector('[data-action="kontakt-hinzufuegen"]').addEventListener("click", () => {
+      k.kontakte = Array.isArray(k.kontakte) ? k.kontakte : [];
+      k.kontakte.push({ id: neueId(), anrede: "", vorname: "", nachname: "", email: "", standard: !k.kontakte.length });
+      speichereInLocalStorage();
+      renderVerwaltungTab();
     });
     div.querySelector('[data-action="kunde-loeschen"]').addEventListener("click", () => {
       const anzahl = data.angebote.filter((a) => a.kundeId === k.id).length;
@@ -9323,7 +9764,7 @@ document.getElementById("angebot-vorlage-upload").addEventListener("change", asy
 document.querySelectorAll("#verwaltung-block-angebot [data-neuer-text]").forEach((btn) => {
   btn.addEventListener("click", () => {
     const typ = btn.dataset.neuerText;
-    data.angebotstexte.push({ id: neueId(), bezeichnung: typ === "einleitung" ? "Neue Einleitung" : "Neuer Schlusstext", typ, immer: false, text: "" });
+    data.angebotstexte.push({ id: neueId(), bezeichnung: typ === "einleitung" ? "Neue Einleitung" : "Neuer Schlusstext", typ, sprache: "de", immer: false, text: "" });
     speichereInLocalStorage();
     renderVerwaltungTab();
   });
@@ -9335,7 +9776,7 @@ document.getElementById("ansprechpartner-hinzufuegen").addEventListener("click",
   renderAngeboteTab();
 });
 document.getElementById("kunde-hinzufuegen").addEventListener("click", () => {
-  data.kunden.push({ id: neueId(), name: "", kundennummer: "", anschrift: "", ansprechpartner: "", notiz: "" });
+  data.kunden.push({ id: neueId(), name: "", kundennummer: "", anschrift: "", kontakte: [], sprache: "de", notiz: "" });
   speichereInLocalStorage();
   renderVerwaltungTab();
 });
@@ -10041,11 +10482,12 @@ function schluesselMak(m) { return normalisiere(m.id); }
    geänderte Position macht das Angebot damit zu einem Konflikt, was hier richtig ist: ein Angebot
    ist ein Dokument, keine Sammlung unabhängiger Zeilen. */
 const ANGEBOT_FELDER = ["nummer", "datum", "gueltigBis", "status", "kundeId", "kundeName", "kundeNummer", "kundeAnschrift",
-  "kundeAnsprechpartner", "kundeReferenz", "ansprechpartnerId", "betreff", "artikel", "anzahlMuster",
-  "einleitungstext", "schlusstext", "positionen", "rabattProzent", "waehrung", "notiz"];
-const KUNDE_FELDER = ["name", "kundennummer", "anschrift", "ansprechpartner", "notiz"];
+  "kundeKontaktId", "kundeAnrede", "kundeVorname", "kundeNachname",
+  "kundeReferenz", "ansprechpartnerId", "betreff", "artikel", "anzahlMuster", "bearbeitungsdauerTage",
+  "sprache", "bloecke", "einleitungstext", "schlusstext", "positionen", "rabattProzent", "waehrung", "notiz"];
+const KUNDE_FELDER = ["name", "kundennummer", "anschrift", "kontakte", "sprache", "notiz"];
 const ANSPRECHPARTNER_FELDER = ["name", "funktion", "telefon", "mobil", "email", "standard"];
-const ANGEBOTSTEXT_FELDER = ["bezeichnung", "typ", "immer", "text"];
+const ANGEBOTSTEXT_FELDER = ["bezeichnung", "typ", "immer", "text", "sprache"];
 const MAK_FELDER = ["kategorie", "bereich", "parameter", "anforderung", "normEu", "normUs", "pruefnachweis", "schlagworte", "varianten", "kosten", "kostenWeiteresArtikel", "abrechnungsmodus", "bewertungsgrundlageErforderlich", "bemerkung", "sapCode"];
 function schluesselWarengruppe(w) { return normalisiereWarengruppe(w.code); }
 const WARENGRUPPE_FELDER = ["name", "bereich"];

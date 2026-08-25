@@ -1471,6 +1471,101 @@ Die Reiterleiste ist in drei Gruppen unterteilt:
 
 ## Reiter „Angebote" (alle Kunden außer LIDL)
 
+### Prüfgrundlage finden: Suche und Filterkette
+
+Die Prüfgrundlage wird nicht über den Warengruppen-Code gesucht (der ist eine
+LIDL-Systematik und für ein Angebot ohne Bedeutung), sondern über:
+
+- eine **Volltextsuche** über Produktname, Warengruppen-Name, Bereich **und die
+  Normen** der Prüfgrundlage — man findet ein Produkt also auch dann, wenn man
+  nur die Norm kennt, nach der geprüft werden soll (z. B. „DIN EN 581");
+- eine **Filterkette Bereich → Warengruppe → Produkt**. Jede Ebene zeigt nur
+  noch, was nach den vorgelagerten Filtern übrig ist; die Warengruppe erscheint
+  **nur mit Namen, ohne Code**. Bleibt am Ende genau **ein** Treffer übrig, gilt
+  er automatisch als gewählt — ein Dropdown mit einem einzigen Eintrag noch
+  einmal anzuklicken wäre reine Klickarbeit.
+
+„Filter zurücksetzen" leert Suche und alle drei Ebenen.
+
+### Bearbeitungsdauer und benötigte Muster
+
+An jeder **Prüfgrundlage** lassen sich jetzt zwei Angaben pflegen, die der
+Kunde als Erstes erfragt:
+
+- **Anzahl Muster** — wie viele Prüfmuster diese Prüfung braucht.
+- **Bearbeitungsdauer (Arbeitstage)** — neues Feld.
+
+Im Angebot zeigt die gewählte Prüfgrundlage beide Werte an; **„In das Angebot
+übernehmen"** schreibt sie in die Kopfdaten. Umfasst ein Angebot mehrere
+Prüfgrundlagen, gilt bei der Dauer die **längste** — das ist die Zeit, auf die
+der Kunde tatsächlich wartet; eine kürzere überschreibt eine bereits
+eingetragene längere deshalb nicht. Beide Angaben erscheinen im Kunden-PDF
+zwischen Positionen und Schlusstext.
+
+### Die vier Prüfblöcke
+
+Ein Angebot ist in dieselben vier Blöcke gegliedert, in denen auch eine
+Kundenanfrage formuliert wird. Oben im Angebot steht dafür eine **Checkliste
+„Umfang der Anfrage"** — nur angehakte Blöcke bieten unten Prüfungen zum
+Übernehmen an, und je Block ist die Anzahl bereits übernommener Positionen
+sichtbar, damit nichts still verschwindet.
+
+| Block | Woher die Prüfungen kommen |
+|---|---|
+| **Kennzeichnung** | Normen mit Prüfungsart „Kennzeichnung" |
+| **Norm-/Sicherheitsprüfung** | Normen-Block der Prüfgrundlage |
+| **Produktspezifikation** | NGO/StiWa-Block der Prüfgrundlage + Prüfungsart „Produktspezifikation" |
+| **FFU/Fitting** | FFU-Block der Prüfgrundlage |
+
+Blöcke mit einer **Prüfungsart** als Quelle hängen nicht am Produkt (eine
+Kennzeichnungsprüfung gilt überall) und stehen deshalb auch ohne gewählte
+Prüfgrundlage bereit. Die Norm-/Sicherheitsprüfung hat bewusst **keine**
+Prüfungsart-Quelle: solche Prüfungen sind produktspezifisch und stehen genau
+deshalb in der Prüfgrundlage — sonst stünden in der Auswahl Hunderte
+fachfremder Normen. Steht dieselbe Norm in der Prüfgrundlage **und** trägt
+die Prüfungsart, gewinnt die Prüfgrundlage — dort ist der produktspezifische
+Preis hinterlegt.
+
+Jede Position trägt ihren Block als eigene Spalte in der Positionstabelle und
+ist dort umstellbar. Im **Kunden-PDF** stehen die Positionen blockweise unter
+einer Zwischenüberschrift, in der festen Reihenfolge oben — nicht in der
+Eingabereihenfolge. Ein Block ohne aktive Position erscheint gar nicht. Die
+Positionsnummer läuft über alle Blöcke hinweg durch, wie der Kunde es erwartet.
+
+### Sprache: Deutsch oder Englisch
+
+Jedes Angebot hat eine **Angebotssprache**. Sie steuert **alle festen
+Beschriftungen** des Kunden-PDFs (Angebotsnummer/Quotation number, Menge/Qty,
+Angebotssumme netto/Total net, Blocküberschriften, Anrede, Gruß …), das
+**Datumsformat** (25.08.2026 / 25/08/2026) und das **Zahlenformat**
+(1.575,00 EUR / 1,575.00 EUR). Ein Angebot ist damit vollständig in einer
+Sprache — nicht halb übersetzt.
+
+Am **Kunden** ist die Sprache hinterlegt und belegt neue Angebote für ihn
+automatisch vor. **Textbausteine** tragen ebenfalls eine Sprache; vorbelegt
+wird nur, was zur Sprache des Angebots passt. Gibt es in der gewählten Sprache
+keinen Baustein, bleibt das Feld leer statt auf die andere Sprache
+zurückzufallen — ein deutscher Standardtext in einem englischen Angebot wäre
+schlimmer als gar keiner. Beim Umschalten der Sprache fragt das Tool, ob die
+Standardtexte der neuen Sprache geladen werden sollen; bereits Formuliertes
+wird nur nach dieser Rückfrage überschrieben.
+
+### Ansprechpartner beim Kunden
+
+Je Kunde lassen sich **mehrere Ansprechpartner** mit **Anrede, Vorname,
+Nachname** und E-Mail hinterlegen (Verwaltung → Kunden); einer ist „Standard"
+und wird beim Übernehmen des Kunden ins Angebot gleich mitgenommen. Im Angebot
+lässt sich der Kontakt per Auswahl wechseln oder frei überschreiben.
+
+Daraus entsteht die **Anrede** im Angebot: „Sehr geehrte Frau Schmitt," /
+„Sehr geehrter Herr Meier," bzw. „Dear Ms Schmitt," / „Dear Mr Meier,". Fehlt
+Anrede oder Nachname, bleibt es bei „Sehr geehrte Damen und Herren," — ein
+„Sehr geehrter Herr ," wäre schlimmer. Ein im Angebot neu eingetragener Kontakt
+wandert über „↑ In Kundenstamm übernehmen" mit in den Stamm und wird dabei über
+den Namen abgeglichen, damit derselbe Kontakt nicht bei jedem Angebot erneut
+angelegt wird.
+
+
 Ein Angebot entsteht in fünf Schritten, alle auf einer Seite:
 
 1. **Kopfdaten** — Angebotsnummer, Datum, Gültigkeit und Status sind beim
@@ -1482,15 +1577,15 @@ Ein Angebot entsteht in fünf Schritten, alle auf einer Seite:
 2. **Kunde** — entweder aus dem Kundenstamm übernehmen oder direkt eintippen.
    **„↑ In Kundenstamm übernehmen"** legt den Kunden an bzw. aktualisiert ihn,
    sodass man für einen neuen Kunden den Reiter nicht verlassen muss. Die
-   Anschrift wird **als Kopie im Angebot** gespeichert: eine spätere Änderung
-   im Kundenstamm verändert bereits geschriebene Angebote nicht.
+   Anschrift **und der gewählte Ansprechpartner** werden **als Kopie im Angebot**
+   gespeichert: eine spätere Änderung im Kundenstamm verändert bereits
+   geschriebene Angebote nicht.
 3. **Ansprechpartner** — wer im Angebot als Kontakt und Unterzeichner steht.
    Der in der Verwaltung als „Standard" markierte ist vorausgewählt.
-4. **Positionen** — Warengruppe eintippen (Tippsuche über alle Warengruppen),
-   Produkt wählen, dann **„Alle N übernehmen"** oder je Prüfung einzeln
-   „+ übernehmen". Übernommen werden die Normen aller drei Blöcke der
-   Prüfgrundlage (Sicherheits-/Normprüfung, FFU/Fitting, NGO/StiWa) mit
-   Bezeichnung, Norm-Titel als Beschreibung, SAP-Code und Preis. Bereits
+4. **Positionen** — oben die Blöcke der Kundenanfrage anhaken, dann die
+   Prüfgrundlage über Suche oder Filterkette finden (siehe unten) und je Block
+   **„Alle N übernehmen"** oder je Prüfung einzeln „+ übernehmen". Übernommen
+   werden Bezeichnung, Norm-Titel als Beschreibung, SAP-Code und Preis. Bereits
    übernommene Prüfungen sind als „✓ im Angebot" markiert. Daneben gibt es
    **„+ Freie Position"** für alles, was nicht aus einer Prüfgrundlage kommt.
 5. **Texte und Ausgabe** — Einleitung und Schlusstext sind aus den
