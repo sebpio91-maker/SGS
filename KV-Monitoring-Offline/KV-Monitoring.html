@@ -656,15 +656,24 @@ input[type=file] { display:none; }
       <button type="button" id="ansprechpartner-hinzufuegen">+ Ansprechpartner</button>
     </div>
   </div>
-  <div class="card" id="verwaltung-block-kunden" style="max-width:900px">
+  <div class="card" id="verwaltung-block-kunden" style="max-width:1250px">
     <h2 style="margin-top:0">Kunden</h2>
     <p class="hinweis">Stammdaten für den Reiter „Angebote" — im Angebot per Auswahl übernehmbar.
       Ein im Angebot neu eingetragener Kunde landet über „↑ In Kundenstamm übernehmen" hier.
       Änderungen hier wirken sich <strong>nicht</strong> rückwirkend auf bereits geschriebene
-      Angebote aus: dort ist die Anschrift bewusst als Kopie gespeichert.</p>
-    <div id="kunden-liste"></div>
-    <div class="toolbar-zeile" style="margin-top:0.6rem">
+      Angebote aus: dort sind Anschrift und Ansprechpartner bewusst als Kopie gespeichert.</p>
+    <div class="toolbar-zeile" style="margin-bottom:0.6rem">
       <button type="button" id="kunde-hinzufuegen">+ Kunde</button>
+    </div>
+    <div class="layout">
+      <div class="liste-panel">
+        <h2>Kunden</h2>
+        <div style="padding:0.6rem 0.6rem 0">
+          <input type="text" id="kunde-suche" placeholder="Firma, Kundennummer, Ort oder Ansprechpartner…" style="width:100%;box-sizing:border-box;font-family:inherit;font-size:0.85rem;padding:0.4rem 0.55rem;border:1px solid var(--border);border-radius:6px">
+        </div>
+        <ul id="kunden-liste"></ul>
+      </div>
+      <div id="kunde-detail"></div>
     </div>
   </div>
   <div class="card" id="verwaltung-block-bereiche" style="max-width:520px">
@@ -2742,6 +2751,11 @@ let pruefgrundlagenAnsicht = "warengruppe";
    | "gefahrenzone") - wie bei pruefgrundlagenAnsicht ein reiner Anzeige-Umschalter statt einer
    langen Scroll-Seite. */
 let verwaltungAnsicht = "bereiche";
+/* Ausgewählter Kunde im Reiter "Verwaltung" -> Kunden. Liste links, Detail rechts (wie im Reiter
+   "MAK") - bei mehreren hundert Kunden mit je einem Dutzend Ansprechpartnern wäre eine einzige
+   lange Liste aller Datensätze nicht mehr bedienbar. */
+let aktiverKundeId = null;
+let kundenSuche = "";
 
 function ladeAusLocalStorage() {
   try {
@@ -3008,6 +3022,27 @@ function seedMak() {
 function seedAnsprechpartner() {
   return [];
 }
+/* Kundenstamm aus der offiziellen Kundenliste (Debitor/Anschrift/Ansprechpartner). Je Debitor ein
+   Kunde, die Ansprechpartner darunter über Vor-/Nachname entdoppelt. Die Angebotssprache leitet
+   sich aus dem Länderkennzeichen ab: DE/AT/CH/LI -> Deutsch, alles andere -> Englisch. Die
+   Geburtsdaten der Spalte "GebDatum" werden bewusst NICHT übernommen - für ein Angebot ohne
+   Nutzen und damit eine personenbezogene Angabe, die hier nichts zu suchen hat. */
+const KUNDEN_STARTBESTAND = [{"kundennummer": "10249603", "name": "ADEO SERVICES SA", "anschrift": "135 rue Sadi Carnot\n59790 Ronchin\nFrankreich", "telefon": "", "sprache": "en", "kontakte": [{"anrede": "", "vorname": "Corentin", "nachname": "Begel", "telefon": ""}, {"anrede": "Herr", "vorname": "Guillaume", "nachname": "BRU", "telefon": "33 6 38 21 28 68"}]}, {"kundennummer": "10131330", "name": "CDM Werbemittel GmbH", "anschrift": "Elchweg 24\n44309 Dortmund", "telefon": "", "sprache": "de", "kontakte": [{"anrede": "Frau", "vorname": "Simone", "nachname": "Brinker", "telefon": "0231 900 390 90"}, {"anrede": "Herr", "vorname": "Ingo", "nachname": "Freitag", "telefon": ""}]}, {"kundennummer": "10158842", "name": "CONMETALL MEISTER GMBH", "anschrift": "Oberkamper Str. 37-39\n42349 Wuppertal", "telefon": "0202247500", "sprache": "de", "kontakte": [{"anrede": "Herr", "vorname": "Jan-Niklas", "nachname": "Behr", "telefon": ""}, {"anrede": "Frau", "vorname": "Julia", "nachname": "Dannaks", "telefon": ""}, {"anrede": "Herr", "vorname": "Cornel", "nachname": "Koch", "telefon": ""}, {"anrede": "Herr", "vorname": "Dirk", "nachname": "Lüttenberg", "telefon": "0202 24750-180"}, {"anrede": "Herr", "vorname": "Julian", "nachname": "Sarrazin", "telefon": ""}, {"anrede": "Herr", "vorname": "Frank", "nachname": "Steuer", "telefon": "(2191) 5921-138"}]}, {"kundennummer": "10025278", "name": "DELTA SPORT HANDELSKONTOR GMBH", "anschrift": "Wragekamp 6\n22397 Hamburg", "telefon": "040 527 310-000", "sprache": "de", "kontakte": [{"anrede": "Herr", "vorname": "Felix", "nachname": "Albes", "telefon": "40-527 310-191"}, {"anrede": "Herr", "vorname": "Fabian", "nachname": "Bartol", "telefon": "40-527 310-332"}, {"anrede": "Herr", "vorname": "Fabian", "nachname": "Bratol", "telefon": "40-527 310-332"}, {"anrede": "Herr", "vorname": "Lukas", "nachname": "Gerlach", "telefon": ""}, {"anrede": "", "vorname": "Björn", "nachname": "Hövermann", "telefon": ""}, {"anrede": "Herr", "vorname": "Florian", "nachname": "Kaminski", "telefon": "040 527 310-000"}, {"anrede": "Herr", "vorname": "Christian", "nachname": "Kleinholz", "telefon": ""}, {"anrede": "Herr", "vorname": "Benjamin", "nachname": "Mees", "telefon": ""}, {"anrede": "Herr", "vorname": "Jens", "nachname": "Meyer", "telefon": ""}, {"anrede": "Herr", "vorname": "Sebastian", "nachname": "Meß", "telefon": "40-527 310-397"}, {"anrede": "Frau", "vorname": "Svenja", "nachname": "Stegemann", "telefon": "040-527 310 311"}, {"anrede": "Herr", "vorname": "Benjamin", "nachname": "Struve", "telefon": ""}, {"anrede": "Frau", "vorname": "Tanja", "nachname": "Struve", "telefon": "040 527 310-000"}, {"anrede": "Herr", "vorname": "Felix", "nachname": "Veer", "telefon": ""}, {"anrede": "Herr", "vorname": "Tim", "nachname": "Wassel", "telefon": "40-527 310-163"}, {"anrede": "", "vorname": "Jens", "nachname": "Werner", "telefon": ""}]}, {"kundennummer": "10024477", "name": "KM Zündholz International", "anschrift": "Karl Müller GmbH\nBemannsbruch 16-18\n74909 Meckesheim", "telefon": "06226 9202-0", "sprache": "de", "kontakte": [{"anrede": "Herr", "vorname": "Burak", "nachname": "Gümüs", "telefon": ""}]}, {"kundennummer": "10055879", "name": "Kompernass Handelsges.mbH", "anschrift": "Burgstr. 21\n44867 Bochum", "telefon": "02327-3018-96", "sprache": "de", "kontakte": [{"anrede": "Herr", "vorname": "Matthias", "nachname": "Jansen", "telefon": ""}]}, {"kundennummer": "10261766", "name": "Lanco GmbH", "anschrift": "Haderwaldstr. 69b\n36041 Fulda", "telefon": "", "sprache": "de", "kontakte": [{"anrede": "", "vorname": "Andreas", "nachname": "Spies", "telefon": ""}]}, {"kundennummer": "10102485", "name": "Leifheit AG", "anschrift": "Leifheitstraße 1\n56377 Nassau", "telefon": "", "sprache": "de", "kontakte": [{"anrede": "Herr", "vorname": "Detlef", "nachname": "Bätza", "telefon": "02604 977-456"}]}, {"kundennummer": "10173318", "name": "Lidl & Kaufland Asia Pte. Limited", "anschrift": "30 PASIR PANJANG ROAD\n117440 Singapore\nSingapur", "telefon": "", "sprache": "en", "kontakte": [{"anrede": "", "vorname": "Jacky", "nachname": "Au Yeung", "telefon": ""}, {"anrede": "", "vorname": "Chan", "nachname": "Cara", "telefon": ""}, {"anrede": "", "vorname": "Cara", "nachname": "Chan", "telefon": ""}, {"anrede": "Herr", "vorname": "Frankie", "nachname": "Chan", "telefon": ""}, {"anrede": "Herr", "vorname": "Ryan", "nachname": "Chan", "telefon": ""}, {"anrede": "", "vorname": "Li", "nachname": "Christi", "telefon": ""}, {"anrede": "Frau", "vorname": "Emily", "nachname": "Chung", "telefon": ""}, {"anrede": "Frau", "vorname": "Tania", "nachname": "Chung", "telefon": ""}, {"anrede": "Frau", "vorname": "Astrid", "nachname": "Delfino", "telefon": ""}, {"anrede": "Herr", "vorname": "Lu", "nachname": "Elvis", "telefon": ""}, {"anrede": "", "vorname": "lee", "nachname": "enzo", "telefon": ""}, {"anrede": "", "vorname": "Hei", "nachname": "Fung", "telefon": ""}, {"anrede": "", "vorname": "Miu", "nachname": "Fung", "telefon": ""}, {"anrede": "", "vorname": "Lam", "nachname": "Kamam", "telefon": ""}, {"anrede": "", "vorname": "Hiu Chi Janet", "nachname": "Lam", "telefon": ""}, {"anrede": "Herr", "vorname": "Tim", "nachname": "Lam", "telefon": ""}, {"anrede": "", "vorname": "Wing Yee", "nachname": "Lau", "telefon": ""}, {"anrede": "Herr", "vorname": "Enzo", "nachname": "Lee", "telefon": ""}, {"anrede": "Herr", "vorname": "John", "nachname": "Leong", "telefon": ""}, {"anrede": "Herr", "vorname": "John", "nachname": "Leung", "telefon": ""}, {"anrede": "Frau", "vorname": "Angel", "nachname": "Li", "telefon": ""}, {"anrede": "", "vorname": "Yin", "nachname": "Li", "telefon": ""}, {"anrede": "", "vorname": "Lik", "nachname": "Lo", "telefon": ""}, {"anrede": "Frau", "vorname": "Iris", "nachname": "Lui", "telefon": ""}, {"anrede": "Herr", "vorname": "Jack", "nachname": "Mak", "telefon": ""}, {"anrede": "Frau", "vorname": "Christina", "nachname": "Man", "telefon": ""}, {"anrede": "", "vorname": "Shelly", "nachname": "Poon", "telefon": ""}, {"anrede": "Herr", "vorname": "Leo", "nachname": "Siu", "telefon": ""}, {"anrede": "Frau", "vorname": "Agatha", "nachname": "Teng", "telefon": ""}, {"anrede": "Herr", "vorname": "Karl", "nachname": "Tsang", "telefon": ""}, {"anrede": "", "vorname": "Kris", "nachname": "Tse", "telefon": ""}, {"anrede": "", "vorname": "Victor", "nachname": "Tse", "telefon": ""}]}, {"kundennummer": "10089677", "name": "Lässig GmbH", "anschrift": "Im Riemen 32\n64832 Babenhausen", "telefon": "06073 74489-0", "sprache": "de", "kontakte": [{"anrede": "Frau", "vorname": "-", "nachname": "-", "telefon": ""}, {"anrede": "Frau", "vorname": "Michaela", "nachname": "Brehm", "telefon": ""}, {"anrede": "Frau", "vorname": "Kerstin", "nachname": "Burgert", "telefon": ""}, {"anrede": "Frau", "vorname": "Melissa", "nachname": "Henkes", "telefon": ""}, {"anrede": "Frau", "vorname": "Garcia", "nachname": "Miriam", "telefon": ""}, {"anrede": "Frau", "vorname": "Thusiba", "nachname": "Nadeswaran", "telefon": ""}, {"anrede": "Herr", "vorname": "Marco", "nachname": "Nimbler", "telefon": ""}, {"anrede": "Frau", "vorname": "Anna", "nachname": "Roth", "telefon": ""}, {"anrede": "Frau", "vorname": "Anne", "nachname": "Sachse", "telefon": ""}, {"anrede": "Frau", "vorname": "Ute", "nachname": "Schliessmann", "telefon": ""}, {"anrede": "Frau", "vorname": "Claudia", "nachname": "Stöhr", "telefon": ""}, {"anrede": "Frau", "vorname": "unbekannt", "nachname": "unbekann", "telefon": "0607374489-177"}, {"anrede": "Frau", "vorname": "Kathleen", "nachname": "Ungerer", "telefon": ""}, {"anrede": "Frau", "vorname": "Nele", "nachname": "Weiss", "telefon": ""}]}, {"kundennummer": "3546500", "name": "M + C Schiffer GmbH", "anschrift": "Dental Care Products\nIndustriestrasse 4\n53577 Neustadt", "telefon": "02683981232", "sprache": "de", "kontakte": [{"anrede": "", "vorname": "Johannes", "nachname": "Cheers", "telefon": ""}, {"anrede": "", "vorname": "Klaus", "nachname": "Frings", "telefon": ""}, {"anrede": "Frau", "vorname": "Ursula", "nachname": "Holl", "telefon": "02683/ 981-104"}, {"anrede": "Frau", "vorname": "Melanie", "nachname": "Mühle", "telefon": "02683 981-131"}, {"anrede": "Frau", "vorname": "Barbara", "nachname": "Niedtfeld", "telefon": ""}]}, {"kundennummer": "10037112", "name": "MAM Baby AG Ft.", "anschrift": "Fö u. 132\n9795 Vaskeresztes\nUngarn", "telefon": "94 351-007", "sprache": "en", "kontakte": [{"anrede": "", "vorname": "Endre", "nachname": "Agel", "telefon": "94 351-007"}, {"anrede": "Frau", "vorname": "Krisztina", "nachname": "Csipkés", "telefon": "094 540-100"}, {"anrede": "Frau", "vorname": "Hortenzia", "nachname": "Csiszár (Nicht mehr verwenden)", "telefon": ""}, {"anrede": "Frau", "vorname": "Szilvia", "nachname": "Deé", "telefon": ""}, {"anrede": "Frau", "vorname": "Linda", "nachname": "Gombor", "telefon": ""}, {"anrede": "Frau", "vorname": "Júlia Rita", "nachname": "Horváth", "telefon": "094 540100-691"}, {"anrede": "Frau", "vorname": "Dora", "nachname": "Kartyas", "telefon": "94 351-007"}, {"anrede": "Frau", "vorname": "Dóra", "nachname": "Kártyás", "telefon": "94 540-658"}, {"anrede": "Herr", "vorname": "Boldizsar", "nachname": "Laszlo", "telefon": "94 351-007"}, {"anrede": "Herr", "vorname": "Boldizsár", "nachname": "László", "telefon": "94 540-658"}, {"anrede": "Frau", "vorname": "Reka", "nachname": "Sarpataki", "telefon": ""}, {"anrede": "Frau", "vorname": "Zsófia", "nachname": "Sipocz-Varga", "telefon": ""}, {"anrede": "Frau", "vorname": "Zsuzsanna", "nachname": "Szvicsek", "telefon": "94 540 100"}, {"anrede": "Frau", "vorname": "Judit", "nachname": "Valkó", "telefon": "36 (0)94 540 ..."}, {"anrede": "Herr", "vorname": "Endre", "nachname": "Ágel", "telefon": "94 540 100-658"}]}, {"kundennummer": "10037309", "name": "MAM Babyartikel GmbH", "anschrift": "Rudolf-Diesel-Str. 6-8\n27383 Scheeßel", "telefon": "04263 9317-0", "sprache": "de", "kontakte": [{"anrede": "Frau", "vorname": "Britta", "nachname": "Schornstein", "telefon": ""}]}, {"kundennummer": "10090861", "name": "MAPA GmbH", "anschrift": "Industriestraße 21-25\n27404 Zeven", "telefon": "04281 / 73-0", "sprache": "de", "kontakte": [{"anrede": "Frau", "vorname": "p", "nachname": "b", "telefon": ""}, {"anrede": "Frau", "vorname": "Julia-Sophie", "nachname": "Baden", "telefon": ""}, {"anrede": "Herr", "vorname": "Steffen", "nachname": "Berger", "telefon": ""}, {"anrede": "", "vorname": "Rieke", "nachname": "Brase", "telefon": ""}, {"anrede": "Frau", "vorname": "Kerstin", "nachname": "Conrad", "telefon": ""}, {"anrede": "Frau", "vorname": "Ina", "nachname": "Cordes", "telefon": ""}, {"anrede": "Frau", "vorname": "Dr. Elena", "nachname": "Dirksen", "telefon": "04281 73-126"}, {"anrede": "Herr", "vorname": "Alexander", "nachname": "DuChesne", "telefon": ""}, {"anrede": "Frau", "vorname": "Tanja", "nachname": "Engelke", "telefon": ""}, {"anrede": "Frau", "vorname": "Tina", "nachname": "Forkert", "telefon": ""}, {"anrede": "Frau", "vorname": "Tina", "nachname": "Hauschild", "telefon": ""}, {"anrede": "Frau", "vorname": "Carolin", "nachname": "Hellberg", "telefon": ""}, {"anrede": "", "vorname": "", "nachname": "Jens Lottermoser", "telefon": ""}, {"anrede": "Herr", "vorname": "Steffen", "nachname": "Krange", "telefon": ""}, {"anrede": "Frau", "vorname": "Stephanie", "nachname": "Lippoldt", "telefon": ""}, {"anrede": "Frau", "vorname": "Sandra", "nachname": "Meyer", "telefon": "4281 73-159"}, {"anrede": "Frau", "vorname": "Kerstin", "nachname": "Otto", "telefon": ""}, {"anrede": "Frau", "vorname": "Petra", "nachname": "Puffer", "telefon": ""}, {"anrede": "Frau", "vorname": "Julia", "nachname": "Scholtes", "telefon": ""}, {"anrede": "", "vorname": "Grietje", "nachname": "Schriefer", "telefon": ""}, {"anrede": "Frau", "vorname": "Karolin", "nachname": "Schwanke", "telefon": ""}, {"anrede": "Herr", "vorname": "Günter", "nachname": "Steitz", "telefon": ""}, {"anrede": "Frau", "vorname": "Nicole", "nachname": "Szamocki", "telefon": ""}, {"anrede": "Frau", "vorname": "Grietje", "nachname": "van der Kooi", "telefon": "49 4281 73-470"}, {"anrede": "Frau", "vorname": "Lisa", "nachname": "Weigel", "telefon": ""}, {"anrede": "", "vorname": "Carolin", "nachname": "Wiencke", "telefon": ""}]}, {"kundennummer": "10079576", "name": "Monz Handelsgesellschaft", "anschrift": "International mbH & Co. KG\nSchöndorfer Straße 60-62\n54292 Trier", "telefon": "0651 97020-23", "sprache": "de", "kontakte": [{"anrede": "Herr", "vorname": "Alexander", "nachname": "Born", "telefon": "0651 97020-23"}, {"anrede": "Herr", "vorname": "Robert", "nachname": "Cremer", "telefon": "0651 200 673-23"}]}, {"kundennummer": "10124751", "name": "Obering. Berg & Lukowiak GmbH", "anschrift": "Löhner Straße 157\n32609 Hüllhorst", "telefon": "0049574492960", "sprache": "de", "kontakte": [{"anrede": "Herr", "vorname": "Christian", "nachname": "Benthin", "telefon": ""}, {"anrede": "Herr", "vorname": "Hasan", "nachname": "Durgunsu", "telefon": ""}, {"anrede": "Herr", "vorname": "Christian", "nachname": "Eisenmeier", "telefon": ""}, {"anrede": "Herr", "vorname": "Dennis", "nachname": "Koch", "telefon": ""}]}, {"kundennummer": "10021433", "name": "PFI Prüf- und Forschungsinstitut", "anschrift": "Pirmasens e.V.\nMarie-Curie-Str. 19\n66953 Pirmasens", "telefon": "06331 2490-710", "sprache": "de", "kontakte": [{"anrede": "Frau", "vorname": "Ines", "nachname": "Anderie", "telefon": ""}, {"anrede": "Herr", "vorname": "Oliver", "nachname": "Haubrich", "telefon": ""}, {"anrede": "Herr", "vorname": "Michael", "nachname": "Knauer", "telefon": ""}]}, {"kundennummer": "10157515", "name": "Pretty Nail Shop 24 GmbH", "anschrift": "Bäckerbarg 3\n22889 Tangstedt", "telefon": "04109 25393-13", "sprache": "de", "kontakte": [{"anrede": "Herr", "vorname": "Dominik", "nachname": "Bahmer", "telefon": ""}, {"anrede": "Herr", "vorname": "Mike", "nachname": "Pudler", "telefon": "04109 25393-44"}]}, {"kundennummer": "10191247", "name": "Schou Company A/S", "anschrift": "Nordager 31\n6000 Kolding\nDänemark", "telefon": "", "sprache": "en", "kontakte": [{"anrede": "Frau", "vorname": "", "nachname": "Kirsten Vibeke Jensen", "telefon": ""}, {"anrede": "", "vorname": "Rikke", "nachname": "Lykkefold Sørensen", "telefon": ""}, {"anrede": "", "vorname": "Henriette", "nachname": "Petersen", "telefon": ""}]}, {"kundennummer": "10035873", "name": "SIGG Switzerland Bottles AG", "anschrift": "Walzmühlestr. 62\n8501 Frauenfeld\nSchweiz", "telefon": "", "sprache": "de", "kontakte": [{"anrede": "Herr", "vorname": "Stefan", "nachname": "Marusic", "telefon": ""}]}, {"kundennummer": "10079167", "name": "Targa GmbH", "anschrift": "Coesterweg 45\n59494 Soest", "telefon": "", "sprache": "de", "kontakte": [{"anrede": "Herr", "vorname": "David", "nachname": "Hillebrand", "telefon": "02921 38038-615"}, {"anrede": "", "vorname": "Michael", "nachname": "Kotthoff", "telefon": ""}, {"anrede": "", "vorname": "Christian", "nachname": "Stamen", "telefon": "0292138038-613"}]}, {"kundennummer": "10203177", "name": "Toynamics Europe GmbH", "anschrift": "Alsfelder Straße 41\n35325 Mücke", "telefon": "0 6400 9587  0", "sprache": "de", "kontakte": [{"anrede": "Herr", "vorname": "Thomas", "nachname": "Mogk", "telefon": "0 6400 9587-156"}, {"anrede": "Frau", "vorname": "Jessica", "nachname": "Müller", "telefon": "0 6400 9587-196"}, {"anrede": "Frau", "vorname": "Sina", "nachname": "Schäfer", "telefon": "0 6400 9587 0"}, {"anrede": "", "vorname": "Christin", "nachname": "Viebeck", "telefon": "0 6400 9587  0"}]}, {"kundennummer": "10132133", "name": "Tradix GmbH & Co. KG", "anschrift": "Schwanheimer Straße 132\n64625 Bensheim", "telefon": "", "sprache": "de", "kontakte": [{"anrede": "Herr", "vorname": "Frank", "nachname": "Langer", "telefon": ""}, {"anrede": "", "vorname": "Holger", "nachname": "Lemke", "telefon": ""}, {"anrede": "Frau", "vorname": "Lea", "nachname": "Ludwig", "telefon": "040 333 12-198"}, {"anrede": "", "vorname": "Markus", "nachname": "Schöneberg", "telefon": ""}, {"anrede": "Herr", "vorname": "Peter", "nachname": "Voth", "telefon": "062517056245"}]}, {"kundennummer": "10061170", "name": "VILLEROY & BOCH AG", "anschrift": "RIEFFSTR. 46\n66663 MERZIG", "telefon": "", "sprache": "de", "kontakte": [{"anrede": "Frau", "vorname": "Laura", "nachname": "Gerart", "telefon": ""}, {"anrede": "", "vorname": "Corinna", "nachname": "Nagel", "telefon": ""}, {"anrede": "", "vorname": "Daniela", "nachname": "Witzel", "telefon": ""}]}, {"kundennummer": "10120503", "name": "Walter Werkzeuge Salzburg GmbH", "anschrift": "Gewerbeparkstraße 9\n5081 Anif\nÖsterreich", "telefon": "0624672091-0", "sprache": "de", "kontakte": [{"anrede": "Herr", "vorname": "Ben", "nachname": "Shields", "telefon": "0624672091-63"}, {"anrede": "Frau", "vorname": "Jovana", "nachname": "Stojanovic", "telefon": ""}]}];
+function seedKunden() {
+  return KUNDEN_STARTBESTAND.map((k) => ({
+    id: neueId(),
+    name: k.name || "",
+    kundennummer: k.kundennummer || "",
+    anschrift: k.anschrift || "",
+    telefon: k.telefon || "",
+    sprache: k.sprache === "en" ? "en" : "de",
+    notiz: "",
+    kontakte: (k.kontakte || []).map((c, i) => ({
+      id: neueId(), anrede: c.anrede || "", vorname: c.vorname || "", nachname: c.nachname || "",
+      email: "", telefon: c.telefon || "", standard: i === 0
+    }))
+  }));
+}
 function seedAngebotstexte() {
   return [
     { id: "text-einleitung", bezeichnung: "Standard-Einleitung", typ: "einleitung", immer: true,
@@ -3120,7 +3155,7 @@ function init() {
     geloeschteEintraege: (geladen && Array.isArray(geladen.geloeschteEintraege)) ? geladen.geloeschteEintraege : [],
     artikelkategoriePruefumfang: (geladen && geladen.artikelkategoriePruefumfang) ? geladen.artikelkategoriePruefumfang : { ...DEFAULT_ARTIKELKATEGORIE_PRUEFUMFANG },
     angebote: (geladen && Array.isArray(geladen.angebote)) ? geladen.angebote : [],
-    kunden: (geladen && Array.isArray(geladen.kunden)) ? geladen.kunden : [],
+    kunden: (geladen && Array.isArray(geladen.kunden) && geladen.kunden.length) ? geladen.kunden : seedKunden(),
     ansprechpartner: (geladen && Array.isArray(geladen.ansprechpartner)) ? geladen.ansprechpartner : seedAnsprechpartner(),
     /* Textbausteine bewusst nur beim ALLERERSTEN Start vorbelegen (leeres Array bleibt leer) -
        sonst käme ein bewusst gelöschter Standardtext bei jedem Neuladen zurück. */
@@ -9489,86 +9524,168 @@ function renderAnsprechpartnerVerwaltung() {
   });
 }
 
-function renderKundenVerwaltung() {
-  const box = document.getElementById("kunden-liste");
+function kundeSuchtext(k) {
+  return normalisiere([k.name, k.kundennummer, k.anschrift, k.telefon,
+    kundeKontakte(k).map((c) => `${c.vorname} ${c.nachname} ${c.email || ""}`).join(" ")].join(" "));
+}
+function gefilterteKunden() {
+  const q = normalisiere(kundenSuche);
+  const liste = q ? data.kunden.filter((k) => kundeSuchtext(k).includes(q)) : data.kunden;
+  return liste.slice().sort((a, b) => (a.name || "").localeCompare(b.name || "", "de"));
+}
+
+function renderKundenListe() {
+  const ul = document.getElementById("kunden-liste");
+  if (!ul) return;
+  const suchfeld = document.getElementById("kunde-suche");
+  if (suchfeld && suchfeld !== document.activeElement) suchfeld.value = kundenSuche;
+  const liste = gefilterteKunden();
+  if (!liste.length) {
+    ul.innerHTML = `<li class="leer">${data.kunden.length ? "Kein Kunde passt zur Suche." : "Noch keine Kunden hinterlegt."}</li>`;
+    return;
+  }
+  ul.innerHTML = liste.map((k) => {
+    const anzahlKontakte = kundeKontakte(k).length;
+    const anzahlAngebote = data.angebote.filter((a) => a.kundeId === k.id).length;
+    /* Ort statt kompletter Anschrift: bei gleichnamigen Firmen ist er das unterscheidende Merkmal,
+       ohne die schmale Liste zu sprengen. Er steht als letzte gefüllte Zeile vor dem Land. */
+    const zeilen = String(k.anschrift || "").split("\n").map((z) => z.trim()).filter(Boolean);
+    const ort = zeilen.length > 1 ? zeilen[1] : "";
+    return `<li class="${k.id === aktiverKundeId ? "aktiv" : ""}" data-id="${escapeHtml(k.id)}">
+      <strong>${escapeHtml(k.name || "(ohne Namen)")}</strong>
+      ${(k.sprache || "de") === "en" ? `<span class="badge">EN</span>` : ""}
+      <div class="muted">${escapeHtml(k.kundennummer || "ohne Kundennummer")}${ort ? " · " + escapeHtml(ort) : ""}</div>
+      <div class="muted">${anzahlKontakte} Ansprechpartner${anzahlAngebote ? ` · ${anzahlAngebote} Angebot${anzahlAngebote === 1 ? "" : "e"}` : ""}</div>
+    </li>`;
+  }).join("");
+  ul.querySelectorAll("li[data-id]").forEach((li) => li.addEventListener("click", () => {
+    aktiverKundeId = li.dataset.id;
+    renderKundenVerwaltung();
+  }));
+}
+
+function renderKundeDetail() {
+  const box = document.getElementById("kunde-detail");
   if (!box) return;
-  const sortiert = data.kunden.slice().sort((a, b) => (a.name || "").localeCompare(b.name || "", "de"));
-  box.innerHTML = sortiert.length ? sortiert.map((k) => {
-    const anzahl = data.angebote.filter((a) => a.kundeId === k.id).length;
-    return `<div class="mak-variante-item" data-id="${escapeHtml(k.id)}">
-      <div class="mak-variante-kopf">
-        <input type="text" data-feld="name" value="${escapeHtml(k.name || "")}" placeholder="Firma">
-        <input type="text" data-feld="kundennummer" value="${escapeHtml(k.kundennummer || "")}" placeholder="Kundennummer" style="max-width:160px">
-        <span class="muted" style="white-space:nowrap;font-size:0.8rem">${anzahl ? `${anzahl} Angebot${anzahl === 1 ? "" : "e"}` : "kein Angebot"}</span>
-        <button type="button" class="danger small" data-action="kunde-loeschen" title="Kunde löschen">🗑</button>
+  const k = data.kunden.find((x) => x.id === aktiverKundeId);
+  if (!k) {
+    box.innerHTML = '<div class="card leerzustand">Kein Kunde ausgewählt – links einen wählen oder oben „+ Kunde".</div>';
+    return;
+  }
+  const angebote = data.angebote.filter((a) => a.kundeId === k.id);
+  box.innerHTML = `<div class="card" style="margin-bottom:0.8rem">
+      <div class="toolbar-zeile">
+        <h2 style="margin:0">${escapeHtml(k.name || "(ohne Namen)")}</h2>
+        <div class="spacer"></div>
+        <span class="muted" style="font-size:0.8rem">${angebote.length ? `${angebote.length} Angebot${angebote.length === 1 ? "" : "e"}` : "kein Angebot"}</span>
+        <button type="button" class="danger small" id="kunde-loeschen">Kunde löschen</button>
       </div>
-      <div class="mak-variante-zusatz" style="flex-direction:column;align-items:stretch;gap:0.35rem">
-        <textarea class="auto-hoehe" data-feld="anschrift" rows="3" placeholder="Anschrift (mehrzeilig)" style="font-family:inherit;font-size:0.85rem;padding:0.35rem 0.5rem;border:1px solid var(--border);border-radius:6px">${escapeHtml(k.anschrift || "")}</textarea>
-        <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.8rem;font-weight:600">Angebotssprache
-          <select data-feld="sprache" style="font-family:inherit;font-size:0.85rem;padding:0.25rem 0.4rem;border:1px solid var(--border);border-radius:6px;font-weight:400">
-            ${ANGEBOT_SPRACHEN.map((x) => `<option value="${x.wert}" ${(k.sprache || "de") === x.wert ? "selected" : ""}>${x.label}</option>`).join("")}
-          </select>
-          <span class="muted" style="font-weight:400">– belegt neue Angebote für diesen Kunden vor</span></label>
-        <div class="kunde-kontakte">
-          <strong style="font-size:0.8rem">Ansprechpartner</strong>
-          ${kundeKontakte(k).length ? kundeKontakte(k).map((kk) => `<div class="kunde-kontakt" data-kontakt="${escapeHtml(kk.id)}">
-            <select data-kfeld="anrede">${["", "Herr", "Frau"].map((x) => `<option value="${x}" ${(kk.anrede || "") === x ? "selected" : ""}>${x || "—"}</option>`).join("")}</select>
-            <input type="text" data-kfeld="vorname" value="${escapeHtml(kk.vorname || "")}" placeholder="Vorname">
-            <input type="text" data-kfeld="nachname" value="${escapeHtml(kk.nachname || "")}" placeholder="Nachname">
-            <input type="text" data-kfeld="email" value="${escapeHtml(kk.email || "")}" placeholder="E-Mail">
-            <label class="checkbox-label" style="display:flex;align-items:center;gap:0.25rem;font-size:0.78rem;white-space:nowrap"><input type="radio" name="kontakt-standard-${escapeHtml(k.id)}" data-kfeld="standard" ${kk.standard ? "checked" : ""}> Standard</label>
-            <button type="button" class="danger small" data-action="kontakt-loeschen" title="Ansprechpartner löschen">🗑</button>
-          </div>`).join("") : '<p class="muted" style="margin:0.2rem 0">Noch kein Ansprechpartner hinterlegt.</p>'}
-          <button type="button" class="ghost small" data-action="kontakt-hinzufuegen" style="margin-top:0.3rem">+ Ansprechpartner</button>
-        </div>
+      <div class="formular-grid">
+        <label>Firma<input type="text" data-feld="name" value="${escapeHtml(k.name || "")}"></label>
+        <label>Kundennummer<input type="text" data-feld="kundennummer" value="${escapeHtml(k.kundennummer || "")}"></label>
+        <label class="volle-breite">Anschrift <span class="muted" style="font-weight:400">– so, wie sie im Angebot stehen soll (mehrzeilig)</span><textarea class="auto-hoehe" data-feld="anschrift" rows="3">${escapeHtml(k.anschrift || "")}</textarea></label>
+        <label>Telefon<input type="text" data-feld="telefon" value="${escapeHtml(k.telefon || "")}"></label>
+        <label title="Belegt neue Angebote für diesen Kunden vor.">Angebotssprache<select data-feld="sprache">
+          ${ANGEBOT_SPRACHEN.map((x) => `<option value="${x.wert}" ${(k.sprache || "de") === x.wert ? "selected" : ""}>${x.label}</option>`).join("")}
+        </select></label>
+        <label class="volle-breite">Interne Notiz<textarea class="auto-hoehe" data-feld="notiz" rows="2">${escapeHtml(k.notiz || "")}</textarea></label>
       </div>
+    </div>
+
+    <div class="card">
+      <div class="toolbar-zeile">
+        <h2 style="margin:0">Ansprechpartner <span class="muted" style="font-weight:400;font-size:0.85rem">(${kundeKontakte(k).length})</span></h2>
+        <div class="spacer"></div>
+        <button type="button" class="ghost small" id="kontakt-hinzufuegen">+ Ansprechpartner</button>
+      </div>
+      <p class="hinweis" style="margin-top:0">Der als <strong>Standard</strong> markierte wird beim Übernehmen des Kunden ins Angebot automatisch mitgenommen. „Anrede" bestimmt die Beugung der Anrede im Angebot (auch auf Englisch).</p>
+      <div class="tabellen-wrapper">
+        <table class="tabelle tabelle-fest">
+          <thead><tr>
+            <th style="width:11%">Anrede</th><th style="width:22%">Vorname</th><th style="width:22%">Nachname</th>
+            <th style="width:22%">E-Mail</th><th style="width:14%">Telefon</th>
+            <th style="width:5%" title="Wird beim Übernehmen des Kunden ins Angebot vorausgewählt">Std.</th>
+            <th style="width:4%"></th>
+          </tr></thead>
+          <tbody id="kunde-kontakt-body">
+            ${kundeKontakte(k).length ? kundeKontakte(k).map((c) => `<tr data-kontakt="${escapeHtml(c.id)}">
+              <td><select data-kfeld="anrede">${["", "Herr", "Frau"].map((x) => `<option value="${x}" ${(c.anrede || "") === x ? "selected" : ""}>${x || "—"}</option>`).join("")}</select></td>
+              <td><input type="text" data-kfeld="vorname" value="${escapeHtml(c.vorname || "")}"></td>
+              <td><input type="text" data-kfeld="nachname" value="${escapeHtml(c.nachname || "")}"></td>
+              <td><input type="text" data-kfeld="email" value="${escapeHtml(c.email || "")}"></td>
+              <td><input type="text" data-kfeld="telefon" value="${escapeHtml(c.telefon || "")}"></td>
+              <td style="text-align:center"><input type="radio" name="kontakt-standard-${escapeHtml(k.id)}" data-kfeld="standard" ${c.standard ? "checked" : ""}></td>
+              <td style="text-align:center"><button type="button" class="danger small" data-action="kontakt-loeschen" title="Ansprechpartner löschen">🗑</button></td>
+            </tr>`).join("") : '<tr><td colspan="7" class="leerzustand">Noch kein Ansprechpartner hinterlegt.</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+      ${angebote.length ? `<p class="hinweis" style="margin-bottom:0">Angebote dieses Kunden: ${angebote.map((a) => escapeHtml(a.nummer || "(ohne Nummer)")).join(" · ")}</p>` : ""}
     </div>`;
-  }).join("") : '<p class="muted">Noch keine Kunden hinterlegt.</p>';
+
   macheTextareaSelbstwachsend(box);
-  box.querySelectorAll(".mak-variante-item").forEach((div) => {
-    const k = data.kunden.find((x) => x.id === div.dataset.id);
-    if (!k) return;
-    div.querySelectorAll("[data-feld]").forEach((el) => {
-      el.addEventListener(el.tagName === "SELECT" ? "change" : "input", () => { k[el.dataset.feld] = el.value; speichereInLocalStorage(); });
+  box.querySelectorAll(".formular-grid [data-feld]").forEach((el) => {
+    el.addEventListener(el.tagName === "SELECT" ? "change" : "input", () => {
+      k[el.dataset.feld] = el.value;
+      speichereInLocalStorage();
+      renderKundenListe();
+      if (el.dataset.feld === "name") box.querySelector("h2").textContent = k.name || "(ohne Namen)";
     });
-    div.querySelectorAll(".kunde-kontakt").forEach((zeile) => {
-      const kk = kundeKontakte(k).find((x) => x.id === zeile.dataset.kontakt);
-      if (!kk) return;
-      zeile.querySelectorAll("[data-kfeld]").forEach((el) => {
-        el.addEventListener(el.type === "radio" ? "change" : (el.tagName === "SELECT" ? "change" : "input"), () => {
-          if (el.type === "radio") k.kontakte.forEach((x) => { x.standard = x.id === kk.id; });
-          else kk[el.dataset.kfeld] = el.value;
-          speichereInLocalStorage();
-          renderAngeboteTab();
-        });
-      });
-      zeile.querySelector('[data-action="kontakt-loeschen"]').addEventListener("click", () => {
-        if (!confirm(`Ansprechpartner „${kundeKontaktName(kk)}" wirklich löschen?`)) return;
-        k.kontakte = k.kontakte.filter((x) => x.id !== kk.id);
+  });
+  box.querySelectorAll("#kunde-kontakt-body tr[data-kontakt]").forEach((tr) => {
+    const c = kundeKontakte(k).find((x) => x.id === tr.dataset.kontakt);
+    if (!c) return;
+    tr.querySelectorAll("[data-kfeld]").forEach((el) => {
+      const ereignis = (el.type === "radio" || el.tagName === "SELECT") ? "change" : "input";
+      el.addEventListener(ereignis, () => {
+        /* Genau EIN Standard je Kunde - die übrigen werden mit zurückgesetzt. */
+        if (el.type === "radio") k.kontakte.forEach((x) => { x.standard = x.id === c.id; });
+        else c[el.dataset.kfeld] = el.value;
         speichereInLocalStorage();
-        renderVerwaltungTab();
+        renderKundenListe();
         renderAngeboteTab();
       });
     });
-    div.querySelector('[data-action="kontakt-hinzufuegen"]').addEventListener("click", () => {
-      k.kontakte = Array.isArray(k.kontakte) ? k.kontakte : [];
-      k.kontakte.push({ id: neueId(), anrede: "", vorname: "", nachname: "", email: "", standard: !k.kontakte.length });
+    tr.querySelector('[data-action="kontakt-loeschen"]').addEventListener("click", () => {
+      if (!confirm(`Ansprechpartner „${kundeKontaktName(c) || "(ohne Namen)"}" wirklich löschen?`)) return;
+      const warStandard = c.standard;
+      k.kontakte = k.kontakte.filter((x) => x.id !== c.id);
+      /* War das der Standard, rückt der erste verbleibende nach - ein Kunde ohne Standard hätte
+         beim Übernehmen ins Angebot sonst gar keinen Ansprechpartner. */
+      if (warStandard && k.kontakte.length) k.kontakte[0].standard = true;
       speichereInLocalStorage();
-      renderVerwaltungTab();
-    });
-    div.querySelector('[data-action="kunde-loeschen"]').addEventListener("click", () => {
-      const anzahl = data.angebote.filter((a) => a.kundeId === k.id).length;
-      const zusatz = anzahl ? `\n\n${anzahl} Angebot(e) verweisen darauf - sie behalten ihre gespeicherte Anschrift und bleiben unverändert.` : "";
-      if (!confirm(`Kunde „${k.name || ""}" wirklich löschen?${zusatz}`)) return;
-      merkeGeloescht("kunden", k.id);
-      data.kunden = data.kunden.filter((x) => x.id !== k.id);
-      speichereInLocalStorage();
-      renderVerwaltungTab();
+      renderKundenVerwaltung();
       renderAngeboteTab();
     });
   });
+  box.querySelector("#kontakt-hinzufuegen").addEventListener("click", () => {
+    k.kontakte = Array.isArray(k.kontakte) ? k.kontakte : [];
+    k.kontakte.push({ id: neueId(), anrede: "", vorname: "", nachname: "", email: "", telefon: "", standard: !k.kontakte.length });
+    speichereInLocalStorage();
+    renderKundenVerwaltung();
+  });
+  box.querySelector("#kunde-loeschen").addEventListener("click", () => {
+    const zusatz = angebote.length ? `\n\n${angebote.length} Angebot(e) verweisen darauf - sie behalten ihre gespeicherte Anschrift und bleiben unverändert.` : "";
+    if (!confirm(`Kunde „${k.name || ""}" wirklich löschen?${zusatz}`)) return;
+    merkeGeloescht("kunden", k.id);
+    data.kunden = data.kunden.filter((x) => x.id !== k.id);
+    aktiverKundeId = null;
+    speichereInLocalStorage();
+    renderKundenVerwaltung();
+    renderAngeboteTab();
+  });
 }
 
+function renderKundenVerwaltung() {
+  if (aktiverKundeId && !data.kunden.some((k) => k.id === aktiverKundeId)) aktiverKundeId = null;
+  renderKundenListe();
+  renderKundeDetail();
+}
+
+const kundeSuchfeld = document.getElementById("kunde-suche");
+if (kundeSuchfeld) {
+  kundeSuchfeld.addEventListener("input", () => { kundenSuche = kundeSuchfeld.value; renderKundenListe(); });
+}
 
 /* ---------- Word-Vorlage für Kopf-/Fußzeile des Angebots ----------
    Aus einer hochgeladenen .docx werden die KOPF- und FUSSZEILE übernommen: ihre Texte und die dort
@@ -9776,9 +9893,12 @@ document.getElementById("ansprechpartner-hinzufuegen").addEventListener("click",
   renderAngeboteTab();
 });
 document.getElementById("kunde-hinzufuegen").addEventListener("click", () => {
-  data.kunden.push({ id: neueId(), name: "", kundennummer: "", anschrift: "", kontakte: [], sprache: "de", notiz: "" });
+  const neu = { id: neueId(), name: "", kundennummer: "", anschrift: "", telefon: "", kontakte: [], sprache: "de", notiz: "" };
+  data.kunden.push(neu);
+  aktiverKundeId = neu.id;
+  kundenSuche = "";
   speichereInLocalStorage();
-  renderVerwaltungTab();
+  renderKundenVerwaltung();
 });
 
 /* Editierbare Prozentsätze je Artikelkategorie (siehe pruefumfangFuerArtikelkategorie) - drei

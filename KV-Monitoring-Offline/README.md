@@ -1662,9 +1662,30 @@ Weitere Punkte:
   statt zu ersetzen, damit bereits Getipptes nicht verloren geht.
 - **Ansprechpartner** — Name, Funktion, Telefon, Mobil, E-Mail. Genau einer ist
   „Standard" und wird bei neuen Angeboten vorausgewählt.
-- **Kunden** — Firma, Kundennummer, Anschrift, Ansprechpartner. Je Kunde ist
-  vermerkt, wie viele Angebote darauf verweisen; beim Löschen wird darauf
-  hingewiesen, dass diese Angebote ihre gespeicherte Anschrift behalten.
+- **Kunden** — als **Liste links, Detail rechts** aufgebaut (wie der Reiter
+  „MAK"): oben eine Suche über **Firma, Kundennummer, Ort und
+  Ansprechpartner**, links die Kundenliste mit Kundennummer, Ort, Anzahl
+  Ansprechpartner und Angebote sowie einem **EN**-Kennzeichen bei
+  englischsprachigen Kunden. Rechts stehen die Stammdaten (Firma,
+  Kundennummer, Anschrift, Telefon, Angebotssprache, interne Notiz) und
+  darunter die **Ansprechpartner als Tabelle** — je Zeile Anrede, Vorname,
+  Nachname, E-Mail, Telefon und die Standard-Markierung. Beim Löschen eines
+  Kunden wird darauf hingewiesen, dass seine Angebote ihre gespeicherte
+  Anschrift behalten; löscht man den Standard-Ansprechpartner, rückt
+  automatisch der nächste nach (ein Kunde ohne Standard hätte beim Übernehmen
+  ins Angebot sonst gar keinen Kontakt).
+
+  **Startbestand:** die offizielle Kundenliste ist als Startbestand
+  eingepflegt — **25 Kunden mit 155 Ansprechpartnern**. Je Debitor ein Kunde,
+  die Ansprechpartner darunter über Vor-/Nachname entdoppelt, der erste je
+  Kunde als Standard. Die **Angebotssprache** leitet sich aus dem
+  Länderkennzeichen ab: DE/AT/CH/LI → Deutsch, alles andere → Englisch. Die
+  Anreden sind dabei vereinheitlicht (`Mr.`/`Mrs.` → `Herr`/`Frau`), damit die
+  Beugung in beiden Sprachen funktioniert. Die Spalte **„GebDatum" wurde
+  bewusst nicht übernommen** — für ein Angebot ohne Nutzen und damit eine
+  personenbezogene Angabe, die hier nichts zu suchen hat. Der Startbestand
+  greift nur, solange noch **kein** Kunde gepflegt ist; gepflegte Daten werden
+  beim Neuladen nie überschrieben.
 
 Der **CSV-Export** im Reiter „Angebote" liefert eine Zeile je Position über
 alle (gefilterten) Angebote — für Auswertungen; der SAP-Export eines einzelnen
