@@ -1487,20 +1487,43 @@ LIDL-Systematik und für ein Angebot ohne Bedeutung), sondern über:
 
 „Filter zurücksetzen" leert Suche und alle drei Ebenen.
 
+### Neue Prüfgrundlage direkt aus der Angebotsmaske
+
+Findet die Suche kein passendes Produkt, muss man den Reiter nicht verlassen:
+**„+ Neue Prüfgrundlage"** in der Filterkarte öffnet dieselbe Anlegemaske wie
+der Reiter Prüfgrundlagen und übernimmt **Bereich und Warengruppe aus dem
+aktuellen Filter** als Vorbelegung. Nach dem Speichern ist das neue Produkt im
+Angebot **sofort ausgewählt** — sonst müsste man es von Hand suchen, was der
+häufigste Grund wäre, den Umweg über den anderen Reiter doch wieder zu gehen.
+
 ### Bearbeitungsdauer und benötigte Muster
 
-An jeder **Prüfgrundlage** lassen sich jetzt zwei Angaben pflegen, die der
-Kunde als Erstes erfragt:
+An jeder **Prüfgrundlage** lassen sich zwei Angaben pflegen, die der Kunde als
+Erstes erfragt:
 
 - **Anzahl Muster** — wie viele Prüfmuster diese Prüfung braucht.
-- **Bearbeitungsdauer (Arbeitstage)** — neues Feld.
+- **Bearbeitungsdauer (Arbeitstage)**.
 
-Im Angebot zeigt die gewählte Prüfgrundlage beide Werte an; **„In das Angebot
-übernehmen"** schreibt sie in die Kopfdaten. Umfasst ein Angebot mehrere
-Prüfgrundlagen, gilt bei der Dauer die **längste** — das ist die Zeit, auf die
-der Kunde tatsächlich wartet; eine kürzere überschreibt eine bereits
-eingetragene längere deshalb nicht. Beide Angaben erscheinen im Kunden-PDF
-zwischen Positionen und Schlusstext.
+Im Angebot zeigt die gewählte Prüfgrundlage beide Werte direkt über der
+Prüfungsauswahl an („benötigte Muster 3 · Bearbeitungsdauer 15 Arbeitstage"),
+sodass man sie beim Zusammenstellen im Blick hat.
+
+Die beiden Angaben gehen unterschiedliche Wege, weil sie unterschiedlich
+funktionieren:
+
+- Die **Bearbeitungsdauer** ist eine Kopfangabe des Angebots —
+  **„Bearbeitungsdauer übernehmen"** schreibt sie dorthin. Umfasst ein Angebot
+  mehrere Prüfgrundlagen, gilt die **längste**: das ist die Zeit, auf die der
+  Kunde tatsächlich wartet, eine kürzere überschreibt eine bereits eingetragene
+  längere deshalb nicht. Im Kunden-PDF steht sie als Eckdatum zwischen
+  Positionen und Schlusstext.
+- Die **benötigten Muster** stehen **je Position** (eigene Spalte „Muster"),
+  vorbelegt aus der Prüfgrundlage. Aufsummiert werden sie bewusst nicht: über
+  mehrere Prüfungen hinweg ist eine Gesamtzahl schlicht falsch, weil dieselben
+  Muster mehrfach verwendet werden. Das Feld ist **Freitext** — „3", aber auch
+  „2 je Farbe" oder „1 Muster + 1 Rückstellmuster" — und **hat keinen Einfluss
+  auf den Preis**. Im Kunden-PDF steht es unter der jeweiligen Position
+  („Benötigte Prüfmuster: 2 je Farbe").
 
 ### Die vier Prüfblöcke
 
@@ -1514,12 +1537,17 @@ sichtbar, damit nichts still verschwindet.
 |---|---|
 | **Kennzeichnung** | Normen mit Prüfungsart „Kennzeichnung" |
 | **Norm-/Sicherheitsprüfung** | Normen-Block der Prüfgrundlage |
-| **Produktspezifikation** | NGO/StiWa-Block der Prüfgrundlage + Prüfungsart „Produktspezifikation" |
+| **Produktspezifikation** | Normen mit Prüfungsart „Produktspezifikation" |
 | **FFU/Fitting** | FFU-Block der Prüfgrundlage |
 
 Blöcke mit einer **Prüfungsart** als Quelle hängen nicht am Produkt (eine
 Kennzeichnungsprüfung gilt überall) und stehen deshalb auch ohne gewählte
-Prüfgrundlage bereit. Die Norm-/Sicherheitsprüfung hat bewusst **keine**
+Prüfgrundlage bereit. Das gilt auch für die **Produktspezifikation**: sie
+stammt aus eigens angelegten Normen mit dieser Prüfungsart und ausdrücklich
+**nicht** aus der Prüfgrundlage — was dort unter NGO/StiWa steht, sind
+NGO-/Stiftung-Warentest-Prüfungen und damit etwas anderes.
+
+Die Norm-/Sicherheitsprüfung hat umgekehrt bewusst **keine**
 Prüfungsart-Quelle: solche Prüfungen sind produktspezifisch und stehen genau
 deshalb in der Prüfgrundlage — sonst stünden in der Auswahl Hunderte
 fachfremder Normen. Steht dieselbe Norm in der Prüfgrundlage **und** trägt
@@ -1579,29 +1607,52 @@ Ein Angebot entsteht in fünf Schritten, alle auf einer Seite:
    sodass man für einen neuen Kunden den Reiter nicht verlassen muss. Die
    Anschrift **und der gewählte Ansprechpartner** werden **als Kopie im Angebot**
    gespeichert: eine spätere Änderung im Kundenstamm verändert bereits
-   geschriebene Angebote nicht.
+   geschriebene Angebote nicht. Genau deshalb stehen neben der Auswahl drei
+   Schaltflächen:
+   - **„✎ Kunde bearbeiten"** springt in Verwaltung → Kunden und öffnet den
+     gewählten Kunden — der Weg, um etwa einen Ansprechpartner zu ergänzen.
+   - **„⟳ Erneut übernehmen"** zieht die Stammdaten danach wieder ins Angebot;
+     ohne diesen Schritt bliebe die alte Kopie stehen.
+   - **„✕ Felder leeren"** räumt Firma, Anschrift und Ansprechpartner **nur im
+     Angebot** — der Kundenstamm bleibt unangetastet.
 3. **Ansprechpartner** — wer im Angebot als Kontakt und Unterzeichner steht.
    Der in der Verwaltung als „Standard" markierte ist vorausgewählt.
 4. **Positionen** — oben die Blöcke der Kundenanfrage anhaken, dann die
-   Prüfgrundlage über Suche oder Filterkette finden (siehe unten) und je Block
-   **„Alle N übernehmen"** oder je Prüfung einzeln „+ übernehmen". Übernommen
-   werden Bezeichnung, Norm-Titel als Beschreibung, SAP-Code und Preis. Bereits
+   Prüfgrundlage über Suche oder Filterkette finden (siehe unten; gibt es sie
+   noch nicht, legt **„+ Neue Prüfgrundlage"** sie an Ort und Stelle an) und je
+   Block **„Alle N übernehmen"** oder je Prüfung einzeln „+ übernehmen".
+   Übernommen werden Bezeichnung, Norm-Titel als Beschreibung, SAP-Code, Preis
+   und die benötigten Muster. Bereits
    übernommene Prüfungen sind als „✓ im Angebot" markiert. Daneben gibt es
    **„+ Freie Position"** für alles, was nicht aus einer Prüfgrundlage kommt.
 5. **Texte und Ausgabe** — Einleitung und Schlusstext sind aus den
    Textbausteinen vorbelegt und frei überschreibbar.
 
-**Preise und die Staffelung je Prüfmuster.** Jede Position hat *Menge*,
-*Einzelpreis* und optional *„je weiterem"*. Gerechnet wird
-`Einzelpreis + (Menge − 1) × Preis je weiterem` — bei leerem Folgepreis ist das
-schlicht `Menge × Einzelpreis`, die Formel ist also eine Verallgemeinerung und
-kein Sonderfall. Die Menge wird beim Übernehmen mit „Anzahl Prüfmuster/Styles"
-aus dem Kopf vorbelegt, der Folgepreis kommt aus „Kosten je weiterem Produkt"
-der Norm. Im Kunden-PDF steht bei einer gestaffelten Position eine erklärende
-Zeile („1. Prüfmuster 400,00 EUR, jedes weitere 150,00 EUR"), damit die Summe
-für den Kunden nachvollziehbar ist. Ein **Nachlass** in Prozent wirkt auf die
-Summe und lässt die Positionspreise unangetastet — er erscheint als eigene
-Zeile, nicht eingerechnet in die Einzelpreise.
+**Muster und Anzahl sind zwei verschiedene Dinge.** Jede Position hat deshalb
+zwei getrennte Felder:
+
+- **Muster** — wie viele Prüfmuster für diese Prüfung anzuliefern sind.
+  Freitext, vorbelegt aus der Prüfgrundlage, **preisneutral**. Drei Muster
+  derselben Prüfung sind eine Prüfung, kein dreifacher Preis.
+- **Anzahl** — wie oft die Prüfung tatsächlich **durchgeführt** wird, weil es
+  sich um verschiedene Produkte handelt. Standardwert **1**; nur dieser Wert
+  multipliziert den Preis.
+
+**Preise und die Staffelung je Durchführung.** Gerechnet wird
+`Einzelpreis + (Anzahl − 1) × Preis je weiterem` — bei leerem Folgepreis ist das
+schlicht `Anzahl × Einzelpreis`, die Formel ist also eine Verallgemeinerung und
+kein Sonderfall. Der Folgepreis kommt aus „Kosten je weiterem Produkt" der Norm.
+Im Kunden-PDF steht bei einer gestaffelten Position eine erklärende Zeile
+(„1. Durchführung 400,00 EUR, jede weitere 150,00 EUR"), damit die Summe für den
+Kunden nachvollziehbar ist. Ein **Nachlass** in Prozent wirkt auf die Summe und
+lässt die Positionspreise unangetastet — er erscheint als eigene Zeile, nicht
+eingerechnet in die Einzelpreise.
+
+Angebote aus der früheren Fassung, in der die *Menge* noch die Musterzahl war,
+werden beim Öffnen **einmalig umgestellt**: der alte Wert wandert in das
+Musterfeld, die Anzahl der Durchführungen startet bei 1. Sonst stünde in einem
+bereits verschickten Angebot plötzlich ein Vielfaches des ursprünglichen
+Preises.
 
 **„Noch offen"-Prüfung.** Über den Ausgabe-Schaltflächen steht, was für ein
 vollständiges Angebot noch fehlt (Firma, Anschrift, Betreff, Ansprechpartner,
@@ -1610,8 +1661,12 @@ mindestens eine aktive Position, Preis bei allen Positionen). Erst wenn dort
 
 **SAP-Export.** „📋 SAP-Positionen in Zwischenablage" (tabulatorgetrennt) und
 „⬇ SAP-Positionen als CSV" liefern je Zeile: Position, SAP-Material,
-Bezeichnung, Menge, Einheit, Einzelpreis, Preis ab 2. Muster, Positionssumme,
-Währung. Nur **aktive** Positionen; ein Nachlass steht als eigene Schlusszeile.
+Bezeichnung, Menge, Einheit, Einzelpreis, Preis ab 2. Durchführung,
+Positionssumme, Währung, Prüfmuster. **Menge** ist die Anzahl der
+Durchführungen — die preisrelevante Menge und damit die, die SAP braucht; die
+benötigten Prüfmuster stehen als rein informative letzte Spalte, weil sie
+Freitext sind und die SAP-Menge nicht verfälschen dürfen.
+Nur **aktive** Positionen; ein Nachlass steht als eigene Schlusszeile.
 Welche Felder eine SAP-Angebotsposition genau braucht, hängt vom Mandanten ab —
 der Spaltensatz steht deshalb als eine Konstante (`ANGEBOT_SAP_SPALTEN`) im
 Code und lässt sich dort an einer Stelle anpassen.

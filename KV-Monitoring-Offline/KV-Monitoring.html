@@ -3102,6 +3102,15 @@ function migriereAngebotsdaten() {
       if (p.aktiv === undefined) p.aktiv = true;
       if (p.menge === undefined || p.menge === null) p.menge = 1;
       if (p.einheit === undefined) p.einheit = "Prüfung";
+      /* Früher bedeutete "menge" die Anzahl der Prüfmuster und multiplizierte damit auch den Preis.
+         Jetzt sind das zwei getrennte Angaben: menge = Anzahl der Durchführungen (preisrelevant),
+         muster = benötigte Prüfmuster (Freitext, NICHT preisrelevant). Der Altwert wandert deshalb
+         in das Musterfeld, die Anzahl der Durchführungen startet bei 1 - sonst stünde im Angebot
+         plötzlich ein Vielfaches des tatsächlichen Preises. */
+      if (p.muster === undefined) {
+        p.muster = (Number(p.menge) > 1) ? String(p.menge) : "";
+        p.menge = 1;
+      }
       /* Vor der Block-Einteilung gab es nur eine Positionsliste - alles landet im Regelblock. */
       if (!p.block || !angebotBlock(p.block)) p.block = "normSicherheit";
       delete p.quelle;
@@ -6930,7 +6939,10 @@ const ANGEBOT_BLOECKE = [
      genau deshalb in der Prüfgrundlage. Würde hier zusätzlich jede Norm mit dieser Prüfungsart
      erscheinen, stünden in der Auswahl Hunderte fachfremder Normen. */
   { id: "normSicherheit", label: "Norm-/Sicherheitsprüfung", labelEn: "Standard and safety testing", pgFeld: "normen", pruefungsart: null },
-  { id: "produktspezifikation", label: "Produktspezifikation", labelEn: "Product specification", pgFeld: "stiwaNormen", pruefungsart: "Produktspezifikation" },
+  /* Produktspezifikationen sind eigens angelegte Normen mit der Prüfungsart "Produktspezifikation"
+     und stehen bewusst NICHT in der Prüfgrundlage - dort liegen unter stiwaNormen die NGO/StiWa-
+     Prüfungen, die etwas anderes sind. */
+  { id: "produktspezifikation", label: "Produktspezifikation", labelEn: "Product specification", pgFeld: null, pruefungsart: "Produktspezifikation" },
   { id: "ffu", label: "FFU/Fitting", labelEn: "Fit, form and function", pgFeld: "ffuNormen", pruefungsart: null }
 ];
 function angebotBlock(id) { return ANGEBOT_BLOECKE.find((b) => b.id === id) || null; }
@@ -6953,7 +6965,7 @@ const ANGEBOT_BESCHRIFTUNGEN = {
         telefon: "Telefon", mobil: "Mobil", email: "E-Mail",
         anredeNeutral: "Sehr geehrte Damen und Herren,", anredeFrau: "Sehr geehrte Frau", anredeHerr: "Sehr geehrter Herr",
         einheit: "Prüfung", bearbeitungsdauer: "Bearbeitungsdauer", arbeitstage: "Arbeitstage",
-        muster: "Benötigte Prüfmuster", erstesMuster: "1. Prüfmuster", jedesWeitere: "jedes weitere" },
+        muster: "Benötigte Prüfmuster", ersteDurchfuehrung: "1. Durchführung", jedeWeitere: "jede weitere" },
   en: { dokumentart: "Quotation", angebotsnummer: "Quotation number", datum: "Date", gueltigBis: "Valid until",
         kundennummer: "Customer number", referenz: "Your enquiry", artikel: "Article/model",
         pos: "Item", leistung: "Service", menge: "Qty", einzelpreis: "Unit price", gesamt: "Total",
@@ -6962,7 +6974,7 @@ const ANGEBOT_BESCHRIFTUNGEN = {
         telefon: "Phone", mobil: "Mobile", email: "E-mail",
         anredeNeutral: "Dear Sir or Madam,", anredeFrau: "Dear Ms", anredeHerr: "Dear Mr",
         einheit: "test", bearbeitungsdauer: "Turnaround time", arbeitstage: "working days",
-        muster: "Samples required", erstesMuster: "1st sample", jedesWeitere: "each additional" }
+        muster: "Samples required", ersteDurchfuehrung: "1st test", jedeWeitere: "each additional" }
 };
 function angebotSprache(a) { return (a && a.sprache) === "en" ? "en" : "de"; }
 function t(a, schluessel) { return ANGEBOT_BESCHRIFTUNGEN[angebotSprache(a)][schluessel]; }
@@ -7002,9 +7014,13 @@ function datumAnzeige(iso) {
   return teile.length === 3 ? `${teile[2]}.${teile[1]}.${teile[0]}` : String(iso);
 }
 
-/* Summe einer Position: der Erstprüfungspreis gilt einmal, jeder weitere Style/Artikel zum
-   (meist günstigeren) Folgepreis. Ohne Folgepreis ist es die normale Menge × Einzelpreis-Rechnung -
-   die Formel ist also eine Verallgemeinerung, kein Sonderfall. */
+/* Summe einer Position: der Erstprüfungspreis gilt einmal, jede weitere Durchführung zum (meist
+   günstigeren) Folgepreis. Ohne Folgepreis ist es die normale Anzahl × Einzelpreis-Rechnung - die
+   Formel ist also eine Verallgemeinerung, kein Sonderfall.
+   WICHTIG: "menge" ist die Anzahl der DURCHFÜHRUNGEN (verschiedene Produkte/Styles), nicht die
+   Anzahl der Prüfmuster. Wie viele Muster eine Prüfung braucht, steht als eigenes, frei
+   beschreibbares Feld an der Position (p.muster) und geht bewusst NICHT in den Preis ein - drei
+   Muster für eine Prüfung kosten nicht das Dreifache. */
 function angebotPositionSumme(p) {
   const menge = Math.max(0, Number(p.menge) || 0);
   if (!menge) return 0;
@@ -7047,7 +7063,7 @@ function angebotEntwurfNeu(sprache) {
     kundeId: "", kundeName: "", kundeAnschrift: "", kundeNummer: "", kundeReferenz: "",
     kundeKontaktId: "", kundeAnrede: "", kundeVorname: "", kundeNachname: "",
     ansprechpartnerId: standard ? standard.id : "",
-    betreff: "", artikel: "", anzahlMuster: "", bearbeitungsdauerTage: null,
+    betreff: "", artikel: "", bearbeitungsdauerTage: null,
     /* Welche Blöcke die Kundenanfrage umfasst. Norm-/Sicherheitsprüfung ist der Regelfall und
        deshalb vorausgewählt; die übrigen hakt man je Anfrage dazu. */
     bloecke,
@@ -7143,14 +7159,19 @@ function angebotPruefungBezeichnung(pruefung) {
 function angebotHatPosition(a, bezeichnung) {
   return (a.positionen || []).some((p) => normalisiere(p.bezeichnung) === normalisiere(bezeichnung));
 }
-function angebotPositionAusPruefung(pruefung, menge, sprache) {
+function angebotPositionAusPruefung(pruefung, muster, sprache) {
   return {
     id: neueId(),
     block: pruefung.block || "normSicherheit",
     bezeichnung: angebotPruefungBezeichnung(pruefung),
     beschreibung: pruefung.beschreibung || "",
     sapMaterial: pruefung.sapMaterial || "",
-    menge: Math.max(1, Number(menge) || 1),
+    /* Anzahl der Durchführungen - startet bei 1 und wird nur erhöht, wenn dieselbe Prüfung für
+       mehrere Produkte/Styles anfällt. */
+    menge: 1,
+    /* Benötigte Prüfmuster: Freitext, damit auch "2 je Farbe" o. Ä. möglich ist. Vorbelegt aus der
+       Prüfgrundlage, falls dort etwas hinterlegt ist. */
+    muster: String(muster || "").trim(),
     einheit: ANGEBOT_BESCHRIFTUNGEN[sprache === "en" ? "en" : "de"].einheit,
     einzelpreis: pruefung.einzelpreis === null ? 0 : pruefung.einzelpreis,
     einzelpreisWeitere: pruefung.einzelpreisWeitere,
@@ -7231,9 +7252,13 @@ function angebotPgAuswahlHtml() {
         angebotAuswahl.produktId, `— Produkt wählen (${produkte.length}) —`)}
       <button type="button" class="ghost small" id="angebot-pg-zuruecksetzen" style="align-self:flex-end;margin-bottom:0.1rem">Filter zurücksetzen</button>
     </div>
-    ${(angebotAuswahl.suche && !angebotAuswahl.produktId) ? `<p class="hinweis" style="margin:0.3rem 0 0">${produkte.length
-      ? `${produkte.length} Prüfgrundlage${produkte.length === 1 ? "" : "n"} passen zur Suche – oben ein Produkt wählen.`
-      : "Keine Prüfgrundlage passt zur Suche."}</p>` : ""}
+    <div class="toolbar-zeile" style="margin:0.1rem 0 0">
+      ${(angebotAuswahl.suche && !angebotAuswahl.produktId) ? `<span class="hinweis" style="margin:0">${produkte.length
+        ? `${produkte.length} Prüfgrundlage${produkte.length === 1 ? "" : "n"} passen zur Suche – oben ein Produkt wählen.`
+        : "Keine Prüfgrundlage passt zur Suche."}</span>` : ""}
+      <div class="spacer"></div>
+      <button type="button" class="ghost small" id="angebot-neue-pruefgrundlage" title="Legt eine neue Prüfgrundlage an - danach steht sie hier sofort zur Auswahl.">+ Neue Prüfgrundlage</button>
+    </div>
   </div>`;
 }
 
@@ -7274,7 +7299,7 @@ function angebotBlockChecklisteHtml(a) {
 
 function angebotPositionsquelleHtml(a) {
   const { gewaehlt } = angebotGewaehltePruefgrundlage();
-  const menge = Math.max(1, Number(a.anzahlMuster) || 1);
+
   const aktiveBloecke = ANGEBOT_BLOECKE.filter((b) => angebotBlockIstGewaehlt(a, b.id));
 
   /* Was die gewählte Prüfgrundlage über Muster und Dauer sagt - direkt übernehmbar, damit beides
@@ -7286,7 +7311,7 @@ function angebotPositionsquelleHtml(a) {
       ${(gewaehlt.bearbeitungsdauerTage !== null && gewaehlt.bearbeitungsdauerTage !== undefined && gewaehlt.bearbeitungsdauerTage !== "")
         ? `Bearbeitungsdauer <strong>${escapeHtml(String(gewaehlt.bearbeitungsdauerTage))} Arbeitstage</strong>` : "keine Bearbeitungsdauer hinterlegt"}
       <div class="toolbar-zeile">
-        <button type="button" class="ghost small" id="angebot-pg-angaben-uebernehmen">In das Angebot übernehmen</button>
+        <button type="button" class="ghost small" id="angebot-pg-angaben-uebernehmen">Bearbeitungsdauer übernehmen</button>
       </div>
     </div>` : "";
 
@@ -7325,7 +7350,7 @@ function angebotPositionsquelleHtml(a) {
 
   return `<div class="card">
     <h2 style="margin-top:0">Prüfungen übernehmen <span class="muted" style="font-weight:400;font-size:0.85rem">– Vollprüfung zum vollen Preis der Prüfgrundlage</span></h2>
-    <p class="hinweis" style="margin-top:0">Die Menge jeder übernommenen Position wird mit <strong>${menge}</strong> vorbelegt (Feld „Anzahl Prüfmuster/Styles" oben). Ist an der Norm ein Preis „je weiterem Produkt" hinterlegt, gilt er automatisch ab dem zweiten Muster.</p>
+    <p class="hinweis" style="margin-top:0">Übernommene Positionen starten mit <strong>Anzahl 1</strong> – erhöhen Sie den Wert nur, wenn dieselbe Prüfung für mehrere Produkte/Styles anfällt (dann greift der Preis „je weiterer" aus der Norm). Die <strong>benötigten Prüfmuster</strong> stehen als eigenes Feld je Position und gehen bewusst <strong>nicht</strong> in den Preis ein.</p>
     ${angebotPgAuswahlHtml()}
     ${pgAngabenHtml}
     ${bloeckeHtml}
@@ -7342,9 +7367,10 @@ function angebotPositionenTabelleHtml(a) {
       <td><input type="text" data-feld="bezeichnung" value="${escapeHtml(p.bezeichnung || "")}"></td>
       <td><textarea class="auto-hoehe" data-feld="beschreibung" rows="1" placeholder="Ergänzung für den Kunden…">${escapeHtml(p.beschreibung || "")}</textarea></td>
       <td><input type="text" data-feld="sapMaterial" value="${escapeHtml(p.sapMaterial || "")}" placeholder="SAP-Material"></td>
-      <td><input type="number" min="0" step="1" data-feld="menge" value="${zahlOderLeer(p.menge)}"></td>
+      <td><input type="text" data-feld="muster" value="${escapeHtml(p.muster || "")}" placeholder="z. B. 2" title="Wie viele Prüfmuster diese Prüfung braucht. Freitext - geht NICHT in den Preis ein."></td>
+      <td><input type="number" min="0" step="1" data-feld="menge" value="${zahlOderLeer(p.menge)}" title="Wie oft diese Prüfung durchgeführt wird (z. B. für mehrere Produkte/Styles). Standard 1."></td>
       <td><input type="number" step="0.01" data-feld="einzelpreis" value="${zahlOderLeer(p.einzelpreis)}"></td>
-      <td><input type="number" step="0.01" data-feld="einzelpreisWeitere" value="${zahlOderLeer(p.einzelpreisWeitere)}" placeholder="wie oben" title="Preis ab dem zweiten Prüfmuster/Style. Leer = derselbe Preis wie links."></td>
+      <td><input type="number" step="0.01" data-feld="einzelpreisWeitere" value="${zahlOderLeer(p.einzelpreisWeitere)}" placeholder="wie oben" title="Preis ab der zweiten Durchführung. Leer = derselbe Preis wie links."></td>
       <td class="angebot-pos-summe">${betrag(angebotPositionSumme(p), waehrung, "de")}</td>
       <td class="zeile-aktionen">
         <button class="ghost small" data-action="hoch" ${idx === 0 ? "disabled" : ""}>↑</button>
@@ -7358,13 +7384,14 @@ function angebotPositionenTabelleHtml(a) {
         <th style="width:4%">Aktiv</th><th style="width:3%">Pos.</th>
         <th style="width:12%" title="Unter dieser Überschrift erscheint die Position im Angebot">Block</th>
         <th style="width:17%">Bezeichnung</th>
-        <th style="width:16%">Beschreibung</th><th style="width:10%">SAP-Material</th>
-        <th style="width:6%" title="Anzahl Prüfmuster/Styles">Menge</th>
+        <th style="width:14%">Beschreibung</th><th style="width:9%">SAP-Material</th>
+        <th style="width:7%" title="Wie viele Prüfmuster diese Prüfung braucht - Freitext, geht nicht in den Preis ein">Muster</th>
+        <th style="width:6%" title="Wie oft die Prüfung durchgeführt wird (mehrere Produkte/Styles) - dieser Wert multipliziert den Preis">Anzahl</th>
         <th style="width:8%">Einzelpreis</th>
-        <th style="width:8%" title="Preis ab dem zweiten Prüfmuster/Style - leer heißt: derselbe Preis">je weiterem</th>
-        <th style="width:8%">Summe</th><th style="width:8%">Aktionen</th>
+        <th style="width:8%" title="Preis ab der zweiten Durchführung - leer heißt: derselbe Preis">je weiterer</th>
+        <th style="width:8%">Summe</th><th style="width:7%">Aktionen</th>
       </tr></thead>
-      <tbody id="angebot-positionen-body">${zeilen || '<tr><td colspan="11" class="leerzustand">Noch keine Positionen. Oben aus einer Prüfgrundlage übernehmen oder als freie Position anlegen.</td></tr>'}</tbody>
+      <tbody id="angebot-positionen-body">${zeilen || '<tr><td colspan="12" class="leerzustand">Noch keine Positionen. Oben aus einer Prüfgrundlage übernehmen oder als freie Position anlegen.</td></tr>'}</tbody>
     </table>
   </div>`;
 }
@@ -7407,7 +7434,6 @@ function renderAngebotDetail() {
         <label>Gültig bis<input type="date" data-feld="gueltigBis" value="${escapeHtml(a.gueltigBis || "")}"></label>
         <label class="volle-breite">Betreff <span class="muted" style="font-weight:400">– steht als Überschrift im Angebot, z. B. „Prüfung Gartenstuhl Modell XY"</span><input type="text" data-feld="betreff" value="${escapeHtml(a.betreff || "")}"></label>
         <label>Artikel/Modell<input type="text" data-feld="artikel" value="${escapeHtml(a.artikel || "")}"></label>
-        <label title="Wird beim Übernehmen von Prüfungen als Menge vorbelegt und dem Kunden im Angebot genannt.">Anzahl Prüfmuster/Styles<input type="number" min="1" step="1" data-feld="anzahlMuster" value="${escapeHtml(a.anzahlMuster || "")}"></label>
         <label title="Erscheint im Angebot. Wird beim Übernehmen einer Prüfgrundlage automatisch aus deren Bearbeitungsdauer gefüllt (bei mehreren gilt die längste).">Bearbeitungsdauer (Arbeitstage)<input type="number" min="0" step="1" data-feld="bearbeitungsdauerTage" value="${zahlOderLeer(a.bearbeitungsdauerTage)}"></label>
         <label>Ihre Anfrage/Referenz<input type="text" data-feld="kundeReferenz" value="${escapeHtml(a.kundeReferenz || "")}"></label>
         <label>Währung<input type="text" data-feld="waehrung" value="${escapeHtml(waehrung)}"></label>
@@ -7419,7 +7445,10 @@ function renderAngebotDetail() {
         <h2 style="margin:0">Kunde</h2>
         <div class="spacer"></div>
         <select id="angebot-kunde-auswahl" style="font-family:inherit;font-size:0.85rem;padding:0.3rem 0.5rem;border:1px solid var(--border);border-radius:6px">${angebotKundeOptionenHtml(a)}</select>
+        <button type="button" class="ghost small" id="angebot-kunde-bearbeiten" title="Öffnet diesen Kunden im Kundenstamm - dort lassen sich z. B. weitere Ansprechpartner anlegen." ${a.kundeId ? "" : "disabled"}>✎ Kunde bearbeiten</button>
+        <button type="button" class="ghost small" id="angebot-kunde-neuladen" title="Holt Anschrift und Ansprechpartner erneut aus dem Kundenstamm - nach einer Änderung dort." ${a.kundeId ? "" : "disabled"}>⟳ Erneut übernehmen</button>
         <button type="button" class="ghost small" id="angebot-kunde-speichern" title="Legt die hier eingetragenen Kundendaten als Stammdatensatz an bzw. aktualisiert ihn.">↑ In Kundenstamm übernehmen</button>
+        <button type="button" class="ghost small" id="angebot-kunde-leeren" title="Leert alle Kundenfelder dieses Angebots. Der Kundenstamm bleibt unverändert.">✕ Felder leeren</button>
       </div>
       <div class="formular-grid" id="angebot-kunde">
         <label>Firma<input type="text" data-feld="kundeName" value="${escapeHtml(a.kundeName || "")}"></label>
@@ -7493,7 +7522,9 @@ function renderAngebotDetail() {
       </div>
       <details class="hinweis-block" style="margin-top:0.6rem"><summary>ℹ Was genau exportiert wird</summary>
         <p class="hinweis">Der SAP-Export enthält nur <strong>aktive</strong> Positionen, je Zeile:
-          Position, SAP-Material, Bezeichnung, Menge, Einheit, Einzelpreis, Preis ab 2. Muster, Positionssumme, Währung.
+          Position, SAP-Material, Bezeichnung, Menge, Einheit, Einzelpreis, Preis ab 2. Durchführung, Positionssumme, Währung, Prüfmuster.
+          <strong>Menge</strong> ist dabei die Anzahl der Durchführungen (die preisrelevante Menge);
+          die benötigten Prüfmuster stehen als rein informative letzte Spalte.
           Tabulatorgetrennt bzw. als CSV mit Semikolon — beides direkt in eine SAP-Angebotsmaske
           bzw. Excel einfügbar. Der Nachlass steckt bewusst NICHT in den Einzelpreisen, sondern
           steht als eigene Zeile am Ende, damit die Positionspreise unverändert bleiben.</p>
@@ -7577,12 +7608,17 @@ function angebotDruckHtml(a) {
     return kopf + imBlock.map((p) => {
       nummer++;
       const staffelung = (p.einzelpreisWeitere !== null && p.einzelpreisWeitere !== undefined && p.einzelpreisWeitere !== "" && Number(p.menge) > 1)
-        ? `<div class="ang-beschreibung">${b.erstesMuster} ${geld(p.einzelpreis)}, ${b.jedesWeitere} ${geld(p.einzelpreisWeitere)}</div>` : "";
+        ? `<div class="ang-beschreibung">${b.ersteDurchfuehrung} ${geld(p.einzelpreis)}, ${b.jedeWeitere} ${geld(p.einzelpreisWeitere)}</div>` : "";
+      /* Benötigte Muster stehen JE POSITION - sie werden bewusst nicht über die Prüfungen summiert,
+         weil dieselben Muster meist für mehrere Prüfungen verwendet werden. */
+      const muster = String(p.muster || "").trim()
+        ? `<div class="ang-beschreibung">${b.muster}: ${escapeHtml(p.muster)}</div>` : "";
       return `<tr>
         <td class="ang-pos">${nummer}</td>
         <td>
           <strong>${escapeHtml(p.bezeichnung || "")}</strong>
           ${p.beschreibung ? `<div class="ang-beschreibung">${escapeHtml(p.beschreibung).replace(/\n/g, "<br>")}</div>` : ""}
+          ${muster}
           ${staffelung}
         </td>
         <td class="ang-zahl">${Number(p.menge) || 0} ${escapeHtml(p.einheit || "")}</td>
@@ -7596,9 +7632,7 @@ function angebotDruckHtml(a) {
      Angaben, nach denen der Kunde als Erstes fragt. */
   const eckdaten = [
     (a.bearbeitungsdauerTage !== null && a.bearbeitungsdauerTage !== undefined && a.bearbeitungsdauerTage !== "")
-      ? `<div><span>${b.bearbeitungsdauer}</span><strong>${escapeHtml(String(a.bearbeitungsdauerTage))} ${b.arbeitstage}</strong></div>` : "",
-    String(a.anzahlMuster || "").trim()
-      ? `<div><span>${b.muster}</span><strong>${escapeHtml(String(a.anzahlMuster))}</strong></div>` : ""
+      ? `<div><span>${b.bearbeitungsdauer}</span><strong>${escapeHtml(String(a.bearbeitungsdauerTage))} ${b.arbeitstage}</strong></div>` : ""
   ].filter(Boolean).join("");
 
   return `<div class="ang-blatt">
@@ -7682,7 +7716,10 @@ function druckeAngebot(a) {
    Spaltensatz bewusst explizit und dokumentiert: welche Felder eine SAP-Angebotsposition genau
    braucht, hängt vom jeweiligen Mandanten ab - so lässt sich die Reihenfolge bei Bedarf an einer
    Stelle anpassen, statt sie im Code zu suchen. */
-const ANGEBOT_SAP_SPALTEN = ["Position", "SAP-Material", "Bezeichnung", "Menge", "Einheit", "Einzelpreis", "Preis ab 2. Muster", "Positionssumme", "Währung"];
+/* "Menge" ist die Anzahl der Durchführungen - das ist die preisrelevante Menge und damit die,
+   die SAP braucht. Die benötigten Prüfmuster stehen als eigene, rein informative Spalte am Ende:
+   sie sind Freitext ("2 je Farbe") und dürfen die SAP-Menge nicht verfälschen. */
+const ANGEBOT_SAP_SPALTEN = ["Position", "SAP-Material", "Bezeichnung", "Menge", "Einheit", "Einzelpreis", "Preis ab 2. Durchführung", "Positionssumme", "Währung", "Prüfmuster"];
 function angebotSapZeilen(a) {
   const waehrung = angebotWaehrung(a);
   return (a.positionen || []).filter((p) => p.aktiv).map((p, i) => [
@@ -7694,14 +7731,15 @@ function angebotSapZeilen(a) {
     (Number(p.einzelpreis) || 0).toFixed(2),
     (p.einzelpreisWeitere === null || p.einzelpreisWeitere === undefined || p.einzelpreisWeitere === "") ? "" : (Number(p.einzelpreisWeitere) || 0).toFixed(2),
     angebotPositionSumme(p).toFixed(2),
-    waehrung
+    waehrung,
+    tsvSicher(p.muster || "")
   ]);
 }
 function angebotSapTsv(a) {
   const zeilen = angebotSapZeilen(a);
   const rabatt = angebotRabattBetrag(a);
   const fuss = rabatt
-    ? [["", "", `Nachlass ${Number(a.rabattProzent)} %`, "1", "", (-rabatt).toFixed(2), "", (-rabatt).toFixed(2), angebotWaehrung(a)]]
+    ? [["", "", `Nachlass ${Number(a.rabattProzent)} %`, "1", "", (-rabatt).toFixed(2), "", (-rabatt).toFixed(2), angebotWaehrung(a), ""]]
     : [];
   return [ANGEBOT_SAP_SPALTEN, ...zeilen, ...fuss].map((z) => z.join("\t")).join("\n");
 }
@@ -7724,10 +7762,9 @@ function initialisiereAngebotDetail(panel, a) {
     }
   });
 
-  const kundeAuswahl = panel.querySelector("#angebot-kunde-auswahl");
-  kundeAuswahl.addEventListener("change", () => {
-    const k = data.kunden.find((x) => x.id === kundeAuswahl.value);
-    if (!k) { a.kundeId = ""; speichereInLocalStorage(); return; }
+  /* Stammdaten eines Kunden in das Angebot kopieren. Bewusst eine Kopie: eine spätere Änderung im
+     Stamm verändert bereits geschriebene Angebote nicht - dafür gibt es "⟳ Erneut übernehmen". */
+  const uebernimmKunde = (k) => {
     a.kundeId = k.id;
     a.kundeName = k.name || "";
     a.kundeNummer = k.kundennummer || "";
@@ -7742,7 +7779,18 @@ function initialisiereAngebotDetail(panel, a) {
     a.kundeNachname = kontakt ? (kontakt.nachname || "") : "";
     speichereInLocalStorage();
     renderAngeboteTab();
-    zeigeStatus("Kundendaten übernommen · " + jetzt(), "ok");
+    zeigeStatus(`Kundendaten von „${k.name || ""}" übernommen · ${jetzt()}`, "ok");
+  };
+  const kundeAuswahl = panel.querySelector("#angebot-kunde-auswahl");
+  kundeAuswahl.addEventListener("change", () => {
+    const k = data.kunden.find((x) => x.id === kundeAuswahl.value);
+    if (!k) { a.kundeId = ""; speichereInLocalStorage(); renderAngeboteTab(); return; }
+    uebernimmKunde(k);
+  });
+  panel.querySelector("#angebot-kunde-neuladen").addEventListener("click", () => {
+    const k = data.kunden.find((x) => x.id === a.kundeId);
+    if (!k) { zeigeStatus("Dieser Kunde steht nicht (mehr) im Kundenstamm.", ""); return; }
+    uebernimmKunde(k);
   });
   panel.querySelector("#angebot-kunde-speichern").addEventListener("click", () => {
     const name = String(a.kundeName || "").trim();
@@ -7770,6 +7818,30 @@ function initialisiereAngebotDetail(panel, a) {
     speichereInLocalStorage();
     renderAngeboteTab();
     renderVerwaltungTab();
+  });
+
+  /* Alle Kundenfelder dieses Angebots leeren - der Kundenstamm bleibt dabei unangetastet, es wird
+     nur die im Angebot gespeicherte Kopie zurückgesetzt. */
+  panel.querySelector("#angebot-kunde-leeren").addEventListener("click", () => {
+    if (!confirm("Alle Kundenangaben dieses Angebots leeren?\n\nDer Kundenstamm bleibt unverändert.")) return;
+    ["kundeId", "kundeName", "kundeNummer", "kundeAnschrift", "kundeKontaktId", "kundeAnrede", "kundeVorname", "kundeNachname"]
+      .forEach((feld) => { a[feld] = ""; });
+    speichereInLocalStorage();
+    renderAngeboteTab();
+    zeigeStatus("Kundenangaben geleert · " + jetzt(), "ok");
+  });
+
+  /* Springt in den Kundenstamm zum gewählten Kunden - der übliche Weg, um dort z. B. einen weiteren
+     Ansprechpartner anzulegen, ohne ihn erst suchen zu müssen. */
+  const bearbeitenBtn = panel.querySelector("#angebot-kunde-bearbeiten");
+  bearbeitenBtn.addEventListener("click", () => {
+    if (!a.kundeId) return;
+    aktiverKundeId = a.kundeId;
+    kundenSuche = "";
+    verwaltungAnsicht = "kunden";
+    document.querySelectorAll("#verwaltung-ansicht-toggle button").forEach((b) => b.classList.toggle("aktiv", b.dataset.ansicht === "kunden"));
+    wechsleTab("verwaltung");
+    zeigeStatus(`Kunde „${a.kundeName || ""}" im Kundenstamm geöffnet – Änderungen dort mit „Kunde erneut übernehmen" ins Angebot holen · ${jetzt()}`, "ok");
   });
 
   const kontaktAuswahl = panel.querySelector("#angebot-kundekontakt-auswahl");
@@ -7868,6 +7940,26 @@ function initialisiereAngebotDetail(panel, a) {
     angebotAuswahl.produktId = produktAuswahl.value;
     renderAngeboteTab();
   });
+  /* Fehlt für ein Produkt noch eine Prüfgrundlage, lässt sie sich direkt hier anlegen - dasselbe
+     Formular wie im Reiter "Prüfgrundlagen" (oeffnePruefgrundlageModal), nur ohne Tab-Wechsel.
+     Bereich und Warengruppe der aktuellen Filterauswahl sind vorbelegt; nach dem Speichern zeigt die
+     Suche gezielt das neue Produkt, damit man sofort weiterarbeiten kann. */
+  const neuePgBtn = panel.querySelector("#angebot-neue-pruefgrundlage");
+  if (neuePgBtn) neuePgBtn.addEventListener("click", () => {
+    const entwurf = pruefgrundlageEntwurfNeu();
+    if (angebotAuswahl.bereich) entwurf.bereich = angebotAuswahl.bereich;
+    const wg = data.warengruppen.find((w) => normalisiereWarengruppe(w.code) === normalisiereWarengruppe(angebotAuswahl.warengruppeCode));
+    if (wg) { entwurf.warengruppeCode = wg.code; entwurf.warengruppeName = wg.name; }
+    oeffnePruefgrundlageModal(entwurf, () => {
+      angebotAuswahl.suche = entwurf.produkt || "";
+      angebotAuswahl.bereich = "";
+      angebotAuswahl.warengruppeCode = "";
+      angebotAuswahl.produktId = mechanikEintragId(entwurf);
+      renderAngeboteTab();
+      zeigeStatus(`Prüfgrundlage „${entwurf.produkt || ""}" angelegt und ausgewählt · ${jetzt()}`, "ok");
+    });
+  });
+
   const filterReset = panel.querySelector("#angebot-pg-zuruecksetzen");
   if (filterReset) filterReset.addEventListener("click", () => {
     angebotAuswahl = { suche: "", bereich: "", warengruppeCode: "", produktId: "" };
@@ -7882,7 +7974,8 @@ function initialisiereAngebotDetail(panel, a) {
     const { gewaehlt } = angebotGewaehltePruefgrundlage();
     if (!gewaehlt) return;
     const meldungen = [];
-    if (String(gewaehlt.anzahlMuster || "").trim()) { a.anzahlMuster = String(gewaehlt.anzahlMuster).trim(); meldungen.push("Musteranzahl"); }
+    /* Die Musteranzahl wandert NICHT in den Kopf - sie gehört je Position ans Prüfverfahren und
+       wird beim Übernehmen der einzelnen Prüfungen dort gefüllt. */
     const dauer = Number(gewaehlt.bearbeitungsdauerTage);
     if (gewaehlt.bearbeitungsdauerTage !== null && gewaehlt.bearbeitungsdauerTage !== "" && !Number.isNaN(dauer)) {
       const bisher = Number(a.bearbeitungsdauerTage) || 0;
@@ -7891,7 +7984,7 @@ function initialisiereAngebotDetail(panel, a) {
     }
     speichereInLocalStorage();
     renderAngeboteTab();
-    zeigeStatus(meldungen.length ? `${meldungen.join(" und ")} übernommen · ${jetzt()}` : "In der Prüfgrundlage sind weder Muster noch Dauer hinterlegt.", meldungen.length ? "ok" : "");
+    zeigeStatus(meldungen.length ? `${meldungen.join(" und ")} übernommen · ${jetzt()}` : "In dieser Prüfgrundlage ist keine Bearbeitungsdauer hinterlegt.", meldungen.length ? "ok" : "");
   });
 
   const pruefungenDesBlocks = (blockId) => {
@@ -7902,7 +7995,7 @@ function initialisiereAngebotDetail(panel, a) {
     btn.addEventListener("click", () => {
       const pruefung = pruefungenDesBlocks(btn.dataset.block)[Number(btn.dataset.idx)];
       if (!pruefung) return;
-      a.positionen.push(angebotPositionAusPruefung(pruefung, a.anzahlMuster, angebotSprache(a)));
+      a.positionen.push(angebotPositionAusPruefung(pruefung, angebotGewaehltePruefgrundlage().gewaehlt ? angebotGewaehltePruefgrundlage().gewaehlt.anzahlMuster : "", angebotSprache(a)));
       speichereInLocalStorage();
       renderAngeboteTab();
       zeigeStatus("Position übernommen · " + jetzt(), "ok");
@@ -7911,9 +8004,11 @@ function initialisiereAngebotDetail(panel, a) {
   panel.querySelectorAll('[data-action="angebot-block-uebernehmen"]').forEach((btn) => {
     btn.addEventListener("click", () => {
       let anzahl = 0;
+      const gewaehltePg = angebotGewaehltePruefgrundlage().gewaehlt;
+      const musterAusPg = gewaehltePg ? gewaehltePg.anzahlMuster : "";
       pruefungenDesBlocks(btn.dataset.block).forEach((pruefung) => {
         if (angebotHatPosition(a, angebotPruefungBezeichnung(pruefung))) return;
-        a.positionen.push(angebotPositionAusPruefung(pruefung, a.anzahlMuster, angebotSprache(a)));
+        a.positionen.push(angebotPositionAusPruefung(pruefung, musterAusPg, angebotSprache(a)));
         anzahl++;
       });
       speichereInLocalStorage();
@@ -7927,7 +8022,7 @@ function initialisiereAngebotDetail(panel, a) {
     const angehakt = ANGEBOT_BLOECKE.filter((x) => angebotBlockIstGewaehlt(a, x.id));
     a.positionen.push({ id: neueId(), block: angehakt.length === 1 ? angehakt[0].id : "normSicherheit",
       bezeichnung: "", beschreibung: "", sapMaterial: "",
-      menge: Math.max(1, Number(a.anzahlMuster) || 1), einheit: ANGEBOT_BESCHRIFTUNGEN[angebotSprache(a)].einheit,
+      menge: 1, muster: "", einheit: ANGEBOT_BESCHRIFTUNGEN[angebotSprache(a)].einheit,
       einzelpreis: 0, einzelpreisWeitere: null, aktiv: true });
     speichereInLocalStorage();
     renderAngeboteTab();
@@ -8694,7 +8789,10 @@ function pruefgrundlageFormularHtml(entwurf) {
     ${pruefgrundlageVerwendungHtml(entwurf)}`;
 }
 
-function oeffnePruefgrundlageModal(entwurf) {
+/* nachSpeichern: optionaler Rückruf, den der Aufrufer mitgeben kann, um nach dem Speichern gezielt
+   weiterzuarbeiten (z. B. die frisch angelegte Prüfgrundlage in der Angebotsmaske gleich
+   auszuwählen). Ohne Rückruf bleibt es beim bisherigen Verhalten. */
+function oeffnePruefgrundlageModal(entwurf, nachSpeichern) {
   const box = document.getElementById("overlay-box");
   const istNeu = !data.pruefgrundlagen.some((e) => e.id === entwurf.id);
   box.innerHTML = `<h2>${istNeu ? "Neue Prüfgrundlage" : "Prüfgrundlage bearbeiten"}</h2>
@@ -8727,6 +8825,7 @@ function oeffnePruefgrundlageModal(entwurf) {
        aus der Warengruppen-Empfehlung im KV-Reiter heraus öffnen (siehe
        initialisiereMechanikEmpfehlungKarte) - der jeweils sichtbare Reiter soll aktualisiert
        werden, nicht immer zwingend Prüfgrundlagen. */
+    if (typeof nachSpeichern === "function") { nachSpeichern(entwurf); return; }
     renderAktivenTab();
     zeigeStatus("Prüfgrundlage gespeichert · " + jetzt(), "ok");
   });
@@ -10586,14 +10685,14 @@ document.getElementById("btn-csv").addEventListener("click", () => {
     /* Eine Zeile je Position über ALLE (gefilterten) Angebote - für Auswertungen; der SAP-Export
        eines einzelnen Angebots steckt dagegen im Angebot selbst (siehe angebotSapZeilen). */
     const zeilen = [["Angebotsnummer", "Datum", "Gültig bis", "Status", "Kunde", "Kundennummer", "Betreff", "Artikel",
-      "Pos.", "Aktiv", "SAP-Material", "Bezeichnung", "Beschreibung", "Menge", "Einheit", "Einzelpreis", "Preis ab 2. Muster",
+      "Pos.", "Aktiv", "SAP-Material", "Bezeichnung", "Beschreibung", "Prüfmuster", "Anzahl Durchführungen", "Einheit", "Einzelpreis", "Preis ab 2. Durchführung",
       "Positionssumme", "Nachlass %", "Angebotssumme netto", "Währung"]];
     gefilterteAngebote().forEach((a) => {
       const basis = [a.nummer || "", a.datum || "", a.gueltigBis || "", a.status || "", a.kundeName || "", a.kundeNummer || "", a.betreff || "", a.artikel || ""];
       const abschluss = [zahlOderLeer(a.rabattProzent), angebotGesamtsumme(a).toFixed(2), angebotWaehrung(a)];
-      if (!(a.positionen || []).length) { zeilen.push([...basis, "", "", "", "", "", "", "", "", "", "", ...abschluss]); return; }
+      if (!(a.positionen || []).length) { zeilen.push([...basis, "", "", "", "", "", "", "", "", "", "", "", ...abschluss]); return; }
       a.positionen.forEach((p, i) => zeilen.push([...basis, String(i + 1), p.aktiv ? "Ja" : "Nein",
-        p.sapMaterial || "", p.bezeichnung || "", p.beschreibung || "", zahlOderLeer(p.menge), p.einheit || "",
+        p.sapMaterial || "", p.bezeichnung || "", p.beschreibung || "", p.muster || "", zahlOderLeer(p.menge), p.einheit || "",
         zahlOderLeer(p.einzelpreis), zahlOderLeer(p.einzelpreisWeitere), angebotPositionSumme(p).toFixed(2), ...abschluss]));
     });
     csvHerunterladen(zeilen, "angebote_export.csv");
@@ -10636,7 +10735,7 @@ function schluesselMak(m) { return normalisiere(m.id); }
    ist ein Dokument, keine Sammlung unabhängiger Zeilen. */
 const ANGEBOT_FELDER = ["nummer", "datum", "gueltigBis", "status", "kundeId", "kundeName", "kundeNummer", "kundeAnschrift",
   "kundeKontaktId", "kundeAnrede", "kundeVorname", "kundeNachname",
-  "kundeReferenz", "ansprechpartnerId", "betreff", "artikel", "anzahlMuster", "bearbeitungsdauerTage",
+  "kundeReferenz", "ansprechpartnerId", "betreff", "artikel", "bearbeitungsdauerTage",
   "sprache", "bloecke", "einleitungstext", "schlusstext", "positionen", "rabattProzent", "waehrung", "notiz"];
 const KUNDE_FELDER = ["name", "kundennummer", "anschrift", "kontakte", "sprache", "notiz"];
 const ANSPRECHPARTNER_FELDER = ["name", "funktion", "telefon", "mobil", "email", "standard"];
