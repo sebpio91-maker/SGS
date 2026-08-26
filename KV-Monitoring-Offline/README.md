@@ -1683,9 +1683,18 @@ Weitere Punkte:
   Anreden sind dabei vereinheitlicht (`Mr.`/`Mrs.` → `Herr`/`Frau`), damit die
   Beugung in beiden Sprachen funktioniert. Die Spalte **„GebDatum" wurde
   bewusst nicht übernommen** — für ein Angebot ohne Nutzen und damit eine
-  personenbezogene Angabe, die hier nichts zu suchen hat. Der Startbestand
-  greift nur, solange noch **kein** Kunde gepflegt ist; gepflegte Daten werden
-  beim Neuladen nie überschrieben.
+  personenbezogene Angabe, die hier nichts zu suchen hat. Als
+  **Kundennummer** dient die Spalte „Debitor".
+
+  Die Liste wird **einmalig je Datenbestand** eingespielt — auch dann, wenn
+  bereits Kunden gepflegt sind. (Der Startbestand allein hätte nicht gereicht:
+  er greift nur bei einer komplett leeren Liste, und wer vorher auch nur einen
+  Kunden über „↑ In Kundenstamm übernehmen" angelegt hatte, hätte die Liste nie
+  zu sehen bekommen.) Ein bereits vorhandener Kunde wird dabei über die
+  **Kundennummer**, ersatzweise über den Firmennamen erkannt und **nicht
+  überschrieben**: dort werden nur leere Felder ergänzt und fehlende
+  Ansprechpartner angehängt. Weil die Einspielung nur ein einziges Mal läuft,
+  kommt ein bewusst gelöschter Kunde beim nächsten Öffnen **nicht** zurück.
 
 Der **CSV-Export** im Reiter „Angebote" liefert eine Zeile je Position über
 alle (gefilterten) Angebote — für Auswertungen; der SAP-Export eines einzelnen
