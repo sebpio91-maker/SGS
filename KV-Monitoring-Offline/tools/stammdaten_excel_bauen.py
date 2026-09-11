@@ -61,22 +61,23 @@ def blatt(name, spalten, zeilen, hinweis=None, versteckt=()):
 
 # ---------------------------------------------------------------- Normen
 n_spalten = [
-    ("Norm / Prüfprogramm", 26, None, None), ("Titel", 60, None, None), ("Typ", 10, "center", None),
+    ("Norm / Prüfprogramm", 26, None, None), ("Status", 24, None, None), ("Titel", 60, None, None), ("Typ", 10, "center", None),
     ("Prüfungsart", 22, None, None), ("SAP-Code", 20, None, None), ("Preis", 13, "right", EUR),
     ("Kennz.", 8, "center", None), ("BDA", 8, "center", None), ("LIDL-Block", 18, None, None),
     ("Anw.-bereiche", 11, "center", None), ("Anwendungsbereiche", 40, None, None),
     ("Bemerkung", 38, None, None), ("PDF-Datei", 26, None, None), ("Hochgeladen", 13, "center", None),
     ("Volltext", 9, "center", None), ("Verwendet in PG", 13, "center", None), ("ID", 10, None, None),
 ]
-n_zeilen = [[n["bezeichnung"], n["titel"], n["typ"], n["pruefungsart"], n["sapCode"], n["kosten"],
+n_zeilen = [[n["bezeichnung"], None, n["titel"], n["typ"], n["pruefungsart"], n["sapCode"], n["kosten"],
              jn(n["kennzeichnung"]), jn(n["bedienungsanleitung"]), n["lidlBlock"],
              n["anzahlAnwendungsbereiche"], n["anwendungsbereiche"], n["bemerkung"],
              n["dateiname"], n["hochgeladenAm"], jn(n["volltextVorhanden"]), None, n["id"]]
             for n in sorted(D["normen"], key=lambda x: (x["pruefungsart"], x["bezeichnung"]))]
 ws_n, kn, ln = blatt("Normen", n_spalten, n_zeilen,
     "Alle Normen und Prüfprogramme aus dem Reiter „Normen“. Kopfzeile filtern/sortieren wie gewohnt; "
-    "„Verwendet in PG“ zählt live, in wie vielen Prüfgrundlagen die Norm referenziert ist.",
-    versteckt=("Q",))
+    "„Verwendet in PG“ zählt live, in wie vielen Prüfgrundlagen die Norm referenziert ist. "
+    "Die Spalte „Status“ markiert Normen, die in keiner Prüfgrundlage vorkommen oder keine Prüfungsart tragen.",
+    versteckt=("R",))
 # Die Zählformel folgt erst nach dem Blatt "Prüfanforderungen" (Zeilenbereich steht dann fest).
 
 # -------------------------------------------------- Norm-Anwendungsbereiche
@@ -161,7 +162,16 @@ for text in ('"keine Norm hinterlegt"', '"0 € hinterlegt"'):
                    font=Font(name=SCHRIFT, size=10, bold=True, color="9C5700")))
 
 for r in range(kn + 1, ln + 1):
-    ws_n.cell(row=r, column=16, value=f'=COUNTIF({P_NORM},$A{r})')
+    ws_n.cell(row=r, column=17, value=f'=COUNTIF({P_NORM},$A{r})')
+    # Zwei Zustände, die eine Norm still unwirksam machen: sie ist in keiner Prüfgrundlage
+    # referenziert, und/oder sie hat keine Prüfungsart - dann taucht sie in keinem Angebotsblock auf.
+    ws_n.cell(row=r, column=2, value=(
+        f'=TRIM(IF(COUNTIF({P_NORM},$A{r})=0,"nicht verwendet","")'
+        f'&IF($E{r}="",IF(COUNTIF({P_NORM},$A{r})=0," · ","")&"ohne Prüfungsart",""))'))
+for text in ('"nicht verwendet"', '"ohne Prüfungsart"', '"nicht verwendet · ohne Prüfungsart"'):
+    ws_n.conditional_formatting.add(f"B{kn+1}:B{ln}",
+        CellIsRule(operator="equal", formula=[text], fill=GELB,
+                   font=Font(name=SCHRIFT, size=10, bold=True, color="9C5700")))
 
 # ------------------------------------------------------- MAK-Anforderungen
 m_spalten = [
@@ -188,7 +198,9 @@ ws.column_dimensions["A"].width = 26
 ws.column_dimensions["B"].width = 14
 ws.column_dimensions["C"].width = 92
 ws["A1"] = "KV-Monitoring — Normen und Prüfanforderungen"; ws["A1"].font = TITEL_FONT
-ws["A2"] = "Stand: Stammdaten aus KV-Monitoring.html (Commit dd4251e)"
+stand = (D.get("stand") or "")[:10]
+ws["A2"] = ("Stand: " + (f"Datenexport vom {stand[8:10]}.{stand[5:7]}.{stand[:4]}" if stand
+            else "Startdaten aus KV-Monitoring.html") + f" · Quelle: {D.get('quelle', '')}")
 ws["A2"].font = Font(name=SCHRIFT, size=9, italic=True, color="595959")
 kopf = ["Blatt", "Zeilen", "Was drinsteht"]
 for i, t in enumerate(kopf, start=1):
@@ -196,7 +208,8 @@ for i, t in enumerate(kopf, start=1):
 inhalt = [
     ("Normen", len(n_zeilen), "Alle Normen und Prüfprogramme mit Typ, Prüfungsart, SAP-Code, Preis, "
         "Kennzeichnungs-/BDA-Kennzeichen und Bemerkung. „Verwendet in PG“ zählt per Formel, in wie vielen "
-        "Prüfgrundlagen die Norm steckt — 0 heißt: nirgends referenziert."),
+        "Prüfgrundlagen die Norm steckt. Die Spalte „Status“ markiert gelb, was still unwirksam ist: "
+        "nirgends referenziert und/oder ohne Prüfungsart (dann erscheint die Norm in keinem Angebotsblock)."),
     ("Anwendungsbereiche", len(ab_zeilen), "Untergliederung einzelner Normen (z. B. „Filigrane Tische“) mit eigenem Preis."),
     ("Prüfanforderungen", len(p_zeilen), "Die Arbeitsliste: eine Zeile je geforderter Prüfung — Produkt × Norm × Prüfblock, "
         "mit Kosten für die 1. Prüfung und je weiterem Produkt. Leere Kosten sind gelb hinterlegt "

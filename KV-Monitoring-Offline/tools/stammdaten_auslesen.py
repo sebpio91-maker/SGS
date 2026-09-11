@@ -1,4 +1,10 @@
-import asyncio, json, pathlib
+"""Liest die Stammdaten aus der Anwendung aus.
+
+Ohne Argument gelten die in KV-Monitoring.html eingebauten Startdaten; mit dem
+Pfad zu einem JSON-Export der Anwendung wird dieser vorher in den Browser-Speicher
+gelegt, sodass die Anwendung ihn wie einen echten Datenbestand lädt - samt aller
+Migrationen, die sie beim Start darauf anwendet."""
+import asyncio, json, pathlib, sys
 from playwright.async_api import async_playwright
 DATEI = (pathlib.Path(__file__).resolve().parent.parent / "KV-Monitoring.html").as_uri()
 
@@ -116,9 +122,17 @@ async def main():
         b = await p.chromium.launch(executable_path="/opt/pw-browsers/chromium-1194/chrome-linux/chrome", args=["--no-sandbox"])
         page = await b.new_page()
         page.on("pageerror", lambda e: print("PAGEERROR:", e))
-        await page.goto(DATEI); await page.wait_for_timeout(2500)
+        if len(sys.argv) > 1:
+            bestand = json.load(open(sys.argv[1], encoding="utf-8"))
+            await page.add_init_script(
+                "localStorage.setItem('kv_monitoring_v3', %s);" % json.dumps(json.dumps(bestand)))
+            print("Datenbestand:", sys.argv[1])
+        await page.goto(DATEI); await page.wait_for_timeout(3000)
         d = await page.evaluate(JS)
+        d["stand"] = bestand.get("exportiertAm", "") if len(sys.argv) > 1 else ""
+        d["quelle"] = pathlib.Path(sys.argv[1]).name if len(sys.argv) > 1 else "Startdaten aus KV-Monitoring.html"
         json.dump(d, open(pathlib.Path(__file__).parent / "export.json","w",encoding="utf-8"), ensure_ascii=False)
-        for k,v in d.items(): print(k, len(v))
+        for k, v in d.items():
+            print(k, len(v) if isinstance(v, list) else repr(v))
         await b.close()
 asyncio.run(main())
