@@ -32,6 +32,65 @@ namespace PokerGrid
         public bool ColumnFirst = false;
         public AlignMode Align = AlignMode.Center;
         public int Overlap = 0;   // percent a table may grow beyond its slot
+        public bool Dynamic;      // Mode=Dynamic: Columns/Rows are chosen at runtime by BestGrid
+        public int MaxColumns = 5;
+        public int MaxRows = 4;
+
+        /// <summary>
+        /// Mode=Dynamic: finds the columns x rows grid in which the given tables get as big
+        /// as possible. The smallest table decides (every table should stay readable), then
+        /// the total table area, then fewer slots.
+        /// </summary>
+        public void BestGrid(IList<double> ratios, out int bestCols, out int bestRows)
+        {
+            Rectangle a = GridArea();
+            double grow = 1 + Math.Max(0, Overlap) / 100.0;
+            int n = Math.Max(1, ratios.Count);
+            int maxCols = Math.Max(1, MaxColumns), maxRows = Math.Max(1, MaxRows);
+            bestCols = maxCols;
+            bestRows = maxRows;
+            double bestMin = -1, bestSum = -1;
+
+            for (int c = 1; c <= maxCols; c++)
+            {
+                int r = (n + c - 1) / c;
+                if (r > maxRows)
+                    continue;
+                if (c > 1 && (c - 1) * r >= n)   // a whole column would stay empty
+                    continue;
+
+                double cellW = Math.Min((a.Width - Gap * (c - 1)) / (double)c * grow, a.Width);
+                double cellH = Math.Min((a.Height - Gap * (r - 1)) / (double)r * grow, a.Height);
+                double min = double.MaxValue, sum = 0;
+                foreach (double ratio in ratios)
+                {
+                    double w = Math.Min(cellW, cellH * ratio);
+                    double area = w * (w / ratio);
+                    min = Math.Min(min, area);
+                    sum += area;
+                }
+
+                bool better;
+                if (bestMin < 0 || min > bestMin * 1.01)
+                    better = true;
+                else if (min < bestMin * 0.99)
+                    better = false;
+                else if (sum > bestSum * 1.01)
+                    better = true;
+                else if (sum < bestSum * 0.99)
+                    better = false;
+                else
+                    better = c * r < bestCols * bestRows;
+
+                if (better)
+                {
+                    bestMin = min;
+                    bestSum = sum;
+                    bestCols = c;
+                    bestRows = r;
+                }
+            }
+        }
         public List<SlotSpec> Slots = new List<SlotSpec>();
 
         /// <summary>
@@ -44,14 +103,16 @@ namespace PokerGrid
             if (ratio <= 0)
                 return slot;
 
-            double grow = 1 + Math.Max(0, Overlap) / 100.0;
-            double maxW = slot.Width * grow, maxH = slot.Height * grow;
-            int w = (int)Math.Round(Math.Min(maxW, maxH * ratio));
-            int h = (int)Math.Round(w / ratio);
-
             Rectangle area = Slots.Count > 0
                 ? MonitorArea(Slots[index].Monitor >= 0 ? Slots[index].Monitor : Monitor, UseWorkingArea)
                 : GridArea();
+
+            // Overlap may enlarge a table beyond its slot, but never beyond the screen.
+            double grow = 1 + Math.Max(0, Overlap) / 100.0;
+            double maxW = Math.Min(slot.Width * grow, Math.Max(slot.Width, area.Width));
+            double maxH = Math.Min(slot.Height * grow, Math.Max(slot.Height, area.Height));
+            int w = (int)Math.Round(Math.Min(maxW, maxH * ratio));
+            int h = (int)Math.Round(w / ratio);
             int x, y;
 
             if (Align == AlignMode.Spread && Slots.Count == 0)
@@ -87,6 +148,12 @@ namespace PokerGrid
             Rectangle a = MonitorArea(Monitor, UseWorkingArea);
             a.Inflate(-Margin, -Margin);
             return a;
+        }
+
+        /// <summary>Name for tray and overlay; dynamic layouts also show the current grid.</summary>
+        public string DisplayName
+        {
+            get { return Dynamic ? string.Format("{0} ({1}x{2})", Name, Columns, Rows) : Name; }
         }
 
         public List<Rectangle> ComputeSlots()
@@ -363,6 +430,13 @@ namespace PokerGrid
                 case "gap": l.Gap = ParseInt(value); return true;
                 case "useworkingarea": l.UseWorkingArea = ParseBool(value); return true;
                 case "overlap": l.Overlap = ParseInt(value); return true;
+                case "maxcolumns": l.MaxColumns = ParseInt(value); return true;
+                case "maxrows": l.MaxRows = ParseInt(value); return true;
+                case "mode":
+                    l.Dynamic = value.Trim().Equals("Dynamic", StringComparison.OrdinalIgnoreCase);
+                    if (!l.Dynamic && !value.Trim().Equals("Grid", StringComparison.OrdinalIgnoreCase))
+                        throw new FormatException("erwartet Grid oder Dynamic");
+                    return true;
                 case "align": l.Align = (AlignMode)ParseEnum(typeof(AlignMode), value); return true;
                 case "order":
                     l.ColumnFirst = value.Trim().Equals("ColumnFirst", StringComparison.OrdinalIgnoreCase);

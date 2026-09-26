@@ -29,12 +29,13 @@ RestoreMinimized=true
 ; Mehr Tische als Slots:  Stack = Tische werden gestapelt,  Wait = warten bis ein Slot frei wird
 Overflow=Stack
 ; Aktives Layout (Name eines [Layout:...]-Abschnitts). Wird beim manuellen Umschalten gespeichert.
-ActiveLayout=3x2
-; Layout automatisch nach Tischanzahl wählen: Liste von klein nach groß.
-; Es wird das erste Layout genommen, das genug Slots hat (hier: bis 6 Tische 3x2, ab 7 Tischen 3x3).
+ActiveLayout=Dynamisch
+; Alternative zum dynamischen Layout: zwischen festen Layouts nach Tischanzahl umschalten.
+; Liste von klein nach groß, es wird das erste Layout mit genug Slots genommen
+; (z.B. AutoLayout=3x2,3x3 = bis 6 Tische 3x2, ab 7 Tischen 3x3).
 ; Leer lassen = aus. Manuelles Umschalten im Tray-Menü schaltet die Automatik ab (dort wieder einschaltbar).
-AutoLayout=3x2,3x3
-; Zurück auf das kleinere Layout erst, wenn die Tischanzahl so lange (ms) niedrig bleibt
+AutoLayout=
+; Auf ein kleineres Layout/Grid erst wechseln, wenn die Tischanzahl so lange (ms) niedrig bleibt
 ; (verhindert Hin- und Herspringen bei Tischwechseln im Turnier)
 AutoLayoutShrinkDelayMs=5000
 
@@ -61,7 +62,20 @@ HotkeyOverlay=Ctrl+Alt+O
 ;                   und Aktionsbuttons unten im Tisch sichtbar bleiben.
 ;  Order          : RowFirst (Slots zeilenweise nummeriert) | ColumnFirst
 ;  UseWorkingArea : true = Taskleiste freilassen
+;  Mode           : Grid (feste Columns/Rows) | Dynamic
+;                   Dynamic = Spalten und Zeilen werden laufend aus der Anzahl der
+;                   offenen Tische und ihren Seitenverhältnissen berechnet, sodass
+;                   alle Tische so groß wie möglich werden (Columns/Rows werden ignoriert)
+;  MaxColumns / MaxRows : Grenzen für Mode=Dynamic
 ; ------------------------------------------------------------
+
+[Layout:Dynamisch]
+Monitor=0
+Mode=Dynamic
+MaxColumns=5
+MaxRows=4
+Align=Spread
+Overlap=10
 
 [Layout:2x2]
 Monitor=0

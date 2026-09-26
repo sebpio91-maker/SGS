@@ -33,6 +33,7 @@ namespace PokerGrid
         public bool Paused;
         public bool AutoLayoutEnabled;
         private DateTime shrinkSince = DateTime.MinValue;
+        private DateTime dynamicShrinkSince = DateTime.MinValue;
         public event EventHandler StateChanged;
         /// <summary>Raised once per site when Windows refuses to move its tables (client runs as admin).</summary>
         public event Action<string> MoveDenied;
@@ -186,6 +187,8 @@ namespace PokerGrid
 
             if (active && ApplyAutoLayout(now))
                 changed = true;
+            if (active && ApplyDynamicGrid(now))
+                changed = true;
 
             if (active)
             {
@@ -262,6 +265,49 @@ namespace PokerGrid
             }
             shrinkSince = DateTime.MinValue;
             SetLayout(want.Name);
+            return true;
+        }
+
+        /// <summary>
+        /// Mode=Dynamic: re-computes the grid from the open tables and their aspect ratios.
+        /// More room is needed → switch at once; fewer slots would do → wait
+        /// AutoLayoutShrinkDelayMs so table moves in tournaments don't reshuffle everything.
+        /// </summary>
+        private bool ApplyDynamicGrid(DateTime now)
+        {
+            if (!layout.Dynamic)
+                return false;
+            List<double> ratios = managed.Values
+                .Where(x => !x.Released)
+                .Select(x => x.Ratio > 0 ? x.Ratio : 1.4)
+                .ToList();
+            if (ratios.Count == 0)
+            {
+                dynamicShrinkSince = DateTime.MinValue;
+                return false;
+            }
+
+            int cols, rows;
+            layout.BestGrid(ratios, out cols, out rows);
+            if (cols == layout.Columns && rows == layout.Rows)
+            {
+                dynamicShrinkSince = DateTime.MinValue;
+                return false;
+            }
+            bool stillFits = ratios.Count <= slots.Count;
+            if (stillFits && cols * rows < slots.Count)
+            {
+                if (dynamicShrinkSince == DateTime.MinValue)
+                    dynamicShrinkSince = now;
+                if ((now - dynamicShrinkSince).TotalMilliseconds < cfg.AutoLayoutShrinkDelayMs)
+                    return false;
+            }
+            dynamicShrinkSince = DateTime.MinValue;
+
+            layout.Columns = cols;
+            layout.Rows = rows;
+            slots = layout.ComputeSlots();
+            Compact();
             return true;
         }
 

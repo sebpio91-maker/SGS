@@ -294,7 +294,7 @@ namespace PokerGrid
         {
             if (overlay != null && !overlay.IsDisposed)
                 overlay.Close();
-            overlay = new OverlayForm(manager.Slots, manager.SlotCounts(), manager.Layout.Name);
+            overlay = new OverlayForm(manager.Slots, manager.SlotCounts(), manager.Layout.DisplayName);
             overlay.Show();
         }
 
@@ -343,7 +343,7 @@ namespace PokerGrid
             UpdateLayoutChecks();
             tray.Icon = manager.Paused ? iconPaused : iconActive;
             string text = string.Format("PokerGrid – {0}{1} – {2} Tische{3}",
-                manager.Layout.Name, manager.AutoLayoutEnabled ? " (auto)" : "", manager.ManagedCount, manager.Paused ? " (Pause)" : "");
+                manager.Layout.DisplayName, manager.AutoLayoutEnabled ? " (auto)" : "", manager.ManagedCount, manager.Paused ? " (Pause)" : "");
             tray.Text = text.Length > 63 ? text.Substring(0, 63) : text;
         }
 
