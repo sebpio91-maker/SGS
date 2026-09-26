@@ -122,10 +122,19 @@ namespace PokerGrid
             return ToRectangle(r);
         }
 
+        private const int ERROR_ACCESS_DENIED = 5;
+
+        /// <summary>
+        /// Set by SetVisibleBounds when Windows refused the move. That happens when the target
+        /// window belongs to a process running as administrator and PokerGrid does not.
+        /// </summary>
+        public static bool LastMoveDenied;
+
         /// <summary>Moves/resizes a window so that its visible part matches target. Returns the resulting visible bounds.</summary>
         public static Rectangle SetVisibleBounds(IntPtr h, Rectangle target)
         {
             Rectangle result = Rectangle.Empty;
+            LastMoveDenied = false;
             // A second pass handles windows that change their border size after being moved
             // to a monitor with a different DPI.
             for (int pass = 0; pass < 2; pass++)
@@ -136,10 +145,15 @@ namespace PokerGrid
                 int left = Clamp(vis.Left - wr.Left), top = Clamp(vis.Top - wr.Top);
                 int right = Clamp(wr.Right - vis.Right), bottom = Clamp(wr.Bottom - vis.Bottom);
 
-                NativeMethods.SetWindowPos(h, IntPtr.Zero,
-                    target.X - left, target.Y - top,
-                    target.Width + left + right, target.Height + top + bottom,
-                    NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOACTIVATE | NativeMethods.SWP_NOOWNERZORDER);
+                if (!NativeMethods.SetWindowPos(h, IntPtr.Zero,
+                        target.X - left, target.Y - top,
+                        target.Width + left + right, target.Height + top + bottom,
+                        NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOACTIVATE | NativeMethods.SWP_NOOWNERZORDER)
+                    && Marshal.GetLastWin32Error() == ERROR_ACCESS_DENIED)
+                {
+                    LastMoveDenied = true;
+                    return GetVisibleBounds(h);
+                }
 
                 result = GetVisibleBounds(h);
                 if (IsNear(result, target, 1))

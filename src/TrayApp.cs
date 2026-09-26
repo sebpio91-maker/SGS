@@ -112,6 +112,7 @@ namespace PokerGrid
 
             manager = new GridManager(cfg);
             manager.StateChanged += delegate { UpdateTray(); };
+            manager.MoveDenied += OnMoveDenied;
 
             tray = new NotifyIcon();
             tray.Icon = iconActive;
@@ -253,6 +254,14 @@ namespace PokerGrid
                 SafeRun(delegate { manager.OnMoveSizeStart(hwnd); });
             else if (eventType == NativeMethods.EVENT_SYSTEM_MOVESIZEEND)
                 SafeRun(delegate { manager.OnMoveSizeEnd(hwnd); });
+        }
+
+        private void OnMoveDenied(string siteName)
+        {
+            tray.ShowBalloonTip(10000, "PokerGrid braucht Administratorrechte",
+                siteName + " läuft als Administrator, deshalb blockiert Windows das Verschieben der Tische. " +
+                "PokerGrid beenden und per Rechtsklick › Als Administrator ausführen starten.",
+                ToolTipIcon.Warning);
         }
 
         private void OnDisplaySettingsChanged(object sender, EventArgs e)

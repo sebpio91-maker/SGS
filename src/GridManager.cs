@@ -34,6 +34,9 @@ namespace PokerGrid
         public bool AutoLayoutEnabled;
         private DateTime shrinkSince = DateTime.MinValue;
         public event EventHandler StateChanged;
+        /// <summary>Raised once per site when Windows refuses to move its tables (client runs as admin).</summary>
+        public event Action<string> MoveDenied;
+        private readonly HashSet<string> deniedSites = new HashSet<string>();
 
         public GridManager(AppConfig config)
         {
@@ -427,6 +430,8 @@ namespace PokerGrid
             m.Expected = WindowScanner.SetVisibleBounds(m.Hwnd, target);
             m.PlacedAt = DateTime.Now;
             m.Verified = !verifyLater;
+            if (WindowScanner.LastMoveDenied && deniedSites.Add(m.Site.Name) && MoveDenied != null)
+                MoveDenied(m.Site.Name);
         }
 
         /// <summary>Largest rectangle with the given aspect ratio that fits into the slot.</summary>
