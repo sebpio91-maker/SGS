@@ -13,6 +13,8 @@ wie möglich in ihren Slot eingepasst, ohne verzerrt zu werden.
   Außerhalb des Grids losgelassen → springt zurück (oder wird freigegeben, einstellbar).
 - **Mehrere Layouts** (2x2, 3x2, 3x3, eigene Slots in Pixel oder Prozent, auch über mehrere Monitore),
   per Tray-Menü oder Hotkey umschaltbar.
+- **Automatische Layoutwahl**: Standardmäßig 3x2 bei bis zu 6 Tischen, 3x3 ab 7 Tischen (`AutoLayout=3x2,3x3`).
+  Zurück auf 3x2 geht es erst, wenn die Tischanzahl 5 Sekunden lang niedrig bleibt.
 - **Überlauf**: Mehr Tische als Slots → stapeln oder warten, bis ein Slot frei wird.
 - **Slot-Overlay**: zeigt die Slots des aktiven Layouts kurz auf dem Bildschirm an.
 - **Fenster-Info**: listet Prozess, Fensterklasse und Titel aller Fenster und erzeugt per Klick eine
@@ -37,7 +39,11 @@ Das Skript nutzt den C#-Compiler, der bei Windows 10 schon dabei ist. Ergebnis: 
    (damit z. B. die Lobby nicht mit einsortiert wird), speichern.
 4. *Konfiguration neu laden* – ab jetzt werden die Tische automatisch angeordnet.
 
-Für PokerStars ist bereits ein Eintrag vorhanden. In der Fenster-Info sind erkannte Tische grün markiert.
+Für PokerStars, GGPoker, partypoker und CoinPoker sind bereits Einträge vorhanden. Bei GGPoker, partypoker und
+CoinPoker sind Prozessnamen und Lobby-Titel noch nicht am echten Client geprüft – kontrolliere sie beim ersten Start
+in der Fenster-Info (siehe unten).
+
+Hast du PokerGrid schon einmal gestartet, lösche die alte `PokerGrid.ini`, damit die neuen Standardwerte angelegt werden. In der Fenster-Info sind erkannte Tische grün markiert.
 
 ### Hotkeys (Standard, in der INI änderbar)
 

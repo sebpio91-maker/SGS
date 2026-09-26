@@ -87,7 +87,7 @@ namespace PokerGrid
         private readonly Icon iconActive, iconPaused;
         private readonly NativeMethods.WinEventDelegate winEventProc;   // field keeps the delegate alive
         private IntPtr winEventHook;
-        private ToolStripMenuItem pauseItem, layoutMenu;
+        private ToolStripMenuItem pauseItem, layoutMenu, autoLayoutItem;
         private OverlayForm overlay;
         private WindowListForm windowList;
 
@@ -191,13 +191,44 @@ namespace PokerGrid
         private void RebuildLayoutMenu()
         {
             layoutMenu.DropDownItems.Clear();
+            if (manager.Config.AutoLayouts.Count > 0)
+            {
+                autoLayoutItem = new ToolStripMenuItem(
+                    "Automatisch nach Tischanzahl (" + string.Join(" → ", manager.Config.AutoLayouts) + ")",
+                    null, delegate { ToggleAutoLayout(); });
+                layoutMenu.DropDownItems.Add(autoLayoutItem);
+                layoutMenu.DropDownItems.Add(new ToolStripSeparator());
+            }
+            else
+            {
+                autoLayoutItem = null;
+            }
             foreach (LayoutDef l in manager.Config.Layouts)
             {
                 string name = l.Name;
                 var item = new ToolStripMenuItem(name, null, delegate { SwitchLayout(name); });
-                item.Checked = l == manager.Layout;
+                item.Tag = l;
                 layoutMenu.DropDownItems.Add(item);
             }
+            UpdateLayoutChecks();
+        }
+
+        private void UpdateLayoutChecks()
+        {
+            if (autoLayoutItem != null)
+                autoLayoutItem.Checked = manager.AutoLayoutEnabled;
+            foreach (ToolStripItem item in layoutMenu.DropDownItems)
+            {
+                var menuItem = item as ToolStripMenuItem;
+                if (menuItem != null && menuItem.Tag is LayoutDef)
+                    menuItem.Checked = menuItem.Tag == manager.Layout;
+            }
+        }
+
+        private void ToggleAutoLayout()
+        {
+            manager.AutoLayoutEnabled = !manager.AutoLayoutEnabled;
+            UpdateTray();
         }
 
         // ------------------------------------------------------------------ actions
@@ -237,14 +268,15 @@ namespace PokerGrid
             UpdateTray();
         }
 
+        /// <summary>Manual switch (menu or hotkey); turns the automatic layout choice off.</summary>
         private void SwitchLayout(string name)
         {
+            manager.AutoLayoutEnabled = false;
             SafeRun(delegate
             {
                 manager.SetLayout(name);
                 AppConfig.SaveActiveLayout(configPath, manager.Layout.Name);
             });
-            RebuildLayoutMenu();
             UpdateTray();
             ShowOverlay();
         }
@@ -299,9 +331,10 @@ namespace PokerGrid
         private void UpdateTray()
         {
             pauseItem.Checked = manager.Paused;
+            UpdateLayoutChecks();
             tray.Icon = manager.Paused ? iconPaused : iconActive;
-            string text = string.Format("PokerGrid – {0} – {1} Tische{2}",
-                manager.Layout.Name, manager.ManagedCount, manager.Paused ? " (Pause)" : "");
+            string text = string.Format("PokerGrid – {0}{1} – {2} Tische{3}",
+                manager.Layout.Name, manager.AutoLayoutEnabled ? " (auto)" : "", manager.ManagedCount, manager.Paused ? " (Pause)" : "");
             tray.Text = text.Length > 63 ? text.Substring(0, 63) : text;
         }
 

@@ -14,7 +14,7 @@ namespace PokerGrid
         public bool Released;            // dragged out of the grid by the user
         public double Ratio;             // width / height of the visible window, <= 0 = stretch
         public long Order;               // arrival order, used for fair slot assignment
-        public DateTime PlacedAt;
+        public DateTime PlacedAt = DateTime.MinValue;
         public bool Verified = true;     // false until we checked the client did not move it back
         public Rectangle Expected;
     }
@@ -31,6 +31,8 @@ namespace PokerGrid
         private long orderCounter;
 
         public bool Paused;
+        public bool AutoLayoutEnabled;
+        private DateTime shrinkSince = DateTime.MinValue;
         public event EventHandler StateChanged;
 
         public GridManager(AppConfig config)
@@ -68,6 +70,8 @@ namespace PokerGrid
         {
             cfg = config;
             layout = cfg.FindLayout(cfg.ActiveLayout) ?? cfg.Layouts[0];
+            AutoLayoutEnabled = cfg.AutoLayouts.Count > 0;
+            shrinkSince = DateTime.MinValue;
             slots = layout.ComputeSlots();
 
             // Keep known windows and their slots, just re-link them to the new site profiles.
@@ -164,12 +168,6 @@ namespace PokerGrid
                     : (w.Bounds.Height > 0 ? (double)w.Bounds.Width / w.Bounds.Height : -1);
                 managed[w.Hwnd] = m;
                 changed = true;
-
-                if (active)
-                {
-                    AssignSlot(m);
-                    Place(m, true);
-                }
             }
 
             foreach (IntPtr h in managed.Keys.ToList())
@@ -183,15 +181,18 @@ namespace PokerGrid
                 if (!seen.Contains(h))
                     pending.Remove(h);
 
+            if (active && ApplyAutoLayout(now))
+                changed = true;
+
             if (active)
             {
-                // Windows waiting for a free slot (Overflow=Wait or layout had no room).
+                // New windows and windows waiting for a free slot (Overflow=Wait or layout had no room).
                 foreach (ManagedWindow m in managed.Values.Where(x => x.Slot < 0 && !x.Released).OrderBy(x => x.Order).ToList())
                 {
                     AssignSlot(m);
                     if (m.Slot >= 0)
                     {
-                        Place(m, true);
+                        Place(m, IsFresh(m));
                         changed = true;
                     }
                 }
@@ -219,6 +220,51 @@ namespace PokerGrid
                 if (s.Matches(w))
                     return s;
             return null;
+        }
+
+        /// <summary>
+        /// Picks the first layout of AutoLayout that has enough slots for all tables.
+        /// Switches to a bigger layout immediately, to a smaller one only after the table
+        /// count stayed low for AutoLayoutShrinkDelayMs (tournament table moves close and
+        /// open tables in quick succession).
+        /// </summary>
+        private bool ApplyAutoLayout(DateTime now)
+        {
+            if (!AutoLayoutEnabled)
+                return false;
+            int count = managed.Values.Count(x => !x.Released);
+            LayoutDef want = null;
+            int wantSlots = 0;
+            foreach (string name in cfg.AutoLayouts)
+            {
+                LayoutDef l = cfg.FindLayout(name);
+                if (l == null)
+                    continue;
+                want = l;
+                wantSlots = l.ComputeSlots().Count;
+                if (wantSlots >= count)
+                    break;
+            }
+            if (want == null || want == layout)
+            {
+                shrinkSince = DateTime.MinValue;
+                return false;
+            }
+            if (wantSlots < slots.Count)
+            {
+                if (shrinkSince == DateTime.MinValue)
+                    shrinkSince = now;
+                if ((now - shrinkSince).TotalMilliseconds < cfg.AutoLayoutShrinkDelayMs)
+                    return false;
+            }
+            shrinkSince = DateTime.MinValue;
+            SetLayout(want.Name);
+            return true;
+        }
+
+        private static bool IsFresh(ManagedWindow m)
+        {
+            return m.PlacedAt == DateTime.MinValue;
         }
 
         // ------------------------------------------------------------------ user drag & drop
@@ -317,7 +363,7 @@ namespace PokerGrid
             foreach (ManagedWindow m in managed.Values.Where(x => x.Slot < 0).OrderBy(x => x.Order).ToList())
                 AssignSlot(m);
             foreach (ManagedWindow m in managed.Values)
-                Place(m, false);
+                Place(m, IsFresh(m));
             RaiseChanged();
         }
 
@@ -336,7 +382,7 @@ namespace PokerGrid
             foreach (ManagedWindow m in ordered)
                 AssignSlot(m);
             foreach (ManagedWindow m in ordered)
-                Place(m, false);
+                Place(m, IsFresh(m));
             RaiseChanged();
         }
 

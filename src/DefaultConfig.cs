@@ -28,8 +28,15 @@ SnapBack=true
 RestoreMinimized=true
 ; Mehr Tische als Slots:  Stack = Tische werden gestapelt,  Wait = warten bis ein Slot frei wird
 Overflow=Stack
-; Aktives Layout (Name eines [Layout:...]-Abschnitts). Wird beim Umschalten automatisch gespeichert.
-ActiveLayout=2x2
+; Aktives Layout (Name eines [Layout:...]-Abschnitts). Wird beim manuellen Umschalten gespeichert.
+ActiveLayout=3x2
+; Layout automatisch nach Tischanzahl wählen: Liste von klein nach groß.
+; Es wird das erste Layout genommen, das genug Slots hat (hier: bis 6 Tische 3x2, ab 7 Tischen 3x3).
+; Leer lassen = aus. Manuelles Umschalten im Tray-Menü schaltet die Automatik ab (dort wieder einschaltbar).
+AutoLayout=3x2,3x3
+; Zurück auf das kleinere Layout erst, wenn die Tischanzahl so lange (ms) niedrig bleibt
+; (verhindert Hin- und Herspringen bei Tischwechseln im Turnier)
+AutoLayoutShrinkDelayMs=5000
 
 ; Hotkeys: Ctrl / Alt / Shift / Win + Taste (z.B. A, F5, Right, NumPad1, 1). Leer lassen = aus.
 HotkeyArrange=Ctrl+Alt+A
@@ -63,13 +70,13 @@ UseWorkingArea=true
 Monitor=0
 Columns=3
 Rows=2
-Align=TopLeft
+Align=Center
 
 [Layout:3x3]
 Monitor=0
 Columns=3
 Rows=3
-Align=TopLeft
+Align=Center
 
 ; Eigene Slots: SlotN=[Monitor:]X,Y,Breite,Höhe  (Pixel oder Prozent des Monitors)
 ; Sobald ein Layout Slots hat, werden Columns/Rows ignoriert.
@@ -97,19 +104,39 @@ Slot5=75%,50%,25%,50%
 ;        offenen Fenster und kopiert eine fertige Vorlage in die Zwischenablage.
 ; ------------------------------------------------------------
 
+; Bei GGPoker, partypoker und CoinPoker liegen Lobby und Tische im selben Prozess.
+; Die Lobby wird über den Titel ausgeschlossen. Falls sie trotzdem einsortiert wird:
+; Fenster-Info öffnen, Titel/Klasse der Lobby ablesen und ExcludeTitleRegex bzw. Class anpassen.
+; TitleRegex=. bedeutet: Fenster muss einen Titel haben (blendet unsichtbare Hilfsfenster aus).
+
 [Site:PokerStars]
 Process=PokerStars.exe
 Class=^PokerStarsTableFrameClass$
 AspectRatio=auto
 
-[Site:Beispiel]
-Enabled=false
-Process=MeinPokerClient.exe
-TitleRegex=Hold'em|Omaha|Table|Tisch
-ExcludeTitleRegex=Lobby
+[Site:GGPoker]
+Process=GGnet.exe,GGPoker.exe
+TitleRegex=.
+ExcludeTitleRegex=Lobby|^GG ?Poker$|^GGnet$
 AspectRatio=auto
-MinWidth=300
-MinHeight=200
+MinWidth=400
+MinHeight=300
+
+[Site:partypoker]
+Process=PartyGaming.exe,partypoker.exe
+TitleRegex=.
+ExcludeTitleRegex=Lobby|^partypoker$
+AspectRatio=auto
+MinWidth=400
+MinHeight=300
+
+[Site:CoinPoker]
+Process=CoinPoker.exe
+TitleRegex=.
+ExcludeTitleRegex=Lobby|^CoinPoker$
+AspectRatio=auto
+MinWidth=400
+MinHeight=300
 ";
     }
 }

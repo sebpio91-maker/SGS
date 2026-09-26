@@ -149,6 +149,8 @@ namespace PokerGrid
         public bool RestoreMinimized = true;
         public OverflowMode Overflow = OverflowMode.Stack;
         public string ActiveLayout = "";
+        public List<string> AutoLayouts = new List<string>();
+        public int AutoLayoutShrinkDelayMs = 5000;
 
         public string HotkeyArrange = "";
         public string HotkeyCompact = "";
@@ -254,6 +256,9 @@ namespace PokerGrid
                     cfg.Warnings.Add(string.Format("ActiveLayout '{0}' nicht gefunden, verwende '{1}'.", cfg.ActiveLayout, cfg.Layouts[0].Name));
                 cfg.ActiveLayout = cfg.Layouts[0].Name;
             }
+            foreach (string n in cfg.AutoLayouts)
+                if (cfg.FindLayout(n) == null)
+                    cfg.Warnings.Add(string.Format("AutoLayout: Layout '{0}' nicht gefunden.", n));
             foreach (SiteProfile s in cfg.Sites)
                 if (s.Enabled && !s.HasCriteria)
                     cfg.Warnings.Add(string.Format("[Site:{0}] braucht mindestens Process, Class oder TitleRegex und wird ignoriert.", s.Name));
@@ -275,6 +280,13 @@ namespace PokerGrid
                 case "restoreminimized": RestoreMinimized = ParseBool(value); return true;
                 case "overflow": Overflow = (OverflowMode)ParseEnum(typeof(OverflowMode), value); return true;
                 case "activelayout": ActiveLayout = value; return true;
+                case "autolayout":
+                    AutoLayouts.Clear();
+                    foreach (string n in value.Split(','))
+                        if (n.Trim().Length > 0)
+                            AutoLayouts.Add(n.Trim());
+                    return true;
+                case "autolayoutshrinkdelayms": AutoLayoutShrinkDelayMs = ParseInt(value); return true;
                 case "hotkeyarrange": HotkeyArrange = value; return true;
                 case "hotkeycompact": HotkeyCompact = value; return true;
                 case "hotkeypause": HotkeyPause = value; return true;
