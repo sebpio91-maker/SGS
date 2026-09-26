@@ -50,9 +50,15 @@ HotkeyOverlay=Ctrl+Alt+O
 ;  Monitor        : 0 = Hauptmonitor, 1..n = Monitore von links nach rechts
 ;  Columns / Rows : Anzahl Spalten / Zeilen
 ;  Margin / Gap   : Rand um das Grid / Abstand zwischen Slots (Pixel)
-;  Align          : Center | TopLeft | Top | Left
+;  Align          : Center | TopLeft | Top | Left | Spread
 ;                   Position des Tisches im Slot, wenn sein Seitenverhältnis
-;                   nicht genau zum Slot passt
+;                   nicht genau zum Slot passt.
+;                   Spread = äußere Tische bündig am Bildschirmrand, die übrigen
+;                   gleichmäßig dazwischen (freier Platz/Überlappung wird gleich verteilt)
+;  Overlap        : Tische dürfen um so viel Prozent größer als ihr Slot werden
+;                   und sich dafür etwas überlappen (0 = keine Überlappung).
+;                   Die oberen Reihen liegen dann über den unteren, damit Karten
+;                   und Aktionsbuttons unten im Tisch sichtbar bleiben.
 ;  Order          : RowFirst (Slots zeilenweise nummeriert) | ColumnFirst
 ;  UseWorkingArea : true = Taskleiste freilassen
 ; ------------------------------------------------------------
@@ -70,13 +76,15 @@ UseWorkingArea=true
 Monitor=0
 Columns=3
 Rows=2
-Align=Center
+Align=Spread
+Overlap=0
 
 [Layout:3x3]
 Monitor=0
 Columns=3
 Rows=3
-Align=Center
+Align=Spread
+Overlap=12
 
 ; Eigene Slots: SlotN=[Monitor:]X,Y,Breite,Höhe  (Pixel oder Prozent des Monitors)
 ; Sobald ein Layout Slots hat, werden Columns/Rows ignoriert.
@@ -111,7 +119,9 @@ Slot5=75%,50%,25%,50%
 
 [Site:PokerStars]
 Process=PokerStars.exe
-Class=^PokerStarsTableFrameClass$
+; GLFW30 = neuer Client, PokerStarsTableFrameClass = alter Client
+Class=^(GLFW30|PokerStarsTableFrameClass)$
+ExcludeTitleRegex=Lobby
 AspectRatio=auto
 
 [Site:GGPoker]
@@ -123,7 +133,8 @@ MinWidth=400
 MinHeight=300
 
 [Site:partypoker]
-Process=PartyGaming.exe,partypoker.exe
+Process=PartyPokerde.exe,PartyGaming.exe,partypoker.exe
+Class=^#32770$
 TitleRegex=.
 ExcludeTitleRegex=Lobby|^partypoker$
 AspectRatio=auto
@@ -132,6 +143,7 @@ MinHeight=300
 
 [Site:CoinPoker]
 Process=CoinPoker.exe
+Class=^UnityWndClass$
 TitleRegex=.
 ExcludeTitleRegex=Lobby|^CoinPoker$
 AspectRatio=auto

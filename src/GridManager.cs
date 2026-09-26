@@ -367,6 +367,7 @@ namespace PokerGrid
                 AssignSlot(m);
             foreach (ManagedWindow m in managed.Values)
                 Place(m, IsFresh(m));
+            StackOverlapping();
             RaiseChanged();
         }
 
@@ -386,6 +387,7 @@ namespace PokerGrid
                 AssignSlot(m);
             foreach (ManagedWindow m in ordered)
                 Place(m, IsFresh(m));
+            StackOverlapping();
             RaiseChanged();
         }
 
@@ -426,7 +428,7 @@ namespace PokerGrid
             if (NativeMethods.IsZoomed(m.Hwnd))
                 NativeMethods.ShowWindow(m.Hwnd, NativeMethods.SW_SHOWNOACTIVATE);
 
-            Rectangle target = Fit(slots[m.Slot], m.Ratio, layout.Align);
+            Rectangle target = layout.PlaceTable(m.Slot, slots[m.Slot], m.Ratio);
             m.Expected = WindowScanner.SetVisibleBounds(m.Hwnd, target);
             m.PlacedAt = DateTime.Now;
             m.Verified = !verifyLater;
@@ -434,24 +436,17 @@ namespace PokerGrid
                 MoveDenied(m.Site.Name);
         }
 
-        /// <summary>Largest rectangle with the given aspect ratio that fits into the slot.</summary>
-        public static Rectangle Fit(Rectangle slot, double ratio, AlignMode align)
+        /// <summary>
+        /// With Overlap, tables of the upper rows go on top: their lower part (own cards,
+        /// action buttons) stays visible, only the top edge of the table below is covered.
+        /// </summary>
+        private void StackOverlapping()
         {
-            if (ratio <= 0)
-                return slot;
-            int w = slot.Width;
-            int h = (int)Math.Round(w / ratio);
-            if (h > slot.Height)
-            {
-                h = slot.Height;
-                w = (int)Math.Round(h * ratio);
-            }
-            int x = slot.X, y = slot.Y;
-            if (align == AlignMode.Center || align == AlignMode.Top)
-                x += (slot.Width - w) / 2;
-            if (align == AlignMode.Center || align == AlignMode.Left)
-                y += (slot.Height - h) / 2;
-            return new Rectangle(x, y, w, h);
+            if (layout.Overlap <= 0)
+                return;
+            foreach (ManagedWindow m in managed.Values.Where(x => x.Slot >= 0).OrderByDescending(x => x.Slot).ToList())
+                NativeMethods.SetWindowPos(m.Hwnd, IntPtr.Zero, 0, 0, 0, 0,
+                    NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
         }
 
         private void RaiseChanged()

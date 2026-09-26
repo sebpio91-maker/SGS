@@ -12,7 +12,7 @@ namespace PokerGrid
 {
     internal enum OverflowMode { Stack, Wait }
 
-    internal enum AlignMode { Center, TopLeft, Top, Left }
+    internal enum AlignMode { Center, TopLeft, Top, Left, Spread }
 
     internal class SlotSpec
     {
@@ -31,7 +31,63 @@ namespace PokerGrid
         public bool UseWorkingArea = true;
         public bool ColumnFirst = false;
         public AlignMode Align = AlignMode.Center;
+        public int Overlap = 0;   // percent a table may grow beyond its slot
         public List<SlotSpec> Slots = new List<SlotSpec>();
+
+        /// <summary>
+        /// Where a table with the given aspect ratio goes for slot <paramref name="index"/>:
+        /// the largest size that fits into the slot enlarged by Overlap percent, positioned
+        /// according to Align and kept inside the monitor.
+        /// </summary>
+        public Rectangle PlaceTable(int index, Rectangle slot, double ratio)
+        {
+            if (ratio <= 0)
+                return slot;
+
+            double grow = 1 + Math.Max(0, Overlap) / 100.0;
+            double maxW = slot.Width * grow, maxH = slot.Height * grow;
+            int w = (int)Math.Round(Math.Min(maxW, maxH * ratio));
+            int h = (int)Math.Round(w / ratio);
+
+            Rectangle area = Slots.Count > 0
+                ? MonitorArea(Slots[index].Monitor >= 0 ? Slots[index].Monitor : Monitor, UseWorkingArea)
+                : GridArea();
+            int x, y;
+
+            if (Align == AlignMode.Spread && Slots.Count == 0)
+            {
+                // Outer tables flush with the screen edges, the others evenly in between,
+                // so free space and overlap are shared equally by all rows and columns.
+                int cols = Math.Max(1, Columns), rows = Math.Max(1, Rows);
+                int col = ColumnFirst ? index / rows : index % cols;
+                int row = ColumnFirst ? index % rows : index / cols;
+                x = cols > 1 ? area.X + (int)Math.Round((double)col * (area.Width - w) / (cols - 1))
+                             : area.X + (area.Width - w) / 2;
+                y = rows > 1 ? area.Y + (int)Math.Round((double)row * (area.Height - h) / (rows - 1))
+                             : area.Y + (area.Height - h) / 2;
+                return new Rectangle(x, y, w, h);
+            }
+
+            x = slot.X;
+            y = slot.Y;
+            if (Align == AlignMode.Center || Align == AlignMode.Top || Align == AlignMode.Spread)
+                x += (slot.Width - w) / 2;
+            if (Align == AlignMode.Center || Align == AlignMode.Left || Align == AlignMode.Spread)
+                y += (slot.Height - h) / 2;
+            // A table bigger than its slot must not stick out of the screen.
+            if (w <= area.Width)
+                x = Math.Max(area.X, Math.Min(x, area.Right - w));
+            if (h <= area.Height)
+                y = Math.Max(area.Y, Math.Min(y, area.Bottom - h));
+            return new Rectangle(x, y, w, h);
+        }
+
+        private Rectangle GridArea()
+        {
+            Rectangle a = MonitorArea(Monitor, UseWorkingArea);
+            a.Inflate(-Margin, -Margin);
+            return a;
+        }
 
         public List<Rectangle> ComputeSlots()
         {
@@ -51,8 +107,7 @@ namespace PokerGrid
                 return result;
             }
 
-            Rectangle a = MonitorArea(Monitor, UseWorkingArea);
-            a.Inflate(-Margin, -Margin);
+            Rectangle a = GridArea();
             int cols = Math.Max(1, Columns), rows = Math.Max(1, Rows);
             int cellW = (a.Width - Gap * (cols - 1)) / cols;
             int cellH = (a.Height - Gap * (rows - 1)) / rows;
@@ -307,6 +362,7 @@ namespace PokerGrid
                 case "margin": l.Margin = ParseInt(value); return true;
                 case "gap": l.Gap = ParseInt(value); return true;
                 case "useworkingarea": l.UseWorkingArea = ParseBool(value); return true;
+                case "overlap": l.Overlap = ParseInt(value); return true;
                 case "align": l.Align = (AlignMode)ParseEnum(typeof(AlignMode), value); return true;
                 case "order":
                     l.ColumnFirst = value.Trim().Equals("ColumnFirst", StringComparison.OrdinalIgnoreCase);
