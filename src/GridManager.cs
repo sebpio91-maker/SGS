@@ -287,15 +287,15 @@ namespace PokerGrid
                 return false;
             }
 
-            int cols, rows;
-            layout.BestGrid(ratios, out cols, out rows);
-            if (cols == layout.Columns && rows == layout.Rows)
+            int[] counts, heights;
+            layout.BestPlan(ratios, out counts, out heights);
+            if (layout.RowCounts != null && counts.SequenceEqual(layout.RowCounts))
             {
                 dynamicShrinkSince = DateTime.MinValue;
                 return false;
             }
             bool stillFits = ratios.Count <= slots.Count;
-            if (stillFits && cols * rows < slots.Count)
+            if (stillFits && counts.Sum() < slots.Count)
             {
                 if (dynamicShrinkSince == DateTime.MinValue)
                     dynamicShrinkSince = now;
@@ -304,8 +304,8 @@ namespace PokerGrid
             }
             dynamicShrinkSince = DateTime.MinValue;
 
-            layout.Columns = cols;
-            layout.Rows = rows;
+            layout.RowCounts = counts;
+            layout.RowHeights = heights;
             slots = layout.ComputeSlots();
             Compact();
             return true;

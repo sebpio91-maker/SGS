@@ -31,43 +31,58 @@ namespace PokerGrid
         public bool UseWorkingArea = true;
         public bool ColumnFirst = false;
         public AlignMode Align = AlignMode.Center;
-        public int Overlap = 0;   // percent a table may grow beyond its slot
-        public bool Dynamic;      // Mode=Dynamic: Columns/Rows are chosen at runtime by BestGrid
+        public int Overlap = 0;   // percent a table may grow taller than its slot
+        public bool Dynamic;      // Mode=Dynamic: rows are planned at runtime by BestPlan
         public int MaxColumns = 5;
         public int MaxRows = 4;
+        public List<SlotSpec> Slots = new List<SlotSpec>();
+
+        // Current plan of a dynamic layout: tables per row (top to bottom) and row heights.
+        public int[] RowCounts;
+        public int[] RowHeights;
 
         /// <summary>
-        /// Mode=Dynamic: finds the columns x rows grid in which the given tables get as big
-        /// as possible. The smallest table decides (every table should stay readable), then
-        /// the total table area, then fewer slots.
+        /// Mode=Dynamic: distributes the tables over 1..MaxRows rows. Rows may hold different
+        /// numbers of tables (7 → 3 + 4); rows with fewer tables go on top and get wider
+        /// cells and more height. Chooses the plan in which the smallest table is biggest,
+        /// then the one with the most total table area, then the one with fewer rows.
         /// </summary>
-        public void BestGrid(IList<double> ratios, out int bestCols, out int bestRows)
+        public void BestPlan(IList<double> ratios, out int[] bestCounts, out int[] bestHeights)
         {
             Rectangle a = GridArea();
             double grow = 1 + Math.Max(0, Overlap) / 100.0;
             int n = Math.Max(1, ratios.Count);
-            int maxCols = Math.Max(1, MaxColumns), maxRows = Math.Max(1, MaxRows);
-            bestCols = maxCols;
-            bestRows = maxRows;
+            double rMin = ratios.Count > 0 ? ratios.Min() : 1.4;
+            double rMax = ratios.Count > 0 ? ratios.Max() : 1.4;
+            double rMean = ratios.Count > 0 ? ratios.Average() : 1.4;
+
+            bestCounts = null;
+            bestHeights = null;
             double bestMin = -1, bestSum = -1;
 
-            for (int c = 1; c <= maxCols; c++)
+            for (int rows = 1; rows <= Math.Max(1, MaxRows) && rows <= n; rows++)
             {
-                int r = (n + c - 1) / c;
-                if (r > maxRows)
-                    continue;
-                if (c > 1 && (c - 1) * r >= n)   // a whole column would stay empty
+                int[] counts = new int[rows];
+                for (int i = 0; i < rows; i++)
+                    counts[i] = n / rows + (i >= rows - n % rows ? 1 : 0);   // fewer tables on top
+                if (counts[rows - 1] > Math.Max(1, MaxColumns))
                     continue;
 
-                double cellW = Math.Min((a.Width - Gap * (c - 1)) / (double)c * grow, a.Width);
-                double cellH = Math.Min((a.Height - Gap * (r - 1)) / (double)r * grow, a.Height);
-                double min = double.MaxValue, sum = 0;
-                foreach (double ratio in ratios)
+                double[] cellW = new double[rows];
+                double[] need = new double[rows];
+                for (int i = 0; i < rows; i++)
                 {
-                    double w = Math.Min(cellW, cellH * ratio);
-                    double area = w * (w / ratio);
-                    min = Math.Min(min, area);
-                    sum += area;
+                    cellW[i] = (a.Width - Gap * (counts[i] - 1)) / (double)counts[i];
+                    need[i] = cellW[i] / rMin;   // row height at which even the tallest table uses the full width
+                }
+                double[] heights = DistributeHeights(need, a.Height - Gap * (rows - 1));
+
+                double min = double.MaxValue, sum = 0;
+                for (int i = 0; i < rows; i++)
+                {
+                    double maxH = Math.Min(heights[i] * grow, a.Height);
+                    min = Math.Min(min, Math.Min(TableArea(cellW[i], maxH, rMin), TableArea(cellW[i], maxH, rMax)));
+                    sum += counts[i] * TableArea(cellW[i], maxH, rMean);
                 }
 
                 bool better;
@@ -80,23 +95,55 @@ namespace PokerGrid
                 else if (sum < bestSum * 0.99)
                     better = false;
                 else
-                    better = c * r < bestCols * bestRows;
+                    better = rows < bestCounts.Length;
 
                 if (better)
                 {
                     bestMin = min;
                     bestSum = sum;
-                    bestCols = c;
-                    bestRows = r;
+                    bestCounts = counts;
+                    bestHeights = heights.Select(h => (int)Math.Floor(h)).ToArray();
                 }
             }
+
+            if (bestCounts == null)
+            {
+                // More tables than MaxColumns x MaxRows: full grid, the rest gets stacked.
+                int rows = Math.Max(1, MaxRows);
+                bestCounts = Enumerable.Repeat(Math.Max(1, MaxColumns), rows).ToArray();
+                bestHeights = DistributeHeights(Enumerable.Repeat(1.0, rows).ToArray(), a.Height - Gap * (rows - 1))
+                    .Select(h => (int)Math.Floor(h)).ToArray();
+            }
         }
-        public List<SlotSpec> Slots = new List<SlotSpec>();
+
+        /// <summary>Gives each row the height it needs; spare height is shared, missing height taken proportionally.</summary>
+        private static double[] DistributeHeights(double[] need, double available)
+        {
+            double total = need.Sum();
+            var result = new double[need.Length];
+            for (int i = 0; i < need.Length; i++)
+                result[i] = total <= available
+                    ? need[i] + (available - total) / need.Length
+                    : need[i] * available / total;
+            return result;
+        }
+
+        private static double TableArea(double maxW, double maxH, double ratio)
+        {
+            double w = Math.Min(maxW, maxH * ratio);
+            return w * (w / ratio);
+        }
+
+        private bool HasRowPlan
+        {
+            get { return Dynamic && RowCounts != null && Slots.Count == 0; }
+        }
 
         /// <summary>
         /// Where a table with the given aspect ratio goes for slot <paramref name="index"/>:
-        /// the largest size that fits into the slot enlarged by Overlap percent, positioned
-        /// according to Align and kept inside the monitor.
+        /// the largest size that fits the slot's width and its height enlarged by Overlap
+        /// percent, positioned according to Align and kept inside the monitor.
+        /// Overlap only works vertically: tables side by side would cover each other's seats.
         /// </summary>
         public Rectangle PlaceTable(int index, Rectangle slot, double ratio)
         {
@@ -107,13 +154,35 @@ namespace PokerGrid
                 ? MonitorArea(Slots[index].Monitor >= 0 ? Slots[index].Monitor : Monitor, UseWorkingArea)
                 : GridArea();
 
-            // Overlap may enlarge a table beyond its slot, but never beyond the screen.
             double grow = 1 + Math.Max(0, Overlap) / 100.0;
-            double maxW = Math.Min(slot.Width * grow, Math.Max(slot.Width, area.Width));
+            double maxW = slot.Width;
             double maxH = Math.Min(slot.Height * grow, Math.Max(slot.Height, area.Height));
             int w = (int)Math.Round(Math.Min(maxW, maxH * ratio));
             int h = (int)Math.Round(w / ratio);
             int x, y;
+
+            if (HasRowPlan)
+            {
+                int row = 0, col = index;
+                while (row < RowCounts.Length - 1 && col >= RowCounts[row])
+                {
+                    col -= RowCounts[row];
+                    row++;
+                }
+                int cols = RowCounts[row];
+                x = cols > 1 ? area.X + (int)Math.Round((double)col * (area.Width - w) / (cols - 1))
+                             : area.X + (area.Width - w) / 2;
+                // First row flush with the top, last row flush with the bottom, others centered in their band.
+                if (RowCounts.Length == 1)
+                    y = slot.Y + (slot.Height - h) / 2;
+                else if (row == 0)
+                    y = slot.Y;
+                else if (row == RowCounts.Length - 1)
+                    y = slot.Bottom - h;
+                else
+                    y = slot.Y + (slot.Height - h) / 2;
+                return new Rectangle(x, Math.Max(area.Y, Math.Min(y, area.Bottom - h)), w, h);
+            }
 
             if (Align == AlignMode.Spread && Slots.Count == 0)
             {
@@ -135,7 +204,7 @@ namespace PokerGrid
                 x += (slot.Width - w) / 2;
             if (Align == AlignMode.Center || Align == AlignMode.Left || Align == AlignMode.Spread)
                 y += (slot.Height - h) / 2;
-            // A table bigger than its slot must not stick out of the screen.
+            // A table taller than its slot must not stick out of the screen.
             if (w <= area.Width)
                 x = Math.Max(area.X, Math.Min(x, area.Right - w));
             if (h <= area.Height)
@@ -150,10 +219,10 @@ namespace PokerGrid
             return a;
         }
 
-        /// <summary>Name for tray and overlay; dynamic layouts also show the current grid.</summary>
+        /// <summary>Name for tray and overlay; dynamic layouts also show the current rows, e.g. "Dynamisch (3+4)".</summary>
         public string DisplayName
         {
-            get { return Dynamic ? string.Format("{0} ({1}x{2})", Name, Columns, Rows) : Name; }
+            get { return HasRowPlan ? string.Format("{0} ({1})", Name, string.Join("+", RowCounts.Select(c => c.ToString()))) : Name; }
         }
 
         public List<Rectangle> ComputeSlots()
@@ -175,21 +244,37 @@ namespace PokerGrid
             }
 
             Rectangle a = GridArea();
-            int cols = Math.Max(1, Columns), rows = Math.Max(1, Rows);
-            int cellW = (a.Width - Gap * (cols - 1)) / cols;
-            int cellH = (a.Height - Gap * (rows - 1)) / rows;
+
+            if (HasRowPlan)
+            {
+                int top = a.Y;
+                for (int r = 0; r < RowCounts.Length; r++)
+                {
+                    int cols = RowCounts[r];
+                    int cellW = (a.Width - Gap * (cols - 1)) / cols;
+                    int rowH = r == RowCounts.Length - 1 ? a.Bottom - top : RowHeights[r];
+                    for (int c = 0; c < cols; c++)
+                        result.Add(new Rectangle(a.X + c * (cellW + Gap), top, cellW, rowH));
+                    top += rowH + Gap;
+                }
+                return result;
+            }
+
+            int gridCols = Math.Max(1, Columns), gridRows = Math.Max(1, Rows);
+            int gridCellW = (a.Width - Gap * (gridCols - 1)) / gridCols;
+            int gridCellH = (a.Height - Gap * (gridRows - 1)) / gridRows;
 
             if (ColumnFirst)
             {
-                for (int c = 0; c < cols; c++)
-                    for (int r = 0; r < rows; r++)
-                        result.Add(new Rectangle(a.X + c * (cellW + Gap), a.Y + r * (cellH + Gap), cellW, cellH));
+                for (int c = 0; c < gridCols; c++)
+                    for (int r = 0; r < gridRows; r++)
+                        result.Add(new Rectangle(a.X + c * (gridCellW + Gap), a.Y + r * (gridCellH + Gap), gridCellW, gridCellH));
             }
             else
             {
-                for (int r = 0; r < rows; r++)
-                    for (int c = 0; c < cols; c++)
-                        result.Add(new Rectangle(a.X + c * (cellW + Gap), a.Y + r * (cellH + Gap), cellW, cellH));
+                for (int r = 0; r < gridRows; r++)
+                    for (int c = 0; c < gridCols; c++)
+                        result.Add(new Rectangle(a.X + c * (gridCellW + Gap), a.Y + r * (gridCellH + Gap), gridCellW, gridCellH));
             }
             return result;
         }

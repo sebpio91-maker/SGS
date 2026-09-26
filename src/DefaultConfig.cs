@@ -56,17 +56,20 @@ HotkeyOverlay=Ctrl+Alt+O
 ;                   nicht genau zum Slot passt.
 ;                   Spread = äußere Tische bündig am Bildschirmrand, die übrigen
 ;                   gleichmäßig dazwischen (freier Platz/Überlappung wird gleich verteilt)
-;  Overlap        : Tische dürfen um so viel Prozent größer als ihr Slot werden
-;                   und sich dafür etwas überlappen (0 = keine Überlappung).
+;  Overlap        : Tische dürfen um so viel Prozent höher als ihr Slot werden
+;                   und sich dafür oben/unten etwas überlappen (0 = keine Überlappung).
+;                   Nebeneinander wird nie überlappt.
 ;                   Die oberen Reihen liegen dann über den unteren, damit Karten
 ;                   und Aktionsbuttons unten im Tisch sichtbar bleiben.
 ;  Order          : RowFirst (Slots zeilenweise nummeriert) | ColumnFirst
 ;  UseWorkingArea : true = Taskleiste freilassen
 ;  Mode           : Grid (feste Columns/Rows) | Dynamic
-;                   Dynamic = Spalten und Zeilen werden laufend aus der Anzahl der
-;                   offenen Tische und ihren Seitenverhältnissen berechnet, sodass
-;                   alle Tische so groß wie möglich werden (Columns/Rows werden ignoriert)
-;  MaxColumns / MaxRows : Grenzen für Mode=Dynamic
+;                   Dynamic = Reihen werden laufend aus der Anzahl der offenen Tische
+;                   und ihren Seitenverhältnissen geplant, sodass alle Tische so groß
+;                   wie möglich werden. Reihen dürfen unterschiedlich viele Tische haben
+;                   (z.B. 7 Tische = 3 oben über die volle Breite + 4 unten).
+;                   Columns/Rows werden dabei ignoriert.
+;  MaxColumns / MaxRows : max. Tische pro Reihe / max. Reihen bei Mode=Dynamic
 ; ------------------------------------------------------------
 
 [Layout:Dynamisch]

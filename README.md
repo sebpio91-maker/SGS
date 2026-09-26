@@ -13,9 +13,10 @@ wie möglich in ihren Slot eingepasst, ohne verzerrt zu werden.
   Außerhalb des Grids losgelassen → springt zurück (oder wird freigegeben, einstellbar).
 - **Mehrere Layouts** (2x2, 3x2, 3x3, eigene Slots in Pixel oder Prozent, auch über mehrere Monitore),
   per Tray-Menü oder Hotkey umschaltbar.
-- **Dynamisches Layout** (Standard): Spalten und Zeilen werden laufend aus der Anzahl der offenen Tische und ihren
-  Seitenverhältnissen berechnet, sodass alle Tische so groß wie möglich werden (z. B. 7 Tische → 4x2 statt 3x3).
-  Mit `Overlap` dürfen sich Tische leicht überlappen, die obere Reihe liegt dann über der unteren.
+- **Dynamisches Layout** (Standard): Die Reihen werden laufend aus der Anzahl der offenen Tische und ihren
+  Seitenverhältnissen geplant, sodass alle Tische so groß wie möglich werden. Reihen dürfen unterschiedlich viele
+  Tische haben, z. B. 7 Tische → 3 oben über die volle Breite + 4 unten, 5 Tische → 2 + 3.
+  Mit `Overlap` dürfen sich Reihen leicht überlappen, die obere Reihe liegt dann über der unteren.
 - **Automatische Layoutwahl** (Alternative): Standardmäßig 3x2 bei bis zu 6 Tischen, 3x3 ab 7 Tischen (`AutoLayout=3x2,3x3`).
   Zurück auf 3x2 geht es erst, wenn die Tischanzahl 5 Sekunden lang niedrig bleibt.
 - **Überlauf**: Mehr Tische als Slots → stapeln oder warten, bis ein Slot frei wird.
